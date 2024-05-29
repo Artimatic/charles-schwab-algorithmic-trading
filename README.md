@@ -1,10 +1,7 @@
 # charles-schwab-algorithmic-trading
 
 ## Install
-* Create file 'credentials.js' in '\server\config\environment\credentials.js'
-* Get Access to TD Ameritrade. Both a trading account and Developer account are necessary 
-*  for API access: https://developer.tdameritrade.com/apis
-* Add TD Ameritrade credentials to credentials.js: 
+* Create optional file 'credentials.js' in '\server\config\environment\credentials.js'
 ```
 export default {
     port: 9000,
