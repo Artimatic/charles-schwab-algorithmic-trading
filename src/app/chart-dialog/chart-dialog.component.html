@@ -1,0 +1,26 @@
+<h2 mat-dialog-title>Load Chart</h2>
+<mat-dialog-content class="mat-typography">
+  <mat-form-field>
+    <mat-label>Select a chart</mat-label>
+    <mat-select [(ngModel)]="selectedAlgo">
+      <mat-option *ngFor="let algo of algorithms" [value]="algo.value">
+        {{algo.viewValue}}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+  <form *ngIf="selectedAlgo==='sma' || selectedAlgo==='macrossover'" [formGroup]="smaForm">
+    <mat-form-field hintLabel="Deviation">
+      <input matInput placeholder="0.003" formControlName="deviation">
+    </mat-form-field>
+    <mat-form-field hintLabel="Fast Average">
+      <input matInput placeholder="30" formControlName="fastAvg">
+    </mat-form-field>
+    <mat-form-field hintLabel="Slow Average">
+      <input matInput placeholder="90" formControlName="slowAvg">
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Cancel</button>
+  <button mat-button [mat-dialog-close]="useSelected()" cdkFocusInitial>Load</button>
+</mat-dialog-actions>

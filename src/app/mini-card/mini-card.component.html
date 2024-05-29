@@ -1,0 +1,32 @@
+<div class="mini-card-container">
+  <p-card>
+    <div class="card-content">
+      <span>
+        <h4 *ngIf="!order.primaryLeg||!order.secondaryLeg">
+          {{order.holding.symbol}}
+        </h4>
+        <h4 *ngIf="order.primaryLeg">
+          {{order.primaryLeg.symbol}}
+        </h4>
+        <h4 *ngIf="order.secondaryLeg">
+          {{order.secondaryLeg.symbol}}
+        </h4>
+        <ul class="detail-list">
+          <li>
+            <b>Type</b> {{order.side}}
+          </li>
+          <li>
+            <b>Quantity</b> {{order.quantity}}
+          </li>
+          <li>
+            <b>Order</b> {{order.orderSize}}
+          </li>
+        </ul>
+      </span>
+    </div>      
+    <ng-template pTemplate="footer">
+      <button pButton type="button" label="Delete" icon="pi pi-times-circle" class="mini-card-button ui-button-danger"
+      (click)="deleteCard()"></button>
+    </ng-template>
+  </p-card>
+</div>

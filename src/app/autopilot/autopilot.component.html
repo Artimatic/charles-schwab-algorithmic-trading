@@ -1,0 +1,57 @@
+<div class="autopilot-container">
+    <p-avatar icon="pi pi-prime" styleClass="p-mr-2" size="large" shape="circle" (click)="scroll()"></p-avatar>
+</div>
+
+<p-dialog header="Strategy finder" [(visible)]="revealPotentialStrategy">
+    <p-listbox [options]="strategies">
+        <ng-template let-strategy pTemplate="item">
+            <div class="strategy-list">
+                <p-button pRipple class="p-button-danger" icon="pi pi-times" (click)="removeStrategy(strategy)"
+                    class="p-button-rounded p-button-outlined p-button-sm"></p-button>
+                <div class="buy-sell-container">
+                    <div *ngFor="let buy of strategy.strategy.buy">
+                        <p-tag styleClass="p-mr-2" severity="success" [value]="buy" [rounded]="true"></p-tag>
+                    </div>
+                    <div *ngFor="let sell of strategy.strategy.sell">
+                        <p-tag styleClass="p-mr-2" severity="danger" [value]="sell" [rounded]="true"></p-tag>
+                    </div>
+                </div>
+            </div>
+        </ng-template>
+    </p-listbox>
+    <p-button label="Ok" styleClass="p-button-success" (click)="revealPotentialStrategy = false"></p-button>
+</p-dialog>
+
+<p-toolbar id="autopilot-toolbar">
+    <div class="p-toolbar-group-left">
+        <div class="toolbar-header">
+            <ng-container *ngTemplateOutlet="header"></ng-container>
+        </div>
+    </div>
+    <div class="p-toolbar">
+        <div *ngIf="display">
+            <p-tag value="Active"></p-tag>
+        </div>
+        <!-- <app-ai-picks></app-ai-picks> -->
+        <app-find-some-daytrade></app-find-some-daytrade>
+    </div>
+    <div class="p-toolbar-group-right">
+        <p-button icon="pi pi-play" *ngIf="!display" styleClass="p-button-success" (click)="open()"></p-button>
+        <p-button icon="pi pi-times" *ngIf="display" styleClass="p-button-danger" (click)="stop()"></p-button>
+        <p-splitButton label="Change strategy" (onClick)="changeStrategy()" [model]="multibuttonOptions" styleClass="ui-button-success"></p-splitButton>
+    </div>
+</p-toolbar>
+
+<ng-template #header>
+    <h3>Day Trade Manager</h3>
+    <span *ngIf="strategyList[strategyCounter] === 'Daytrade'">
+        <p-tag [value]="strategyList[strategyCounter]" severity="warning"></p-tag>
+    </span>
+    <span *ngIf="strategyList[strategyCounter] !== 'Daytrade'">
+        <p-tag [value]="strategyList[strategyCounter]" severity="danger"></p-tag>
+    </span>
+    <p-tag [value]="dayTradingRiskToleranceList[dayTradeRiskCounter]" severity="warning"
+        pTooltip="Day trade allocation - percentage of total bp"></p-tag>
+    <p-tag pTooltip="Swing trade allocation - percentage of cash balance" [value]="riskToleranceList[riskCounter]"
+        severity="danger"></p-tag>
+</ng-template>

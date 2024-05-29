@@ -1,0 +1,12 @@
+.todo-card {
+  margin: 10px;
+  max-width: 125px;
+}
+
+.checkbox-label {
+  word-wrap: break-word;
+}
+
+.todo-item {
+  margin-bottom: 10px;
+}

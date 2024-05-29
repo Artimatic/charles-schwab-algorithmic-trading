@@ -1,0 +1,27 @@
+<div class="shopping-list">
+  <p-accordion>
+    <p-accordionTab header="Import Orders">
+      <app-xls-import (onImport)="import($event)"></app-xls-import>
+    </p-accordionTab>
+    <p-accordionTab header="Settings">
+      <app-setting-controls></app-setting-controls>
+    </p-accordionTab>
+    <p-accordionTab header="Profit Loss Table">
+      <app-daytrade-score-board [buyOrders]="cartService.buyOrders" [otherOrders]="cartService.otherOrders"
+        [totalScore]="scoreKeeperService.total"></app-daytrade-score-board>
+    </p-accordionTab>
+    <p-accordionTab header="Logs">
+      <app-terminal-view></app-terminal-view>
+    </p-accordionTab>
+  </p-accordion>
+
+  <h1 mat-subheader>Shopping List</h1>
+  <!-- <app-pokerhand></app-pokerhand> -->
+  <div class="action-buttons">
+    <p-splitButton label="Start Orders" (onClick)="confirmStart()" [model]="multibuttonOptions" icon="pi pi-dollar"
+      styleClass="ui-button-success"></p-splitButton>
+    <app-default-order-lists class="default-orders-button"></app-default-order-lists>
+  </div>
+
+  <app-orders-list></app-orders-list>
+</div>

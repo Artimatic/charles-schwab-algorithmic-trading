@@ -1,0 +1,23 @@
+<div class="login-container">
+    <form name="form" (ngSubmit)="login()" #f="ngForm" novalidate>
+        <div class="form-group">
+            <div class="login-input">
+                <input type="text" placeholder="Username" name="username" [(ngModel)]="model.username" required/>
+            </div>
+        </div>
+        <div class="form-group">
+            <div class="login-input">
+                <p-password [(ngModel)]="model.password" placeholder="Password" [toggleMask]="true" [feedback]="false"></p-password>
+            </div>
+        </div>
+        <div class="form-group">
+            <div *ngIf="loading">
+                <p-progressSpinner styleClass="w-4rem h-4rem" strokeWidth="8" fill="var(--surface-ground)" animationDuration="1s"></p-progressSpinner>
+            </div>
+            <span *ngIf="!loading">
+                <button pButton pRipple label="Next" class="p-button-success" (click)="login()"></button>
+            </span>
+        </div>
+        <div *ngIf="error" class="alert alert-danger">{{error}}</div>
+    </form>
+</div>

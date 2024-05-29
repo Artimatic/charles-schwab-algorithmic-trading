@@ -1,0 +1,149 @@
+<p-messages [(value)]="messages"></p-messages>
+<app-product-view #product></app-product-view>
+<p-table #dt [columns]="selectedColumns" [value]="currentList" [paginator]="true" [rows]="10" selectionMode="single"
+  [(selection)]="selectedStock" dataKey="stock">
+  <ng-template pTemplate="caption">
+    <div class="ui-g">
+      <div class="ui-g-4">
+        <div class="table-commands">
+          <button pButton (click)="openChartDialog(selectedStock, endDate)" [disabled]="!selectedStock">
+            <mat-icon>assessment</mat-icon>
+            Chart
+          </button>
+          <button pButton (click)="runAi(selectedStock, true)" [disabled]="!selectedStock">
+            Machine Learning
+          </button>
+          <button pButton color="primary" (click)="runDefaultBacktest()">
+            Full list
+          </button>
+          <button pButton color="primary" (click)="autoActivate()">
+            Primary list
+          </button>
+          <button pButton color="primary" (click)="getFoundPatterns()">
+            Find patterns
+          </button>
+          <button pButton color="primary" (click)="purgeStockList()">
+            Purge stock list
+          </button>
+          <button pButton color="primary" (click)="exportResults()">Export Results</button>
+          <app-watch-list>
+          </app-watch-list>
+        </div>
+      </div>
+      <div class="ui-g-4">
+        <div class="table-settings">
+          <div class="global-filter">
+            <i class="fa fa-search" style="margin:4px 4px 0 0"></i>
+            <input type="text" pInputText size="50" placeholder="Global Filter" [(ngModel)]="searchText"
+              (input)="filter()" style="width:auto">
+          </div>
+          <div class="date-picker">
+            End Date
+            <input name="endDate" type="date" [ngModel]="endDate" (ngModelChange)="endDate = $event">
+          </div>
+          <mat-form-field *ngIf="additionalOptions">
+            <mat-select placeholder="Algorithm" [(ngModel)]="selectedAlgo">
+              <mat-optgroup *ngFor="let group of algoGroups" [label]="group.name" [disabled]="group.disabled">
+                <mat-option *ngFor="let algo of group.algorithm" [value]="algo.value">
+                  {{algo.viewValue}}
+                </mat-option>
+              </mat-optgroup>
+            </mat-select>
+          </mat-form-field>
+          <span class="sentiment-title">
+            Sentiment:
+            <span
+              [ngClass]="{'bullish-sentiment': algoReport.bullishCount > algoReport.bearishCount, 'hide-sentiment': algoReport.bullishCount <= algoReport.bearishCount}">
+              BULLISH
+            </span>
+            <span
+              [ngClass]="{'bearish-sentiment': algoReport.bullishCount < algoReport.bearishCount, 'hide-sentiment': algoReport.bullishCount >= algoReport.bearishCount}">
+              BEARISH
+            </span>
+          </span>
+        </div>
+      </div>
+      <div class="ui-g-4">
+        <div class="table-filters">
+          <p-multiSelect class="filter" [options]="recommendations" [(ngModel)]="selectedRecommendation"
+            defaultLabel="All Recommendations" (onChange)="filter()" selectedItemsLabel="{0} recommendations selected"
+            *ngIf="additionalOptions">
+          </p-multiSelect>
+          <p-multiSelect *ngIf="additionalOptions" (onChange)="filter()" [options]="indicatorsList" [(ngModel)]="selectedIndicators" defaultLabel="Select an Indicator" optionLabel="label" selectedItemsLabel="{0} indicators selected"></p-multiSelect>
+          
+          <mat-checkbox class="filter" [(ngModel)]="twoOrMoreSignalsOnly" (change)="filter()" *ngIf="additionalOptions">
+            Only show if two or more signals
+          </mat-checkbox>
+          <div class="filter">
+            <div class="more-options-container">
+              <label class="more-options">More options</label>
+              <p-inputSwitch [(ngModel)]="additionalOptions"></p-inputSwitch>
+            </div>
+            <app-auto-backtest-switch (switchActivate)="autoActivate()"></app-auto-backtest-switch>
+          </div>
+        </div>
+      </div>
+    </div>
+  </ng-template>
+  <ng-template pTemplate="header" let-columns>
+    <tr>
+      <th *ngFor="let col of columns" [pSortableColumn]="col.field" pResizableColumn pReorderableColumn>
+        {{col.header}}
+        <p-sortIcon [field]="col.field"></p-sortIcon>
+      </th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-element let-columns="columns">
+    <tr [pSelectableRow]="element">
+      <td *ngFor="let col of selectedColumns" [ngSwitch]="col.field" class="table-cell">
+        <span *ngSwitchCase="'returns'">
+          {{element[col.field] | percent}}
+        </span>
+        <span *ngSwitchCase="'lastVolume'">
+          {{element.lastVolume | number}}
+        </span>
+        <span *ngSwitchCase="'lastPrice'">
+          {{element.lastVolume | currency}}
+        </span>
+        <span *ngSwitchCase="'impliedMovement'">
+          {{element?.impliedMovement | percent}}
+        </span>
+        <span *ngSwitchCase="'previousImpliedMovement'">
+          {{element?.previousImpliedMovement | percent}}
+        </span>
+        <span *ngSwitchCase="'kellyCriterion'">
+          <button pButton color="primary" *ngIf=!element.kellyCriterion (click)="getKellyCriterion(element)">Get
+            Allocation</button>
+          <span *ngIf=element.kellyCriterion>{{element.kellyCriterion}}</span>
+        </span>
+        <span *ngSwitchCase="'ml'">
+          <div *ngIf="element.ml">
+             {{element.ml}}
+          </div>
+        </span>
+        <span *ngSwitchDefault>
+          {{element[col.field]}}
+        </span>
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="emptymessage" let-columns>
+    <tr class="empty-table">
+      <td [attr.colspan]="columns.length + 1">
+        No stocks found
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="summary">
+    Progress: {{progress}}/{{totalStocks}}
+    <mat-progress-bar mode="determinate" value="{{progressPct}}"></mat-progress-bar>
+    <span class="summary-title">Average Trades: </span>{{algoReport.averageTrades}}
+    <span class="summary-title">Average Returns: </span>{{algoReport.averageReturns.toFixed(1)}}%
+    <span class="summary-title">Profitable Trades: </span>{{algoReport.profitableTrades}}
+    <span class="summary-title">Total Trades: </span>{{algoReport.totalTrades}}
+    <span class="summary-title">Success Rate: </span>{{algoReport.successRate | percent}}
+    <span class="summary-title">Bullish Count: </span>{{algoReport.bullishCount}}
+    <span class="summary-title">Bearish Count: </span>{{algoReport.bearishCount}}
+    <span class="summary-title">Bullish/Bearish: </span>{{algoReport.bullishBearishRatio}}
+  </ng-template>
+</p-table>

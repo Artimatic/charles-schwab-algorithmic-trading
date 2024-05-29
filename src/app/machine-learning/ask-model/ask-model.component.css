@@ -1,0 +1,14 @@
+.data-cell {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+button {
+  margin: 5px;
+}
+
+.buy-color {
+  color: green;
+  font-weight: bolder;
+}

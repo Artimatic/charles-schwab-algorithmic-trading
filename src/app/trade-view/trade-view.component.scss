@@ -1,0 +1,35 @@
+.robinhood {
+  color: #ffff;
+  background-color: #21ce99;
+}
+
+.td {
+  color: #1b1b1d;
+  background-color: #FAFAFA;
+  .mat-tab-label-content {
+    color: #1b1b1d;
+  }
+}
+
+/* Styles for tab labels */
+.mat-tab-label {
+  min-width: 25px;
+  padding: 5px;
+  background-color: transparent;
+  color: #ffff;
+  opacity: 0.7;
+  font-weight: 700;
+}
+
+/* Styles for the active tab label */
+.mat-tab-label.mat-tab-label-active {
+  min-width: 25px;
+  padding: 5px;
+  background-color: transparent;
+  color: #ffff;
+  font-weight: 700;
+}
+
+.autopilot-container {
+  margin-top: 1rem;
+}

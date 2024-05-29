@@ -1,0 +1,72 @@
+.banner { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    background-color: #ff0000; 
+    width: 100%; 
+}
+
+.banner-content { 
+    width: 800px;
+    padding: 10px;
+    color: #ffffff;
+}
+
+.banner-warning { 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    background-color: #FFD700; 
+    width: 100%; 
+}
+
+.banner-content-warning { 
+    width: 800px;
+    padding: 10px;
+    color: #000000;
+}
+
+.padded {
+    padding: 5px;
+    margin: auto;
+    position: absolute; 
+}
+
+.progress-bar {
+    display: flex;
+    align-content: center;
+    align-items: center;
+    height: 18px;
+  }
+
+.order-log {
+    height: auto;
+    width: auto;
+}
+
+.machine-switch {
+    padding: 3px 0 5px 3px;
+}
+
+.bb-form-field {
+    margin: 2rem 0.5rem;
+}
+
+:host ::ng-deep .p-chip.live-chip {
+    background: var(--secondary-color);
+    color: var(--secondary-color-text);
+}
+
+.card-form-main {
+    overflow: auto;
+}
+
+button {
+    margin-bottom: 0.5rem;
+    margin-right: 0.5rem;
+}
+
+.settings-container {
+    display: flex;
+    flex-wrap: wrap;
+}

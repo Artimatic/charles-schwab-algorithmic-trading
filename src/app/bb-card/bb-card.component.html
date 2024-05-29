@@ -1,0 +1,130 @@
+<p-button [label]="order.holding.symbol" (click)="toggleSettingsVisible()" [badge]="firstFormGroup.value.quantity" styleClass="mr-2"></p-button>
+
+<p-dialog [header]="order.holding.symbol" [(visible)]="settingsVisible">
+  <div class="banner" *ngIf="error">
+    <div class="banner-content">
+      ERROR: {{error}}
+    </div>
+  </div>
+  <div class="banner-warning" *ngIf="warning">
+    <div class="banner-content-warning">
+      WARNING: {{warning}}
+    </div>
+  </div>
+  <p-steps [model]="items" [(activeIndex)]="activeIndex" [readonly]="false"></p-steps>
+
+  <div class="card-form-main" *ngIf="activeIndex === 0">
+    <form [formGroup]="firstFormGroup">
+      <div class="p-field-radiobutton bb-form-field" *ngFor="let side of sides">
+        <p-radioButton name="orderType" [value]="side" [label]="side" formControlName="orderType"></p-radioButton>
+      </div>
+      <div class="bb-form-field">
+        <p-multiSelect [formControl]="preferences" defaultLabel="Select additional options"
+          [options]="preferenceList"></p-multiSelect>
+      </div>
+      <span class="p-float-label bb-form-field">
+        <p-inputNumber id="float-input" type="number" placeholder="Quantity" pInputText formControlName="quantity"
+          required></p-inputNumber>
+        <label for="float-input">Quantity</label>
+      </span>
+      <span class="p-float-label bb-form-field">
+        <p-inputNumber id="float-input" type="number" pInputText formControlName="orderSize" required></p-inputNumber>
+        <label for="float-input">Orders</label>
+      </span>
+      <div class="bb-form-field">
+        <p-checkbox formControlName="useML" label="Enable machine learning" (onChange)="checkMLService()"></p-checkbox>
+      </div>
+      <div class="bb-form-field">
+        <p-dropdown [options]="algorithmList" [formControl]="selectedAlgorithm"
+          optionLabel="Select an Algorithm"></p-dropdown>
+      </div>
+      <span class="p-float-label bb-form-field">
+        <p-inputNumber id="float-input" type="number" placeholder="Stop Loss" pInputText formControlName="lossThreshold"
+          required></p-inputNumber>
+        <label for="float-input">Stop Loss</label>
+      </span>
+      <span class="p-float-label bb-form-field">
+        <p-inputNumber id="float-input" type="number" placeholder="Trailing Stop Loss" pInputText
+          formControlName="trailingStop" required></p-inputNumber>
+        <label for="float-input">Trailing Stop Loss</label>
+      </span>
+      <span class="p-float-label bb-form-field">
+        <p-inputNumber id="float-input" type="number" pInputText formControlName="profitTarget"
+          required></p-inputNumber>
+        <label for="float-input">Profit Target</label>
+      </span>
+      <span class="p-float-label bb-form-field">
+        <input type="text" pInputText formControlName="phoneNumber" />
+        <label for="float-input">Phone Number</label>
+      </span>
+    </form>
+  </div>
+  <div *ngIf="activeIndex === 1">
+    <div>
+      <div *ngIf="live">
+        <p-chip label="Live" styleClass="p-mr-2 live-chip"></p-chip>
+      </div>
+      <div *ngIf="!live">
+        <p-chip label="Stalled"></p-chip>
+      </div>
+      <div>
+        Orders Submitted: {{ buyCount + sellCount}}/{{firstFormGroup.value.quantity || 0}} shares
+      </div>
+      <div class="toolbar-content" fxLayout fxLayout.xs="column" fxLayoutAlign="center center" fxLayoutGap="10px"
+        fxLayoutGap.xs="0">
+        <div fxFlex="5%">
+          <p-header>
+            <h3>{{order.holding.symbol}}</h3>
+            <p>
+              <p-tag *ngIf="firstFormGroup.value.orderType=='Buy'" styleClass="p-mr-2" severity="success"
+                value="Buy"></p-tag>
+              <p-tag *ngIf="firstFormGroup.value.orderType=='Sell'" severity="danger" value="Sell"></p-tag>
+              <p-tag *ngIf="firstFormGroup.value.orderType=='DayTrade'" styleClass="p-mr-2" severity="info"
+                value="Daytrade"></p-tag>
+            </p>
+          </p-header>
+          <mat-checkbox (click)="toggleChart()">Chart</mat-checkbox>
+        </div>
+        <div fxFlex="95%">
+          <div class="order-log" *ngIf="!showChart">
+            <mat-grid-list cols="3" rowHeight="150px">
+              <mat-grid-tile *ngFor="let tile of tiles" [colspan]="tile.cols" [rowspan]="tile.rows">
+                <div class="tiles">
+                  <table>
+                    <tr *ngFor="let order of tile.orders">
+                      <td>{{order.signalTime}}</td>
+                      <td>{{order.action}}</td>
+                      <td>{{order.quantity}}@</td>
+                      <td>${{order.price}}</td>
+                      <td> on {{order.timeSubmitted}}</td>
+                    </tr>
+                  </table>
+                </div>
+              </mat-grid-tile>
+            </mat-grid-list>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card-actions">
+          <button pButton class="p-button-info" (click)="backtest()">Backtest</button>
+        </div>
+        <div class="card-actions">
+          <button pButton class="p-button-info" (click)="test()">Test</button>
+        </div>
+        <div class="card-actions">
+          <button pButton class="p-button-info" (click)="buyAll()">Buy All</button>
+        </div>
+        <div class="card-actions">
+          <button pButton class="p-button-info" (click)="sellAll()">Sell All</button>
+        </div>
+        <div class="card-actions">
+          <button pButton class="p-button-info" (click)="buyStrangle()">Buy Strangle</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <span class="delete-me">
+    <button pButton type="button" (click)="delete()" label="Delete" iconPos="left"></button>
+  </span>
+</p-dialog>

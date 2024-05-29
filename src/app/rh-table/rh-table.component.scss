@@ -1,0 +1,75 @@
+.table-commands {
+  text-align: left;
+}
+
+.table-setteings {
+  text-align: center;
+}
+
+.table-filters {
+  text-align: right;
+  .filter {
+    padding: 0 5px 0 5px;
+  }
+}
+
+.empty-table {
+  padding: 25px;
+  text-align: center;
+}
+
+.table-title {
+  padding: 5px 10px 5px 10px;
+}
+
+.global-filter {
+  padding: 3px;
+}
+
+:host ::ng-deep .ui-table .ui-table-thead > tr > th {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 70px;
+}
+
+@media screen and (max-width: 64em) {
+  :host ::ng-deep .ui-table .ui-table-thead > tr > th {
+      top: 100px;
+  }
+}
+
+.summary-title {
+  font-weight: 500;
+}
+
+.more-options {
+  padding-right: 10px;
+}
+
+.more-options-container {
+  width: 11rem;
+}
+
+.bullish-sentiment {
+  color: #0F9117;
+  font-weight: 700;
+}
+
+.bearish-sentiment {
+  color: #ff0000;
+  font-weight: 700;
+}
+
+.hide-sentiment { 
+  display: none;
+}
+
+.sentiment-title {
+  font-weight: 500;
+}
+
+.table-commands {
+  > button, > app-watch-list {
+    margin-left: 1rem;
+  }
+}

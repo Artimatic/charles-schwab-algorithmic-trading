@@ -1,0 +1,78 @@
+/* You can add global styles to this file, and also import other style files */
+@import '~@angular/material/prebuilt-themes/indigo-pink.css';
+@import '~primeng/resources/primeng.min.css';
+
+@import '~primeng/resources/themes/arya-blue/theme.css';
+
+html body {
+  display: block;
+  margin: 0;
+  background: #2a281c;
+  color: #f5f5f5;
+}
+
+mat-card.mat-card.mat-focus-indicator {
+  background: #a0b0b0;
+}
+
+.mat-form-field-label {
+  color: white;
+}
+
+button.nav-item {
+  width:160px;
+  text-align: left;
+}
+
+.button-separator {
+  margin-right: 1rem;
+}
+
+.mat-checkbox-layout {
+  white-space: pre-wrap !important;
+}
+
+.table-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -o-text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.app-title {
+  color: white;
+  font-weight: 800;
+  font-family: monospace;
+  font-size: larger;
+}
+
+.mat-drawer-inner-container {
+  background-color: #2c2c52;
+  color: white;
+}
+
+.online-status-text {
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.ui-button {
+  margin: 1em;
+}
+
+.uppercase {
+  text-transform: uppercase;
+}
+
+.ui-g {
+  display: flex;
+  flex-direction: column;
+}
+
+.p-steps .p-steps-item .p-menuitem-link {
+  background: transparent;
+  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+  border-radius: 3px;
+  background: transparent;
+}

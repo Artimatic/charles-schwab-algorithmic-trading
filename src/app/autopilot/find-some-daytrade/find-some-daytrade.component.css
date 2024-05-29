@@ -1,0 +1,12 @@
+.caption-container {
+    display: flex;
+    flex-direction: row;
+}
+
+.caption-items {
+    margin: 0.5rem;
+}
+
+.daytrade-container {
+    overflow-y: auto;
+}

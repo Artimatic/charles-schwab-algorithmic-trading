@@ -1,0 +1,35 @@
+<mat-card>
+  <div>
+    <span [hidden]="!resolving">
+      <p-progressSpinner aria-label="Loading"></p-progressSpinner>
+    </span>
+    <span [hidden]="resolving">
+      <div [chart]="chart"></div>
+    </span>
+  </div>
+  <h3 class="first">Results</h3>
+  <p-table [value]="backtestResults">
+      <ng-template pTemplate="header">
+          <tr>
+              <th>Algorithm</th>
+              <th>Invested</th>
+              <th>Last Price</th>
+              <th>Last Volume</th>
+              <th>Recommendation</th>
+              <th>Total Trades</th>
+              <th>Returns</th>
+          </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-result>
+          <tr>
+              <td class="table-cell">{{result.algo}}</td>
+              <td class="table-cell">{{result.invested | currency}}</td>
+              <td class="table-cell">{{result.lastPrice | currency}}</td>
+              <td class="table-cell">{{result.lastVolume | number}}</td>
+              <td class="table-cell">{{result.recommendation}}</td>
+              <td class="table-cell">{{result.totalTrades | number}}</td>
+              <td class="table-cell">{{result.returns | percent}}</td>
+          </tr>
+      </ng-template>
+  </p-table>
+</mat-card>
