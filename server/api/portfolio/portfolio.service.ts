@@ -32,8 +32,8 @@ class PortfolioService {
       method: 'get',
       url
     }).then(response => {
-        reply.status(200).send((response as any).json());
-      })
+      reply.status(200).send((response as any).json());
+    })
       .catch((e) => {
         if (e.request && e.request._redirectable && e.request._redirectable._options && e.request._redirectable._options.href) {
           reply.redirect(e.request._redirectable._options.href);
@@ -51,7 +51,7 @@ class PortfolioService {
       code,
       redirect_uri: callbackUrl
     };
-  
+
     const auth = Buffer.from(`${appKey}:${secret}`).toString('base64');
     const options = {
       method: 'POST',
@@ -140,6 +140,9 @@ class PortfolioService {
   }
 
   getQuote(symbol, accountId, response) {
+    if (!accountId) {
+      accountId = this.getAccountId();
+    }
     if (!this.access_token[accountId]) {
       return this.renewExpiredAccessTokenAndGetQuote(symbol, accountId, response);
     } else {
@@ -272,16 +275,13 @@ class PortfolioService {
   }
 
   getAccountId() {
-    let accountId = configurations.tdameritrade.accountId;
-    if (accountId) {
-      return accountId;
-    } else {
-      for (const id in this.access_token) {
-        if (id && id !== 'null' && this.access_token[id]) {
-          accountId = id;
-        }
+    let accountId;
+    for (const id in this.access_token) {
+      if (id && id !== 'null' && this.access_token[id]) {
+        accountId = id;
       }
     }
+
     console.log('Using account id ', accountId);
     return accountId;
   }

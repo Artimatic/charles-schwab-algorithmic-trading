@@ -343,7 +343,7 @@ class BacktestService {
   }
 
   getCurrentDaytrade(symbol: string, price: number, paidPrice: number, parameters, dataSource = 'td', response) {
-    if (this.lastRequest && moment().diff(this.lastRequest, 'milliseconds') < 350) {
+    if (this.lastRequest && moment().diff(this.lastRequest, 'milliseconds') < 100) {
       response.status(429).send({ message: 'Last request was to soon.' });
       return Promise.reject();
     } else {

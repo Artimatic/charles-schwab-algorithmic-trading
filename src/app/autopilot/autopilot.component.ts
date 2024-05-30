@@ -240,6 +240,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         command: () => {
           this.revealPotentialStrategy = !this.revealPotentialStrategy;
         }
+      },
+      {
+        label: 'Test order list', 
+        command: () => {
+          this.testExecuteOrderList();
+        }
       }
     ];
   }
@@ -813,16 +819,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const buyAndSellList = this.cartService.sellOrders.concat(this.cartService.buyOrders);
     const orders = buyAndSellList.concat(this.cartService.otherOrders);
     const limit = this.simultaneousOrderLimit > orders.length ? orders.length : this.simultaneousOrderLimit;
-
     while (this.executedIndex < limit && this.lastOrderListIndex < orders.length) {
       const queueItem: AlgoQueueItem = {
         symbol: orders[this.lastOrderListIndex].holding.symbol,
-        reset: false
+        reset: false,
+        delay: 500 * this.lastOrderListIndex
       };
 
-      setTimeout(() => {
-        this.tradeService.algoQueue.next(queueItem);
-      }, 500 * this.lastOrderListIndex);
+      this.tradeService.algoQueue.next(queueItem);
       this.lastOrderListIndex++;
       this.executedIndex++;
     }
@@ -830,9 +834,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       this.lastOrderListIndex = 0;
     }
     if (this.executedIndex >= limit) {
-      setTimeout(() => {
-        this.executedIndex = 0;
-      }, 500);
+      this.executedIndex = 0;
     }
   }
 
@@ -1241,6 +1243,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       this.daytradeService.sendBuy(order, 'limit', () => { }, () => { });
       console.log('buy at close', order);
     }
+  }
+
+  testExecuteOrderList() {
+    this.executeOrderList();
   }
 
   startFindingTrades() {

@@ -7,6 +7,7 @@ export interface AlgoQueueItem  {
   reset: boolean;
   updateOrder?: boolean;
   triggerMlBuySell?: boolean;
+  delay?: number
 }
 
 @Injectable()

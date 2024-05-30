@@ -127,9 +127,6 @@ export default class PredictionService {
   recommendationToInput(signal: Indicators, input, targetRecommendation) {
     for (const rec in signal.recommendation) {
       if (signal.recommendation.hasOwnProperty(rec)) {
-        if (!signal.recommendation[rec]) {
-          console.log(`${rec} not found on `, signal.recommendation);;
-        }
         if (signal.recommendation[rec] && signal.recommendation[rec].toLowerCase) {
           if (signal.recommendation[rec].toLowerCase() === targetRecommendation) {
             input.push(1);
