@@ -143,24 +143,25 @@ class QuoteService {
   }
 
   getLastPrice(symbol, response) {
-    if (this.lastDaytradeRequest && moment().diff(this.lastDaytradeRequest, 'milliseconds') < 350) {
+    if (this.lastDaytradeRequest && moment().diff(this.lastDaytradeRequest, 'milliseconds') < 100) {
       response.status(429).send({ message: 'Last request was to soon.' });
       return Promise.reject();
     } else {
       this.lastDaytradeRequest = moment();
     }
-    const query = `${configurations.apps.tiingo}iex/${symbol}`;
-    const options = {
-      method: 'GET',
-      json: true,
-      uri: query,
-      headers: {
-        Authorization: 'Token ' + configurations.tiingo.key,
-        'Content-Type': 'application/json'
-      }
-    };
+    // const query = `${configurations.apps.tiingo}iex/${symbol}`;
+    // const options = {
+    //   method: 'GET',
+    //   json: true,
+    //   uri: query,
+    //   headers: {
+    //     Authorization: 'Token ' + configurations.tiingo.key,
+    //     'Content-Type': 'application/json'
+    //   }
+    // };
 
-    return RequestPromise(options);
+    // return RequestPromise(options);
+    return PortfolioService.getQuote(symbol, null, response);
   }
 
   getIntradayData(symbol, interval) {
