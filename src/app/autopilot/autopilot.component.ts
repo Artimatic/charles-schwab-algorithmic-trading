@@ -24,6 +24,7 @@ import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { AddOptionsTradeComponent } from './add-options-trade/add-options-trade.component';
 import { FindDaytradeService } from './find-daytrade.service';
 import { Trade } from '@shared/models/trade';
+import { StockListDialogComponent } from '../stock-list-dialog/stock-list-dialog.component';
 
 export interface PositionHoldings {
   name: string;
@@ -224,25 +225,31 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     this.multibuttonOptions = [
       {
-        label: 'Add strangle', 
+        label: 'Update stock list',
+        command: () => {
+          this.updateStockList();
+        }
+      },
+      {
+        label: 'Add strangle',
         command: () => {
           this.addOptions();
         }
       },
       {
-        label: 'Find patterns', 
+        label: 'Find patterns',
         command: () => {
           this.runFindPattern();
         }
       },
       {
-        label: 'Show strategies', 
+        label: 'Show strategies',
         command: () => {
           this.revealPotentialStrategy = !this.revealPotentialStrategy;
         }
       },
       {
-        label: 'Test order list', 
+        label: 'Test order list',
         command: () => {
           this.testExecuteOrderList();
         }
@@ -1172,9 +1179,28 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const backtestResults = await this.backtestTableService.getBacktestData(name);
 
         if (backtestResults && backtestResults.ml > 0.6) {
-          const optionStrategy = await this.backtestTableService.getCallTrade(name);
-          const price = this.backtestTableService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.backtestTableService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
-          this.backtestTableService.addStrangle(optionStrategy.call.symbol + '/' + optionStrategy.put.symbol, price, optionStrategy);
+          if (backtestResults?.optionsVolume > 500) {
+            const optionStrategy = await this.backtestTableService.getCallTrade(name);
+            const price = this.backtestTableService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.backtestTableService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
+            this.backtestTableService.addStrangle(optionStrategy.call.symbol + '/' + optionStrategy.put.symbol, price, optionStrategy);
+          } else {
+            const stock: PortfolioInfoHolding = {
+              name: name,
+              pl: 0,
+              netLiq: 0,
+              shares: 0,
+              alloc: 0,
+              recommendation: 'None',
+              buyReasons: '',
+              sellReasons: '',
+              buyConfidence: 0,
+              sellConfidence: 0,
+              prediction: null
+            };
+            await this.addBuy(stock);
+            const log = `Adding swing trade ${stock.name}`;
+            this.reportingService.addAuditLog(null, log);
+          }
         }
       } catch (error) {
         console.log(error);
@@ -1243,6 +1269,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       this.daytradeService.sendBuy(order, 'limit', () => { }, () => { });
       console.log('buy at close', order);
     }
+  }
+
+  updateStockList() {
+    this.dialogService.open(StockListDialogComponent, {
+      header: 'Stock list',
+      contentStyle: { 'overflow-y': 'unset' }
+    });
   }
 
   testExecuteOrderList() {

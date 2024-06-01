@@ -91,6 +91,7 @@ import { BacktestTableComponent } from './backtest-table/backtest-table.componen
 import { StrategyFinderComponent } from './backtest-table/strategy-finder/strategy-finder.component';
 import { AddOptionsTradeComponent } from './autopilot/add-options-trade/add-options-trade.component';
 import { FindSomeDaytradeComponent } from './autopilot/find-some-daytrade/find-some-daytrade.component';
+import { StockListDialogComponent } from './stock-list-dialog/stock-list-dialog.component';
 
 @NgModule({
   declarations: [
@@ -142,6 +143,7 @@ import { FindSomeDaytradeComponent } from './autopilot/find-some-daytrade/find-s
     StrategyFinderComponent,
     AddOptionsTradeComponent,
     FindSomeDaytradeComponent,
+    StockListDialogComponent,
   ],
   entryComponents: [
     LoginDialogComponent,
