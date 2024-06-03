@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Subject } from 'rxjs';
+import { Observable, Subject, Subscription } from 'rxjs';
 import { TimerObservable } from 'rxjs-compat/observable/TimerObservable';
 import { finalize, takeUntil, take } from 'rxjs/operators';
 import * as moment from 'moment-timezone';
@@ -113,7 +113,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   defaultInterval = 70300;
   interval = 70300;
   oneDayInterval;
-  timer;
+  timer: Subscription;
+  orderListTimer: Subscription;
   alive = false;
   destroy$ = new Subject();
   currentHoldings: PortfolioInfoHolding[] = [];
@@ -161,8 +162,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   backtestBuffer$;
 
-  simultaneousOrderLimit = 3;
-  executedIndex = 0;
   lastOrderListIndex = 0;
 
   lastInterval = moment();
@@ -391,7 +390,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   resetCart() {
-    this.executedIndex = 0;
     this.lastOrderListIndex = 0;
     this.cartService.removeCompletedOrders();
   }
@@ -823,26 +821,25 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   executeOrderList() {
+    if (this.orderListTimer) {
+      this.orderListTimer.unsubscribe();
+    }
     const buyAndSellList = this.cartService.sellOrders.concat(this.cartService.buyOrders);
     const orders = buyAndSellList.concat(this.cartService.otherOrders);
-    const limit = this.simultaneousOrderLimit > orders.length ? orders.length : this.simultaneousOrderLimit;
-    while (this.executedIndex < limit && this.lastOrderListIndex < orders.length) {
-      const queueItem: AlgoQueueItem = {
-        symbol: orders[this.lastOrderListIndex].holding.symbol,
-        reset: false,
-        delay: 500 * this.lastOrderListIndex
-      };
 
-      this.tradeService.algoQueue.next(queueItem);
-      this.lastOrderListIndex++;
-      this.executedIndex++;
-    }
-    if (this.lastOrderListIndex >= orders.length) {
-      this.lastOrderListIndex = 0;
-    }
-    if (this.executedIndex >= limit) {
-      this.executedIndex = 0;
-    }
+    this.orderListTimer = TimerObservable.create(1000, 500)
+      .pipe(take(orders.length))
+      .subscribe(() => {
+        if (this.lastOrderListIndex >= orders.length) {
+          this.lastOrderListIndex = 0;
+        }
+        const queueItem: AlgoQueueItem = {
+          symbol: orders[this.lastOrderListIndex].holding.symbol,
+          reset: false
+        };
+        this.tradeService.algoQueue.next(queueItem);
+        this.lastOrderListIndex++;
+      });
   }
 
   getLastTradeDate() {
