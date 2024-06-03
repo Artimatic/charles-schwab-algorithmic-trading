@@ -8,7 +8,8 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { InputTextModule } from 'primeng/inputtext';
 import { ToolbarModule } from 'primeng/toolbar';
-import {TooltipModule} from 'primeng/tooltip';
+import { TooltipModule } from 'primeng/tooltip';
+import { TabMenuModule } from 'primeng/tabmenu';
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import 'hammerjs';
@@ -178,6 +179,7 @@ import { StockListDialogComponent } from './stock-list-dialog/stock-list-dialog.
     ToolbarModule,
     TooltipModule,
     RippleModule,
+    TabMenuModule
   ],
   providers: [
     BacktestService,
