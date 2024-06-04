@@ -222,7 +222,7 @@ export class FindSomeDaytradeComponent implements OnInit, OnDestroy {
 
   async sendBuy(symbol: string) {
     const tiingoQuote = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
-    const lastPrice = tiingoQuote.quote.lastPrice;
+    const lastPrice = tiingoQuote[symbol].quote.lastPrice;
 
     const balance = await this.machineDaytradingService.getPortfolioBalance().toPromise();
     const currentBalance = balance.cashBalance;
@@ -264,7 +264,7 @@ export class FindSomeDaytradeComponent implements OnInit, OnDestroy {
 
   async sendSell(symbol: string, orderQuantity: number) {
     const tiingoQuote = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
-    const lastPrice = tiingoQuote.quote.lastPrice;
+    const lastPrice = tiingoQuote[symbol].quote.lastPrice;
 
     const order = {
       symbol: symbol,
