@@ -81,6 +81,8 @@
               <p-tag *ngIf="firstFormGroup.value.orderType=='Sell'" severity="danger" value="Sell"></p-tag>
               <p-tag *ngIf="firstFormGroup.value.orderType=='DayTrade'" styleClass="p-mr-2" severity="info"
                 value="Daytrade"></p-tag>
+              <p-tag *ngIf="order.type=='options'" styleClass="p-mr-2" severity="info"
+                value="Options"></p-tag>
             </p>
           </p-header>
           <mat-checkbox (click)="toggleChart()">Chart</mat-checkbox>
