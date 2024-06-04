@@ -340,14 +340,14 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
         console.log('Scheduling machine order ', this.firstFormGroup.value);
         this.backtestService.getLastPriceTiingo({ symbol: this.order.holding.symbol })
           .subscribe(tiingoQuote => {
-            const lastPrice = tiingoQuote.quote.lastPrice;
+            const lastPrice = tiingoQuote[this.order.holding.symbol].quote.lastPrice;
             this.runStrategy(1 * lastPrice);
           });
       }
     } else {
       this.backtestService.getLastPriceTiingo({ symbol: this.order.holding.symbol })
         .subscribe(tiingoQuote => {
-          const lastPrice = tiingoQuote.quote.lastPrice;
+          const lastPrice = tiingoQuote[this.order.holding.symbol].quote.lastPrice;
           this.runStrategy(1 * lastPrice);
         });
     }
@@ -459,7 +459,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     if (sellOrder) {
       this.backtestService.getLastPriceTiingo({ symbol: this.order.holding.symbol })
         .subscribe(tiingoQuote => {
-          const lastPrice = tiingoQuote.quote.lastPrice;
+          const lastPrice = tiingoQuote[this.order.holding.symbol].quote.lastPrice;
 
           sellOrder.price = _.round(lastPrice, 2);
           const log = `ORDER SENT ${sellOrder.side} ${sellOrder.quantity} ${sellOrder.holding.symbol}@${sellOrder.price}`;
@@ -706,7 +706,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       orderQuantity = this.scoreKeeperService.modifier(this.order.holding.symbol, orderQuantity);
       this.backtestService.getLastPriceTiingo({ symbol: this.order.holding.symbol })
         .subscribe(tiingoQuote => {
-          const lastPrice = tiingoQuote.quote.lastPrice;
+          const lastPrice = tiingoQuote[this.order.holding.symbol].quote.lastPrice;
 
           if (lastPrice >= quote * 1) {
             const buyOrder = this.buildBuyOrder(orderQuantity,
@@ -1009,7 +1009,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   buyAll() {
     this.backtestService.getLastPriceTiingo({ symbol: this.order.holding.symbol })
       .subscribe(tiingoQuote => {
-        const lastPrice = tiingoQuote.quote.lastPrice;
+        const lastPrice = tiingoQuote[this.order.holding.symbol].quote.lastPrice;
         const buyOrder = this.daytradeService.createOrder(this.order.holding, 'Buy', this.firstFormGroup.value.quantity, lastPrice, moment().valueOf());
         this.daytradeService.sendBuy(buyOrder, 'limit', () => { }, () => { });
       });
@@ -1018,7 +1018,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   sellAll() {
     this.backtestService.getLastPriceTiingo({ symbol: this.order.holding.symbol })
       .subscribe(tiingoQuote => {
-        const lastPrice = tiingoQuote.quote.lastPrice;
+        const lastPrice = tiingoQuote[this.order.holding.symbol].quote.lastPrice;
         const sellOrder = this.daytradeService.createOrder(this.order.holding, 'Sell', this.firstFormGroup.value.quantity, lastPrice, moment().valueOf());
         this.daytradeService.sendSell(sellOrder, 'limit', () => { }, () => { }, () => { });
       });
