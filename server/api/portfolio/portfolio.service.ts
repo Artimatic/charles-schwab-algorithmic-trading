@@ -6,7 +6,6 @@ import axios from 'axios';
 import * as qs from 'qs';
 
 import QuoteService from '../quote/quote.service';
-import * as configurations from '../../config/environment';
 
 const charlesSchwabUrl = 'https://api.schwabapi.com/v1/';
 const charlesSchwabTraderUrl = 'https://api.schwabapi.com/trader/v1/';

@@ -417,7 +417,7 @@ export class BacktestTableService {
       const order = {
         holding: {
           instrument: null,
-          symbol: symbol.toUpperCase(),
+          symbol: symbol.toUpperCase().match(/[A-Za-z]{1,6}/)[0],
         },
         quantity: quantity,
         price,
