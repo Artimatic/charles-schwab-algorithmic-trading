@@ -1,5 +1,5 @@
 import * as request from 'request-promise';
-import * as Robinhood from 'robinhood';
+import * as charlesSchwabApi from 'charles-schwab-api';
 import * as _ from 'lodash';
 import * as moment from 'moment';
 import axios from 'axios';
@@ -20,20 +20,25 @@ class PortfolioService {
   access_token: { [key: string]: TokenInfo } = {};
   refreshTokensHash = {};
   accountIdToHash = {};
-  appKey = {};
-  secret = {};
+  accountStore = {};
   lastTokenRequest = null;
 
+  postLogin(accountId, appKey, secret, callbackUrl, response) {
+    this.accountStore[accountId] = {
+      appKey,
+      secret,
+      callbackUrl
+    };
+    response.status(201).send({});
+  }
+
   login(consumerKey, callbackUrl, reply) {
-    const path = 'oauth/authorize';
-    const url = `${charlesSchwabUrl}${path}?client_id=${consumerKey}&redirect_uri=${callbackUrl}`;
-    return axios({
-      method: 'get',
-      url
-    }).then(response => {
+    return charlesSchwabApi.authorize(consumerKey, callbackUrl).then(response => {
+      console.log((response as any).json());
       reply.status(200).send((response as any).json());
     })
       .catch((e) => {
+        console.log('e', e);
         if (e.request && e.request._redirectable && e.request._redirectable._options && e.request._redirectable._options.href) {
           reply.redirect(e.request._redirectable._options.href);
         } else {
@@ -42,27 +47,8 @@ class PortfolioService {
       });
   }
 
-  getAccessToken(accountId, appKey, secret, code, callbackUrl, reply) {
-    const path = 'oauth/token'
-    const url = `${charlesSchwabUrl}${path}`;
-    const data = {
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: callbackUrl
-    };
-
-    const auth = Buffer.from(`${appKey}:${secret}`).toString('base64');
-    const options = {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${auth}`
-      },
-      data: qs.stringify(data),
-      url
-    };
-
-    return axios(options)
+  getAccessToken(accountId, code, reply) {
+    return charlesSchwabApi.getAccessToken(this.accountStore[accountId].appKey, this.accountStore[accountId].secret, 'authorization_code', code, this.accountStore[accountId].callbackUrl)
       .then((response) => {
         const data = (response as any).data;
         this.getAccountNumbers(data?.access_token)
@@ -75,8 +61,6 @@ class PortfolioService {
               timestamp: moment().valueOf(),
               token: data?.access_token || null
             };
-            this.appKey[accountId] = appKey;
-            this.secret[accountId] = secret;
           });
 
         reply.status(200).send(data);
@@ -93,29 +77,17 @@ class PortfolioService {
   }
 
   refreshAccessToken(accountId) {
-    const token = Buffer.from(`${this.appKey[accountId]}:${this.secret[accountId]}`).toString('base64');
-    const data = {
-      grant_type: 'refresh_token',
-      refresh_token: this.refreshTokensHash[accountId]
-    };
-    const options = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${token}`
-      },
-      data: qs.stringify(data),
-      url: charlesSchwabUrl + 'oauth/token',
-    };
-    return axios(options)
-      .then((response) => {
-        const data = (response as any).data;
-        this.refreshTokensHash[accountId] = (data?.refresh_token as string) || null;
-        this.access_token[accountId] = {
-          timestamp: moment().valueOf(),
-          token: data?.access_token || null
-        }
-      })
+    return charlesSchwabApi.refreshAccessToken(this.accountStore[accountId].appKey,
+      this.accountStore[accountId].appSecret,
+      this.refreshTokensHash[accountId]
+    ).then((response) => {
+      const data = (response as any).data;
+      this.refreshTokensHash[accountId] = (data?.refresh_token as string) || null;
+      this.access_token[accountId] = {
+        timestamp: moment().valueOf(),
+        token: data?.access_token || null
+      }
+    })
       .catch((e) => {
         if (e.toJSON) {
           const error = e.toJSON();
@@ -156,17 +128,6 @@ class PortfolioService {
         })
         .catch(error => this.renewExpiredAccessTokenAndGetQuote(symbol, accountId, response));
     }
-  }
-
-  getInstruments(symbol, reply) {
-    Robinhood().instruments(symbol, (error, response, body) => {
-      if (error) {
-        console.error(error);
-        reply.status(500).send(error);
-      } else {
-        reply.status(200).send(body);
-      }
-    });
   }
 
   renewAuth(accountId, reply = null) {

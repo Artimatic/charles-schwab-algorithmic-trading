@@ -250,7 +250,6 @@ export class BacktestTableService {
 
   getStorage(storageName: string) {
     const storage = JSON.parse(localStorage.getItem(storageName));
-
     return storage ? storage : {};
   }
 

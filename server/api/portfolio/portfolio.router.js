@@ -1,42 +1,46 @@
 import PortfolioController from './portfolio.controller';
 
-export let portfolio = (request, response) => {
+export const portfolio = (request, response) => {
   PortfolioController.getPortfolio(request, response);
 };
 
-export let positions = (request, response) => {
+export const positions = (request, response) => {
   PortfolioController.getPositions(request, response);
 };
 
-export let login = (request, response) => {
+export const login = (request, response) => {
   PortfolioController.login(request, response);
 };
 
-export let logout = (request, response) => {
+export const postLogin = (request, response) => {
+  PortfolioController.postLogin(request, response);
+};
+
+export const logout = (request, response) => {
   PortfolioController.logout(request, response);
 };
 
-export let getAccessToken = (request, response) => {
+export const getAccessToken = (request, response) => {
   PortfolioController.getAccessToken(request, response);
 };
 
-export let getResources = (request, response) => {
+export const getResources = (request, response) => {
   PortfolioController.getResources(request, response);
 };
 
-export let sell = (request, response) => {
+export const sell = (request, response) => {
   PortfolioController.sell(request, response);
 };
 
-export let buy = (request, response) => {
+export const buy = (request, response) => {
   PortfolioController.buy(request, response);
 };
 
-export let instruments = (request, response) => {
+export const instruments = (request, response) => {
   PortfolioController.getInstruments(request, response);
 };
 
-export let quote = (request, response) => {
+export const quote = (request, response) => {
   PortfolioController.getQuote(request, response);
 };
 

@@ -1,45 +1,45 @@
 import BacktestController from './backtest.controller';
 
-export let backtest = (request, response) => {
+export const backtest = (request, response) => {
   BacktestController.backtest(request, response);
 };
 
-export let getMeanReversionChart = (request, response) => {
+export const getMeanReversionChart = (request, response) => {
   BacktestController.getMeanReversionChart(request, response);
 };
 
-export let indicator = (request, response) => {
+export const indicator = (request, response) => {
   BacktestController.getIndicator(request, response);
 };
 
-export let bollingerBands = (request, response) => {
+export const bollingerBands = (request, response) => {
   BacktestController.getBollingerBands(request, response);
 };
 
-export let infoV2 = (request, response) => {
+export const infoV2 = (request, response) => {
   BacktestController.getInfoV2(request, response);
 };
 
-export let infoV2Chart = (request, response) => {
+export const infoV2Chart = (request, response) => {
   BacktestController.getInfoV2Chart(request, response);
 };
 
-export let timeline = (request, response) => {
+export const timeline = (request, response) => {
   BacktestController.getHistoricalMatches(request, response);
 };
 
-export let sma = (request, response) => {
+export const sma = (request, response) => {
   BacktestController.getSMA(request, response);
 };
 
-export let roc = (request, response) => {
+export const roc = (request, response) => {
   BacktestController.getRateOfChange(request, response);
 };
 
-export let mfi = (request, response) => {
+export const mfi = (request, response) => {
   BacktestController.getMfi(request, response);
 };
 
-export let vwma = (request, response) => {
+export const vwma = (request, response) => {
   BacktestController.getVwma(request, response);
 };

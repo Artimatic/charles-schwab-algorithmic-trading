@@ -4013,6 +4013,8 @@ for (const b of bearList) {
 export const PersonalBullishPicks = [
   'AAPL',
   'GOOG',
+  'NVDA',
+  'AMD',
   'INTC',
   'HUBS',
   'MSFT'].map(b => createParam(b));

@@ -15,14 +15,16 @@ class PortfolioController extends BaseController {
     PortfolioService.login(request.query.consumerKey, request.query.callbackUrl, response);
   }
 
+  postLogin(request, response) {
+    PortfolioService.postLogin(
+      request.body.accountId,
+      request.body.appKey,
+      request.body.secret,
+      request.body.callbackUrl, response);
+  }
+
   getAccessToken(request, response) {
-    PortfolioService.getAccessToken(
-      request.body.accountId, 
-      request.body.appKey, 
-      request.body.secret, 
-      request.body.code, 
-      request.body.callbackUrl, 
-      response);
+    PortfolioService.getAccessToken(request.body.accountId, request.body.code, response);
   }
 
   getInstruments(request, response) {
@@ -40,7 +42,7 @@ class PortfolioController extends BaseController {
   }
 
   getInstrument(request, response) {
-    console.log('query',request.query);
+    console.log('query', request.query);
     PortfolioService.getInstrument(request.query.cusip)
       .then((data) => BaseController.requestGetSuccessHandler(response, data))
       .catch((err) => BaseController.requestErrorHandler(response, err));
@@ -130,7 +132,7 @@ class PortfolioController extends BaseController {
       .then((data) => BaseController.requestGetSuccessHandler(response, data))
       .catch((err) => BaseController.requestErrorHandler(response, err));
   }
-  
+
   setCredentials(request, response) {
     PortfolioService.setCredentials(request.body.accountId,
       request.body.key,
