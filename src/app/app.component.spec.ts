@@ -49,7 +49,6 @@ import {
 import { RhInputComponent } from './rh-input/rh-input.component';
 import { ProductViewComponent } from './product-view/product-view.component';
 import { LoginComponent } from './login/login.component';
-import { LoginDialogComponent } from './login-dialog/login-dialog.component';
 import { TradeViewComponent } from './trade-view/trade-view.component';
 import { InstrumentPipe } from './shared/pipes/instrument.pipe';
 import { OrderDialogComponent } from './order-dialog/order-dialog.component';
@@ -75,7 +74,6 @@ describe('AppComponent', () => {
         RhInputComponent,
         ProductViewComponent,
         LoginComponent,
-        LoginDialogComponent,
         TradeViewComponent,
         InstrumentPipe,
         OrderDialogComponent,

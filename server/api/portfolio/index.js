@@ -13,6 +13,7 @@ router.get('/v2/positions', handler.tdPosition);
 router.get('/balance', handler.tdBalance);
 router.get('/v3/equity-hours', handler.getEquityMarketHours);
 router.get('/login', handler.login);
+router.post('/login', handler.postLogin);
 router.post('/access-token', handler.getAccessToken);
 router.post('/instruments', handler.instruments);
 router.post('/v2/buy', handler.tdBuy);

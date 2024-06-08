@@ -33,7 +33,6 @@ import {
 
 import { RhInputComponent } from './rh-input/rh-input.component';
 import { ProductViewComponent } from './product-view/product-view.component';
-import { LoginDialogComponent } from './login-dialog/login-dialog.component';
 import { TradeViewComponent } from './trade-view/trade-view.component';
 import { InstrumentPipe } from './shared/pipes/instrument.pipe';
 import { OrderDialogComponent } from './order-dialog/order-dialog.component';
@@ -102,7 +101,6 @@ import { StockListDialogComponent } from './stock-list-dialog/stock-list-dialog.
     RhTableComponent,
     RhInputComponent,
     ProductViewComponent,
-    LoginDialogComponent,
     TradeViewComponent,
     InstrumentPipe,
     OrderDialogComponent,
@@ -147,7 +145,6 @@ import { StockListDialogComponent } from './stock-list-dialog/stock-list-dialog.
     StockListDialogComponent,
   ],
   entryComponents: [
-    LoginDialogComponent,
     OrderDialogComponent,
     ConfirmDialogComponent,
     ReportDialogComponent,

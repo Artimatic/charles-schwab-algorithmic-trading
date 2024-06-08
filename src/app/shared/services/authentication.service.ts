@@ -40,19 +40,13 @@ export class AuthenticationService {
     return this.token;
   }
 
-  login(username: string, password: string): Observable<boolean> {
-    return this.http.post('/api/portfolio/login', { username: username, password: password })
-      .map((res: Response) => {
-        if (res) {
-          if (res.status === 201) {
-            return true;
-          } else if (res.status === 200) {
-            return true;
-          }
-        } else {
-          return false;
-        }
-      });
+  login(accountId: string, appKey: string, secret: string, callbackUrl: string): Observable<any> {
+    return this.http.post('/api/portfolio/login', {
+      accountId,
+      appKey,
+      secret,
+      callbackUrl
+    });
   }
 
   logout(): void {
@@ -105,21 +99,21 @@ export class AuthenticationService {
 
     setTimeout(() => {
       this.checkCredentials(this.selectedTdaAccount.accountId)
-      .subscribe(() => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Credentials selected'
-        });
-      }, () => {
-        if (this.selectedTdaAccount.appKey && this.selectedTdaAccount.refreshKey) {
-          this.setTdaAccount(this.selectedTdaAccount.accountId);
-        } else {
+        .subscribe(() => {
           this.messageService.add({
-            severity: 'danger',
-            summary: 'Current selected account info is missing. Reenter credentials.'
+            severity: 'success',
+            summary: 'Credentials selected'
           });
-        }
-      });
+        }, () => {
+          if (this.selectedTdaAccount.appKey && this.selectedTdaAccount.refreshKey) {
+            this.setTdaAccount(this.selectedTdaAccount.accountId);
+          } else {
+            this.messageService.add({
+              severity: 'danger',
+              summary: 'Current selected account info is missing. Reenter credentials.'
+            });
+          }
+        });
     }, 1000);
   }
 
@@ -145,8 +139,11 @@ export class AuthenticationService {
     this.deleteCredentials(accountId).subscribe();
   }
 
-  signIn(appKey, callbackUrl) {
-    window.location.assign(`/api/portfolio/login?consumerKey=${appKey}&callbackUrl=${callbackUrl}`);
+  signIn(accountId: string, appKey: string, secret: string, callbackUrl: string) {
+    this.login(accountId, appKey, secret, callbackUrl)
+      .subscribe(() => {
+        window.location.assign(`/api/portfolio/login?consumerKey=${appKey}&callbackUrl=${callbackUrl}`);
+      });
   }
 
   checkCredentials(accountId) {
@@ -163,14 +160,11 @@ export class AuthenticationService {
     return this.http.post('/api/portfolio/v3/delete-cred', body);
   }
 
-  getAccessToken(accountId: string, appKey: string, secret: string, code: string, callbackUrl: string): Observable<any> {
+  getAccessToken(accountId: string, code: string): Observable<any> {
     return this.http.post('/api/portfolio/access-token',
       {
         accountId,
-        appKey,
-        secret,
-        code,
-        callbackUrl
+        code
       }).pipe(tap(() => {
         this.setTdaAccount(accountId);
       }), catchError((error: any) => {
