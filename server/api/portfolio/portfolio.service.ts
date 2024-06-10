@@ -2,12 +2,9 @@ import * as request from 'request-promise';
 import * as charlesSchwabApi from 'charles-schwab-api';
 import * as _ from 'lodash';
 import * as moment from 'moment';
-import axios from 'axios';
-import * as qs from 'qs';
 
 import QuoteService from '../quote/quote.service';
 
-const charlesSchwabUrl = 'https://api.schwabapi.com/v1/';
 const charlesSchwabTraderUrl = 'https://api.schwabapi.com/trader/v1/';
 const charlesSchwabMarketDataUrl = 'https://api.schwabapi.com/marketdata/v1/';
 
@@ -78,7 +75,7 @@ class PortfolioService {
 
   refreshAccessToken(accountId) {
     return charlesSchwabApi.refreshAccessToken(this.accountStore[accountId].appKey,
-      this.accountStore[accountId].appSecret,
+      this.accountStore[accountId].secret,
       this.refreshTokensHash[accountId]
     ).then((response) => {
       const data = (response as any).data;
@@ -616,17 +613,20 @@ class PortfolioService {
 
   setCredentials(accountId, key, refreshToken, response) {
     this.refreshTokensHash[accountId] = refreshToken;
+    console.log('setCredentials');
+    // this.refreshAccessToken(accountId);
     response.status(200).send();
   }
 
   isSet(accountId, response) {
-    const isSet = !_.isNil(this.refreshTokensHash[accountId]) && !_.isNil(this.accountIdToHash[accountId]);
-
-    if (isSet) {
-      response.status(200).send(isSet);
-    } else {
-      response.status(404).send(isSet);
-    }
+    this.lastTokenRequest = null;
+    this.refreshAccessToken(accountId)
+      .then(res => {
+        response.status(200).send(res);
+      })
+      .catch(err => {
+        response.status(404).send(err);
+      });
   }
 
   deleteCredentials(accountId, response) {
