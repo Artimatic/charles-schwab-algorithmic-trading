@@ -252,6 +252,38 @@ export class PortfolioService {
     return this.http.post('/api/portfolio/v2/sell', body);
   }
 
+  sendOptionBuy(primaryLegSymbol: string, quantity: number, price: number, extended: boolean): Observable<any> {
+    const accountId = this.getAccountId();
+    if (!accountId) {
+      return of(null);
+    }
+    const body = {
+      primaryLegSymbol,
+      quantity: quantity,
+      price: price,
+      type: 'NET_DEBIT',
+      extendedHours: extended,
+      accountId
+    };
+    return this.http.post('/api/portfolio/v2/options-buy', body);
+  }
+
+  sendOptionSell(primaryLegSymbol: string, quantity: number, price: number, extended: boolean): Observable<any> {
+    const accountId = this.getAccountId();
+    if (!accountId) {
+      return of(null);
+    }
+    const body = {
+      primaryLegSymbol,
+      quantity: quantity,
+      price: price,
+      type: 'NET_DEBIT',
+      extendedHours: extended,
+      accountId
+    };
+    return this.http.post('/api/portfolio/v2/options-sell', body);
+  }
+
   sendTwoLegOrder(primaryLegSymbol: string, secondaryLegSymbol: string,
     quantity: number, price: number, extended: boolean): Observable<any> {
     const accountId = this.getAccountId();

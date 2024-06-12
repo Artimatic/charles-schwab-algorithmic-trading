@@ -79,7 +79,7 @@ class PortfolioController extends BaseController {
   }
 
   tdBuy(request, response) {
-    PortfolioService.sendTdBuyOrder(request.body.symbol,
+    PortfolioService.sendBuyOrder(request.body.symbol,
       request.body.quantity,
       request.body.price,
       request.body.type,
@@ -91,7 +91,31 @@ class PortfolioController extends BaseController {
   }
 
   tdSell(request, response) {
-    PortfolioService.sendTdSellOrder(request.body.symbol,
+    PortfolioService.sendSellOrder(request.body.symbol,
+      request.body.quantity,
+      request.body.price,
+      request.body.type,
+      request.body.extendedHours,
+      request.body.accountId,
+      response)
+      .then((data) => BaseController.requestGetSuccessHandler(response, data))
+      .catch((err) => BaseController.requestErrorHandler(response, err));
+  }
+
+  optionBuy(request, response) {
+    PortfolioService.optionBuy(request.body.symbol,
+      request.body.quantity,
+      request.body.price,
+      request.body.type,
+      request.body.extendedHours,
+      request.body.accountId,
+      response)
+      .then((data) => BaseController.requestGetSuccessHandler(response, data))
+      .catch((err) => BaseController.requestErrorHandler(response, err));
+  }
+
+  optionSell(request, response) {
+    PortfolioService.optionSell(request.body.symbol,
       request.body.quantity,
       request.body.price,
       request.body.type,

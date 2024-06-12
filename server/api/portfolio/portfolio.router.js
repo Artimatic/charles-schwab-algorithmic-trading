@@ -68,6 +68,14 @@ export const tdSell = (request, response) => {
   PortfolioController.tdSell(request, response);
 }
 
+export const optionBuy = (request, response) => {
+  PortfolioController.optionBuy(request, response);
+}
+
+export const optionSell = (request, response) => {
+  PortfolioController.optionSell(request, response);
+}
+
 export const tdPosition = (request, response) => {
   PortfolioController.tdPosition(request, response);
 }
