@@ -187,19 +187,39 @@ export class BacktestTableService {
         (this.isCallHedge(goal, curr.strategyStrike, impliedMovement) && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.call))) {
         if (curr.secondaryLeg.putCallInd.toLowerCase() === 'c') {
           prev.call = JSON.parse(JSON.stringify(curr.secondaryLeg));
-        } else if (curr.primaryLeg.putCallInd.toLowerCase() === 'p') {
+        } else if (curr.primaryLeg.putCallInd.toLowerCase() === 'c') {
           prev.call = JSON.parse(JSON.stringify(curr.primaryLeg));
         }
       }
       if (!prev.put || (Math.abs(curr.strategyStrike - goal) < Math.abs(Number(prev.put.strikePrice) - goal))) {
         if (curr.primaryLeg.putCallInd.toLowerCase() === 'p') {
           prev.put = JSON.parse(JSON.stringify(curr.primaryLeg));
-        } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'c') {
+        } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p') {
           prev.put = JSON.parse(JSON.stringify(curr.secondaryLeg));
         }
       }
       return prev;
     }, { call: null, put: null });
+  }
+
+  async getProtectivePut(symbol: string) {
+    const minExpiration = 65;
+    const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
+    const optionsChain = optionsData.optionsChain;
+    const impliedMovement = optionsData.move;
+    const strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= minExpiration);
+    const goal = optionsChain?.underlyingPrice;
+    return strategyList.optionStrategyList.reduce((prev, curr) => {
+      if ((!prev.put && curr.strategyStrike < goal) ||
+        (this.isPutHedge(goal, curr.strategyStrike, impliedMovement) && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.put))) {
+        if (curr.primaryLeg.putCallInd.toLowerCase() === 'p') {
+          prev.put = JSON.parse(JSON.stringify(curr.primaryLeg));
+        } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p') {
+          prev.put = JSON.parse(JSON.stringify(curr.secondaryLeg));
+        }
+      }
+      return prev;
+    }, { put: null });
   }
 
   findOptionsPrice(bid: number, ask: number): number {
@@ -434,10 +454,42 @@ export class BacktestTableService {
         allocation: 0.05,
         primaryLeg: optionStrategy.call,
         secondaryLeg: optionStrategy.put,
-        type: OrderTypes.options
+        type: OrderTypes.strangle
       };
   
       this.cartService.addToCart(order);
     }
+  }
+
+  
+  async addProtectivePut(symbol: string, price: number, quantity, optionStrategy: Strangle) {
+    if (symbol === 'TQQQ') {
+      return null;
+    }
+
+    const order = {
+      holding: {
+        instrument: null,
+        symbol: symbol.toUpperCase().match(/[A-Za-z]{1,6}/)[0],
+      },
+      quantity: quantity,
+      price,
+      submitted: false,
+      pending: false,
+      orderSize: 1,
+      side: 'Buy',
+      lossThreshold: -0.05,
+      profitTarget: 0.1,
+      trailingStop: -0.05,
+      useStopLoss: true,
+      useTrailingStopLoss: true,
+      useTakeProfit: true,
+      sellAtClose: false,
+      allocation: 0.05,
+      primaryLeg: optionStrategy.put,
+      type: OrderTypes.strangle
+    };
+
+    this.cartService.addToCart(order);
   }
 }

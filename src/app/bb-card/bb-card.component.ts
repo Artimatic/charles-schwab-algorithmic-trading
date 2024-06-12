@@ -428,19 +428,9 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           }
         };
 
-        if (this.order.type === OrderTypes.options && this.order.side.toLowerCase() === 'buy') {
-          if ((Math.abs(this.startingPrice - buyOrder.price) / this.startingPrice) < 0.015) {
-            const bullishStrangle = await this.backtestTableService.getCallTrade(this.order.holding.symbol);
-            // const price = bullishStrangle.call.bid + bullishStrangle.put.bid;
-            const price = this.backtestTableService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) +
-              this.backtestTableService.findOptionsPrice(bullishStrangle.put.bid, bullishStrangle.put.ask);
-            const orderQuantity = Math.floor(this.currentBalance * (this.order?.allocation || 0.01) / price)
-
-            console.log('orderQuantity', orderQuantity)
-            console.log('built strangle', bullishStrangle);
-
-            this.portfolioService.sendTwoLegOrder(bullishStrangle.call.symbol,
-              bullishStrangle.put.symbol, 1, price, false).subscribe();
+        if (this.order.type === OrderTypes.strangle && this.order.side.toLowerCase() === 'buy') {
+          if ((Math.abs(this.startingPrice - buyOrder.price) / this.startingPrice) < 0.01) {
+            this.buyStrangle();
           }
         } else {
           this.daytradeService.sendBuy(buyOrder, 'limit', resolve, reject);
@@ -593,6 +583,10 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     const initialQuantity = this.multiplierPreference.value * this.firstFormGroup.value.quantity;
     if (this.hasReachedOrderLimit()) {
       this.stop();
+    } else if (this.order.type === OrderTypes.protectivePut && analysis.recommendation.toLowerCase() === 'buy') {
+      if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
+        this.buyProtectivePut();
+      }
     } else if (analysis.recommendation.toLowerCase() === 'buy') {
       if (daytradeType === 'buy' || this.isDayTrading()) {
         this.daytradeService.sellDefaultHolding();
@@ -1029,13 +1023,19 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     // const price = bullishStrangle.call.bid + bullishStrangle.put.bid;
     const price = this.backtestTableService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) +
       this.backtestTableService.findOptionsPrice(bullishStrangle.put.bid, bullishStrangle.put.ask);
-    const orderQuantity = 1;
 
-    console.log('orderQuantity', orderQuantity)
-    console.log('built strangle', bullishStrangle);
+    const orderQuantity = Math.floor(this.currentBalance * (this.order?.allocation || 0.01) / price)
 
     this.portfolioService.sendTwoLegOrder(bullishStrangle.call.symbol,
-      bullishStrangle.put.symbol, 1, price, false).subscribe();
+      bullishStrangle.put.symbol, orderQuantity, price, false).subscribe();
+  }
+
+  async buyProtectivePut() {
+    const putOption = await this.backtestTableService.getProtectivePut(this.order.holding.symbol);
+    const price = this.backtestTableService.findOptionsPrice(putOption.put.bid, putOption.put.ask);
+    const orderQuantity = this.order.quantity;
+
+    this.portfolioService.sendOptionBuy(putOption.put.symbol, orderQuantity, price, false).subscribe();
   }
 
   ngOnDestroy() {

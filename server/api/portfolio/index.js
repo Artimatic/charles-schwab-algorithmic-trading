@@ -17,6 +17,8 @@ router.post('/login', handler.postLogin);
 router.post('/access-token', handler.getAccessToken);
 router.post('/instruments', handler.instruments);
 router.post('/v2/buy', handler.tdBuy);
+router.post('/v2/option-buy', handler.optionBuy);
+router.post('/v2/option-sell', handler.optionSell);
 router.post('/v2/two-leg', handler.twoLegOrder);
 router.post('/v2/sell', handler.tdSell);
 router.post('/v3/set-account', handler.setAccount);

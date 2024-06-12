@@ -3,7 +3,9 @@ import { Order } from './order';
 
 export enum OrderTypes {
     equity,
-    options
+    options,
+    protectivePut,
+    strangle
 }
 
 export interface SmartOrder extends Order {

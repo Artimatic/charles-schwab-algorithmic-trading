@@ -393,7 +393,7 @@ class PortfolioService {
       });
   }
 
-  sendTdBuyOrder(symbol,
+  sendBuyOrder(symbol,
     quantity,
     price,
     type = 'LIMIT',
@@ -517,7 +517,95 @@ class PortfolioService {
     return request.post(options);
   }
 
-  sendTdSellOrder(symbol,
+  optionBuy(primaryLegSymbol,
+    quantity,
+    price,
+    type = 'LIMIT',
+    extendedHours = false, accountId, response) {
+    const headers = {
+      'Accept': '*/*',
+      'Accept-Encoding': 'gzip',
+      'Accept-Language': 'en-US',
+      'Authorization': `Bearer ${this.access_token[accountId].token}`,
+      'Content-Type': 'application/json',
+    };
+
+    const options = {
+      uri: charlesSchwabTraderUrl + `accounts/${this.accountIdToHash[accountId]}/orders`,
+      headers: headers,
+      json: true,
+      gzip: true,
+      body: {
+        orderType: type,
+        session: extendedHours ? 'SEAMLESS' : 'NORMAL',
+        duration: 'DAY',
+        orderStrategyType: 'SINGLE',
+        price: price,
+        taxLotMethod: 'LIFO',
+        orderLegCollection: [
+          {
+            instruction: 'BUY_TO_OPEN',
+            quantity: quantity,
+            instrument: {
+              symbol: primaryLegSymbol,
+              assetType: 'OPTION'
+            }
+          }
+        ]
+      }
+    };
+
+    return this.renewAuth(accountId, response)
+      .then(() => {
+        return request.post(options);
+      });
+  }
+
+  optionSell(primaryLegSymbol,
+    quantity,
+    price,
+    type = 'LIMIT',
+    extendedHours = false, accountId, response) {
+    const headers = {
+      'Accept': '*/*',
+      'Accept-Encoding': 'gzip',
+      'Accept-Language': 'en-US',
+      'Authorization': `Bearer ${this.access_token[accountId].token}`,
+      'Content-Type': 'application/json',
+    };
+
+    const options = {
+      uri: charlesSchwabTraderUrl + `accounts/${this.accountIdToHash[accountId]}/orders`,
+      headers: headers,
+      json: true,
+      gzip: true,
+      body: {
+        orderType: type,
+        session: extendedHours ? 'SEAMLESS' : 'NORMAL',
+        duration: 'DAY',
+        orderStrategyType: 'SINGLE',
+        price: price,
+        taxLotMethod: 'LIFO',
+        orderLegCollection: [
+          {
+            instruction: 'BUY_TO_OPEN',
+            quantity: quantity,
+            instrument: {
+              symbol: primaryLegSymbol,
+              assetType: 'OPTION'
+            }
+          }
+        ]
+      }
+    };
+
+    return this.renewAuth(accountId, response)
+      .then(() => {
+        return request.post(options);
+      });
+  }
+
+  sendSellOrder(symbol,
     quantity,
     price,
     type = 'LIMIT',
@@ -666,7 +754,6 @@ class PortfolioService {
 
   getEquityMarketHours(date: string) {
     const accountId = this.getAccountId();
-
     const query = `${charlesSchwabMarketDataUrl}markets`;
     const options = {
       uri: query,
@@ -680,7 +767,13 @@ class PortfolioService {
     };
 
     return request.get(options)
-      .then(this.processData);
+      .then(this.processData)
+      .catch(error => {
+        for (const key in error) {
+          console.log('error getting equity market hours', key);
+        }
+        this.renewAuth(accountId);
+      });
   }
 
   getInstrument(cusip: string) {
