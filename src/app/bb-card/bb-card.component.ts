@@ -884,6 +884,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             return null;
           },
           error => {
+            console.log('Error getting daytrade recommendations', error);
             this.error = 'Issue getting analysis.';
           }
         );
@@ -1024,7 +1025,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     const price = this.backtestTableService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) +
       this.backtestTableService.findOptionsPrice(bullishStrangle.put.bid, bullishStrangle.put.ask);
 
-    const orderQuantity = Math.floor(this.currentBalance * (this.order?.allocation || 0.01) / price)
+    const orderQuantity = this.order.quantity;
 
     this.portfolioService.sendTwoLegOrder(bullishStrangle.call.symbol,
       bullishStrangle.put.symbol, orderQuantity, price, false).subscribe();

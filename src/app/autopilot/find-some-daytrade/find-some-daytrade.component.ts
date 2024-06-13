@@ -13,7 +13,13 @@ import { GlobalSettingsService } from 'src/app/settings/global-settings.service'
 
 interface Daytrade {
   stock: string;
-  daytradeIndicators: any;
+  daytradeIndicators?: any;
+}
+interface CurrentTrade extends Daytrade { 
+  stock: string; 
+  recommendations?: string;
+  time: string; 
+  orderQuantity?: number; 
 }
 
 @Component({
@@ -22,7 +28,7 @@ interface Daytrade {
   styleUrls: ['./find-some-daytrade.component.css']
 })
 export class FindSomeDaytradeComponent implements OnInit, OnDestroy {
-  currentTrades: StockTrade[] = [];
+  currentTrades: CurrentTrade[] = [];
   currentHoldings: StockTrade[] = [];
   dollarAmount = 1000;
   destroy$ = new Subject();
@@ -63,14 +69,15 @@ export class FindSomeDaytradeComponent implements OnInit, OnDestroy {
   async getCurrentHoldings() {
     this.currentHoldings = [];
     const data = await this.portfolioService.getTdPortfolio().toPromise();
-    this.currentTrades = this.currentTrades.filter(trade => !trade.time || moment().diff(moment(trade.time), 'minutes') < 30);
+    this.currentTrades = this.currentTrades.filter(trade => !trade.time || moment().diff(moment(trade.time), 'minutes') < 45);
 
     if (data) {
       for (const holding of data) {
         if (holding.instrument.assetType.toLowerCase() !== 'option') {
           const newHolding = {
             stock: holding.instrument.symbol,
-            orderQuantity: holding.longQuantity
+            orderQuantity: holding.longQuantity,
+            time: moment().format('hh:mm a z')
           };
 
           const foundInCurrentHoldings = this.currentHoldings.find(h => {
@@ -206,16 +213,18 @@ export class FindSomeDaytradeComponent implements OnInit, OnDestroy {
   async checkCurrentHoldings() {
     await this.delay();
     await this.getCurrentHoldings();
-    this.currentTrades = this.currentTrades.map((trade: StockTrade) => {
+    this.currentTrades = this.currentTrades.map((trade: CurrentTrade) => {
       const found = this.currentHoldings.find((value) => value.stock === trade.stock);
       if (found) {
-        return found;
+        found.time = moment().format('hh:mm a z');
+        return found as CurrentTrade;
       } else {
         if (trade.orderQuantity) {
           trade.orderQuantity = 0;
         }
       }
-      return trade;
+      trade.time = moment().format('hh:mm a z');
+      return trade as CurrentTrade;
     });
     this.ref.detectChanges();
   }
