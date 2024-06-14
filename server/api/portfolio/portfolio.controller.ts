@@ -171,6 +171,13 @@ class PortfolioController extends BaseController {
   deleteCredentials(request, response) {
     PortfolioService.deleteCredentials(request.body.accountId, response);
   }
+
+  getUserPreferences(request, response) {
+    const accountId = request.query && request.query.accountId ? request.query.accountId : null;
+    PortfolioService.getUserPreferences(accountId)
+      .then((data) => BaseController.requestGetSuccessHandler(response, data))
+      .catch((err) => BaseController.requestErrorHandler(response, err));
+  }
 }
 
 export default new PortfolioController();

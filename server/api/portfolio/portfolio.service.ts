@@ -792,6 +792,22 @@ class PortfolioService {
     return request.get(options)
       .then(this.processData);
   }
+
+  getUserPreferences(accountId: string) {
+    accountId = accountId ? accountId : this.getAccountId();
+
+    const url = `${charlesSchwabTraderUrl}userPreference`;
+
+    const options = {
+      uri: url,
+      headers: {
+        Authorization: `Bearer ${this.access_token[accountId].token}`
+      }
+    };
+
+    return request.get(options)
+      .then(this.processData);
+  }
 }
 
 export default new PortfolioService();

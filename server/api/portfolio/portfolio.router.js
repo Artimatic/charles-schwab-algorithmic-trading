@@ -103,3 +103,7 @@ export const getEquityMarketHours = (request, response) => {
 export const getInstrument = (request, response) => {
   PortfolioController.getInstrument(request, response);
 }
+
+export const getUserPreferences = (request, response) => {
+  PortfolioController.getUserPreferences(request, response);
+}
