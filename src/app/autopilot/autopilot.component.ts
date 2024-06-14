@@ -130,7 +130,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     //Strategy.TrimHoldings,
     // Strategy.InverseSwingtrade,
     //Strategy.DaytradeShort,
-    Strategy.Short,
+    // Strategy.Short,
     // Strategy.DaytradeFullList,
   ];
 
