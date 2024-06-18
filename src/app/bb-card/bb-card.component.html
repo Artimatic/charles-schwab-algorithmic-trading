@@ -75,6 +75,14 @@
         <div fxFlex="5%">
           <p-header>
             <h3>{{order.holding.symbol}}</h3>
+            <span *ngFor="let order of order.holding.primaryLeg">
+              <td>{{order.symbol}}</td>
+              <td>{{order.putCallInd}}</td>
+            </span>
+            <span *ngFor="let order of order.holding.secondaryLeg">
+              <td>{{order.symbol}}</td>
+              <td>{{order.putCallInd}}</td>
+            </span>
             <p>
               <p-tag *ngIf="firstFormGroup.value.orderType=='Buy'" styleClass="p-mr-2" severity="success"
                 value="Buy"></p-tag>

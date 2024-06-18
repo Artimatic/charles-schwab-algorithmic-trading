@@ -140,7 +140,8 @@ export class FindSomeDaytradeComponent implements OnInit, OnDestroy {
       this.addTrade(symbol, daytradeData);
     } else {
       const indicator = daytradeData.data.indicator;
-      const mlResult = await this.machineLearningService
+      try {
+        const mlResult = await this.machineLearningService
         .trainDaytrade(symbol.toUpperCase(),
           moment().add({ days: 1 }).format('YYYY-MM-DD'),
           moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
@@ -154,6 +155,10 @@ export class FindSomeDaytradeComponent implements OnInit, OnDestroy {
       } else {
         this.updateStockList(symbol, indicator);
       }
+      } catch(error) {
+        console.log('error activating ml', error);
+      }
+
     }
     if (this.currentCycleList.length > 0) {
       this.delay.then(() => {
