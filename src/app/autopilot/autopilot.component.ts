@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Subject, Subscription } from 'rxjs';
 import { TimerObservable } from 'rxjs-compat/observable/TimerObservable';
-import { finalize, takeUntil, take } from 'rxjs/operators';
+import { finalize, takeUntil, take, map, tap, delay } from 'rxjs/operators';
 import * as moment from 'moment-timezone';
 import { AuthenticationService, BacktestService, CartService, DaytradeService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
 import { BacktestResponse } from '../rh-table';
@@ -126,7 +126,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     // Strategy.MLSpy,
     // Strategy.SingleStockPick,
     // Strategy.StateMachine,
-    Strategy.Swingtrade,
+    //Strategy.Swingtrade,
     Strategy.Daytrade,
     //Strategy.TrimHoldings,
     // Strategy.InverseSwingtrade,
@@ -236,6 +236,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         label: 'Add strangle',
         command: () => {
           this.addOptions();
+        }
+      },
+      {
+        label: 'Sell strangle',
+        command: () => {
+          this.testSellStrangle();
         }
       },
       {
@@ -765,7 +771,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       const currentDate = moment().format('YYYY-MM-DD');
       const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
       try {
-        const indicators = await this.getTechnicalIndicators(holding.name, startDate, currentDate, this.currentHoldings).toPromise();
+        const allIndicators = await this.getTechnicalIndicators(holding.name, startDate, currentDate).toPromise();
+        const indicators = allIndicators.signals[allIndicators.signals.length - 1];
         const thresholds = this.getStopLoss(indicators.low, indicators.high);
         await this.portfolioBuy(holding,
           allocation,
@@ -786,7 +793,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       const currentDate = moment().format('YYYY-MM-DD');
       const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
       try {
-        const indicators = await this.getTechnicalIndicators(stock, startDate, currentDate, this.currentHoldings).toPromise();
+        const indicators = await this.getTechnicalIndicators(stock, startDate, currentDate).toPromise();
         const thresholds = this.getStopLoss(indicators.low, indicators.high);
         await this.portfolioDaytrade(stock,
           round(this.dayTradingRiskToleranceList[this.dayTradeRiskCounter], 2),
@@ -873,59 +880,66 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           const pl = holding.marketValue - (holding.averagePrice * holding.longQuantity) * 100;
           let found = false;
           this.currentHoldings = this.currentHoldings.map(holdingInfo => {
-            if (holdingInfo.primaryLegs[0].symbol.match(/[A-Za-z]{1,6}/)[0] === symbol) {
-              if (holdingInfo.name === symbol) {
-                found = true;
+            if (holdingInfo.name === symbol) {
+              found = true;
+              if (!holdingInfo.primaryLegs) {
+                holdingInfo.primaryLegs = [];
+                const newOption = {
+                  symbol: entitySymbol,
+                  putCallInd: null
+                };
+                switch (holding.instrument.putCall.toLowerCase()) {
+                  case 'call':
+                    newOption.putCallInd = 'C';
+                    break;
+                  case 'put':
+                    newOption.putCallInd = 'P';
+                    break;
+                }
+                holdingInfo.primaryLegs.push(newOption);
+              } else {
                 if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'c' &&
                   holding.instrument.putCall.toLowerCase() === 'call') {
-                    const newOption = {
-                      symbol: entitySymbol,
-                      putCallInd: 'C'
-                    };
-                    holdingInfo.primaryLegs.push(newOption as Options);
-                } else if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'c' &&
-                  holding.instrument.putCall.toLowerCase() === 'put') {
-                    const newOption = {
-                      symbol: entitySymbol,
-                      putCallInd: 'P'
-                    };
-
-                    holdingInfo.secondaryLegs.push(newOption as Options);
-                } else if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'p' &&
-                  holding.instrument.putCall.toLowerCase() === 'put') {
-                    const newOption = {
-                      symbol: entitySymbol,
-                      putCallInd: 'P'
-                    };
-
-                    holdingInfo.primaryLegs.push(newOption as Options);
-                } else if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'p' &&
-                  holding.instrument.putCall.toLowerCase() === 'call') {
-                    const newOption = {
-                      symbol: entitySymbol,
-                      putCallInd: 'C'
-                    };
-
-                    holdingInfo.secondaryLegs.push(newOption as Options);
-                } else {
-                  holdingInfo.primaryLegs = [];
                   const newOption = {
                     symbol: entitySymbol,
-                    putCallInd: null
+                    putCallInd: 'C'
                   };
-                  switch (holding.instrument.putCall.toLowerCase()) {
-                    case 'call':
-                      newOption.putCallInd = 'C';
-                      break;
-                    case 'put':
-                      newOption.putCallInd = 'P';
-                      break;
+                  holdingInfo.primaryLegs.push(newOption as Options);
+                } else if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'c' &&
+                  holding.instrument.putCall.toLowerCase() === 'put') {
+                  const newOption = {
+                    symbol: entitySymbol,
+                    putCallInd: 'P'
+                  };
+
+                  if (!holdingInfo.secondaryLegs) {
+                    holdingInfo.secondaryLegs = [];
                   }
-                  holdingInfo.primaryLegs.push(newOption);
+                  holdingInfo.secondaryLegs.push(newOption as Options);
+                } else if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'p' &&
+                  holding.instrument.putCall.toLowerCase() === 'put') {
+                  const newOption = {
+                    symbol: entitySymbol,
+                    putCallInd: 'P'
+                  };
+
+                  holdingInfo.primaryLegs.push(newOption as Options);
+                } else if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'p' &&
+                  holding.instrument.putCall.toLowerCase() === 'call') {
+                  const newOption = {
+                    symbol: entitySymbol,
+                    putCallInd: 'C'
+                  };
+                  if (!holdingInfo.secondaryLegs) {
+                    holdingInfo.secondaryLegs = [];
+                  }
+                  holdingInfo.secondaryLegs.push(newOption as Options);
                 }
-                holdingInfo.pl = holdingInfo.pl + (holding.marketValue - (holding.averagePrice * holding.longQuantity) * 100);
               }
+
+              holdingInfo.pl = holdingInfo.pl + (holding.marketValue - (holding.averagePrice * holding.longQuantity) * 100);
             }
+
             return holdingInfo;
           });
           if (!found) {
@@ -941,11 +955,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
                 newOption.putCallInd = 'P';
                 break;
             }
-            const tempHoldingObj = {
+            const tempHoldingObj: PortfolioInfoHolding = {
               name: symbol,
               pl,
-              netLiq: holding.marketValue,
-              shares: holding.longQuantity,
+              netLiq: 0,
+              shares: 0,
               alloc: (holding.averagePrice * holding.longQuantity) / totalValue,
               recommendation: null,
               buyReasons: '',
@@ -953,7 +967,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
               buyConfidence: 0,
               sellConfidence: 0,
               prediction: null,
-              primaryLeg: [newOption]
+              primaryLegs: [newOption]
             };
             this.currentHoldings.push(tempHoldingObj);
           }
@@ -989,55 +1003,54 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (sellHolding) {
       this.portfolioSell(sellHolding);
     }
-    this.checkAllCurrentHoldings();
+    await this.modifyCurrentHoldings();
   }
 
-  checkAllCurrentHoldings() {
+  async modifyCurrentHoldings() {
     const currentDate = moment().format('YYYY-MM-DD');
     const startDate = moment().subtract(365, 'days').format('YYYY-MM-DD');
     this.currentHoldings.forEach(async (holding) => {
+      console.log(holding);
       await this.checkStopLoss(holding);
 
-      const indicators = await this.getTechnicalIndicators(holding.name,
+      this.getTechnicalIndicators(holding.name,
         startDate,
-        currentDate,
-        this.currentHoldings,
-        true).toPromise();
-      const foundIdx = this.currentHoldings.findIndex((value) => {
-        return value.name === holding.name;
-      });
-      this.currentHoldings[foundIdx].recommendation = indicators.recommendation.recommendation;
-      const reasons = this.getRecommendationReason(indicators.recommendation);
-      this.currentHoldings[foundIdx].buyReasons = reasons.buyReasons;
-      this.currentHoldings[foundIdx].sellReasons = reasons.sellReasons;
-      try {
-        const backtestResults = await this.backtestTableService.getBacktestData(holding.name);
-        if ((backtestResults && backtestResults.ml < 0.3) || holding.name === 'TQQQ') {
-          const sellHolding = this.currentHoldings.find(holdingInfo => {
-            return holdingInfo.name === holding.name;
+        currentDate)
+        .pipe(delay(new Date().getMilliseconds()))
+        .subscribe(async (indicatorsResponse) => {
+          this.getIndicatorScore(holding.name, indicatorsResponse.signals, this.currentHoldings);
+
+          const indicators = indicatorsResponse.signals[indicatorsResponse.signals.length - 1];
+          const foundIdx = this.currentHoldings.findIndex((value) => {
+            return value.name === holding.name;
           });
-          if (sellHolding) {
-            console.log('Backtest indicates sell', backtestResults);
-            this.portfolioSell(sellHolding);
+          this.currentHoldings[foundIdx].recommendation = indicators.recommendation.recommendation;
+          const reasons = this.getRecommendationReason(indicators.recommendation);
+          this.currentHoldings[foundIdx].buyReasons = reasons.buyReasons;
+          this.currentHoldings[foundIdx].sellReasons = reasons.sellReasons;
+          try {
+            const backtestResults = await this.backtestTableService.getBacktestData(holding.name);
+            if ((backtestResults && backtestResults.ml < 0.3) || holding.name === 'TQQQ') {
+              const sellHolding = this.currentHoldings.find(holdingInfo => {
+                return holdingInfo.name === holding.name;
+              });
+              if (sellHolding) {
+                console.log('Backtest indicates sell', backtestResults);
+                this.portfolioSell(sellHolding);
+              }
+            } else if (backtestResults && backtestResults.ml > 0.7) {
+              console.log('Backtest indicates buying', backtestResults);
+              await this.addBuy(this.createHoldingObj(holding.name));
+            }
+          } catch (error) {
+            console.log(error);
           }
-        } else if (backtestResults && backtestResults.ml > 0.7) {
-          console.log('Backtest indicates buying', backtestResults);
-          await this.addBuy(this.createHoldingObj(holding.name));
-        }
-      } catch (error) {
-        console.log(error);
-      }
+        });
     });
   }
 
-  getTechnicalIndicators(stock: string, startDate: string, currentDate: string, holdings, triggerBuySell = false) {
-    return this.backtestService.getBacktestEvaluation(stock, startDate, currentDate, 'daily-indicators')
-      .map((indicatorResults: BacktestResponse) => {
-        if (triggerBuySell) {
-          this.getIndicatorScore(stock, indicatorResults.signals, holdings);
-        }
-        return indicatorResults.signals[indicatorResults.signals.length - 1];
-      });
+  getTechnicalIndicators(stock: string, startDate: string, currentDate: string) {
+    return this.backtestService.getBacktestEvaluation(stock, startDate, currentDate, 'daily-indicators');
   }
 
   getIndicatorScore(stock, signals, holdings) {
@@ -1388,6 +1401,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.backtestTableService.findTrades();
     this.strategies = this.backtestTableService.getTradingStrategies();
     return this.revealPotentialStrategy;
+  }
+
+  testSellStrangle() {
+    this.currentHoldings.forEach(holding => {
+
+    });
   }
 
   unsubscribeStockFinder() {
