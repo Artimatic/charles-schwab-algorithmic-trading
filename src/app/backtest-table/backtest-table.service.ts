@@ -5,7 +5,7 @@ import { Stock } from '@shared/stock.interface';
 import { PotentialTrade, Strategy } from './potential-trade.constant';
 import * as moment from 'moment-timezone';
 import { Strangle } from '@shared/models/options';
-import { OrderTypes } from '@shared/models/smart-order';
+import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
 import { MessageService } from 'primeng/api';
 
 @Injectable({
@@ -456,12 +456,12 @@ export class BacktestTableService {
         secondaryLeg: optionStrategy.put,
         type: OrderTypes.strangle
       };
-  
+
       this.cartService.addToCart(order);
     }
   }
 
-  
+
   async addProtectivePut(symbol: string, price: number, quantity, optionStrategy: Strangle) {
     if (symbol === 'TQQQ') {
       return null;
@@ -488,6 +488,45 @@ export class BacktestTableService {
       allocation: 0.05,
       primaryLeg: optionStrategy.put,
       type: OrderTypes.strangle
+    };
+
+    this.cartService.addToCart(order);
+  }
+
+  async addOptionOrder(symbol: string, 
+    primaryLegSymbol: string, 
+    putCallInd: 'C' | 'P',
+    price: number, 
+    quantity, 
+    side: 'Buy' | 'Sell') {
+    if (symbol === 'TQQQ') {
+      return null;
+    }
+
+    const order: SmartOrder = {
+      holding: {
+        instrument: null,
+        symbol,
+      },
+      quantity: quantity,
+      price,
+      submitted: false,
+      pending: false,
+      orderSize: 1,
+      side,
+      lossThreshold: -0.05,
+      profitTarget: 0.1,
+      trailingStop: -0.05,
+      useStopLoss: true,
+      useTrailingStopLoss: true,
+      useTakeProfit: true,
+      sellAtClose: false,
+      allocation: 0.05,
+      primaryLeg: {
+        symbol: primaryLegSymbol,
+        putCallInd
+      },
+      type: OrderTypes.options
     };
 
     this.cartService.addToCart(order);

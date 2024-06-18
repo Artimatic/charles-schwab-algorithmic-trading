@@ -476,7 +476,11 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
               this.setWarning(`Trying to sell position that doesn\'t exists`);
             };
 
-            this.daytradeService.sendSell(sellOrder, 'limit', resolve, reject, handleNotFound);
+            if (this.order.type === OrderTypes.options) {
+              this.sellOptions(sellOrder);
+            } else {
+              this.daytradeService.sendSell(sellOrder, 'limit', resolve, reject, handleNotFound);
+            }
           } else {
             this.incrementSell(sellOrder);
 
@@ -1037,6 +1041,10 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     const orderQuantity = this.order.quantity;
 
     this.portfolioService.sendOptionBuy(putOption.put.symbol, orderQuantity, price, false).subscribe();
+  }
+
+  async sellOptions(order: SmartOrder) {
+
   }
 
   ngOnDestroy() {

@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Observable, Subject, Subscription } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import { TimerObservable } from 'rxjs-compat/observable/TimerObservable';
 import { finalize, takeUntil, take } from 'rxjs/operators';
 import * as moment from 'moment-timezone';
@@ -25,6 +25,7 @@ import { AddOptionsTradeComponent } from './add-options-trade/add-options-trade.
 import { FindDaytradeService } from './find-daytrade.service';
 import { Trade } from '@shared/models/trade';
 import { StockListDialogComponent } from '../stock-list-dialog/stock-list-dialog.component';
+import { Options } from '@shared/models/options';
 
 export interface PositionHoldings {
   name: string;
@@ -145,6 +146,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   dayTradeRiskCounter = 0;
 
   riskToleranceList = [
+    RiskTolerance.Zero,
+    RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.ExtremeFear,
     RiskTolerance.Fear,
@@ -504,9 +507,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
                 sellConfidence: 0,
                 prediction: null
               };
-              await this.addBuy(stock);
               const log = `Adding swing trade ${stock.name}`;
               this.reportingService.addAuditLog(null, log);
+              console.log(log);
+              await this.addBuy(stock);
             }
           }
         };
@@ -529,10 +533,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             sellConfidence: 0,
             prediction: null
           };
-          if (prediction > 0.5) {
-            await this.addBuy(stock);
+          if (prediction > 0.7) {
             const log = `Adding swing trade ${stock.name}`;
             this.reportingService.addAuditLog(null, log);
+            console.log(log);
+            await this.addBuy(stock);
           } else if (prediction < 0.4) {
             const sellHolding = this.currentHoldings.find(holdingInfo => {
               return holdingInfo.name === stock.name;
@@ -640,7 +645,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
                   await this.addDaytrade(stock.name);
                   console.log('Added day trade', stock.name);
                 } else {
-                  console.log('Added buy', stock.name);
+                  console.log('Added buy from day trade strategy', stock.name);
                   await this.addBuy(stock);
                 }
               }
@@ -768,10 +773,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           thresholds.stopLoss);
       } catch (error) {
         console.log('Error getting backtest data for ', holding.name, error);
-        await this.portfolioBuy(holding,
-          round(this.riskToleranceList[this.riskCounter], 2),
-          null,
-          null);
       }
     } else {
       console.log('Tried to add buy order but too many orders', holding);
@@ -855,8 +856,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.authenticationService.checkCredentials(this.authenticationService?.selectedTdaAccount?.accountId).toPromise();
 
     this.currentHoldings = [];
-    const currentDate = moment().format('YYYY-MM-DD');
-    const startDate = moment().subtract(365, 'days').format('YYYY-MM-DD');
     this.setLoading(true);
     const balance: any = await this.portfolioService.getTdBalance().toPromise();
     const totalValue = balance.buyingPower;
@@ -868,18 +867,103 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     if (data) {
       for (const holding of data) {
-        if (holding.instrument.assetType.toLowerCase() !== 'option') {
-          const stock = holding.instrument.symbol;
-          // let pl;
-          // if (holding.instrument.assetType.toLowerCase() === 'option') {
-          //   pl = holding.marketValue - (holding.averagePrice * holding.longQuantity) * 100;
-          // } else {
-          //   pl = holding.marketValue - (holding.averagePrice * holding.longQuantity);
-          // }
+        if (holding.instrument.assetType.toLowerCase() === 'option') {
+          const symbol = holding.instrument.underlyingSymbol;
+          const entitySymbol = holding.instrument.symbol;
+          const pl = holding.marketValue - (holding.averagePrice * holding.longQuantity) * 100;
+          let found = false;
+          this.currentHoldings = this.currentHoldings.map(holdingInfo => {
+            if (holdingInfo.primaryLegs[0].symbol.match(/[A-Za-z]{1,6}/)[0] === symbol) {
+              if (holdingInfo.name === symbol) {
+                found = true;
+                if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'c' &&
+                  holding.instrument.putCall.toLowerCase() === 'call') {
+                    const newOption = {
+                      symbol: entitySymbol,
+                      putCallInd: 'C'
+                    };
+                    holdingInfo.primaryLegs.push(newOption as Options);
+                } else if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'c' &&
+                  holding.instrument.putCall.toLowerCase() === 'put') {
+                    const newOption = {
+                      symbol: entitySymbol,
+                      putCallInd: 'P'
+                    };
+
+                    holdingInfo.secondaryLegs.push(newOption as Options);
+                } else if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'p' &&
+                  holding.instrument.putCall.toLowerCase() === 'put') {
+                    const newOption = {
+                      symbol: entitySymbol,
+                      putCallInd: 'P'
+                    };
+
+                    holdingInfo.primaryLegs.push(newOption as Options);
+                } else if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'p' &&
+                  holding.instrument.putCall.toLowerCase() === 'call') {
+                    const newOption = {
+                      symbol: entitySymbol,
+                      putCallInd: 'C'
+                    };
+
+                    holdingInfo.secondaryLegs.push(newOption as Options);
+                } else {
+                  holdingInfo.primaryLegs = [];
+                  const newOption = {
+                    symbol: entitySymbol,
+                    putCallInd: null
+                  };
+                  switch (holding.instrument.putCall.toLowerCase()) {
+                    case 'call':
+                      newOption.putCallInd = 'C';
+                      break;
+                    case 'put':
+                      newOption.putCallInd = 'P';
+                      break;
+                  }
+                  holdingInfo.primaryLegs.push(newOption);
+                }
+                holdingInfo.pl = holdingInfo.pl + (holding.marketValue - (holding.averagePrice * holding.longQuantity) * 100);
+              }
+            }
+            return holdingInfo;
+          });
+          if (!found) {
+            const newOption = {
+              symbol: entitySymbol,
+              putCallInd: null
+            };
+            switch (holding.instrument.putCall.toLowerCase()) {
+              case 'call':
+                newOption.putCallInd = 'C';
+                break;
+              case 'put':
+                newOption.putCallInd = 'P';
+                break;
+            }
+            const tempHoldingObj = {
+              name: symbol,
+              pl,
+              netLiq: holding.marketValue,
+              shares: holding.longQuantity,
+              alloc: (holding.averagePrice * holding.longQuantity) / totalValue,
+              recommendation: null,
+              buyReasons: '',
+              sellReasons: '',
+              buyConfidence: 0,
+              sellConfidence: 0,
+              prediction: null,
+              primaryLeg: [newOption]
+            };
+            this.currentHoldings.push(tempHoldingObj);
+          }
+        } else if (holding.instrument.assetType.toLowerCase() === 'equity') {
+          const symbol = holding.instrument.symbol;
+
           const pl = holding.marketValue - (holding.averagePrice * holding.longQuantity);
 
           const tempHoldingObj = {
-            name: stock,
+            name: symbol,
             pl,
             netLiq: holding.marketValue,
             shares: holding.longQuantity,
@@ -890,40 +974,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             buyConfidence: 0,
             sellConfidence: 0,
             prediction: null
-          }
+          };
+
           this.scoreKeeperService.addProfitLoss(tempHoldingObj.name, Number(tempHoldingObj.pl), false);
           this.currentHoldings.push(tempHoldingObj);
-          await this.checkStopLoss(tempHoldingObj);
-
-          if (holding.instrument.assetType.toLowerCase() === 'equity') {
-            const indicators = await this.getTechnicalIndicators(holding.instrument.symbol,
-              startDate,
-              currentDate,
-              this.currentHoldings,
-              true).toPromise();
-            const foundIdx = this.currentHoldings.findIndex((value) => {
-              return value.name === stock;
-            });
-            this.currentHoldings[foundIdx].recommendation = indicators.recommendation.recommendation;
-            const reasons = this.getRecommendationReason(indicators.recommendation);
-            this.currentHoldings[foundIdx].buyReasons = reasons.buyReasons;
-            this.currentHoldings[foundIdx].sellReasons = reasons.sellReasons;
-            try {
-              const backtestResults = await this.backtestTableService.getBacktestData(stock);
-              if ((backtestResults && backtestResults.ml < 0.3) || stock === 'TQQQ') {
-                const sellHolding = this.currentHoldings.find(holdingInfo => {
-                  return holdingInfo.name === stock;
-                });
-                if (sellHolding) {
-                  this.portfolioSell(sellHolding);
-                }
-              } else if (backtestResults && backtestResults.ml > 0.7) {
-                await this.addBuy(this.createHoldingObj(stock));
-              }
-            } catch (error) {
-              console.log(error);
-            }
-          }
         }
       }
       //this.checkIfTooManyHoldings(this.currentHoldings);
@@ -935,6 +989,45 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (sellHolding) {
       this.portfolioSell(sellHolding);
     }
+    this.checkAllCurrentHoldings();
+  }
+
+  checkAllCurrentHoldings() {
+    const currentDate = moment().format('YYYY-MM-DD');
+    const startDate = moment().subtract(365, 'days').format('YYYY-MM-DD');
+    this.currentHoldings.forEach(async (holding) => {
+      await this.checkStopLoss(holding);
+
+      const indicators = await this.getTechnicalIndicators(holding.name,
+        startDate,
+        currentDate,
+        this.currentHoldings,
+        true).toPromise();
+      const foundIdx = this.currentHoldings.findIndex((value) => {
+        return value.name === holding.name;
+      });
+      this.currentHoldings[foundIdx].recommendation = indicators.recommendation.recommendation;
+      const reasons = this.getRecommendationReason(indicators.recommendation);
+      this.currentHoldings[foundIdx].buyReasons = reasons.buyReasons;
+      this.currentHoldings[foundIdx].sellReasons = reasons.sellReasons;
+      try {
+        const backtestResults = await this.backtestTableService.getBacktestData(holding.name);
+        if ((backtestResults && backtestResults.ml < 0.3) || holding.name === 'TQQQ') {
+          const sellHolding = this.currentHoldings.find(holdingInfo => {
+            return holdingInfo.name === holding.name;
+          });
+          if (sellHolding) {
+            console.log('Backtest indicates sell', backtestResults);
+            this.portfolioSell(sellHolding);
+          }
+        } else if (backtestResults && backtestResults.ml > 0.7) {
+          console.log('Backtest indicates buying', backtestResults);
+          await this.addBuy(this.createHoldingObj(holding.name));
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    });
   }
 
   getTechnicalIndicators(stock: string, startDate: string, currentDate: string, holdings, triggerBuySell = false) {
@@ -995,6 +1088,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         prediction: null
       };
       if (prediction > 0.7) {
+        console.log('trim holdings prediction', prediction);
+
         await this.addBuy(stock);
         const log = `Adding swing trade ${stock.name}`;
         this.reportingService.addAuditLog(null, log);
@@ -1013,13 +1108,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async analyseRecommendations(holding: PortfolioInfoHolding) {
     if (holding.recommendation.toLowerCase() === 'buy') {
+      console.log('Adding buy based on recommendation')
       await this.addBuy(holding);
     } else if (holding.recommendation.toLowerCase() === 'sell') {
       this.portfolioSell(holding);
     }
   }
 
-  async checkStopLoss(holding: PositionHoldings) {
+  async checkStopLoss(holding: PortfolioInfoHolding) {
     const percentLoss = divide(holding.pl, holding.netLiq);
     if (percentLoss < -0.045) {
       this.portfolioSell(holding);
@@ -1077,11 +1173,19 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.initializeOrder(order);
   }
 
+  async enterSellOptionOrder(holding: PortfolioInfoHolding) {
+    // this.backtestService.getLastPriceTiingo({ symbol: holding.primaryLegSymbol })
+    //   .subscribe(tiingoQuote => {
+    //     const lastPrice = tiingoQuote[holding.primaryLegSymbol].quote.lastPrice;
+    //     this.backtestTableService.addOptionOrder(holding.name, holding.primaryLegSymbol, 'P', lastPrice, holding.shares, 'Sell');
+    //   });
+  }
+
   async buildBuyOrder(holding: PortfolioInfoHolding,
     allocation: number,
     profitThreshold: number = null,
     stopLossThreshold: number = null,
-    useCashBalance = false) {
+    useCashBalance = true) {
     const price = await this.portfolioService.getPrice(holding.name).toPromise();
     const balance = await this.portfolioService.getTdBalance().toPromise();
     const quantity = this.getQuantity(price, allocation, useCashBalance ? balance.cashBalance : balance.availableFunds);
@@ -1125,7 +1229,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   private getQuantity(stockPrice: number, allocationPct: number, total: number) {
     const totalCost = round(total * allocationPct, 2);
-    return Math.ceil(totalCost / stockPrice);
+    return Math.floor(totalCost / stockPrice);
   }
 
   getRecommendationReason(recommendation) {

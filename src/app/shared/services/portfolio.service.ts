@@ -9,6 +9,7 @@ import * as _ from 'lodash';
 import { GlobalSettingsService, Brokerage } from '../../settings/global-settings.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, of } from 'rxjs';
+import { Options } from '@shared/models/options';
 
 export interface PortfolioInfoHolding {
   name: string;
@@ -22,6 +23,8 @@ export interface PortfolioInfoHolding {
   buyConfidence: number;
   sellConfidence: number;
   prediction: number;
+  primaryLegs?: Options[];
+  secondaryLegs?: Options[];
 }
 
 export interface Balance {
