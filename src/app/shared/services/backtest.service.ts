@@ -3,12 +3,13 @@ import {
   HttpHeaders
 } from '@angular/common/http';
 
-import { Observable, Subject, of } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { Injectable } from '@angular/core';
 import * as moment from 'moment-timezone';
 
 import { environment } from '../../../environments/environment';
 import { AuthenticationService } from './authentication.service';
+import { delay } from 'rxjs/operators';
 
 const BASE_URL = environment.appUrl;
 
@@ -127,18 +128,17 @@ export class BacktestService {
     start: string,
     end: string,
     algo: string): Observable<any> {
-
-    if (this.lastRequest && moment().diff(this.lastRequest, 'milliseconds') < 350) {
-      return of({});
-    } else {
-      this.lastRequest = moment();
-    }
     const data = {
       ticker,
       start,
       end,
       algo
     };
+    if (this.lastRequest && moment().diff(this.lastRequest, 'milliseconds') < 350) {
+      return this.http.post(`${BASE_URL}api/backtest`, data, {}).pipe(delay(new Date().getMilliseconds() + 1000));
+    } else {
+      this.lastRequest = moment();
+    }
 
     return this.http.post(`${BASE_URL}api/backtest`, data, {});
   }
