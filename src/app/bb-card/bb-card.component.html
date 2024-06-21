@@ -1,5 +1,15 @@
-<p-button [label]="order.holding.symbol" (click)="toggleSettingsVisible()" [badge]="firstFormGroup.value.quantity" styleClass="mr-2"></p-button>
-
+<div *ngIf="order.primaryLeg">
+  <p-button [label]="order.primaryLeg.description" (click)="toggleSettingsVisible()"
+    [badge]="firstFormGroup.value.quantity" styleClass="mr-2" severity="warning"></p-button>
+</div>
+<div *ngIf="!order.primaryLeg && !order.primaryLegs">
+  <p-button [label]="order.holding.symbol" (click)="toggleSettingsVisible()" [badge]="firstFormGroup.value.quantity"
+    styleClass="mr-2"></p-button>
+</div>
+<div *ngIf="order.primaryLegs">
+  <p-button [label]="order.primaryLegs[0].description" (click)="toggleSettingsVisible()" [badge]="firstFormGroup.value.quantity"
+    styleClass="mr-2"></p-button>
+</div>
 <p-dialog [header]="order.holding.symbol" [(visible)]="settingsVisible">
   <div class="banner" *ngIf="error">
     <div class="banner-content">
@@ -75,22 +85,29 @@
         <div fxFlex="5%">
           <p-header>
             <h3>{{order.holding.symbol}}</h3>
-            <span *ngFor="let order of order.holding.primaryLeg">
-              <td>{{order.symbol}}</td>
-              <td>{{order.putCallInd}}</td>
-            </span>
-            <span *ngFor="let order of order.holding.secondaryLeg">
-              <td>{{order.symbol}}</td>
-              <td>{{order.putCallInd}}</td>
-            </span>
+            <div *ngIf="order.primaryLeg">
+              <label>{{order.primaryLeg.description}}</label>
+            </div>
+            <div *ngIf="order.secondaryLeg">
+              <label>{{order.secondaryLeg.description}}</label>
+            </div>
+            <ul *ngIf="order.primaryLegs">
+              <li *ngFor="let leg of order.primaryLegs">
+                {{leg.description}}
+              </li>
+            </ul>
+            <ul *ngIf="order.secondaryLegs">
+              <li *ngFor="let leg of order.secondaryLegs">
+                {{leg.description}}
+              </li>
+            </ul>
             <p>
               <p-tag *ngIf="firstFormGroup.value.orderType=='Buy'" styleClass="p-mr-2" severity="success"
                 value="Buy"></p-tag>
               <p-tag *ngIf="firstFormGroup.value.orderType=='Sell'" severity="danger" value="Sell"></p-tag>
               <p-tag *ngIf="firstFormGroup.value.orderType=='DayTrade'" styleClass="p-mr-2" severity="info"
                 value="Daytrade"></p-tag>
-              <p-tag *ngIf="order.type=='options'" styleClass="p-mr-2" severity="info"
-                value="Options"></p-tag>
+              <p-tag *ngIf="order.type=='options'" styleClass="p-mr-2" severity="info" value="Options"></p-tag>
             </p>
           </p-header>
           <mat-checkbox (click)="toggleChart()">Chart</mat-checkbox>

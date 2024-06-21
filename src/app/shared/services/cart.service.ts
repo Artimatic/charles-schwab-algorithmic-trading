@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
 import { PortfolioService } from './portfolio.service';
-import { SmartOrder } from '../models/smart-order';
+import { OrderTypes, SmartOrder } from '../models/smart-order';
 import { TradeService, AlgoQueueItem } from './trade.service';
 import * as _ from 'lodash';
 import { MessageService } from 'primeng/api';
 import { Subject } from 'rxjs';
 import * as moment from 'moment-timezone';
+import { Options } from '@shared/models/options';
 
 @Injectable()
 export class CartService {
@@ -238,6 +239,38 @@ export class CartService {
       sellAtClose: (side === 'DayTrade' || side === 'Sell') ? true : false,
       id
     };
+  }
+
+  addSellStrangleOrder(symbol: string, 
+    primaryLegs: Options[],
+    secondaryLegs: Options[],
+    price: number, 
+    quantity: number) {
+    const order: SmartOrder = {
+      holding: {
+        instrument: null,
+        symbol,
+      },
+      quantity: quantity,
+      price,
+      submitted: false,
+      pending: false,
+      orderSize: 1,
+      side: 'Sell',
+      lossThreshold: -0.05,
+      profitTarget: 0.1,
+      trailingStop: -0.05,
+      useStopLoss: true,
+      useTrailingStopLoss: true,
+      useTakeProfit: true,
+      sellAtClose: false,
+      allocation: 0.05,
+      primaryLegs,
+      secondaryLegs,
+      type: OrderTypes.strangle
+    };
+
+    this.addToCart(order);
   }
 
   removeCompletedOrders() {

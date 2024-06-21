@@ -409,8 +409,63 @@ class PortfolioService {
   }
 
 
+  sendMultiOrderSell(primaryArr,
+    secondaryArr,
+    price, accountId, response) {
+      const orderLegCollection = [];
+      primaryArr.forEach((order) => {
+        const newOrder = {
+          instruction: 'SELL_TO_CLOSE',
+          quantity: order.quantity,
+          instrument: {
+            symbol: order.symbol,
+            assetType: order.putCallInd ? 'OPTION' : 'EQUITY'
+          }
+        };
+        orderLegCollection.push(newOrder)
+      });
+      secondaryArr.forEach((order) => {
+        const newOrder = {
+          instruction: 'SELL_TO_CLOSE',
+          quantity: order.quantity,
+          instrument: {
+            symbol: order.symbol,
+            assetType: order.putCallInd ? 'OPTION' : 'EQUITY'
+          }
+        };
+        orderLegCollection.push(newOrder)
+      });
+    return this.renewAuth(accountId, response)
+      .then(() => {
+        const headers = {
+          'Accept': '*/*',
+          'Accept-Encoding': 'gzip',
+          'Accept-Language': 'en-US',
+          'Authorization': `Bearer ${this.access_token[accountId].token}`,
+          'Content-Type': 'application/json',
+        };
+    
+        const options = {
+          uri: charlesSchwabTraderUrl + `accounts/${this.accountIdToHash[accountId]}/orders`,
+          headers: headers,
+          json: true,
+          gzip: true,
+          body: {
+            orderType: 'NET_CREDIT',
+            session: 'NORMAL',
+            duration: 'DAY',
+            orderStrategyType: 'SINGLE',
+            complexOrderStrategyType: 'CUSTOM',
+            price: price,
+            orderLegCollection
+          }
+        };
+    
+        return request.post(options);
+      });
+  }
   sendTwoLegOrder(primarySymbol,
-    seconarySymbol,
+    secondarySymbol,
     quantity,
     price,
     type = 'NET_DEBIT',
@@ -418,7 +473,7 @@ class PortfolioService {
     return this.renewAuth(accountId, response)
       .then(() => {
         return this.tdTwoLegOrder(primarySymbol,
-          seconarySymbol,
+          secondarySymbol,
           quantity,
           price,
           type,

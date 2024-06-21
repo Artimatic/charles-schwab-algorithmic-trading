@@ -19,8 +19,8 @@ const AlphaVantage = algotrader.Data.AlphaVantage;
 const av = new AlphaVantage(configurations.alpha.key);
 
 class QuoteService {
-  lastDaytradeRequest = null;
-
+  lastQuoteRequest = null;
+  lastQuoteRequestCount = 0;
   /*
   * Interval: ["1m", "1d"]
   * Range: ["1d","5d","1mo","3mo","6mo","1y","2y","5y","10y","ytd","max"]
@@ -143,11 +143,16 @@ class QuoteService {
   }
 
   getLastPrice(symbol, response) {
-    if (this.lastDaytradeRequest && moment().diff(this.lastDaytradeRequest, 'milliseconds') < 100) {
-      response.status(429).send({ message: 'Last request was to soon.' });
-      return Promise.reject();
+    if (this.lastQuoteRequest && moment().diff(this.lastQuoteRequest, 'milliseconds') < 100) {
+      if (this.lastQuoteRequestCount > 10) {
+        response.status(429).send({ message: 'Last request was to soon.' });
+        return Promise.reject();
+      } else {
+        this.lastQuoteRequestCount++;
+      }
     } else {
-      this.lastDaytradeRequest = moment();
+      this.lastQuoteRequest = moment();
+      this.lastQuoteRequestCount = 0;
     }
     // const query = `${configurations.apps.tiingo}iex/${symbol}`;
     // const options = {

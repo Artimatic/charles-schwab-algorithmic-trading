@@ -139,6 +139,16 @@ class PortfolioController extends BaseController {
       .catch((err) => BaseController.requestErrorHandler(response, err));
   }
 
+  sendMultiOrderSell(request, response) {
+    PortfolioService.sendMultiOrderSell(request.body.primaryLeg,
+      request.body.secondaryLeg,
+      request.body.price,
+      request.body.accountId,
+      response)
+      .then((data) => BaseController.requestGetSuccessHandler(response, data))
+      .catch((err) => BaseController.requestErrorHandler(response, err));
+  }
+
   tdPosition(request, response) {
     PortfolioService.getPositions(request.query.accountId)
       .then((data) => BaseController.requestGetSuccessHandler(response, data))

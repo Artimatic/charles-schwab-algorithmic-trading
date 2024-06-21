@@ -280,7 +280,7 @@ export class PortfolioService {
       primaryLegSymbol,
       quantity: quantity,
       price: price,
-      type: 'NET_DEBIT',
+      type: 'NET_CREDIT',
       extendedHours: extended,
       accountId
     };
@@ -303,6 +303,22 @@ export class PortfolioService {
       accountId
     };
     return this.http.post('/api/portfolio/v2/two-leg', body);
+  }
+
+  sendMultiOrderSell(primaryLeg: Options[], secondaryLeg: Options[],
+    price: number): Observable<any> {
+    const accountId = this.getAccountId();
+    if (!accountId) {
+      return of(null);
+    }
+    const body = {
+      primaryLeg,
+      secondaryLeg,
+      price: price,
+      type: 'NET_CREDIT',
+      accountId
+    };
+    return this.http.post('/api/portfolio/v2/multi-order-sell', body);
   }
 
   getTdBalance(): Observable<any> {
