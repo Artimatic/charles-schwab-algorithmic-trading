@@ -493,7 +493,7 @@ export class BacktestTableService {
     this.cartService.addToCart(order);
   }
 
-  async addOptionOrder(symbol: string, 
+  addOptionOrder(symbol: string, 
     primaryLegSymbol: string, 
     putCallInd: 'C' | 'P',
     price: number, 

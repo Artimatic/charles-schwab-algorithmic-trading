@@ -220,16 +220,16 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
     ];
 
     this.selectedRecommendation = ['strongbuy', 'buy', 'sell', 'strongsell'];
-    this.filter();
     this.interval = 0;
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     if (savedBacktest) {
       for (const saved in savedBacktest) {
-        this.currentList.push(savedBacktest[saved]);
+        this.stockList.push(savedBacktest[saved]);
       }
     }
     const backtestBlacklist = JSON.parse(localStorage.getItem('blacklist'));
     this.tickerBlacklist = backtestBlacklist ? backtestBlacklist : {};
+    this.filter();
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -567,22 +567,22 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   filter() {
-    if (this.stockList.length > 400) {
-      // Too many records;delete irrelevant records to increase performance
-      this.stockList = this.stockList.filter((stockItem: Stock) => ((stockItem.buySignals.length + stockItem.sellSignals.length) > 1));
-    }
+    // if (this.stockList.length > 400) {
+    //   // Too many records;delete irrelevant records to increase performance
+    //   this.stockList = this.stockList.filter((stockItem: Stock) => ((stockItem.buySignals.length + stockItem.sellSignals.length) > 1));
+    // }
 
-    this.filterRecommendation();
-    this.filterIndicators();
+    // this.filterRecommendation();
+    // this.filterIndicators();
     this.filterQueryString();
-    if (this.twoOrMoreSignalsOnly) {
-      this.filterTwoOrMoreSignalsOnly();
-    }
-    this.currentList.forEach(result => {
-      result.backtestDate = moment().format();
+    // if (this.twoOrMoreSignalsOnly) {
+    //   this.filterTwoOrMoreSignalsOnly();
+    // }
+    // this.currentList.forEach(result => {
+    //   result.backtestDate = moment().format();
 
-      this.backtestTableService.addToResultStorage(result);
-    });
+    //   this.backtestTableService.addToResultStorage(result);
+    // });
   }
 
   filterTwoOrMoreSignalsOnly() {
@@ -915,6 +915,7 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   filterQueryString() {
+    this.currentList = _.clone(this.stockList);
     if (this.searchText && this.searchText.length > 0) {
       this.currentList = this.currentList.filter((stock: Stock) => {
         const searchTextLowerCase = this.searchText.toLowerCase()

@@ -1,6 +1,5 @@
 import { Component, OnChanges, Input, OnInit, SimpleChanges, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
-import { MatDialog } from '@angular/material/dialog';
 
 import * as moment from 'moment-timezone';
 import * as _ from 'lodash';
@@ -32,6 +31,7 @@ import { DaytradeAlgorithms } from '@shared/enums/daytrade-algorithms.enum';
 import { BacktestTableComponent } from '../backtest-table/backtest-table.component';
 import { DialogService } from 'primeng/dynamicdialog';
 import { BacktestTableService } from '../backtest-table/backtest-table.service';
+import { PricingService } from '../pricing/pricing.service';
 
 @Component({
   selector: 'app-bb-card',
@@ -112,12 +112,12 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     private scoreKeeperService: ScoreKeeperService,
     private dialogService: DialogService,
     private backtestTableService: BacktestTableService,
-    public dialog: MatDialog) { }
+    private pricingService: PricingService) { }
 
   ngOnInit() {
     this.subscriptions = [];
-    const algoQueueSub = this.tradeService.algoQueue.subscribe((item: AlgoQueueItem) => {
-      setTimeout(() => {
+    const algoQueueSub = this.tradeService.algoQueue.subscribe(async (item: AlgoQueueItem) => {
+      setTimeout(async () => {
         if (!this.order) {
           console.log('Order not found', this);
         }
@@ -138,7 +138,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             const currentTimeStamp = this.getTimeStamp();
             if (this.lastTriggeredTime !== currentTimeStamp) {
               this.lastTriggeredTime = this.getTimeStamp();
-              this.step();
+              await this.step();
             }
           }
         }
@@ -272,9 +272,9 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     this.setLive();
   }
 
-  step() {
+  async step() {
     if (this.alive) {
-      this.play();
+      await this.play();
     }
   }
 
@@ -342,9 +342,9 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
         console.log('Scheduling machine order ', this.firstFormGroup.value);
         this.backtestService.getLastPriceTiingo({ symbol: this.order.holding.symbol })
-          .subscribe(tiingoQuote => {
+          .subscribe(async (tiingoQuote) => {
             const lastPrice = tiingoQuote[this.order.holding.symbol].quote.lastPrice;
-            this.runStrategy(1 * lastPrice);
+            await this.runStrategy(1 * lastPrice);
           });
       }
     } else {
@@ -593,6 +593,33 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     } else if (this.order.type === OrderTypes.protectivePut && analysis.recommendation.toLowerCase() === 'buy') {
       if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
         this.buyProtectivePut();
+      }
+    } else if (this.order.type === OrderTypes.strangle && this.order.side.toLowerCase() == 'sell') {
+      const calls = this.order.primaryLegs;
+      const puts = this.order.secondaryLegs;
+      const { callsTotalPrice, putsTotalPrice } = await this.pricingService.getPricing(calls, puts);
+      const mlResult = await this.machineLearningService
+        .trainDaytrade(this.order.holding.symbol.toUpperCase(),
+          moment().add({ days: 1 }).format('YYYY-MM-DD'),
+          moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
+          1,
+          this.globalSettingsService.daytradeAlgo
+        ).toPromise();
+
+      if (callsTotalPrice > putsTotalPrice) {
+        if (analysis.recommendation.toLowerCase() === 'sell') {
+          if (mlResult && (mlResult as any)?.nextOutput < 0.4) {
+            this.portfolioService.sendMultiOrderSell(calls,
+              puts, callsTotalPrice + putsTotalPrice).subscribe();
+          }
+        }
+      } else {
+        if (analysis.recommendation.toLowerCase() === 'buy') {
+          if (mlResult && (mlResult as any)?.nextOutput > 0.6) {
+            this.portfolioService.sendMultiOrderSell(calls,
+              puts, callsTotalPrice + putsTotalPrice).subscribe();
+          }
+        }
       }
     } else if (analysis.recommendation.toLowerCase() === 'buy') {
       if (daytradeType === 'buy' || this.isDayTrading()) {
@@ -886,8 +913,8 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       const estimatedPrice = this.daytradeService.estimateAverageBuyOrderPrice(this.orders);
       this.backtestService.getDaytradeRecommendation(this.order.holding.symbol, lastPrice, estimatedPrice, { minQuotes: 81 })
         .subscribe(
-          analysis => {
-            this.processAnalysis(daytradeType, analysis, lastPrice, moment().valueOf());
+          async (analysis) => {
+            await this.processAnalysis(daytradeType, analysis, lastPrice, moment().valueOf());
             return null;
           },
           error => {
@@ -898,7 +925,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
-  goLive() {
+  async goLive() {
     this.initRun();
     this.step();
   }
@@ -1037,6 +1064,19 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     this.portfolioService.sendTwoLegOrder(bullishStrangle.call.symbol,
       bullishStrangle.put.symbol, orderQuantity, price, false).subscribe();
   }
+
+  async sellStrangle() {
+    const bullishStrangle = await this.backtestTableService.getCallTrade(this.order.holding.symbol);
+    // const price = bullishStrangle.call.bid + bullishStrangle.put.bid;
+    const price = this.backtestTableService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) +
+      this.backtestTableService.findOptionsPrice(bullishStrangle.put.bid, bullishStrangle.put.ask);
+
+    const orderQuantity = this.order.quantity;
+
+    this.portfolioService.sendTwoLegOrder(bullishStrangle.call.symbol,
+      bullishStrangle.put.symbol, orderQuantity, price, false).subscribe();
+  }
+
 
   async buyProtectivePut() {
     const putOption = await this.backtestTableService.getProtectivePut(this.order.holding.symbol);

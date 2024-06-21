@@ -1,12 +1,20 @@
 export interface Options {
     ask?: number,
     bid?: number
-    description?: string;
-    putCallInd: 'C'| 'P';
+    putCallInd: 'C' | 'P';
     range?: 'ITM' | 'OTM';
     strikePrice?: number;
     symbol: string;
     totalVolume?: number;
+    quantity?: number;
+    assetType?: string;
+    cusip?: string; // "0INTC.TG40030000"
+    description?: string; //"INTEL CORP 08/16/2024 $30 Put"
+    netChange?: number;
+    putCall?: 'PUT' | 'CALL';
+    type?: string;
+    underlyingSymbol?: string;
+    averagePrice?: number;
 }
 
 export interface Strangle {

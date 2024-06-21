@@ -4,7 +4,6 @@ import { TimerObservable } from 'rxjs-compat/observable/TimerObservable';
 import { finalize, takeUntil, take, map, tap, delay } from 'rxjs/operators';
 import * as moment from 'moment-timezone';
 import { AuthenticationService, BacktestService, CartService, DaytradeService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
-import { BacktestResponse } from '../rh-table';
 import { SmartOrder } from '@shared/index';
 import { divide, floor, round } from 'lodash';
 import { DailyBacktestService } from '@shared/daily-backtest.service';
@@ -26,6 +25,7 @@ import { FindDaytradeService } from './find-daytrade.service';
 import { Trade } from '@shared/models/trade';
 import { StockListDialogComponent } from '../stock-list-dialog/stock-list-dialog.component';
 import { Options } from '@shared/models/options';
+import { PricingService } from '../pricing/pricing.service';
 
 export interface PositionHoldings {
   name: string;
@@ -202,7 +202,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private daytradeService: DaytradeService,
     public dialogService: DialogService,
     private findDaytradeService: FindDaytradeService,
-    private aiPicksService: AiPicksService
+    private aiPicksService: AiPicksService,
+    private pricingService: PricingService
   ) { }
 
   ngOnInit(): void {
@@ -219,7 +220,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((trade: Trade) => {
         this.lastReceivedRecommendation = moment();
-        if (this.cartService.otherOrders.length < 1) {
+        if (this.cartService.otherOrders.length < this.maxTradeCount) {
           this.addDaytrade(trade.stock);
           this.cartService.removeCompletedOrders();
         }
@@ -859,6 +860,18 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.isLoading = value;
   }
 
+  createOptionObj(holding): Options {
+    return {
+      symbol: holding.instrument.symbol,
+      putCall: holding.instrument.putCall,
+      putCallInd: (holding.instrument.putCall.toLowerCase() === 'call' ? 'C' : (holding.instrument.putCall.toLowerCase() === 'put' ? 'P' : null)),
+      quantity: holding.longQuantity,
+      description: holding.instrument.description,
+      averagePrice: holding.averagePrice * 100,
+      underlyingSymbol: holding.instrument.underlyingSymbol
+    };
+  }
+
   async checkCurrentPositions() {
     await this.authenticationService.checkCredentials(this.authenticationService?.selectedTdaAccount?.accountId).toPromise();
 
@@ -875,8 +888,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (data) {
       for (const holding of data) {
         if (holding.instrument.assetType.toLowerCase() === 'option') {
+          console.log(holding);
           const symbol = holding.instrument.underlyingSymbol;
-          const entitySymbol = holding.instrument.symbol;
           const pl = holding.marketValue - (holding.averagePrice * holding.longQuantity) * 100;
           let found = false;
           this.currentHoldings = this.currentHoldings.map(holdingInfo => {
@@ -884,56 +897,26 @@ export class AutopilotComponent implements OnInit, OnDestroy {
               found = true;
               if (!holdingInfo.primaryLegs) {
                 holdingInfo.primaryLegs = [];
-                const newOption = {
-                  symbol: entitySymbol,
-                  putCallInd: null
-                };
-                switch (holding.instrument.putCall.toLowerCase()) {
-                  case 'call':
-                    newOption.putCallInd = 'C';
-                    break;
-                  case 'put':
-                    newOption.putCallInd = 'P';
-                    break;
-                }
-                holdingInfo.primaryLegs.push(newOption);
+                holdingInfo.primaryLegs.push(this.createOptionObj(holding));
               } else {
                 if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'c' &&
                   holding.instrument.putCall.toLowerCase() === 'call') {
-                  const newOption = {
-                    symbol: entitySymbol,
-                    putCallInd: 'C'
-                  };
-                  holdingInfo.primaryLegs.push(newOption as Options);
+                  holdingInfo.primaryLegs.push(this.createOptionObj(holding));
                 } else if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'c' &&
                   holding.instrument.putCall.toLowerCase() === 'put') {
-                  const newOption = {
-                    symbol: entitySymbol,
-                    putCallInd: 'P'
-                  };
-
                   if (!holdingInfo.secondaryLegs) {
                     holdingInfo.secondaryLegs = [];
                   }
-                  holdingInfo.secondaryLegs.push(newOption as Options);
+                  holdingInfo.secondaryLegs.push(this.createOptionObj(holding));
                 } else if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'p' &&
                   holding.instrument.putCall.toLowerCase() === 'put') {
-                  const newOption = {
-                    symbol: entitySymbol,
-                    putCallInd: 'P'
-                  };
-
-                  holdingInfo.primaryLegs.push(newOption as Options);
+                  holdingInfo.primaryLegs.push(this.createOptionObj(holding));
                 } else if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'p' &&
                   holding.instrument.putCall.toLowerCase() === 'call') {
-                  const newOption = {
-                    symbol: entitySymbol,
-                    putCallInd: 'C'
-                  };
                   if (!holdingInfo.secondaryLegs) {
                     holdingInfo.secondaryLegs = [];
                   }
-                  holdingInfo.secondaryLegs.push(newOption as Options);
+                  holdingInfo.secondaryLegs.push(this.createOptionObj(holding));
                 }
               }
 
@@ -943,18 +926,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             return holdingInfo;
           });
           if (!found) {
-            const newOption = {
-              symbol: entitySymbol,
-              putCallInd: null
-            };
-            switch (holding.instrument.putCall.toLowerCase()) {
-              case 'call':
-                newOption.putCallInd = 'C';
-                break;
-              case 'put':
-                newOption.putCallInd = 'P';
-                break;
-            }
             const tempHoldingObj: PortfolioInfoHolding = {
               name: symbol,
               pl,
@@ -967,11 +938,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
               buyConfidence: 0,
               sellConfidence: 0,
               prediction: null,
-              primaryLegs: [newOption]
+              primaryLegs: [this.createOptionObj(holding)]
             };
             this.currentHoldings.push(tempHoldingObj);
           }
-        } else if (holding.instrument.assetType.toLowerCase() === 'equity') {
+        } else if (holding.instrument.assetType.toLowerCase() === 'equity' || holding.instrument.assetType === 'COLLECTIVE_INVESTMENT') {
           const symbol = holding.instrument.symbol;
 
           const pl = holding.marketValue - (holding.averagePrice * holding.longQuantity);
@@ -1030,14 +1001,16 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.currentHoldings[foundIdx].sellReasons = reasons.sellReasons;
           try {
             const backtestResults = await this.backtestTableService.getBacktestData(holding.name);
-            if ((backtestResults && backtestResults.ml < 0.3) || holding.name === 'TQQQ') {
-              const sellHolding = this.currentHoldings.find(holdingInfo => {
-                return holdingInfo.name === holding.name;
-              });
-              if (sellHolding) {
-                console.log('Backtest indicates sell', backtestResults);
-                this.portfolioSell(sellHolding);
+            if (holding.primaryLegs && holding.secondaryLegs) {
+              const { callsTotalPrice, putsTotalPrice } = await this.pricingService.getPricing(holding.primaryLegs, holding.secondaryLegs);
+              if (putsTotalPrice > callsTotalPrice && backtestResults && backtestResults.ml < 0.3) {
+                this.sellStrangle(holding);
+              } else if (callsTotalPrice > putsTotalPrice && backtestResults && backtestResults.ml > 0.7) {
+                this.sellStrangle(holding);
               }
+            } else if ((backtestResults && backtestResults.ml < 0.3) || holding.name === 'TQQQ') {
+              console.log('Backtest indicates sell', backtestResults);
+              this.portfolioSell(holding);
             } else if (backtestResults && backtestResults.ml > 0.7) {
               console.log('Backtest indicates buying', backtestResults);
               await this.addBuy(this.createHoldingObj(holding.name));
@@ -1167,7 +1140,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       useStopLoss: true,
       useTrailingStopLoss: true,
       useTakeProfit: true,
-      sellAtClose: side.toUpperCase() === 'SELL' ? true : false,
+      sellAtClose: (side.toLowerCase() === 'sell' || side.toLowerCase() === 'daytrade') ? true : false,
       // sellAtClose: false,
       allocation
     };
@@ -1214,8 +1187,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     profitThreshold: number = null,
     stopLossThreshold: number = null) {
     const order = await this.buildBuyOrder(holding, allocation, profitThreshold, stopLossThreshold);
-    this.cartService.addToCart(order);
-    this.initializeOrder(order);
+    if (order.quantity) {
+      this.cartService.addToCart(order);
+      this.initializeOrder(order);
+    }
   }
 
   async portfolioDaytrade(symbol: string,
@@ -1242,6 +1217,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   private getQuantity(stockPrice: number, allocationPct: number, total: number) {
     const totalCost = round(total * allocationPct, 2);
+    if (!totalCost) {
+      return 0;
+    }
     return Math.floor(totalCost / stockPrice);
   }
 
@@ -1403,10 +1381,97 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     return this.revealPotentialStrategy;
   }
 
-  testSellStrangle() {
-    this.currentHoldings.forEach(holding => {
+  sendStrangleSellOrder(primaryLegs: Options[], secondaryLegs: Options[], price: number) {
+    // const primaryPrice = primaryLegs.reduce((acc, curr) => {
+    //   return acc + Number(curr.averagePrice);
+    // }, 0);
 
+    // const secondaryPrice = secondaryLegs.reduce((acc, curr) => {
+    //   return acc + Number(curr.averagePrice);
+    // }, 0);
+
+    this.portfolioService.sendMultiOrderSell(primaryLegs,
+      secondaryLegs, price).subscribe();
+  }
+
+  async testSellStrangle() {
+    this.currentHoldings.forEach(async (holding) => {
+      if (holding.primaryLegs && holding.secondaryLegs && holding.primaryLegs.length === holding.secondaryLegs.length) {
+        const seenPuts = {};
+        const seenCalls = {};
+        holding.primaryLegs.concat(holding.secondaryLegs).forEach((option: Options) => {
+          const putCall = option.putCallInd;
+          const expiry = option.description.match(/[0-9]{2}\/[0-9]{2}\/[0-9]{2}/)[0];
+          if (putCall === 'C') {
+            if (!seenCalls[expiry]) {
+              seenCalls[expiry] = [];
+            }
+            seenCalls[expiry].push(option);
+          } else if (putCall === 'P') {
+            if (!seenPuts[expiry]) {
+              seenPuts[expiry] = [];
+            }
+            seenPuts[expiry].push(option);
+          }
+        });
+
+        for (const key in seenCalls) {
+          if (seenPuts[key]) {
+            const fullOrderList = seenCalls[key].concat(seenPuts[key]);
+            let fullPrice = 0;
+            for (let i = 0; i < fullOrderList.length; i++) {
+              const price = await this.backtestService.getLastPriceTiingo({ symbol: fullOrderList[i].symbol }).toPromise();
+
+              const askPrice = price[fullOrderList[i].symbol].quote.askPrice;
+              const bidPrice = price[fullOrderList[i].symbol].quote.bidPrice;
+
+              const estimatedPrice = this.backtestTableService.findOptionsPrice(bidPrice, askPrice);
+              fullPrice += estimatedPrice;
+            }
+
+            this.cartService.addSellStrangleOrder(holding.name, holding.primaryLegs, holding.secondaryLegs, fullPrice, holding.primaryLegs[0].quantity);
+          }
+        }
+      }
     });
+  }
+  async sellStrangle(holding: PortfolioInfoHolding) {
+    if (holding.primaryLegs && holding.secondaryLegs && holding.primaryLegs.length === holding.secondaryLegs.length) {
+      const seenPuts = {};
+      const seenCalls = {};
+      holding.primaryLegs.concat(holding.secondaryLegs).forEach((option: Options) => {
+        const putCall = option.putCallInd;
+        const expiry = option.description.match(/[0-9]{2}\/[0-9]{2}\/[0-9]{2}/)[0];
+        if (putCall === 'C') {
+          if (!seenCalls[expiry]) {
+            seenCalls[expiry] = [];
+          }
+          seenCalls[expiry].push(option);
+        } else if (putCall === 'P') {
+          if (!seenPuts[expiry]) {
+            seenPuts[expiry] = [];
+          }
+          seenPuts[expiry].push(option);
+        }
+      });
+
+      for (const key in seenCalls) {
+        if (seenPuts[key]) {
+          const fullOrderList = seenCalls[key].concat(seenPuts[key]);
+          let fullPrice = 0;
+          for (let i = 0; i < fullOrderList.length; i++) {
+            const price = await this.backtestService.getLastPriceTiingo({ symbol: fullOrderList[i].symbol }).toPromise();
+
+            const askPrice = price[fullOrderList[i].symbol].quote.askPrice;
+            const bidPrice = price[fullOrderList[i].symbol].quote.bidPrice;
+
+            const estimatedPrice = this.backtestTableService.findOptionsPrice(bidPrice, askPrice);
+            fullPrice += estimatedPrice;
+          }
+          this.sendStrangleSellOrder(seenCalls[key], seenPuts[key], fullPrice);
+        }
+      }
+    }
   }
 
   unsubscribeStockFinder() {

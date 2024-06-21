@@ -64,6 +64,10 @@ export const twoLegOrder = (request, response) => {
   PortfolioController.twoLegOrder(request, response);
 }
 
+export const multiOrderSell = (request, response) => {
+  PortfolioController.sendMultiOrderSell(request, response);
+}
+
 export const tdSell = (request, response) => {
   PortfolioController.tdSell(request, response);
 }
