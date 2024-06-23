@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { DynamicDialogConfig } from 'primeng/dynamicdialog';
-import { BacktestTableService } from '../backtest-table.service';
+import { StrategyBuilderService } from '../strategy-builder.service';
 import { MachineDaytradingService } from 'src/app/machine-daytrading/machine-daytrading.service';
 
 @Component({
@@ -11,7 +11,7 @@ import { MachineDaytradingService } from 'src/app/machine-daytrading/machine-day
 export class StrategyFinderComponent implements OnInit {
 
   constructor(public config: DynamicDialogConfig, 
-    private backTestTableService: BacktestTableService) { }
+    private backTestTableService: StrategyBuilderService) { }
 
   ngOnInit(): void {
     this.backTestTableService.findTrades();

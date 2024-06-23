@@ -2,7 +2,7 @@ import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import * as moment from 'moment-timezone';
 
 import { BacktestService, DaytradeService, MachineLearningService, PortfolioService } from '@shared/services';
-import { BacktestTableService } from 'src/app/backtest-table/backtest-table.service';
+import { StrategyBuilderService } from 'src/app/backtest-table/strategy-builder.service';
 import { MachineDaytradingService } from 'src/app/machine-daytrading/machine-daytrading.service';
 import { MessageService } from 'primeng/api';
 import { FindDaytradeService, StockTrade } from '../find-daytrade.service';
@@ -10,6 +10,7 @@ import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { PersonalBullishPicks } from 'src/app/rh-table/backtest-stocks.constant';
 import { GlobalSettingsService } from 'src/app/settings/global-settings.service';
+import { CurrentStockList } from 'src/app/rh-table/stock-list.constant';
 
 interface Daytrade {
   stock: string;
@@ -23,11 +24,11 @@ interface CurrentTrade extends Daytrade {
 }
 
 @Component({
-  selector: 'app-find-some-daytrade',
-  templateUrl: './find-some-daytrade.component.html',
-  styleUrls: ['./find-some-daytrade.component.css']
+  selector: 'app-daytrade-active-search',
+  templateUrl: './daytrade-active-search.component.html',
+  styleUrls: ['./daytrade-active-search.component.css']
 })
-export class FindSomeDaytradeComponent implements OnInit, OnDestroy {
+export class DaytradeActiveSearchComponent implements OnInit, OnDestroy {
   currentTrades: CurrentTrade[] = [];
   currentHoldings: StockTrade[] = [];
   dollarAmount = 1000;
@@ -38,7 +39,7 @@ export class FindSomeDaytradeComponent implements OnInit, OnDestroy {
   processSymbol$ = new Subject<string>();
   delay;
 
-  constructor(private backtestTableService: BacktestTableService,
+  constructor(private strategyBuilderService: StrategyBuilderService,
     private backtestService: BacktestService,
     private portfolioService: PortfolioService,
     private daytradeService: DaytradeService,
@@ -56,6 +57,7 @@ export class FindSomeDaytradeComponent implements OnInit, OnDestroy {
       .subscribe(sym => {
         this.getRecommendations(sym);
       });
+      
     this.findDaytradeService.getRefreshObserver()
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
@@ -120,7 +122,7 @@ export class FindSomeDaytradeComponent implements OnInit, OnDestroy {
       this.mostRelevantStockList.push({ stock: symbol, daytradeIndicators });
     }
 
-    if (this.mostRelevantStockList.length > 10) {
+    if (this.mostRelevantStockList.length > 30) {
       this.mostRelevantStockList = this.mostRelevantStockList.filter((stock: Daytrade) => {
         if (!stock.daytradeIndicators) {
           return true;
@@ -130,6 +132,7 @@ export class FindSomeDaytradeComponent implements OnInit, OnDestroy {
         return false;
       });
     }
+    console.log('mostRelevantStockList', this.mostRelevantStockList);
   }
 
   async getRecommendations(symbol: string) {
@@ -177,7 +180,7 @@ export class FindSomeDaytradeComponent implements OnInit, OnDestroy {
       });
       this.currentCycleList = this.mostRelevantStockList.concat(personalPicks)
 
-      const savedBacktestData = this.backtestTableService.getStorage('backtest');
+      const savedBacktestData = this.strategyBuilderService.getStorage('backtest');
       for (const backtestDataKey in savedBacktestData) {
         const backtestData = savedBacktestData[backtestDataKey];
         if (backtestData) {

@@ -30,7 +30,7 @@ import { ServiceStatus } from '@shared/models/service-status';
 import { DaytradeAlgorithms } from '@shared/enums/daytrade-algorithms.enum';
 import { BacktestTableComponent } from '../backtest-table/backtest-table.component';
 import { DialogService } from 'primeng/dynamicdialog';
-import { BacktestTableService } from '../backtest-table/backtest-table.service';
+import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { PricingService } from '../pricing/pricing.service';
 
 @Component({
@@ -111,7 +111,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     private messageService: MessageService,
     private scoreKeeperService: ScoreKeeperService,
     private dialogService: DialogService,
-    private backtestTableService: BacktestTableService,
+    private strategyBuilderService: StrategyBuilderService,
     private pricingService: PricingService) { }
 
   ngOnInit() {
@@ -626,11 +626,10 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
         this.daytradeService.sellDefaultHolding();
 
         console.log('Received Buy recommendation: ', analysis, this.order.holding.symbol);
-        this.machineDaytradingService.getPortfolioBalance().subscribe((data) => {
-          this.currentBalance = data.cashBalance;
+        this.machineDaytradingService.getPortfolioBalance().subscribe((balance) => {
+          this.currentBalance = this.isDayTrading() ? balance.availableFunds : balance.cashBalance;
           // const availableFunds = data.availableFunds;
-          const usage = (data.liquidationValue - this.currentBalance) / data.liquidationValue;
-
+          const usage = (balance.liquidationValue - this.currentBalance) / balance.liquidationValue;
           if (usage < this.globalSettingsService.maxAccountUsage) {
             const log = `${moment().format()} Received buy recommendation`;
             const report = this.reportingService.addAuditLog(this.order.holding.symbol, log);
@@ -1054,10 +1053,10 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   async buyStrangle() {
-    const bullishStrangle = await this.backtestTableService.getCallTrade(this.order.holding.symbol);
+    const bullishStrangle = await this.strategyBuilderService.getCallTrade(this.order.holding.symbol);
     // const price = bullishStrangle.call.bid + bullishStrangle.put.bid;
-    const price = this.backtestTableService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) +
-      this.backtestTableService.findOptionsPrice(bullishStrangle.put.bid, bullishStrangle.put.ask);
+    const price = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) +
+      this.strategyBuilderService.findOptionsPrice(bullishStrangle.put.bid, bullishStrangle.put.ask);
 
     const orderQuantity = this.order.quantity;
 
@@ -1066,10 +1065,10 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   async sellStrangle() {
-    const bullishStrangle = await this.backtestTableService.getCallTrade(this.order.holding.symbol);
+    const bullishStrangle = await this.strategyBuilderService.getCallTrade(this.order.holding.symbol);
     // const price = bullishStrangle.call.bid + bullishStrangle.put.bid;
-    const price = this.backtestTableService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) +
-      this.backtestTableService.findOptionsPrice(bullishStrangle.put.bid, bullishStrangle.put.ask);
+    const price = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) +
+      this.strategyBuilderService.findOptionsPrice(bullishStrangle.put.bid, bullishStrangle.put.ask);
 
     const orderQuantity = this.order.quantity;
 
@@ -1079,8 +1078,8 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
 
   async buyProtectivePut() {
-    const putOption = await this.backtestTableService.getProtectivePut(this.order.holding.symbol);
-    const price = this.backtestTableService.findOptionsPrice(putOption.put.bid, putOption.put.ask);
+    const putOption = await this.strategyBuilderService.getProtectivePut(this.order.holding.symbol);
+    const price = this.strategyBuilderService.findOptionsPrice(putOption.put.bid, putOption.put.ask);
     const orderQuantity = this.order.quantity;
 
     this.portfolioService.sendOptionBuy(putOption.put.symbol, orderQuantity, price, false).subscribe();

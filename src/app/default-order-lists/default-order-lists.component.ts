@@ -11,7 +11,7 @@ import {
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
 import { SchedulerService } from '@shared/service/scheduler.service';
 import { MenuItem, SelectItem } from 'primeng/api';
-import { BacktestTableService } from '../backtest-table/backtest-table.service';
+import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 
 export interface DefaultOrders {
   label: string;
@@ -48,7 +48,7 @@ export class DefaultOrderListsComponent implements OnInit, OnChanges, OnDestroy 
 
   constructor(private _formBuilder: FormBuilder,
     private cartService: CartService,
-    private backtestTableService: BacktestTableService,
+    private strategyBuilderService: StrategyBuilderService,
     private schedulerService: SchedulerService,
     private machineDaytradingService: MachineDaytradingService) { }
 
@@ -148,17 +148,17 @@ export class DefaultOrderListsComponent implements OnInit, OnChanges, OnDestroy 
 
   async buildStrangle(symbol: string) {
     let optionStrategy = null;
-    const backtestResults = await this.backtestTableService.getBacktestData(symbol);
+    const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
     if (backtestResults && backtestResults.ml > 0.5) {
-      optionStrategy = await this.backtestTableService.getCallTrade(symbol);
+      optionStrategy = await this.strategyBuilderService.getCallTrade(symbol);
     } else {
-      optionStrategy = await this.backtestTableService.getPutTrade(symbol);
+      optionStrategy = await this.strategyBuilderService.getPutTrade(symbol);
     }
     console.log('optionStrategy', optionStrategy);
 
-    const price = this.backtestTableService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.backtestTableService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
+    const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
 
-    this.backtestTableService.addStrangle(symbol, price, optionStrategy);
+    this.strategyBuilderService.addStrangle(symbol, price, optionStrategy);
   }
 
 

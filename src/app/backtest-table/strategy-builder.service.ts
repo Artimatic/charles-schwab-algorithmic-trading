@@ -11,7 +11,7 @@ import { MessageService } from 'primeng/api';
 @Injectable({
   providedIn: 'root'
 })
-export class BacktestTableService {
+export class StrategyBuilderService {
   orderHistory = {};
   correlationThreshold = 0.6;
   lastRequest = null;
