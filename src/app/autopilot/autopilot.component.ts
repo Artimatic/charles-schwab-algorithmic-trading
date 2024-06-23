@@ -120,7 +120,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   destroy$ = new Subject();
   currentHoldings: PortfolioInfoHolding[] = [];
   strategyCounter = null;
-  maxTradeCount = 5;
+  maxTradeCount = 10;
   strategyList = [
     // Strategy.OptionsStrangle,
     // Strategy.MLSpy,
