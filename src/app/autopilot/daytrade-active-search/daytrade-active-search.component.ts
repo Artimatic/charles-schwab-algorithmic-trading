@@ -52,11 +52,6 @@ export class DaytradeActiveSearchComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
-    const list = CurrentStockList.map(pick => {
-      return { stock: pick.ticker, daytradeIndicators: null };
-    });
-    this.currentCycleList = this.mostRelevantStockList.concat(list)
-
     this.processSymbol$
       .pipe(takeUntil(this.destroy$))
       .subscribe(sym => {
