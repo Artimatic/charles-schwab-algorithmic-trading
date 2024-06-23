@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BacktestService } from '@shared/services';
-import { BacktestTableService } from '../backtest-table/backtest-table.service';
+import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { Options } from '@shared/models/options';
 
 @Injectable({
@@ -9,7 +9,7 @@ import { Options } from '@shared/models/options';
 export class PricingService {
 
   constructor(private backtestService: BacktestService,
-    private backtestTableService: BacktestTableService
+    private strategyBuilderService: StrategyBuilderService
   ) { }
 
   async getPricing(primaryLegs: Options[], secondaryLeg: Options[]) {
@@ -37,7 +37,7 @@ export class PricingService {
       const askPrice = price[fullOrderList[i].symbol].quote.askPrice;
       const bidPrice = price[fullOrderList[i].symbol].quote.bidPrice;
 
-      const estimatedPrice = this.backtestTableService.findOptionsPrice(bidPrice, askPrice);
+      const estimatedPrice = this.strategyBuilderService.findOptionsPrice(bidPrice, askPrice);
       fullPrice += estimatedPrice;
     }
     return fullPrice;

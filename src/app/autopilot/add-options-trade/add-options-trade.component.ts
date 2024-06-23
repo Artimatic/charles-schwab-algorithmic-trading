@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { DynamicDialogRef } from 'primeng/dynamicdialog';
 import { Subject } from 'rxjs';
-import { BacktestTableService } from 'src/app/backtest-table/backtest-table.service';
+import { StrategyBuilderService } from 'src/app/backtest-table/strategy-builder.service';
 
 @Component({
   selector: 'app-add-options-trade',
@@ -16,12 +16,12 @@ export class AddOptionsTradeComponent implements OnInit, OnDestroy {
   symbolsArr = [];
   isLoading = false;
 
-  constructor(private backtestTableService: BacktestTableService,
+  constructor(private strategyBuilderService: StrategyBuilderService,
     private ref: DynamicDialogRef) { }
 
 
   ngOnInit() {
-    const storedSuggestions = this.backtestTableService.getStorage('strangle_suggestions');
+    const storedSuggestions = this.strategyBuilderService.getStorage('strangle_suggestions');
     for (const s in storedSuggestions) {
       this.suggestionsArr.push({ label: s })
     }
@@ -47,18 +47,18 @@ export class AddOptionsTradeComponent implements OnInit, OnDestroy {
   async buildStrangle(symbol: string) {
     if (symbol) {
       let optionStrategy = null;
-      const backtestResults = await this.backtestTableService.getBacktestData(symbol);
+      const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
       if (backtestResults && backtestResults.ml > 0.6) {
-        optionStrategy = await this.backtestTableService.getCallTrade(symbol);
+        optionStrategy = await this.strategyBuilderService.getCallTrade(symbol);
       } else if (backtestResults && backtestResults.ml < 0.2) {
-        optionStrategy = await this.backtestTableService.getPutTrade(symbol);
+        optionStrategy = await this.strategyBuilderService.getPutTrade(symbol);
       }
 
       if (optionStrategy.call && optionStrategy.put) {
-        const price = this.backtestTableService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.backtestTableService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
+        const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
         console.log('optionStrategy', optionStrategy, price);
 
-        this.backtestTableService.addStrangle(symbol, price, optionStrategy);
+        this.strategyBuilderService.addStrangle(symbol, price, optionStrategy);
       }
       this.saveToStorage(symbol);
       if (this.symbolsArr.length) {
@@ -99,7 +99,7 @@ export class AddOptionsTradeComponent implements OnInit, OnDestroy {
   }
 
   saveToStorage(symbol) {
-    this.backtestTableService.addToStorage('strangle_suggestions', symbol, true);
+    this.strategyBuilderService.addToStorage('strangle_suggestions', symbol, true);
   }
   ngOnDestroy() {
     this.processSymbol$.next();

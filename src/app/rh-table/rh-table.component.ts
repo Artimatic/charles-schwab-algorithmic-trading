@@ -21,7 +21,7 @@ import { ReportingService } from '@shared/services/reporting.service';
 import { WatchListService } from '../watch-list/watch-list.service';
 import { ClientSmsService } from '@shared/services/client-sms.service';
 import { SchedulerService } from '@shared/service/scheduler.service';
-import { BacktestTableService } from '../backtest-table/backtest-table.service';
+import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 
 export interface Algo {
   value: string;
@@ -122,7 +122,7 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
     private watchListService: WatchListService,
     private machineLearningService: MachineLearningService,
     private portfolioService: PortfolioService,
-    private backtestTableService: BacktestTableService) { }
+    private strategyBuilderService: StrategyBuilderService) { }
 
   ngOnInit() {
     this.unsubscribe$ = new Subject();
@@ -581,7 +581,7 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
     // this.currentList.forEach(result => {
     //   result.backtestDate = moment().format();
 
-    //   this.backtestTableService.addToResultStorage(result);
+    //   this.strategyBuilderService.addToResultStorage(result);
     // });
   }
 

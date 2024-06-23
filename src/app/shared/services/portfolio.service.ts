@@ -365,4 +365,15 @@ export class PortfolioService {
 
     return this.http.get('/api/portfolio/v3/equity-hours', options);
   }
+
+  getUserPreferences() {
+    const accountId = sessionStorage.getItem('accountId');
+    const options = {
+      params: {
+        accountId: accountId
+      }
+    };
+
+    return this.http.get('/api/portfolio/user-preferences', options);
+  }
 }
