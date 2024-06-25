@@ -482,7 +482,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         try {
           const backtestResults = await this.strategyBuilderService.getBacktestData('SH');
 
-          if (backtestResults && backtestResults.ml > 0.7) {
+          if (backtestResults && backtestResults.ml > 0.6) {
             this.decreaseRiskTolerance();
             this.increaseDayTradeRiskTolerance();
           } else {
@@ -1208,7 +1208,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     stopLossThreshold: number = null) {
     const price = await this.portfolioService.getPrice(symbol).toPromise();
     const data = await this.portfolioService.getTdBalance().toPromise();
-    const quantity = this.getQuantity(price, allocation, data.availableFunds);
+    const quantity = this.getQuantity(price, allocation, data.buyingPower);
     const orderSizePct = 0.5;
     const order = this.buildOrder(symbol,
       quantity,
