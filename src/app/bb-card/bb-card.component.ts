@@ -32,6 +32,7 @@ import { BacktestTableComponent } from '../backtest-table/backtest-table.compone
 import { DialogService } from 'primeng/dynamicdialog';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { PricingService } from '../pricing/pricing.service';
+import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
 
 @Component({
   selector: 'app-bb-card',
@@ -112,6 +113,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     private scoreKeeperService: ScoreKeeperService,
     private dialogService: DialogService,
     private strategyBuilderService: StrategyBuilderService,
+    private daytradeStrategiesService: DaytradeStrategiesService,
     private pricingService: PricingService) { }
 
   ngOnInit() {
@@ -913,7 +915,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       this.backtestService.getDaytradeRecommendation(this.order.holding.symbol, lastPrice, estimatedPrice, { minQuotes: 81 })
         .subscribe(
           async (analysis) => {
-            await this.processAnalysis(daytradeType, analysis, lastPrice, moment().valueOf());
+            await this.processAnalysis(daytradeType, this.daytradeStrategiesService.analyse(analysis), lastPrice, moment().valueOf());
             return null;
           },
           error => {

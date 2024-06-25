@@ -132,7 +132,6 @@ export class DaytradeActiveSearchComponent implements OnInit, OnDestroy {
         return false;
       });
     }
-    console.log('mostRelevantStockList', this.mostRelevantStockList);
   }
 
   async getRecommendations(symbol: string) {
