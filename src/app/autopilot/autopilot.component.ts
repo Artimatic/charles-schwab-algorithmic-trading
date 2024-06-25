@@ -26,6 +26,7 @@ import { Trade } from '@shared/models/trade';
 import { StockListDialogComponent } from '../stock-list-dialog/stock-list-dialog.component';
 import { Options } from '@shared/models/options';
 import { PricingService } from '../pricing/pricing.service';
+import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
 
 export interface PositionHoldings {
   name: string;
@@ -111,8 +112,8 @@ export enum RiskTolerance {
 export class AutopilotComponent implements OnInit, OnDestroy {
   display = false;
   isLoading = true;
-  defaultInterval = 70300;
-  interval = 70300;
+  defaultInterval = 90000;
+  interval = 90000;
   oneDayInterval;
   timer: Subscription;
   orderListTimer: Subscription;
@@ -203,7 +204,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     public dialogService: DialogService,
     private findDaytradeService: FindDaytradeService,
     private aiPicksService: AiPicksService,
-    private pricingService: PricingService
+    private pricingService: PricingService,
+    private daytradeStrategiesService: DaytradeStrategiesService
   ) { }
 
   ngOnInit(): void {
@@ -330,10 +332,15 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             this.portfolioService.getEquityMarketHours(moment().format('YYYY-MM-DD'))
               .subscribe((marketHour: any) => {
                 console.log('market hours', marketHour);
-                if (marketHour && marketHour.equity && (marketHour.equity?.equity?.isOpen || marketHour.equity?.EQ?.isOpen)) {
-                  this.isLive = true;
-                } else {
-                  this.lastMarketHourCheck = moment();
+                try {
+                  if (marketHour && marketHour.equity && marketHour.equity.EQ.isOpen) {
+                    this.isLive = true;
+                  } else {
+                    this.lastMarketHourCheck = moment();
+                    this.isLive = false;
+                  }
+                } catch(error) {
+                  console.log( error);
                   this.isLive = false;
                 }
               }, (error) => {
@@ -846,17 +853,21 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const buyAndSellList = this.cartService.sellOrders.concat(this.cartService.buyOrders);
     const orders = buyAndSellList.concat(this.cartService.otherOrders);
 
-    this.orderListTimer = TimerObservable.create(1000, 500)
+    this.orderListTimer = TimerObservable.create(500, 500)
       .pipe(take(orders.length))
       .subscribe(() => {
         if (this.lastOrderListIndex >= orders.length) {
           this.lastOrderListIndex = 0;
         }
-        const queueItem: AlgoQueueItem = {
-          symbol: orders[this.lastOrderListIndex].holding.symbol,
-          reset: false
-        };
-        this.tradeService.algoQueue.next(queueItem);
+        const symbol = orders[this.lastOrderListIndex].holding.symbol;
+        if (!this.daytradeStrategiesService.shouldSkip(symbol)) {
+          const queueItem: AlgoQueueItem = {
+            symbol: symbol,
+            reset: false
+          };
+          this.tradeService.algoQueue.next(queueItem);
+        }
+
         this.lastOrderListIndex++;
       });
   }
@@ -1477,7 +1488,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             const estimatedPrice = this.strategyBuilderService.findOptionsPrice(bidPrice, askPrice);
             fullPrice += estimatedPrice;
           }
-          this.sendStrangleSellOrder(seenCalls[key], seenPuts[key], fullPrice);
+          this.cartService.addSellStrangleOrder(holding.name, holding.primaryLegs, holding.secondaryLegs, fullPrice, holding.primaryLegs[0].quantity);
         }
       }
     }
