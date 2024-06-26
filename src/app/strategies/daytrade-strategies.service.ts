@@ -25,7 +25,7 @@ export class DaytradeStrategiesService {
     } else {
       this.skipNextCheck[analysis.name] = true;  
     }
-    return analysis
+    return analysis;
   }
 
   shouldSkip(name: string) {

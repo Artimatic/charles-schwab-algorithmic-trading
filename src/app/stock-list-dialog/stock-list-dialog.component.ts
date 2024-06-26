@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CurrentStockList } from '../rh-table/stock-list.constant';
-import { PersonalBearishPicks, PersonalBullishPicks } from '../rh-table/backtest-stocks.constant';
-import { MenuItem } from 'primeng/api';
+import { PersonalBearishPicks, AlwaysBuy } from '../rh-table/backtest-stocks.constant';
+import { AlgoParam } from '@shared/algo-param.interface';
 
 @Component({
   selector: 'app-stock-list-dialog',
@@ -9,25 +9,65 @@ import { MenuItem } from 'primeng/api';
   styleUrls: ['./stock-list-dialog.component.css']
 })
 export class StockListDialogComponent implements OnInit {
-  fullList;
-  buyList;
-  sellList;
-  items: MenuItem[];
-  activeItem: MenuItem;
+  stockList: { ticker: string }[] = [];
+  listType: any[];
+  activeList;
+  selectedList;
+  newStock = '';
 
   constructor() { }
 
   ngOnInit(): void {
-    this.fullList = CurrentStockList;
-    this.buyList = PersonalBullishPicks;
-    this.sellList = PersonalBearishPicks;
-
-    this.items = [
+    this.listType = [
       { label: 'Full list' },
-      { label: 'Bullish' },
+      { label: 'Always buy' },
       { label: 'Bearish' }
     ];
-    this.activeItem = this.items[0];
+    this.activeList = this.listType[0];
+    this.stockList = CurrentStockList;
   }
 
+  deleteRow(stock, rowIndex: number) {
+    console.log('delete', stock, rowIndex);
+    switch (this.activeList.label) {
+      case 'Full list':
+        CurrentStockList.splice(rowIndex, 1);
+        break;
+      case 'Bullish':
+        AlwaysBuy.splice(rowIndex, 1);
+        break;
+      case 'Bearish':
+        PersonalBearishPicks.splice(rowIndex, 1);
+        break;
+    }
+  }
+
+  changedList() {
+    switch (this.activeList.label) {
+      case 'Full list':
+        this.stockList = CurrentStockList;
+        break;
+      case 'Bullish':
+        this.stockList = AlwaysBuy;
+        break;
+      case 'Bearish':
+        this.stockList = PersonalBearishPicks;
+        break;
+    }
+  }
+
+  addRow() {
+    switch (this.activeList.label) {
+      case 'Full list':
+        CurrentStockList.push({ ticker: this.newStock });
+        break;
+      case 'Bullish':
+        AlwaysBuy.push({ ticker: this.newStock } as AlgoParam);
+        break;
+      case 'Bearish':
+        PersonalBearishPicks.push({ ticker: this.newStock } as AlgoParam);
+        break;
+    }
+    this.newStock = '';
+  }
 }

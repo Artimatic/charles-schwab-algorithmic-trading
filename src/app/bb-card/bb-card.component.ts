@@ -607,6 +607,8 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           1,
           this.globalSettingsService.daytradeAlgo
         ).toPromise();
+      const strangleOrderDescription = calls.concat(puts).map(v => v.description).join(',');
+      this.reportingService.addAuditLog(this.order.holding.symbol, `Selling ${strangleOrderDescription}`);
 
       if (callsTotalPrice > putsTotalPrice) {
         if (analysis.recommendation.toLowerCase() === 'sell') {
@@ -1061,6 +1063,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       this.strategyBuilderService.findOptionsPrice(bullishStrangle.put.bid, bullishStrangle.put.ask);
 
     const orderQuantity = this.order.quantity;
+    this.reportingService.addAuditLog(this.order.holding.symbol, `Buying ${bullishStrangle.call.symbol + ', ' + bullishStrangle.put.symbol}`);
 
     this.portfolioService.sendTwoLegOrder(bullishStrangle.call.symbol,
       bullishStrangle.put.symbol, orderQuantity, price, false).subscribe();
