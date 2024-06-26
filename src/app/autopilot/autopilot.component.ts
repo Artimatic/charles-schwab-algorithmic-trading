@@ -112,8 +112,8 @@ export enum RiskTolerance {
 export class AutopilotComponent implements OnInit, OnDestroy {
   display = false;
   isLoading = true;
-  defaultInterval = 90000;
-  interval = 90000;
+  defaultInterval = 80000;
+  interval = 80000;
   oneDayInterval;
   timer: Subscription;
   orderListTimer: Subscription;
@@ -121,7 +121,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   destroy$ = new Subject();
   currentHoldings: PortfolioInfoHolding[] = [];
   strategyCounter = null;
-  maxTradeCount = 10;
+  maxTradeCount = 15;
   strategyList = [
     // Strategy.OptionsStrangle,
     // Strategy.MLSpy,
@@ -283,7 +283,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     this.display = true;
     this.startNewInterval();
-    //this.interval = Math.abs(moment(this.globalSettingsService.getStartStopTime().startDateTime).diff(moment(), 'milliseconds'));
     this.interval = this.defaultInterval;
     this.messageService.add({
       severity: 'success',
@@ -324,6 +323,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
                 if (order.side.toLowerCase() === 'daytrade' &&
                   moment(order.createdTime).diff(moment(), 'minutes') > 60 &&
                   order.positionCount === 0) {
+                  this.reportingService.addAuditLog(order.holding.name, 'Deleting day trade');
                   this.cartService.deleteDaytrade(order);
                 }
               });
@@ -352,30 +352,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.lastInterval = moment();
           this.startFindingTrades();
         }
-
-        // if (this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length < this.maxTradeCount) {
-        //   const randomDaytradeStock = this.machineDaytradingService.getNextStock();
-        //   const prediction = await this.getPrediction(randomDaytradeStock);
-        //   if (prediction > 0.8) {
-        //     try {
-        //       const backtestDate = this.getLastTradeDate();
-        //       const trainingResults = await this.machineDaytradingService.trainStock(randomDaytradeStock, backtestDate.subtract({ days: 3 }).format('YYYY-MM-DD'), backtestDate.add({ days: 2 }).format('YYYY-MM-DD'));
-        //       console.log(`Intraday training results for ${randomDaytradeStock} Correct: ${trainingResults[0].correct} Guesses: ${trainingResults[0].guesses}`);
-        //       if (trainingResults[0].correct / trainingResults[0].guesses > 0.6 && trainingResults[0].guesses > 23) {
-        //         const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
-        //         if (!(lastProfitLoss && lastProfitLoss.profitRecord !== undefined && lastProfitLoss.profitRecord[randomDaytradeStock] && lastProfitLoss.profitRecord[randomDaytradeStock] < 10)) {
-        //           const trainingMsg = `Day trade training results correct: ${trainingResults[0].correct}, guesses: ${trainingResults[0].guesses}`;
-        //           this.reportingService.addAuditLog(randomDaytradeStock, trainingMsg);
-        //           await this.addDaytrade(randomDaytradeStock);
-        //         }
-        //       } else {
-        //         await this.addBuy(this.createHoldingObj(randomDaytradeStock));
-        //       }
-        //     } catch (error) {
-        //       console.log('error getting training results ', error);
-        //     }
-        //   }
-        // }
       });
   }
 
