@@ -4010,7 +4010,7 @@ for (const b of bearList) {
   BearList.push(createParam(b));
 }
 
-export const PersonalBullishPicks = [
+export const AlwaysBuy = [
   'AAPL',
   'GOOG',
   'NVDA',

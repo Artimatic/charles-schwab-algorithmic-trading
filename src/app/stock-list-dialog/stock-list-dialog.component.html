@@ -1,1 +1,27 @@
-<p-tabMenu [model]="items" [activeItem]="items[0]"></p-tabMenu>
+<p-selectButton [options]="listType" [(ngModel)]="activeList" optionLabel="label" (click)="changedList()"></p-selectButton>
+<div class="actions">
+    <input type="text" pInputText [(ngModel)]="newStock"/>
+    <button pButton type="button" label="Add Stock" (click)="addRow()"></button>
+</div>
+
+<p-table [value]="stockList" dataKey="ticker" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries" [rowsPerPageOptions]="[10,25,50]">
+    <ng-template pTemplate="body" let-stock let-ri="rowIndex">
+        <tr [pEditableRow]="stock">
+            <td>
+                <p-cellEditor>
+                    <ng-template pTemplate="input">
+                        <input pInputText type="text" [(ngModel)]="stock.ticker">
+                    </ng-template>
+                    <ng-template pTemplate="output">
+                        {{stock.ticker}}
+                    </ng-template>
+                </p-cellEditor>
+            </td>
+            <td style="text-align:center">
+                <button pButton pRipple type="button" pCancelEditableRow icon="pi pi-times"
+                    (click)="deleteRow(stock, ri)" class="p-button-rounded p-button-text p-button-danger"></button>
+            </td>
+        </tr>
+    </ng-template>
+</p-table>

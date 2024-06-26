@@ -11,7 +11,7 @@ import { MenuItem, MessageService } from 'primeng/api';
 import { AlgoQueueItem } from '@shared/services/trade.service';
 import { ScoringIndex } from '@shared/services/score-keeper.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
-import { BearList, PersonalBullishPicks, PersonalBearishPicks } from '../rh-table/backtest-stocks.constant';
+import { BearList, AlwaysBuy, PersonalBearishPicks } from '../rh-table/backtest-stocks.constant';
 import { CurrentStockList } from '../rh-table/stock-list.constant';
 import { AiPicksPredictionData, AiPicksService } from '@shared/services/ai-picks.service';
 import Stocks from '../rh-table/backtest-stocks.constant';
@@ -260,12 +260,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       },
       {
-        label: 'Test order list',
-        command: () => {
-          this.testExecuteOrderList();
-        }
-      },
-      {
         label: 'Get User Preferences',
         command: () => {
           this.getPreferences();
@@ -333,10 +327,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
               .subscribe((marketHour: any) => {
                 console.log('market hours', marketHour);
                 try {
-                  if (marketHour && marketHour.equity && marketHour.equity.EQ.isOpen) {
-                    this.isLive = true;
+                  if (marketHour) {
+                    if (marketHour.equity && marketHour.equity.EQ.isOpen) {
+                      this.isLive = true;
+                    } else {
+                      this.lastMarketHourCheck = moment();
+                      this.isLive = false;
+                    }
                   } else {
-                    this.lastMarketHourCheck = moment();
                     this.isLive = false;
                   }
                 } catch(error) {
@@ -1262,7 +1260,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   checkPersonalLists() {
-    PersonalBullishPicks.forEach(async (stock) => {
+    AlwaysBuy.forEach(async (stock) => {
       const name = stock.ticker;
       try {
         const backtestResults = await this.strategyBuilderService.getBacktestData(name);
@@ -1367,10 +1365,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     });
   }
 
-  testExecuteOrderList() {
-    this.executeOrderList();
-  }
-
   startFindingTrades() {
     this.strategyBuilderService.findTrades();
     this.strategies = this.strategyBuilderService.getTradingStrategies();
@@ -1378,14 +1372,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   sendStrangleSellOrder(primaryLegs: Options[], secondaryLegs: Options[], price: number) {
-    // const primaryPrice = primaryLegs.reduce((acc, curr) => {
-    //   return acc + Number(curr.averagePrice);
-    // }, 0);
-
-    // const secondaryPrice = secondaryLegs.reduce((acc, curr) => {
-    //   return acc + Number(curr.averagePrice);
-    // }, 0);
-
     this.portfolioService.sendMultiOrderSell(primaryLegs,
       secondaryLegs, price).subscribe();
   }
