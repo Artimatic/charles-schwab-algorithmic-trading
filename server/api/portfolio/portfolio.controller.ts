@@ -162,7 +162,7 @@ class PortfolioController extends BaseController {
   }
 
   getEquityMarketHours(request, response) {
-    PortfolioService.getEquityMarketHours(request.query.date)
+    PortfolioService.getEquityMarketHours(request.query.date, response)
       .then((data) => BaseController.requestGetSuccessHandler(response, data))
       .catch((err) => BaseController.requestErrorHandler(response, err));
   }

@@ -807,7 +807,7 @@ class PortfolioService {
       });
   }
 
-  getEquityMarketHours(date: string) {
+  getEquityMarketHours(date: string, response) {
     const accountId = this.getAccountId();
     const query = `${charlesSchwabMarketDataUrl}markets`;
     const options = {
@@ -827,7 +827,7 @@ class PortfolioService {
         for (const key in error) {
           console.log('error getting equity market hours', key);
         }
-        this.renewAuth(accountId);
+        return this.renewAuth(accountId, response);
       });
   }
 
