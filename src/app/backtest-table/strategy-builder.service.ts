@@ -7,6 +7,7 @@ import * as moment from 'moment-timezone';
 import { Strangle } from '@shared/models/options';
 import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
 import { MessageService } from 'primeng/api';
+import { SwingtradeStrategiesService } from '../strategies/swingtrade-strategies.service';
 
 @Injectable({
   providedIn: 'root'
@@ -15,12 +16,14 @@ export class StrategyBuilderService {
   orderHistory = {};
   correlationThreshold = 0.6;
   lastRequest = null;
+  sumNet = 0;
+  countNet = 0;
 
   constructor(private backtestService: BacktestService,
     private aiPicksService: AiPicksService,
     private optionsDataService: OptionsDataService,
     private portfolioService: PortfolioService,
-    private messageService: MessageService,
+    private swingtradeStrategiesService: SwingtradeStrategiesService,
     private cartService: CartService) { }
 
   getRecentBacktest(symbol: string) {
@@ -33,14 +36,6 @@ export class StrategyBuilderService {
   }
 
   async getBacktestData(symbol: string) {
-    if (this.lastRequest && moment().diff(this.lastRequest, 'milliseconds') < 100) {
-      this.messageService.add({
-        severity: 'danger',
-        summary: 'Last backtest was too soon.'
-      });
-    } else {
-      this.lastRequest = moment();
-    }
     const recentBacktest = this.getRecentBacktest(symbol);
     if (recentBacktest) {
       return new Promise(function (resolve) {
@@ -51,7 +46,8 @@ export class StrategyBuilderService {
     const start = moment().subtract(365, 'days').format('YYYY-MM-DD');
 
     try {
-      const indicatorResults = await this.backtestService.getBacktestEvaluation(symbol, start, current, 'daily-indicators').toPromise();
+      const results = await this.backtestService.getBacktestEvaluation(symbol, start, current, 'daily-indicators').toPromise();
+      const indicatorResults = this.swingtradeStrategiesService.processSignals(results);
       this.addToOrderHistoryStorage(symbol, indicatorResults.orderHistory);
       indicatorResults.stock = symbol;
       if (!indicatorResults.signals || !indicatorResults.signals.length) {
@@ -70,7 +66,11 @@ export class StrategyBuilderService {
         }
       }
 
-      if (buySignals.length + sellSignals.length > 1) {
+      this.sumNet += indicatorResults.net;
+      this.countNet++;
+      const averageNet = (this.sumNet / this.countNet);
+      if (buySignals.length + sellSignals.length > 1 && indicatorResults.net > 100 && indicatorResults.net >= averageNet) {
+        console.log('Found recommendation for', symbol);
         const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
         const optionsChain = optionsData.optionsChain.monthlyStrategyList;
         const instruments = await this.portfolioService.getInstrument(symbol).toPromise();
@@ -121,7 +121,7 @@ export class StrategyBuilderService {
   isPutHedge(goal: number, strike: number, impliedMovement: number) {
     if (strike < goal) {
       const diff = ((goal - strike) / goal);
-      if (diff > (impliedMovement * -1)) {
+      if (diff < (impliedMovement * -1)) {
         return true;
       }
     }
@@ -132,7 +132,7 @@ export class StrategyBuilderService {
   isCallHedge(goal: number, strike: number, impliedMovement: number) {
     if (strike > goal) {
       const diff = ((strike - goal) / goal);
-      if (diff < impliedMovement) {
+      if (diff > impliedMovement) {
         return true;
       }
     }
@@ -145,7 +145,7 @@ export class StrategyBuilderService {
   }
 
   async getCallTrade(symbol: string): Promise<Strangle> {
-    const minExpiration = 65;
+    const minExpiration = 45;
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     const optionsChain = optionsData.optionsChain;
     const impliedMovement = optionsData.move;
