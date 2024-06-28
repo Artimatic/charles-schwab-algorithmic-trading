@@ -6,7 +6,6 @@ import { PotentialTrade, Strategy } from './potential-trade.constant';
 import * as moment from 'moment-timezone';
 import { Strangle } from '@shared/models/options';
 import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
-import { MessageService } from 'primeng/api';
 import { SwingtradeStrategiesService } from '../strategies/swingtrade-strategies.service';
 
 @Injectable({
@@ -530,5 +529,13 @@ export class StrategyBuilderService {
     };
 
     this.cartService.addToCart(order);
+  }
+
+  async buyProtectivePut(symbol, quantity) {
+    const putOption = await this.getProtectivePut(symbol);
+    const price = this.findOptionsPrice(putOption.put.bid, putOption.put.ask);
+    const orderQuantity = quantity;
+
+    this.portfolioService.sendOptionBuy(putOption.put.symbol, orderQuantity, price, false).subscribe();
   }
 }
