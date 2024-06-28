@@ -273,6 +273,34 @@ export class CartService {
     this.addToCart(order);
   }
 
+  addProtectivePutOrder(symbol: string, 
+    price: number, 
+    quantity: number) {
+    const order: SmartOrder = {
+      holding: {
+        instrument: null,
+        symbol,
+      },
+      quantity: quantity,
+      price,
+      submitted: false,
+      pending: false,
+      orderSize: 1,
+      side: 'Buy',
+      lossThreshold: -0.05,
+      profitTarget: 0.1,
+      trailingStop: -0.05,
+      useStopLoss: true,
+      useTrailingStopLoss: true,
+      useTakeProfit: true,
+      sellAtClose: false,
+      allocation: 0.05,
+      type: OrderTypes.protectivePut
+    };
+
+    this.addToCart(order);
+  }
+
   removeCompletedOrders() {
     this.buyOrders = this.buyOrders.filter(order => !order.stopped);
     this.sellOrders = this.sellOrders.filter(order => !order.stopped);

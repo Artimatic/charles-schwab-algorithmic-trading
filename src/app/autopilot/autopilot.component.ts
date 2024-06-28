@@ -171,6 +171,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   lastInterval = moment();
 
   lastMarketHourCheck = null;
+  lastCredentialCheck = moment();
   isLive = false;
 
   unsubscribe$ = new Subject();
@@ -308,7 +309,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(async () => {
         const startStopTime = this.globalSettingsService.getStartStopTime();
-        if (moment().isAfter(moment(startStopTime.endDateTime).subtract(8, 'minutes')) &&
+        if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 29) {
+          await this.findCurrentPositions();
+        } else if (moment().isAfter(moment(startStopTime.endDateTime).subtract(8, 'minutes')) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
           this.buyAtClose();
           if (this.reportingService.logs.length > 0) {
@@ -458,6 +461,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       .subscribe(patternsResponse => console.log('found patterns ', patternsResponse));
 
     await this.findCurrentPositions();
+    await this.modifyCurrentHoldings();
+
     this.setProfitLoss();
 
     const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
@@ -905,8 +910,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async findCurrentPositions() {
-    await this.authenticationService.checkCredentials(this.authenticationService?.selectedTdaAccount?.accountId).toPromise();
-
     this.currentHoldings = [];
     this.setLoading(true);
 
@@ -998,16 +1001,16 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       //this.checkIfTooManyHoldings(this.currentHoldings);
       console.log('current holdings', this.currentHoldings);
     }
+  }
+
+  async modifyCurrentHoldings() {
     const sellHolding = this.currentHoldings.find(holdingInfo => {
       return holdingInfo.name === 'TQQQ';
     });
     if (sellHolding) {
       this.portfolioSell(sellHolding);
     }
-    await this.modifyCurrentHoldings();
-  }
 
-  async modifyCurrentHoldings() {
     const currentDate = moment().format('YYYY-MM-DD');
     const startDate = moment().subtract(365, 'days').format('YYYY-MM-DD');
     this.currentHoldings.forEach(async (holding) => {
@@ -1044,11 +1047,37 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else if (backtestResults && backtestResults.ml > 0.7) {
           console.log('Backtest indicates buying', backtestResults);
           await this.addBuy(this.createHoldingObj(holding.name));
+        } else {
+          await this.createProtectivePutOrder(holding);
         }
       } catch (error) {
         console.log('Backtest error', error);
       }
     });
+  }
+
+  async createProtectivePutOrder(holding: PortfolioInfoHolding) {
+    if (holding.shares) {
+      let putsNeeded = 0;
+      if ((holding.primaryLegs && !holding.secondaryLegs && holding.primaryLegs[0].putCallInd === 'P')) {
+        putsNeeded = Math.floor((holding.shares / 100) - holding.primaryLegs.length) || 1; 
+      } else if (!holding.primaryLegs && holding.secondaryLegs && holding.secondaryLegs[0].putCallInd === 'P') {
+        putsNeeded = Math.floor((holding.shares / 100) - holding.primaryLegs.length) || 1; 
+      } else if (!holding.primaryLegs && !holding.secondaryLegs) {
+        putsNeeded = Math.floor((holding.shares / 100) - holding.primaryLegs.length) || 1; 
+      }
+
+      if (putsNeeded > 0) {
+        const putOption = await this.strategyBuilderService.getProtectivePut(holding.name);
+        const estimatedPrice = this.strategyBuilderService.findOptionsPrice(putOption.put.bid, putOption.put.ask);
+
+        if (estimatedPrice > 100) {
+          this.cartService.addProtectivePutOrder(holding.name, estimatedPrice, putsNeeded);
+        } else {
+          console.log('Protective put option too cheap.', estimatedPrice);
+        }
+      }
+    }
   }
 
   getTechnicalIndicators(stock: string, startDate: string, currentDate: string) {
@@ -1227,8 +1256,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     profitThreshold: number = null,
     stopLossThreshold: number = null) {
     const price = await this.portfolioService.getPrice(symbol).toPromise();
-    const data = await this.portfolioService.getTdBalance().toPromise();
-    const quantity = this.getQuantity(price, allocation, data.buyingPower);
+    const balance = await this.portfolioService.getTdBalance().toPromise();
+    const quantity = this.getQuantity(price, allocation, balance.buyingPower);
     const orderSizePct = 0.5;
     const order = this.buildOrder(symbol,
       quantity,

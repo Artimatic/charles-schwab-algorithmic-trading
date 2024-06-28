@@ -756,7 +756,6 @@ class PortfolioService {
 
   setCredentials(accountId, key, refreshToken, response) {
     this.refreshTokensHash[accountId] = refreshToken;
-    console.log('setCredentials');
     // this.refreshAccessToken(accountId);
     response.status(200).send();
   }

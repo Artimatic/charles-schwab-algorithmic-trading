@@ -85,6 +85,7 @@
         <div fxFlex="5%">
           <p-header>
             <h3>{{order.holding.symbol}}</h3>
+            <h4>{{order.type}}</h4>
             <div *ngIf="order.primaryLeg">
               <label>{{order.primaryLeg.description}}</label>
             </div>

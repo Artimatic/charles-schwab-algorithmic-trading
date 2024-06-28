@@ -592,7 +592,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     const initialQuantity = this.multiplierPreference.value * this.firstFormGroup.value.quantity;
     if (this.hasReachedOrderLimit()) {
       this.stop();
-    } else if (this.order.type === OrderTypes.protectivePut && analysis.recommendation.toLowerCase() === 'buy') {
+    } else if (this.order.type === OrderTypes.protectivePut && analysis.recommendation.toLowerCase() === 'sell') {
       if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
         this.buyProtectivePut();
       }
@@ -1083,11 +1083,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
 
   async buyProtectivePut() {
-    const putOption = await this.strategyBuilderService.getProtectivePut(this.order.holding.symbol);
-    const price = this.strategyBuilderService.findOptionsPrice(putOption.put.bid, putOption.put.ask);
-    const orderQuantity = this.order.quantity;
-
-    this.portfolioService.sendOptionBuy(putOption.put.symbol, orderQuantity, price, false).subscribe();
+    await this.strategyBuilderService.buyProtectivePut(this.order.holding.symbol, this.order.quantity)  
   }
 
   async sellOptions(order: SmartOrder) {
