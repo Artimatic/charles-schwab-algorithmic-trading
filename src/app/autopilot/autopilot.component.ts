@@ -291,8 +291,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const price = await this.backtestService.getLastPriceTiingo({ symbol: holding.name }).toPromise();
         const lastPrice = price[holding.name].quote.lastPrice;     
         const closePrice = price[holding.name].quote.closePrice;      
-        const backtestResults = await this.strategyBuilderService.getBacktestData('SH');
-        if (Math.abs(lastPrice - closePrice) > backtestResults.averageMove) {
+        const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
+        if (backtestResults.averageMove && Math.abs(lastPrice - closePrice) > backtestResults.averageMove) {
           console.log(`Large move detected for ${holding.name}. Selling strangle. Last price ${lastPrice}. Close price ${closePrice}.`);
           this.sellStrangle(holding);
         }
@@ -309,7 +309,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(async () => {
         const startStopTime = this.globalSettingsService.getStartStopTime();
-        if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 29) {
+        if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 25) {
+          this.lastCredentialCheck = moment();
           await this.findCurrentPositions();
         } else if (moment().isAfter(moment(startStopTime.endDateTime).subtract(8, 'minutes')) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
