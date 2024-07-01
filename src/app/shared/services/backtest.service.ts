@@ -185,7 +185,7 @@ export class BacktestService {
     return this.http.post(`${BASE_URL}api/quote/historical-intraday`, data, {});
   }
 
-  getTdIntraday(symbol: string): Observable<any> {
+  getIntradayPriceHistory(symbol: string): Observable<any> {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     const options = {
       headers: headers,

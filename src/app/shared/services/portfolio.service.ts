@@ -335,7 +335,7 @@ export class PortfolioService {
     return this.http.get('/api/portfolio/balance', options);
   }
 
-  getTdIntradayQuotes(symbol: string): Observable<any> {
+  getIntradayPriceHistoryQuotes(symbol: string): Observable<any> {
     const options = {
       params: {
         symbol

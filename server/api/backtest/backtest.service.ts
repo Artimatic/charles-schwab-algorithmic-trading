@@ -1265,10 +1265,36 @@ class BacktestService {
       })
       .then(macd => {
         currentQuote.macd = macd;
-        return this.getMacd(indicators.reals.slice(0, indicators.reals.length - 1), 12, 26, 9);
+        return Promise.all([
+          this.getMacd(indicators.reals.slice(0, indicators.reals.length - 1), 12, 26, 9), 
+          this.getMacd(indicators.reals.slice(0, indicators.reals.length - 2), 12, 26, 9), 
+          this.getMacd(indicators.reals.slice(0, indicators.reals.length - 3), 12, 26, 9)
+        ]);
       })
-      .then(macdPrevious => {
-        currentQuote.macdPrevious = macdPrevious;
+      .then(values => {
+        let predicate = null;
+        if (currentQuote.macd > 0) {
+          predicate = (currentMacd) => {
+            const macd = currentMacd[2];
+            return macd[macd.length - 1] <= 0;
+          };
+        } else {
+          predicate = (currentMacd) => {
+            const macd = currentMacd[2];
+            return macd[macd.length - 1] > 0;
+          };
+        }
+        let counter = 0;
+        while (counter < values.length) {
+          if (predicate(values[counter])) {
+            currentQuote.macdPrevious = values[counter];
+            break;
+          }
+          counter++;
+        }
+        if (!currentQuote.macdPrevious) {
+          currentQuote.macdPrevious = values[0];
+        }
         return this.getRsi(this.getSubArray(indicators.reals, 14), 14);
       })
       .then(rsi => {

@@ -163,7 +163,7 @@ export class SimpleCardComponent implements OnInit, OnChanges {
                 notFound);
             } else if ((momentInst.isAfter(buyTime) &&
               momentInst.isBefore(sellTime) && !this.buyAt3Algo.purchaseSent)) {
-              this.backtestService.getTdIntraday(this.order.holding.symbol)
+              this.backtestService.getIntradayPriceHistory(this.order.holding.symbol)
                 .subscribe((quotes) => {
                   const closeArr = this.prepareQuotes(quotes);
                   this.backtestService.getRsi(closeArr)

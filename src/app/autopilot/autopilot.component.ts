@@ -187,7 +187,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   multibuttonOptions: MenuItem[];
 
   constructor(
-    private authenticationService: AuthenticationService,
     private portfolioService: PortfolioService,
     private backtestService: BacktestService,
     private strategyBuilderService: StrategyBuilderService,
@@ -231,9 +230,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     this.multibuttonOptions = [
       {
-        label: 'Run personal list',
+        label: 'Replay last day',
         command: () => {
-          this.checkPersonalLists();
+          this.replayLastDay();
         }
       },
       {
@@ -264,6 +263,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         label: 'Get User Preferences',
         command: () => {
           this.getPreferences();
+        }
+      },
+      {
+        label: 'Test trading functionalities',
+        command: () => {
+          this.backtestService.getDaytradeRecommendation('HUBS', null, null, { minQuotes: 81 }).subscribe(data => console.log('getDaytradeRecommendation', data));;
         }
       }
     ];
@@ -465,38 +470,50 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.modifyCurrentHoldings();
 
     this.setProfitLoss();
+    try {
+      const backtestResults = await this.strategyBuilderService.getBacktestData('SPY');
 
-    const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
-    if (lastProfitLoss && lastProfitLoss.profit !== undefined) {
-      if (Number(this.calculatePl(lastProfitLoss.profitRecord)) < 0) {
-        if (lastProfitLoss.lastStrategy === Strategy.Daytrade) {
-          this.increaseDayTradeRiskTolerance();
-        } else {
-          this.decreaseRiskTolerance();
-        }
-
-      } else if (Number(this.calculatePl(lastProfitLoss.profitRecord)) > 0) {
-        if (lastProfitLoss.lastStrategy === Strategy.Daytrade) {
-          this.decreaseDayTradeRiskTolerance();
-        } else {
-          this.increaseRiskTolerance();
-        }
-      } else {
-        try {
-          const backtestResults = await this.strategyBuilderService.getBacktestData('SH');
-
-          if (backtestResults && backtestResults.ml > 0.6) {
-            this.decreaseRiskTolerance();
-            this.increaseDayTradeRiskTolerance();
-          } else {
-            this.increaseRiskTolerance();
-            this.decreaseDayTradeRiskTolerance();
-          }
-        } catch (error) {
-          console.log(error);
-        }
+      if (backtestResults && backtestResults.ml > 0.7) {
+        this.increaseRiskTolerance();
+        this.increaseDayTradeRiskTolerance();
+      } else if (backtestResults && backtestResults.ml < 0.3) {
+        this.decreaseRiskTolerance();
+        this.decreaseDayTradeRiskTolerance();
       }
+    } catch (error) {
+      console.log(error);
     }
+    // const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
+    // if (lastProfitLoss && lastProfitLoss.profit !== undefined) {
+    //   if (Number(this.calculatePl(lastProfitLoss.profitRecord)) < 0) {
+    //     if (lastProfitLoss.lastStrategy === Strategy.Daytrade) {
+    //       this.increaseDayTradeRiskTolerance();
+    //     } else {
+    //       this.decreaseRiskTolerance();
+    //     }
+
+    //   } else if (Number(this.calculatePl(lastProfitLoss.profitRecord)) > 0) {
+    //     if (lastProfitLoss.lastStrategy === Strategy.Daytrade) {
+    //       this.decreaseDayTradeRiskTolerance();
+    //     } else {
+    //       this.increaseRiskTolerance();
+    //     }
+    //   } else {
+    //     try {
+    //       const backtestResults = await this.strategyBuilderService.getBacktestData('SPY');
+
+    //       if (backtestResults && backtestResults.ml > 0.7) {
+    //         this.increaseRiskTolerance();
+    //         this.increaseDayTradeRiskTolerance();
+    //       } else if (backtestResults && backtestResults.ml < 0.3) {
+    //         this.decreaseRiskTolerance();
+    //         this.decreaseDayTradeRiskTolerance();
+    //       }
+    //     } catch (error) {
+    //       console.log(error);
+    //     }
+    //   }
+    // }
     await this.getNewTrades();
   }
 
@@ -894,20 +911,20 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     (holding.primaryLegs[0].putCallInd !== holding.secondaryLegs[0].putCallInd);
   }
 
-  private hasProtectivePut(holding: PortfolioInfoHolding) {
+  private protectivePutCount(holding: PortfolioInfoHolding): number {
     if (holding.shares) {
       if (!holding.primaryLegs && holding.secondaryLegs) {
         if (holding.secondaryLegs[0].putCallInd === 'P') {
-          return true;
+          return holding.secondaryLegs.reduce((acc, curr) => acc + curr.quantity, 0);
         }
       } else if (holding.primaryLegs && !holding.secondaryLegs) {
         if (holding.primaryLegs[0].putCallInd === 'P') {
-          return true;
+          return holding.primaryLegs.reduce((acc, curr) => acc + curr.quantity, 0);
         }
       }
     }
 
-    return false;
+    return 0;
   }
 
   async findCurrentPositions() {
@@ -1067,6 +1084,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       } else if (!holding.primaryLegs && !holding.secondaryLegs) {
         putsNeeded = Math.floor((holding.shares / 100) - holding.primaryLegs.length) || 1; 
       }
+
+      putsNeeded -= this.protectivePutCount(holding);
 
       if (putsNeeded > 0) {
         const putOption = await this.strategyBuilderService.getProtectivePut(holding.name);
@@ -1531,6 +1550,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   unsubscribeStockFinder() {
     this.unsubscribe$.next();
     this.unsubscribe$.complete();
+  }
+
+  private replayLastDay() {
+
   }
 
   cleanUp() {
