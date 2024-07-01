@@ -74,6 +74,11 @@ class PortfolioService {
   }
 
   refreshAccessToken(accountId) {
+    if (!accountId || !this.accountStore[accountId]?.appKey ||
+      !this.accountStore[accountId]?.secret ||
+      !this.refreshTokensHash[accountId]) {
+      return Promise.reject(new Error('Missing credentials. Please log in.'));
+    }
     return charlesSchwabApi.refreshAccessToken(this.accountStore[accountId].appKey,
       this.accountStore[accountId].secret,
       this.refreshTokensHash[accountId]
@@ -84,12 +89,14 @@ class PortfolioService {
         timestamp: moment().valueOf(),
         token: data?.access_token || null
       }
+      return { accountId: accountId};
     })
-      .catch((e) => {
+      .catch(e => {
         if (e.toJSON) {
           const error = e.toJSON();
           console.log('error refreshing token:', JSON.stringify(error));
         }
+        return e;
       });
   }
 
@@ -186,19 +193,19 @@ class PortfolioService {
     if (!accountId || !this.access_token[accountId]) {
       console.log('missing access token for ', accountId, this.access_token);
       return this.renewAuth(accountId, reply)
-        .then(() => this.getTDIntraday(symbol, accountId));
+        .then(() => this.getIntradayPriceHistory(symbol, accountId));
     } else {
-      return this.getTDIntraday(symbol, accountId)
+      return this.getIntradayPriceHistory(symbol, accountId)
         .catch((error) => {
           console.log('Error retrieving intraday data ', error.error);
 
           return this.renewAuth(accountId, reply)
-            .then(() => this.getTDIntraday(symbol, accountId));
+            .then(() => this.getIntradayPriceHistory(symbol, accountId));
         });
     }
   }
 
-  getTDIntraday(symbol, accountId) {
+  getIntradayPriceHistory(symbol, accountId) {
     if (!accountId) {
       accountId = this.getAccountId();
     }
@@ -228,7 +235,7 @@ class PortfolioService {
 
   getIntradayV2(symbol, period = 2, frequencyType = 'minute', frequency = 1, reply = null) {
     return this.renewAuth(null, reply)
-      .then(() => this.getTDIntradayV2(symbol, period, frequencyType, frequency));
+      .then(() => this.getIntradayPriceHistoryV2(symbol, period, frequencyType, frequency));
   }
 
   getAccountId() {
@@ -243,7 +250,7 @@ class PortfolioService {
     return accountId;
   }
 
-  getTDIntradayV2(symbol, period, frequencyType, frequency) {
+  getIntradayPriceHistoryV2(symbol, period, frequencyType, frequency) {
     const accountId = this.getAccountId();
 
     if (!this.access_token[accountId] || !this.access_token[accountId].token) {
@@ -274,10 +281,10 @@ class PortfolioService {
 
   getIntradayV3(symbol, startDate = moment().subtract({ days: 1 }).valueOf(), endDate = moment().valueOf(), reply = null) {
     return this.renewAuth(null, reply)
-      .then(() => this.getTDIntradayV3(symbol, moment(startDate).valueOf(), moment(endDate).valueOf()));
+      .then(() => this.getIntradayPriceHistoryV3(symbol, moment(startDate).valueOf(), moment(endDate).valueOf()));
   }
 
-  getTDIntradayV3(symbol, startDate, endDate) {
+  getIntradayPriceHistoryV3(symbol, startDate, endDate) {
     const accountId = this.getAccountId();
 
     const query = `${charlesSchwabMarketDataUrl}pricehistory`;
@@ -303,8 +310,8 @@ class PortfolioService {
         return QuoteService.convertTdIntradayV2(symbol, response.candles);
       })
       .catch(error => {
-        console.log('Error on getTDIntradayV3 request ', error);
-        console.log('getTDIntradayV3 request ', symbol, startDate, endDate);
+        console.log('Error on getIntradayPriceHistoryV3 request ', error);
+        console.log('getIntradayPriceHistoryV3 request ', symbol, startDate, endDate);
 
         return error;
       });

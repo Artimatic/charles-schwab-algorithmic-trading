@@ -35,12 +35,18 @@ export class StrategyBuilderService {
   }
 
   async getBacktestData(symbol: string) {
+    this.lastRequest = moment();
     const recentBacktest = this.getRecentBacktest(symbol);
     if (recentBacktest) {
       return new Promise(function (resolve) {
-        setTimeout(resolve, 11000);
+        setTimeout(resolve, 1000);
       }).then(() => recentBacktest);
+    } else if (moment().diff(this.lastRequest) < 250) {
+      return new Promise(function (resolve) {
+        setTimeout(resolve, 20000);
+      }).then(() => this.getRecentBacktest(symbol));
     }
+
     const current = moment().format('YYYY-MM-DD');
     const start = moment().subtract(365, 'days').format('YYYY-MM-DD');
 
@@ -492,11 +498,11 @@ export class StrategyBuilderService {
     this.cartService.addToCart(order);
   }
 
-  addOptionOrder(symbol: string, 
-    primaryLegSymbol: string, 
+  addOptionOrder(symbol: string,
+    primaryLegSymbol: string,
     putCallInd: 'C' | 'P',
-    price: number, 
-    quantity, 
+    price: number,
+    quantity,
     side: 'Buy' | 'Sell') {
     if (symbol === 'TQQQ') {
       return null;

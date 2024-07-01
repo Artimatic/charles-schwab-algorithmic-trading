@@ -6,6 +6,7 @@ import * as algotrader from 'algotrader';
 import PortfolioService from '../portfolio/portfolio.service';
 
 import * as configurations from '../../config/environment';
+import portfolioService from '../portfolio/portfolio.service';
 
 const yahoo = {
   key: configurations.yahoo.key,
@@ -58,27 +59,7 @@ class QuoteService {
 
   getRawData(symbol, interval = '1d', range = '1d') {
     if (interval === '1m') {
-      return api.getHistoricalData(symbol, interval, range)
-        .then((data) => {
-          const close = _.get(data, 'chart.result[0].indicators.quote[0].close', []);
-
-          const quote = _.get(data, 'chart.result[0].indicators.quote[0]', []);
-
-          const timestamps = _.get(data, 'chart.result[0].timestamp', []);
-
-          close.forEach((val, idx) => {
-            if (!val) {
-              quote.close.splice(idx, 1);
-              quote.open.splice(idx, 1);
-              quote.high.splice(idx, 1);
-              quote.low.splice(idx, 1);
-              quote.volume.splice(idx, 1);
-              timestamps.splice(idx, 1);
-            }
-          });
-
-          return data;
-        });
+      return PortfolioService.getIntraday(symbol);
     } else {
       let endDate = moment().valueOf();
       let startDate = moment(endDate).subtract(30, 'years').valueOf();

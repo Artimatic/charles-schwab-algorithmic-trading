@@ -281,7 +281,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   requestQuotes() {
-    return this.backtestService.getTdIntraday(this.order.holding.symbol);
+    return this.backtestService.getIntradayPriceHistory(this.order.holding.symbol);
   }
 
   async runServerSideBacktest() {
@@ -589,6 +589,22 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   async processAnalysis(daytradeType, analysis, quote, timestamp) {
+    if (analysis.recommendation.toLowerCase() === 'sell' || analysis.recommendation.toLowerCase() === 'buy') {
+      let buys = '';
+      let sells = '';
+      for (const rec in analysis) {
+        if (analysis.hasOwnProperty(rec)) {
+          if (analysis[rec].toLowerCase && analysis[rec].toLowerCase() === 'bullish') {
+            buys += rec + ', ';
+          } else if (analysis[rec].toLowerCase && analysis[rec].toLowerCase() === 'bearish') {
+            sells += rec + ', ';
+          }
+        }
+      }
+      const log = `${moment().format()} ${analysis.name} Buys(${buys}) Sells(${sells})`;
+      const report = this.reportingService.addAuditLog(this.order.holding.symbol, log);
+      console.log(report);
+    }
     const initialQuantity = this.multiplierPreference.value * this.firstFormGroup.value.quantity;
     if (this.hasReachedOrderLimit()) {
       this.stop();

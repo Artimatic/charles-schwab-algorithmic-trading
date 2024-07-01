@@ -123,7 +123,7 @@ export class IntradayBacktestViewComponent implements OnInit {
   }
 
   requestQuotes(symbol: string) {
-    return this.backtestService.getTdIntraday(symbol).toPromise()
+    return this.backtestService.getIntradayPriceHistory(symbol).toPromise()
       .then((result) => {
         return result;
       });
