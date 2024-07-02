@@ -87,7 +87,7 @@ export class PortfolioService {
         accountId
       }
     };
-    return this.http.get('/api/portfolio/v2/positions/', options);
+    return this.http.get('/api/portfolio/v2/positions', options);
   }
 
   getResource(url: string): Observable<any> {
