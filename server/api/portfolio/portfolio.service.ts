@@ -58,6 +58,7 @@ class PortfolioService {
               timestamp: moment().valueOf(),
               token: data?.access_token || null
             };
+            console.log('data2', data);
           });
 
         reply.status(200).send(data);
@@ -89,7 +90,8 @@ class PortfolioService {
         timestamp: moment().valueOf(),
         token: data?.access_token || null
       }
-      return { accountId: accountId};
+      console.log('data1', data);
+      return Promise.resolve({ accountId: accountId});
     })
       .catch(e => {
         if (e.toJSON) {

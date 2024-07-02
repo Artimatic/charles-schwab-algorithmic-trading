@@ -434,7 +434,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
         };
 
         if (this.order.type === OrderTypes.strangle && this.order.side.toLowerCase() === 'buy') {
-          if ((Math.abs(this.startingPrice - buyOrder.price) / this.startingPrice) < 0.01) {
+          if (buyOrder.price && this.startingPrice && (Math.abs(this.startingPrice - buyOrder.price) / this.startingPrice) < 0.01) {
             this.buyStrangle();
           }
         } else {
@@ -674,8 +674,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
                 .subscribe((data: any[]) => {
                   console.log(`${this.order.holding.symbol} ml result: `, data[0].nextOutput);
                   const mlLog = `Ml next output: ${data[0].nextOutput}`;
-                  const mlReport = this.reportingService.addAuditLog(this.order.holding.symbol, mlLog);
-                  console.log(mlReport);
+                  this.reportingService.addAuditLog(this.order.holding.symbol, mlLog);
                   if (data[0].nextOutput > 0.6) {
                     if (!this.priceLowerBound || Number(quote) <= Number(this.priceLowerBound)) {
                       this.daytradeBuy(quote, orderQuantity, timestamp, analysis);
@@ -733,8 +732,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
               .subscribe((data: any[]) => {
                 console.log(`${this.order.holding.symbol} ml result: `, data[0].nextOutput);
                 const mlLog = `Ml next output: ${data[0].nextOutput}`;
-                const mlReport = this.reportingService.addAuditLog(this.order.holding.symbol, mlLog);
-                console.log(mlReport);
+                this.reportingService.addAuditLog(this.order.holding.symbol, mlLog);
                 if (data[0].nextOutput < 0.6) {
                   this.sendStopLoss(sellOrder);
                 }
@@ -842,7 +840,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
       const sellTime = moment.tz(`${moment().format('YYYY-MM-DD')} 15:30`, 'America/New_York').toDate();
       if (this.order.sellAtClose && moment().isAfter(moment(sellTime))) {
-        const log = `Current time: ${moment.tz('America/New_York').format()} is after ${sellTime} Is sell at close order: ${this.order.sellAtClose} Closing positions: ${closePrice}/${estimatedPrice}`;
+        const log = `${this.order.holding.name} Current time: ${moment.tz('America/New_York').format()} is after ${sellTime} Is sell at close order: ${this.order.sellAtClose} Closing positions: ${closePrice}/${estimatedPrice}`;
         this.reportingService.addAuditLog(this.order.holding.symbol, log);
         console.log(log);
         const stopLossOrder = this.daytradeService.createOrder(this.order.holding, 'Sell', this.positionCount, closePrice, signalTime);

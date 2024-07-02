@@ -55,8 +55,10 @@ export class DaytradeStrategiesService {
     } else {
       this.skipNextCheck[analysis.name] = true;
     }
-    if (this.states[analysis.name].length > 18) {
+    if (this.states[analysis.name] && this.states[analysis.name].length > 18) {
       this.states[analysis.name].shift();
+    } else {
+      this.states[analysis.name] = [];
     }
     this.states[analysis.name].push(analysis);
 

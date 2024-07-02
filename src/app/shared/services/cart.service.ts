@@ -52,7 +52,6 @@ export class CartService {
     if (noDup && order.quantity > 0) {
       if (order.side.toLowerCase() === 'sell') {
         this.sellOrders.push(order);
-        console.log(`Added ${order.side} ${order.holding.symbol}`, order);
 
         this.messageService.add({
           severity: 'success',
@@ -60,14 +59,12 @@ export class CartService {
         });
       } else if (order.side.toLowerCase() === 'buy') {
         this.buyOrders.push(order);
-        console.log(`Added ${order.side} ${order.holding.symbol}`, order);
         this.messageService.add({
           severity: 'success',
           summary: 'Buy order added to cart'
         });
       } else {
         this.otherOrders.push(order);
-        console.log(`Added ${order.side} ${order.holding.symbol}`, order);
 
         this.messageService.add({
           severity: 'success',
