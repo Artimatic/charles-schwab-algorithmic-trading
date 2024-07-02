@@ -373,7 +373,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
                 console.log('Error checking market hours', error);
               });
           }
-        } else if (Math.abs(moment().diff(moment(startStopTime.startDateTime, 'hours'))) > 9 && moment().diff(this.lastInterval, 'minutes') > 2) {
+        } else if (moment().diff(this.lastInterval, 'minutes') > 2) {
           this.runBackTest();
           this.lastInterval = moment();
           this.startFindingTrades();
