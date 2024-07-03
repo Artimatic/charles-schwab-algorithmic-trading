@@ -1,9 +1,9 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Subject, Subscription } from 'rxjs';
 import { TimerObservable } from 'rxjs-compat/observable/TimerObservable';
-import { finalize, takeUntil, take, map, tap, delay } from 'rxjs/operators';
+import { finalize, takeUntil, take, delay } from 'rxjs/operators';
 import * as moment from 'moment-timezone';
-import { AuthenticationService, BacktestService, CartService, DaytradeService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
+import { BacktestService, CartService, DaytradeService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
 import { SmartOrder } from '@shared/index';
 import { divide, floor, round } from 'lodash';
 import { DailyBacktestService } from '@shared/daily-backtest.service';
@@ -170,7 +170,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   lastOrderListIndex = 0;
 
-  lastInterval = moment();
+  lastInterval = null;
 
   lastMarketHourCheck = null;
   lastCredentialCheck = moment();
@@ -317,8 +317,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const startStopTime = this.globalSettingsService.getStartStopTime();
         if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 25) {
           this.lastCredentialCheck = moment();
-          // Renew token if needed
-          this.runBackTest();
+          try {
+            await this.runBackTest(true);
+          } catch(error) {
+            console.log('Error checking credentials');
+          }
         } else if (moment().isAfter(moment(startStopTime.endDateTime).subtract(8, 'minutes')) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
           this.buyAtClose();
@@ -361,20 +364,23 @@ export class AutopilotComponent implements OnInit, OnDestroy {
                     } else {
                       this.lastMarketHourCheck = moment();
                       this.isLive = false;
+                      this.runBackTest(true);
                     }
                   } else {
                     this.isLive = false;
+                    this.runBackTest(true);
                   }
                 } catch (error) {
                   console.log('error checking equity hours', error);
                   this.isLive = false;
+                  this.runBackTest(true);
                 }
               }, (error) => {
                 console.log('Error checking market hours', error);
               });
           }
-        } else if (moment().diff(this.lastInterval, 'minutes') > 2) {
-          this.runBackTest();
+        } else if (!this.lastInterval || moment().diff(this.lastInterval, 'minutes') > 2) {
+          await this.runBackTest();
           this.lastInterval = moment();
           this.startFindingTrades();
         }
@@ -747,9 +753,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     });
   }
 
-  runBackTest() {
+  async runBackTest(overwrite = false) {
     const stock = this.machineDaytradingService.getNextStock();
-    this.strategyBuilderService.getBacktestData(stock);
+    await this.strategyBuilderService.getBacktestData(stock, overwrite);
   }
 
   async findSwingtrades(cb = async (stock: string, mlResult: number, backtestResults: any) => { }, stockList: (PortfolioInfoHolding[] | any[]) = CurrentStockList) {

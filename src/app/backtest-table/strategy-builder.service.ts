@@ -34,13 +34,11 @@ export class StrategyBuilderService {
     return null;
   }
 
-  async getBacktestData(symbol: string) {
+  async getBacktestData(symbol: string, overwrite = false) {
     this.lastRequest = moment();
     const recentBacktest = this.getRecentBacktest(symbol);
-    if (recentBacktest) {
-      return new Promise(function (resolve) {
-        setTimeout(resolve, 1000);
-      }).then(() => recentBacktest);
+    if (recentBacktest && !overwrite) {
+      return Promise.resolve(recentBacktest);
     } else if (moment().diff(this.lastRequest) < 250) {
       return new Promise(function (resolve) {
         setTimeout(resolve, 20000);
