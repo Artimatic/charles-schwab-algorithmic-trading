@@ -379,9 +379,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
                 console.log('Error checking market hours', error);
               });
           }
-        } else if (!this.lastInterval || moment().diff(this.lastInterval, 'minutes') > 2) {
+        } else {
           await this.runBackTest();
-          this.lastInterval = moment();
           this.startFindingTrades();
         }
       });
