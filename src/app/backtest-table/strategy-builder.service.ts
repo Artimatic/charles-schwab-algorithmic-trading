@@ -42,7 +42,7 @@ export class StrategyBuilderService {
     } else if (moment().diff(this.lastRequest) < 250) {
       return new Promise(function (resolve) {
         setTimeout(resolve, 20000);
-      }).then(() => this.getRecentBacktest(symbol));
+      }).then(() => this.getBacktestData(symbol));
     }
 
     const current = moment().format('YYYY-MM-DD');
