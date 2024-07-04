@@ -6,10 +6,6 @@ class BBandBreakoutService {
     if (previousMfi < 16 && currentMfi > previousMfi){
         return this.getBBands(quotes.slice(1, -1), bbandPeriod, 2)
         .then(previousBband => {
-          console.log('previousBband', previousBband);
-          console.log('currentBBand', currentBBand);
-          console.log('currentMfi', currentMfi);
-          console.log('previousMfi', previousMfi);
           if (previousBband.length && previousBband[0].length) {
             if (quotes[quotes.length - 2] < previousBband[0][0] && quotes[quotes.length - 1] > currentBBand[0][0]) {
               return true;

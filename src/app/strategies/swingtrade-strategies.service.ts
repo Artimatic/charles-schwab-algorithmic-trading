@@ -9,7 +9,6 @@ export class SwingtradeStrategiesService {
   constructor() { }
 
   processSignals(backtest: StockBacktest): StockBacktest {
-    console.log('signals', backtest);
     //const lastSignal = backtest.signals[backtest.signals.length - 1];
     //const lowsFrequency = {};
     let highToLowSum = 0;

@@ -14,7 +14,6 @@ import { SwingtradeStrategiesService } from '../strategies/swingtrade-strategies
 export class StrategyBuilderService {
   orderHistory = {};
   correlationThreshold = 0.6;
-  lastRequest = null;
   sumNet = 0;
   countNet = 0;
 
@@ -35,16 +34,12 @@ export class StrategyBuilderService {
   }
 
   async getBacktestData(symbol: string, overwrite = false) {
-    this.lastRequest = moment();
+    console.log(`${moment().format('hh:mm')} ${symbol} backtest`);
+
     const recentBacktest = this.getRecentBacktest(symbol);
     if (recentBacktest && !overwrite) {
       return Promise.resolve(recentBacktest);
-    } else if (moment().diff(this.lastRequest) < 250) {
-      return new Promise(function (resolve) {
-        setTimeout(resolve, 20000);
-      }).then(() => this.getBacktestData(symbol));
     }
-
     const current = moment().format('YYYY-MM-DD');
     const start = moment().subtract(365, 'days').format('YYYY-MM-DD');
 
@@ -72,7 +67,8 @@ export class StrategyBuilderService {
       this.sumNet += indicatorResults.net;
       this.countNet++;
       const averageNet = (this.sumNet / this.countNet);
-      if (buySignals.length + sellSignals.length > 1 && indicatorResults.net > 100 && indicatorResults.net >= averageNet) {
+      console.log('net:', indicatorResults.net, 'average net:', averageNet)
+      //if (buySignals.length + sellSignals.length > 1 && indicatorResults.net > 100 && indicatorResults.net >= averageNet) {
         console.log('Found recommendation for', symbol);
         const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
         const optionsChain = optionsData.optionsChain.monthlyStrategyList;
@@ -99,7 +95,7 @@ export class StrategyBuilderService {
           lastVolume: indicatorResults.lastVolume || null,
           totalReturns: indicatorResults.totalReturns || null,
           lastPrice: indicatorResults.lastPrice || null,
-          ml: latestMlResult.value,
+          ml: latestMlResult ? latestMlResult.value : 0,
           impliedMovement: optionsData.move,
           optionsVolume: optionsVolume,
           marketCap: instruments[symbol]?.fundamental.marketCap,
@@ -114,7 +110,7 @@ export class StrategyBuilderService {
 
         this.addToResultStorage(tableObj);
         return tableObj;
-      }
+      //}
     } catch (error) {
       console.log(`Backtest table error ${symbol}`, new Date().toString(), error);
     }
