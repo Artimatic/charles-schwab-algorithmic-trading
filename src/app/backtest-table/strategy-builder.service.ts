@@ -34,8 +34,6 @@ export class StrategyBuilderService {
   }
 
   async getBacktestData(symbol: string, overwrite = false) {
-    console.log(`${moment().format('hh:mm')} ${symbol} backtest`);
-
     const recentBacktest = this.getRecentBacktest(symbol);
     if (recentBacktest && !overwrite) {
       return Promise.resolve(recentBacktest);
@@ -87,6 +85,8 @@ export class StrategyBuilderService {
         const tableObj = {
           recommendation: indicatorResults.recommendation,
           stock: indicatorResults.stock,
+          net: indicatorResults.net,
+          averageNet: averageNet,
           returns: indicatorResults.returns,
           total: indicatorResults.total,
           invested: indicatorResults.invested,

@@ -305,8 +305,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const lastPrice = price[holding.name].quote.lastPrice;
         const closePrice = price[holding.name].quote.closePrice;
         const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
-        console.log('analyse strangle', backtestResults && backtestResults.averageMove && Math.abs(lastPrice - closePrice) > backtestResults.averageMove);
-        if (backtestResults && backtestResults.averageMove && Math.abs(lastPrice - closePrice) > backtestResults.averageMove) {
+        console.log('analyse strangle', backtestResults, backtestResults.averageMove, Math.abs(lastPrice - closePrice) > backtestResults.averageMove);
+        if (backtestResults && backtestResults.averageMove && Math.abs(lastPrice - closePrice) > backtestResults.averageMove * 1.08) {
           console.log(`Large move detected for ${holding.name}. Selling strangle. Last price ${lastPrice}. Close price ${closePrice}.`);
           this.sellStrangle(holding);
         }
@@ -318,6 +318,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (this.timer) {
       this.timer.unsubscribe();
     }
+    this.developStrategy();
     this.timer = TimerObservable.create(1000, this.interval)
       .pipe(takeUntil(this.destroy$))
       .subscribe(async () => {
@@ -343,7 +344,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else if (moment().isAfter(moment(startStopTime.startDateTime)) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
           const isMarketOpened = await this.isMarketOpened();
-           if (isMarketOpened) {
+          if (isMarketOpened) {
             if (!this.developedStrategy) {
               this.developStrategy();
               return;
@@ -509,7 +510,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     //     }
     //   }
     // }
-    await this.getNewTrades();
+    // await this.getNewTrades();
     this.developedStrategy = true;
   }
 
@@ -520,7 +521,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
 
-    if ((Math.abs(price[symbol].closePrice - price[symbol].lastPrice) / price[symbol].closePrice) < 0.01 && backtestData?.optionsVolume > 230 && (prediction > 0.7 || prediction < 0.3)) {
+    if ((Math.abs(price[symbol].closePrice - price[symbol].lastPrice) / price[symbol].closePrice) < 0.01 &&
+      backtestData?.optionsVolume > 230 && (prediction > 0.7 || prediction < 0.3)) {
       let optionStrategy;
       if (prediction > 0.7) {
         optionStrategy = await this.strategyBuilderService.getCallTrade(symbol);
@@ -559,7 +561,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             await this.addDaytrade(stock.name);
             console.log('Added day trade', stock.name);
           } else {
-            console.log('Added buy from day trade strategy', stock.name);
+            console.log('Added buy', stock.name, 'backtest gains:', backtestData?.net, 'average gains', backtestData?.averageNet);
             await this.addBuy(stock);
           }
         }
