@@ -37,6 +37,7 @@ export interface DaytradeAlgos {
 }
 
 export interface BacktestResults {
+  symbol?: string;
   algo: string;
   recommendation?: string;
   orderHistory: any[];
@@ -289,7 +290,7 @@ class BacktestService {
         const testResults = this.backtestDaytradingIndicators(this.createDaytradeRecommendation,
           indicators,
           parameters);
-
+        testResults.symbol = symbol;
         return testResults;
       });
   }
@@ -800,6 +801,7 @@ class BacktestService {
           parameters);
 
         testResults.algo = 'All indicators';
+        testResults.symbol = symbol;
 
         return testResults;
       });

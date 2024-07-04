@@ -122,8 +122,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       setTimeout(async () => {
         if (!this.order) {
           console.log('Order not found', this);
-        }
-        if (this.order.holding.symbol === item.symbol || (this.order.id !== undefined && this.order.id === item.id) ||
+        } else if (this.order.holding.symbol === item.symbol || (this.order.id !== undefined && this.order.id === item.id) ||
           (this.machineControlled.value && this.order.id === 'MACHINE')) {
           if (item.reset) {
             this.setup();
