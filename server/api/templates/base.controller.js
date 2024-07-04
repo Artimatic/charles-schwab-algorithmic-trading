@@ -12,6 +12,9 @@ const ajv = new Ajv({
 export default class BaseController {
 
   static requestGetSuccessHandler(reply, data) {
+    reply.setHeader('Access-Control-Allow-Origin', ['*']);
+    reply.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
+    reply.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     reply.status(200).send(data);
   }
 
