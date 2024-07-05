@@ -510,7 +510,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     //     }
     //   }
     // }
-    // await this.getNewTrades();
+    await this.getNewTrades();
     this.developedStrategy = true;
   }
 
