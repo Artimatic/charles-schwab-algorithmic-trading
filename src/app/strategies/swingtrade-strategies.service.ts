@@ -1,11 +1,10 @@
 import { Injectable } from '@angular/core';
-import { StockBacktest } from '@shared/stock-backtest.interface';
+import { Recommendation, StockBacktest } from '@shared/stock-backtest.interface';
 
 @Injectable({
   providedIn: 'root'
 })
 export class SwingtradeStrategiesService {
-
   constructor() { }
 
   processSignals(backtest: StockBacktest): StockBacktest {

@@ -521,52 +521,56 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
 
-    if ((Math.abs(price[symbol].closePrice - price[symbol].lastPrice) / price[symbol].closePrice) < 0.01 &&
-      backtestData?.optionsVolume > 230 && (prediction > 0.7 || prediction < 0.3)) {
-      let optionStrategy;
-      if (prediction > 0.7) {
-        optionStrategy = await this.strategyBuilderService.getCallTrade(symbol);
-        const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
-        this.strategyBuilderService.addStrangle(optionStrategy.call.symbol + '/' + optionStrategy.put.symbol, price, optionStrategy);
-        console.log('Adding Bullish strangle', symbol, price, optionStrategy);
-      } else if (prediction < 0.3) {
-        optionStrategy = await this.strategyBuilderService.getPutTrade(symbol);
-        const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
-        this.strategyBuilderService.addStrangle(optionStrategy.put.symbol + '/' + optionStrategy.call.symbol, price, optionStrategy);
-        console.log('Adding Bearish strangle', symbol, price, optionStrategy);
-      }
-    } else if (prediction > 0.7) {
-      const stock: PortfolioInfoHolding = {
-        name: symbol,
-        pl: 0,
-        netLiq: 0,
-        shares: 0,
-        alloc: 0,
-        recommendation: 'None',
-        buyReasons: '',
-        sellReasons: '',
-        buyConfidence: 0,
-        sellConfidence: 0,
-        prediction: null
-      };
-      const backtestDate = this.getLastTradeDate();
-      try {
-        const trainingResults = await this.machineDaytradingService.trainStock(stock.name, backtestDate.subtract({ days: 3 }).format('YYYY-MM-DD'), backtestDate.add({ days: 2 }).format('YYYY-MM-DD'));
-        console.log(`Intraday training results for ${stock.name} Correct: ${trainingResults[0].correct} Guesses: ${trainingResults[0].guesses}`);
-        if (trainingResults[0].correct / trainingResults[0].guesses > 0.6 && trainingResults[0].guesses > 23) {
-          const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
-          if (!(lastProfitLoss && lastProfitLoss.profitRecord && lastProfitLoss.profitRecord[stock.name] && lastProfitLoss.profitRecord[stock.name] < 10)) {
-            const trainingMsg = `Day trade training results correct: ${trainingResults[0].correct}, guesses: ${trainingResults[0].guesses}`;
-            this.reportingService.addAuditLog(stock.name, trainingMsg);
-            await this.addDaytrade(stock.name);
-            console.log('Added day trade', stock.name);
-          } else {
-            console.log('Added buy', stock.name, 'backtest gains:', backtestData?.net, 'average gains', backtestData?.averageNet);
-            await this.addBuy(stock);
-          }
+    if (backtestData) {
+      if ((Math.abs(price[symbol].closePrice - price[symbol].lastPrice) / price[symbol].closePrice) < 0.01 &&
+        backtestData?.optionsVolume > 230 && (prediction > 0.7 || prediction < 0.3)) {
+        let optionStrategy;
+        if (prediction > 0.7) {
+          optionStrategy = await this.strategyBuilderService.getCallTrade(symbol);
+          const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
+          this.strategyBuilderService.addStrangle(optionStrategy.call.symbol + '/' + optionStrategy.put.symbol, price, optionStrategy);
+          console.log('Adding Bullish strangle', symbol, price, optionStrategy);
+        } else if (prediction < 0.3) {
+          optionStrategy = await this.strategyBuilderService.getPutTrade(symbol);
+          const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
+          this.strategyBuilderService.addStrangle(optionStrategy.put.symbol + '/' + optionStrategy.call.symbol, price, optionStrategy);
+          console.log('Adding Bearish strangle', symbol, price, optionStrategy);
         }
-      } catch (error) {
-        console.log('error getting training results ', error);
+      } else if (prediction > 0.7) {
+        const stock: PortfolioInfoHolding = {
+          name: symbol,
+          pl: 0,
+          netLiq: 0,
+          shares: 0,
+          alloc: 0,
+          recommendation: 'None',
+          buyReasons: '',
+          sellReasons: '',
+          buyConfidence: 0,
+          sellConfidence: 0,
+          prediction: null
+        };
+        const backtestDate = this.getLastTradeDate();
+        try {
+          const trainingResults = await this.machineDaytradingService.trainStock(stock.name, backtestDate.subtract({ days: 3 }).format('YYYY-MM-DD'), backtestDate.add({ days: 2 }).format('YYYY-MM-DD'));
+          console.log(`Intraday training results for ${stock.name} Correct: ${trainingResults[0].correct} Guesses: ${trainingResults[0].guesses}`);
+          if (trainingResults && trainingResults[0].correct / trainingResults[0].guesses > 0.6 && trainingResults[0].guesses > 23) {
+            const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
+            if (!(lastProfitLoss && lastProfitLoss.profitRecord && lastProfitLoss.profitRecord[stock.name] && lastProfitLoss.profitRecord[stock.name] < 10)) {
+              const trainingMsg = `Day trade training results correct: ${trainingResults[0].correct}, guesses: ${trainingResults[0].guesses}`;
+              this.reportingService.addAuditLog(stock.name, trainingMsg);
+              await this.addDaytrade(stock.name);
+              console.log('Added day trade', stock.name);
+            } else {
+              console.log('Added buy', stock.name, 'backtest gains:', backtestData?.net, 'average gains', backtestData?.averageNet);
+              await this.addBuy(stock);
+            }
+          }
+        } catch (error) {
+          console.log('error getting training results ', error);
+          console.log('Added buy', stock.name, 'backtest gains:', backtestData?.net, 'average gains', backtestData?.averageNet);
+          await this.addBuy(stock);
+        }
       }
     }
   }

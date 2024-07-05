@@ -9,13 +9,18 @@ export class DaytradeStrategiesService {
   states: { [key: string]: DaytradeIndicator[] } = {};
   buyStates: DaytradeIndicator[][] = [
     [
-      { bband: 'Neutral', bbandBreakout: 'Neutral', demark9: 'Neutral', macd: 'Neutral', mfi: 'Bearish', mfiTrade: 'Neutral', roc: 'Neutral', vwma: 'Bullish' },
-      { bband: 'Neutral', bbandBreakout: 'Neutral', demark9: 'Neutral', macd: 'Neutral', mfi: 'Bearish', mfiTrade: 'Neutral', roc: 'Neutral', vwma: 'Bullish' }
+      { bband: 'Bullish', bbandBreakout: 'Neutral', demark9: 'Neutral', macd: 'Neutral', mfi: 'Neutral', mfiTrade: 'Neutral', roc: 'Neutral', vwma: 'Bullish' },
+      { bband: 'Neutral', bbandBreakout: 'Neutral', demark9: 'Neutral', macd: 'Neutral', mfi: 'Bullish', mfiTrade: 'Neutral', roc: 'Neutral', vwma: 'Bullish' },
+      { bband: 'Neutral', bbandBreakout: 'Neutral', demark9: 'Neutral', macd: 'Bullish', mfi: 'Neutral', mfiTrade: 'Neutral', roc: 'Neutral', vwma: 'Bullish' }
     ]
   ];
 
-  sellStates = [
-
+  sellStates: DaytradeIndicator[][] = [
+    [
+      { bband: 'Bearish', bbandBreakout: 'Neutral', demark9: 'Neutral', macd: 'Neutral', mfi: 'Neutral', mfiTrade: 'Neutral', roc: 'Neutral', vwma: 'Bullish' },
+      { bband: 'Neutral', bbandBreakout: 'Neutral', demark9: 'Neutral', macd: 'Neutral', mfi: 'Bearish', mfiTrade: 'Neutral', roc: 'Neutral', vwma: 'Bullish' },
+      { bband: 'Neutral', bbandBreakout: 'Neutral', demark9: 'Neutral', macd: 'Bearish', mfi: 'Neutral', mfiTrade: 'Neutral', roc: 'Neutral', vwma: 'Bullish' }
+    ]
   ];
   constructor() { }
 

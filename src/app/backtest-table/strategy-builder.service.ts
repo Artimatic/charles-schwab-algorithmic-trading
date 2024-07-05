@@ -7,6 +7,7 @@ import * as moment from 'moment-timezone';
 import { Strangle } from '@shared/models/options';
 import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
 import { SwingtradeStrategiesService } from '../strategies/swingtrade-strategies.service';
+import { Indicators } from '@shared/stock-backtest.interface';
 
 @Injectable({
   providedIn: 'root'
@@ -33,6 +34,21 @@ export class StrategyBuilderService {
     return null;
   }
 
+  getBuySellSignals(lastSignal: Indicators) {
+    const buySignals = [];
+    const sellSignals = [];
+    for (const indicator in lastSignal.recommendation) {
+      if (lastSignal.recommendation.hasOwnProperty(indicator)) {
+        if (lastSignal.recommendation[indicator] === 'Bullish') {
+          buySignals.push(indicator);
+        } else if (lastSignal.recommendation[indicator] === 'Bearish') {
+          sellSignals.push(indicator);
+        }
+      }
+    }
+    return { buySignals, sellSignals };
+  }
+
   async getBacktestData(symbol: string, overwrite = false) {
     const recentBacktest = this.getRecentBacktest(symbol);
     if (recentBacktest && !overwrite) {
@@ -49,24 +65,20 @@ export class StrategyBuilderService {
       if (!indicatorResults.signals || !indicatorResults.signals.length) {
         return null;
       }
-      const lastSignal = indicatorResults.signals[indicatorResults.signals.length - 1];
-      const buySignals = [];
-      const sellSignals = [];
-      for (const indicator in lastSignal.recommendation) {
-        if (lastSignal.recommendation.hasOwnProperty(indicator)) {
-          if (lastSignal.recommendation[indicator] === 'Bullish') {
-            buySignals.push(indicator);
-          } else if (lastSignal.recommendation[indicator] === 'Bearish') {
-            sellSignals.push(indicator);
-          }
-        }
+      let counter = indicatorResults.signals.length - 1;
+      let { buySignals, sellSignals } = this.getBuySellSignals(indicatorResults.signals[counter]);
+
+      while (counter > indicatorResults.signals.length - 6) {
+        const currentSignalRecommendations = this.getBuySellSignals(indicatorResults.signals[counter]);
+        buySignals = buySignals.concat(currentSignalRecommendations.buySignals.filter(indicator => !buySignals.find(sig => sig === indicator)));
+        sellSignals = sellSignals.concat(currentSignalRecommendations.sellSignals.filter(indicator => !sellSignals.find(sig => sig === indicator)));
       }
 
       this.sumNet += indicatorResults.net;
       this.countNet++;
       const averageNet = (this.sumNet / this.countNet);
       console.log('net:', indicatorResults.net, 'average net:', averageNet)
-      //if (buySignals.length + sellSignals.length > 1 && indicatorResults.net > 100 && indicatorResults.net >= averageNet) {
+      if (buySignals.length + sellSignals.length > 3 && indicatorResults.net >= 0) {
         console.log('Found recommendation for', symbol);
         const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
         const optionsChain = optionsData.optionsChain.monthlyStrategyList;
@@ -110,7 +122,7 @@ export class StrategyBuilderService {
 
         this.addToResultStorage(tableObj);
         return tableObj;
-      //}
+      }
     } catch (error) {
       console.log(`Backtest table error ${symbol}`, new Date().toString(), error);
     }
