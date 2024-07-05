@@ -72,6 +72,7 @@ export class StrategyBuilderService {
         const currentSignalRecommendations = this.getBuySellSignals(indicatorResults.signals[counter]);
         buySignals = buySignals.concat(currentSignalRecommendations.buySignals.filter(indicator => !buySignals.find(sig => sig === indicator)));
         sellSignals = sellSignals.concat(currentSignalRecommendations.sellSignals.filter(indicator => !sellSignals.find(sig => sig === indicator)));
+        counter--;
       }
 
       this.sumNet += indicatorResults.net;
