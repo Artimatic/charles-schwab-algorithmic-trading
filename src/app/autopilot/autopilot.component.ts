@@ -576,130 +576,27 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
   }
 
-  async getNewTrades(strategy = this.strategyList[this.strategyCounter]) {
+  async getNewTrades() {
     this.findPatternService.buildTargetPatterns();
-    this.checkPersonalLists();
-    switch (strategy) {
-      case Strategy.Swingtrade: {
-        const callback = async (symbol: string, mlResult: number, backtestData) => {
-          if (mlResult > 0.65) {
+    if (!this.machineDaytradingService.getCurrentStockList()) {
+      this.machineDaytradingService.setCurrentStockList(CurrentStockList);
+    }
+    let stock;
+    const found = (name) => {
+      return Boolean(this.currentHoldings.find((value) => value.name === name));
+    };
+    let counter = this.machineDaytradingService.getCurrentStockList().length;
+    while (counter > 0 && (this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.maxTradeCount) {
+      do {
+        stock = this.machineDaytradingService.getNextStock();
+      } while (found(stock))
+      const backtestResults = await this.strategyBuilderService.getBacktestData(stock);
+      if (backtestResults) {
+        const price = await this.backtestService.getLastPriceTiingo({ symbol: stock }).toPromise();
 
-            if (backtestData?.optionsVolume > 500) {
-              const optionStrategy = await this.strategyBuilderService.getCallTrade(symbol);
-              const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
-              this.strategyBuilderService.addStrangle(optionStrategy.call.symbol + '/' + optionStrategy.put.symbol, price, optionStrategy);
-            } else {
-              const stock: PortfolioInfoHolding = {
-                name: symbol,
-                pl: 0,
-                netLiq: 0,
-                shares: 0,
-                alloc: 0,
-                recommendation: 'None',
-                buyReasons: '',
-                sellReasons: '',
-                buyConfidence: 0,
-                sellConfidence: 0,
-                prediction: null
-              };
-              const log = `Adding swing trade ${stock.name}`;
-              this.reportingService.addAuditLog(null, log);
-              console.log(log);
-              await this.addBuy(stock);
-            }
-          }
-        };
-
-        this.findSwingtrades(callback);
-        break;
+        this.findTradeCallBack(stock, price, backtestResults.ml, backtestResults);
       }
-      case Strategy.DaytradeFullList: {
-        const callback = async (symbol: string, prediction: number) => {
-          const stock: PortfolioInfoHolding = {
-            name: symbol,
-            pl: 0,
-            netLiq: 0,
-            shares: 0,
-            alloc: 0,
-            recommendation: 'None',
-            buyReasons: '',
-            sellReasons: '',
-            buyConfidence: 0,
-            sellConfidence: 0,
-            prediction: null
-          };
-          if (prediction > 0.7) {
-            const log = `Adding swing trade ${stock.name}`;
-            this.reportingService.addAuditLog(null, log);
-            console.log(log);
-            await this.addBuy(stock);
-          } else if (prediction < 0.4) {
-            const sellHolding = this.currentHoldings.find(holdingInfo => {
-              return holdingInfo.name === stock.name;
-            });
-            if (sellHolding) {
-              this.portfolioSell(sellHolding);
-            }
-          }
-        };
-
-        this.findSwingtrades(callback, Stocks);
-        break;
-      }
-      case Strategy.StateMachine:
-        this.findPatternService.developStrategy();
-        break;
-      case Strategy.DaytradeShort: {
-        this.findDaytradeShort();
-        break;
-      }
-      case Strategy.TrimHoldings: {
-        this.trimHoldings();
-        break;
-      }
-      case Strategy.Short: {
-        const callback = async (symbol: string, prediction: number, backtestData: any) => {
-          if (backtestData?.optionsVolume > 230) {
-            let optionStrategy;
-            if (prediction < 0.3) {
-              optionStrategy = await this.strategyBuilderService.getPutTrade(symbol);
-              const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
-              this.strategyBuilderService.addStrangle(optionStrategy.put.symbol + '/' + optionStrategy.call.symbol, price, optionStrategy);
-              console.log('Adding Bearish strangle', symbol, price, optionStrategy);
-            }
-          }
-        };
-
-        this.findSwingtrades(callback);
-      }
-      case Strategy.MLSpy:
-        try {
-          const backtestResults = await this.strategyBuilderService.getBacktestData('SH');
-          if (backtestResults && backtestResults.ml > 0.6) {
-            this.addBuy(this.createHoldingObj('SH'));
-            const sellHolding = this.currentHoldings.find(holdingInfo => {
-              return holdingInfo.name === 'TQQQ';
-            });
-            if (sellHolding) {
-              this.portfolioSell(sellHolding);
-            }
-          } else {
-            this.addBuy(this.createHoldingObj('TQQQ'));
-            const sellHolding = this.currentHoldings.find(holdingInfo => {
-              return holdingInfo.name === 'SH';
-            });
-            if (sellHolding) {
-              this.portfolioSell(sellHolding);
-            }
-          }
-        } catch (error) {
-          console.log(error);
-        }
-        break;
-      default: {
-        this.findSwingtrades(this.findTradeCallBack);
-        break;
-      }
+      counter--;
     }
   }
 
@@ -760,33 +657,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       console.log('Error finding new trade', error);
     }
 
-  }
-
-  async findSwingtrades(cb = async (stock: string, price: number, mlResult: number, backtestResults: any) => { }, stockList: (PortfolioInfoHolding[] | any[]) = CurrentStockList) {
-    if (stockList) {
-      this.machineDaytradingService.setCurrentStockList(stockList);
-    } else {
-      if (!this.machineDaytradingService.getCurrentStockList()) {
-        this.machineDaytradingService.setCurrentStockList(CurrentStockList);
-      }
-    }
-    let stock;
-    const found = (name) => {
-      return Boolean(this.currentHoldings.find((value) => value.name === name));
-    };
-    let counter = this.machineDaytradingService.getCurrentStockList().length;
-    while (counter > 0 && (this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.maxTradeCount) {
-      do {
-        stock = this.machineDaytradingService.getNextStock();
-      } while (found(stock))
-      const backtestResults = await this.strategyBuilderService.getBacktestData(stock);
-      if (backtestResults) {
-        const price = await this.backtestService.getLastPriceTiingo({ symbol: stock }).toPromise();
-
-        cb(stock, price, backtestResults.ml, backtestResults);
-      }
-      counter--;
-    }
   }
 
   async findDaytradeShort() {
