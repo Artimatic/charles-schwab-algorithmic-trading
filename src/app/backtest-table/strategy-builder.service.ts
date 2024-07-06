@@ -79,51 +79,49 @@ export class StrategyBuilderService {
       this.countNet++;
       const averageNet = (this.sumNet / this.countNet);
       console.log('net:', indicatorResults.net, 'average net:', averageNet)
-      if (buySignals.length + sellSignals.length > 3 && indicatorResults.net >= 0) {
-        console.log('Found recommendation for', symbol);
-        const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
-        const optionsChain = optionsData.optionsChain.monthlyStrategyList;
-        const instruments = await this.portfolioService.getInstrument(symbol).toPromise();
-        const callsCount = optionsData.optionsChain.monthlyStrategyList[0].optionStrategyList[0].secondaryLeg.totalVolume;
-        const putsCount = optionsData.optionsChain.monthlyStrategyList[0].optionStrategyList[0].primaryLeg.totalVolume;
-        const optionsVolume = Number(callsCount) + Number(putsCount);
-        let latestMlResult = null;
-        try {
-          latestMlResult = await this.aiPicksService.trainAndActivate(symbol);
-        } catch (error) {
-          console.log('Error training', error);
-          latestMlResult = await this.aiPicksService.trainAndActivate(symbol);
-        }
-
-        const tableObj = {
-          recommendation: indicatorResults.recommendation,
-          stock: indicatorResults.stock,
-          net: indicatorResults.net,
-          averageNet: averageNet,
-          returns: indicatorResults.returns,
-          total: indicatorResults.total,
-          invested: indicatorResults.invested,
-          profitableTrades: indicatorResults.profitableTrades,
-          totalTrades: indicatorResults.totalTrades,
-          lastVolume: indicatorResults.lastVolume || null,
-          totalReturns: indicatorResults.totalReturns || null,
-          lastPrice: indicatorResults.lastPrice || null,
-          ml: latestMlResult ? latestMlResult.value : 0,
-          impliedMovement: optionsData.move,
-          optionsVolume: optionsVolume,
-          marketCap: instruments[symbol]?.fundamental.marketCap,
-          strongbuySignals: [],
-          buySignals: buySignals,
-          strongsellSignals: [],
-          sellSignals: sellSignals,
-          high52: instruments[symbol]?.fundamental.high52,
-          backtestDate: moment().format(),
-          optionsChainLength: optionsChain.length
-        };
-
-        this.addToResultStorage(tableObj);
-        return tableObj;
+      console.log('Found recommendation for', symbol);
+      const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
+      const optionsChain = optionsData.optionsChain.monthlyStrategyList;
+      const instruments = await this.portfolioService.getInstrument(symbol).toPromise();
+      const callsCount = optionsData.optionsChain.monthlyStrategyList[0].optionStrategyList[0].secondaryLeg.totalVolume;
+      const putsCount = optionsData.optionsChain.monthlyStrategyList[0].optionStrategyList[0].primaryLeg.totalVolume;
+      const optionsVolume = Number(callsCount) + Number(putsCount);
+      let latestMlResult = null;
+      try {
+        latestMlResult = await this.aiPicksService.trainAndActivate(symbol);
+      } catch (error) {
+        console.log('Error training', error);
+        latestMlResult = await this.aiPicksService.trainAndActivate(symbol);
       }
+
+      const tableObj = {
+        recommendation: indicatorResults.recommendation,
+        stock: indicatorResults.stock,
+        net: indicatorResults.net,
+        averageNet: averageNet,
+        returns: indicatorResults.returns,
+        total: indicatorResults.total,
+        invested: indicatorResults.invested,
+        profitableTrades: indicatorResults.profitableTrades,
+        totalTrades: indicatorResults.totalTrades,
+        lastVolume: indicatorResults.lastVolume || null,
+        totalReturns: indicatorResults.totalReturns || null,
+        lastPrice: indicatorResults.lastPrice || null,
+        ml: latestMlResult ? latestMlResult.value : 0,
+        impliedMovement: optionsData.move,
+        optionsVolume: optionsVolume,
+        marketCap: instruments[symbol]?.fundamental.marketCap,
+        strongbuySignals: [],
+        buySignals: buySignals,
+        strongsellSignals: [],
+        sellSignals: sellSignals,
+        high52: instruments[symbol]?.fundamental.high52,
+        backtestDate: moment().format(),
+        optionsChainLength: optionsChain.length
+      };
+
+      this.addToResultStorage(tableObj);
+      return tableObj;
     } catch (error) {
       console.log(`Backtest table error ${symbol}`, new Date().toString(), error);
     }
