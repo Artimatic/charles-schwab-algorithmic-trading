@@ -514,12 +514,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.developedStrategy = true;
   }
 
-  async findTradeCallBack(symbol: string, prediction: number, backtestData: any) {
+  async findTradeCallBack(symbol: string, price, prediction: number, backtestData: any) {
     if (symbol === 'TQQQ') {
       return;
     }
-
-    const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
 
     if (backtestData && backtestData.buySignals.length + backtestData.sellSignals.length > 3 && backtestData.net >= 0) {
       if ((Math.abs(price[symbol].closePrice - price[symbol].lastPrice) / price[symbol].closePrice) < 0.01 &&
@@ -565,6 +563,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
               console.log('Added buy', stock.name, 'backtest gains:', backtestData?.net, 'average gains', backtestData?.averageNet);
               await this.addBuy(stock);
             }
+          } else {
+            console.log('Added buy', stock.name, 'backtest gains:', backtestData?.net, 'average gains', backtestData?.averageNet);
+            await this.addBuy(stock);
           }
         } catch (error) {
           console.log('error getting training results ', error);
@@ -752,7 +753,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       }
       const backtestResults = await this.strategyBuilderService.getBacktestData(stock, overwrite);
       if (backtestResults && (this.cartService.sellOrders.length + this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.maxTradeCount) {
-        this.findTradeCallBack(stock, backtestResults.ml, backtestResults);
+        const price = await this.backtestService.getLastPriceTiingo({ symbol: stock }).toPromise();
+        this.findTradeCallBack(stock, price, backtestResults.ml, backtestResults);
       }
     } catch (error) {
       console.log('Error finding new trade', error);
@@ -760,7 +762,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   }
 
-  async findSwingtrades(cb = async (stock: string, mlResult: number, backtestResults: any) => { }, stockList: (PortfolioInfoHolding[] | any[]) = CurrentStockList) {
+  async findSwingtrades(cb = async (stock: string, price: number, mlResult: number, backtestResults: any) => { }, stockList: (PortfolioInfoHolding[] | any[]) = CurrentStockList) {
     if (stockList) {
       this.machineDaytradingService.setCurrentStockList(stockList);
     } else {
@@ -779,7 +781,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       } while (found(stock))
       const backtestResults = await this.strategyBuilderService.getBacktestData(stock);
       if (backtestResults) {
-        cb(stock, backtestResults.ml, backtestResults);
+        const price = await this.backtestService.getLastPriceTiingo({ symbol: stock }).toPromise();
+
+        cb(stock, price, backtestResults.ml, backtestResults);
       }
       counter--;
     }
