@@ -469,10 +469,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     try {
       const backtestResults = await this.strategyBuilderService.getBacktestData('SPY');
 
-      if (backtestResults && backtestResults.ml > 0.7) {
+      if (backtestResults && backtestResults.ml > 0.5) {
         this.increaseRiskTolerance();
         this.increaseDayTradeRiskTolerance();
-      } else if (backtestResults && backtestResults.ml < 0.3) {
+      } else if (backtestResults && backtestResults.ml < 0.5) {
         this.decreaseRiskTolerance();
         this.decreaseDayTradeRiskTolerance();
       }
@@ -521,7 +521,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
 
-    if (backtestData) {
+    if (backtestData && backtestData.buySignals.length + backtestData.sellSignals.length > 3 && backtestData.net >= 0) {
       if ((Math.abs(price[symbol].closePrice - price[symbol].lastPrice) / price[symbol].closePrice) < 0.01 &&
         backtestData?.optionsVolume > 230 && (prediction > 0.7 || prediction < 0.3)) {
         let optionStrategy;
@@ -751,7 +751,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         stock = this.machineDaytradingService.getNextStock();
       }
       const backtestResults = await this.strategyBuilderService.getBacktestData(stock, overwrite);
-      if ((this.cartService.sellOrders.length + this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.maxTradeCount) {
+      if (backtestResults && (this.cartService.sellOrders.length + this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.maxTradeCount) {
         this.findTradeCallBack(stock, backtestResults.ml, backtestResults);
       }
     } catch (error) {

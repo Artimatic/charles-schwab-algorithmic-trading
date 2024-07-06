@@ -55,4 +55,5 @@ export interface Stock {
   backtestDate?: string;
   optionsChainLength?: number;
   daytradeIndicators?: any;
+  net?: number;
 }
