@@ -8,13 +8,13 @@ export class SwingtradeStrategiesService {
   constructor() { }
 
   processSignals(backtest: StockBacktest): StockBacktest {
-    //const lastSignal = backtest.signals[backtest.signals.length - 1];
+    const lastSignal = backtest.signals[backtest.signals.length - 1];
     //const lowsFrequency = {};
     let highToLowSum = 0;
     backtest.signals.forEach((sig) => {
       highToLowSum += sig.high - sig.low;
     });
-    backtest.averageMove = Number((highToLowSum / backtest.signals.length).toFixed(2));
+    backtest.averageMove = Number((highToLowSum / backtest.signals.length).toFixed(2)) || lastSignal.high - lastSignal.low;
     return backtest;
   }
 }
