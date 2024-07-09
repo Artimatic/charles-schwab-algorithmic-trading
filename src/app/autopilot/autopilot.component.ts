@@ -306,6 +306,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const closePrice = price[holding.name].quote.closePrice;
         const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
         console.log('analyse strangle', backtestResults, backtestResults.averageMove, Math.abs(lastPrice - closePrice) > backtestResults.averageMove);
+        if (!backtestResults.averageMove) {
+          backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
+        }
         if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove && Math.abs(lastPrice - closePrice) > backtestResults.averageMove * 1.08) {
           console.log(`Large move detected for ${holding.name}. Selling strangle. Last price ${lastPrice}. Close price ${closePrice}.`);
           this.sellStrangle(holding);
