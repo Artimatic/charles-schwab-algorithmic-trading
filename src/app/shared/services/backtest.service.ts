@@ -376,14 +376,9 @@ export class BacktestService {
     return this.http.get(`${BASE_URL}api/machine-learning/current-activation-data`, options);
   }
 
-  getDaytradeIndicators(quotes: any, period: number, stddev: number, mfiPeriod: number,
-    vwmaPeriod: number): Observable<any> {
+  getDaytradeIndicators(symbol: string): Observable<any> {
     const data = {
-      quotes,
-      period,
-      stddev,
-      mfiPeriod,
-      vwmaPeriod
+      symbol
     };
     return this.http.post(`${BASE_URL}api/backtest/daytrade-indicators`, data, {});
   }

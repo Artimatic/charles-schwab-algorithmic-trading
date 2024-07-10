@@ -78,8 +78,6 @@ export class StrategyBuilderService {
       this.sumNet += indicatorResults.net;
       this.countNet++;
       const averageNet = (this.sumNet / this.countNet);
-      console.log('net:', indicatorResults.net, 'average net:', averageNet)
-      console.log('Found recommendation for', symbol);
       const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
       const optionsChain = optionsData.optionsChain.monthlyStrategyList;
       const instruments = await this.portfolioService.getInstrument(symbol).toPromise();

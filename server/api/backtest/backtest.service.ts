@@ -124,25 +124,30 @@ class BacktestService {
     return { perfectSell, perfectBuy };
   }
 
-  getCurrentDaytradeIndicators(symbol, period, dataSource = 'td'): Promise<Indicators> {
+  processIndicators(intradayObj, period: number) {
     const getIndicatorQuotes = [];
+
+    const quotes = (intradayObj as any).candles;
+    _.forEach(quotes, (value, key) => {
+      const idx = Number(key);
+      const minLength = idx - period > 0 ? idx - period : idx - 14;
+      const q = quotes.slice(minLength, idx);
+      if (q.length > 0) {
+        getIndicatorQuotes.push(this.initStrategy(q));
+      }
+    });
+    return Promise.all(getIndicatorQuotes)
+      .then((indicators: Indicators[]) => {
+        indicators = this.addOnDaytradeIndicators(indicators);
+        return indicators[indicators.length - 1];
+      });
+  }
+
+  getCurrentDaytradeIndicators(symbol, period = 80, dataSource = 'td'): Promise<Indicators> {
 
     return DaytradeRecommendations.getIntradayQuotes(symbol, dataSource)
       .then(intradayObj => {
-        const quotes = (intradayObj as any).candles;
-        _.forEach(quotes, (value, key) => {
-          const idx = Number(key);
-          const minLength = idx - period > 0 ? idx - period : idx - 14;
-          const q = quotes.slice(minLength, idx);
-          if (q.length > 0) {
-            getIndicatorQuotes.push(this.initStrategy(q));
-          }
-        });
-        return Promise.all(getIndicatorQuotes)
-          .then((indicators: Indicators[]) => {
-            indicators = this.addOnDaytradeIndicators(indicators);
-            return indicators[indicators.length - 1];
-          });
+        return this.processIndicators(intradayObj, period);
       })
       .catch(err => {
         console.log('ERROR! getIntradayV2', err);
@@ -747,25 +752,13 @@ class BacktestService {
 
   initDaytradeStrategy(symbol, startDate, currentDate, parameters): Promise<Indicators[]> {
     const minQuotes = parameters.minQuotes;
-    const getIndicatorQuotes = [];
 
     return QuoteService.queryForIntraday(symbol, startDate, currentDate)
       .then(quotes => {
         if (quotes.length === 0) {
           console.log(`No quotes returned for ${startDate} - ${currentDate}`);
         }
-
-        _.forEach(quotes, (value, key) => {
-          const idx = Number(key);
-          if (idx > minQuotes) {
-            const q = quotes.slice(idx - minQuotes, idx);
-            getIndicatorQuotes.push(this.initStrategy(q));
-          }
-        });
-        return Promise.all(getIndicatorQuotes)
-          .then((indicators: Indicators[]) => {
-            return this.addOnDaytradeIndicators(indicators);
-          });
+        return this.processIndicators(quotes, minQuotes);
       });
   }
 
