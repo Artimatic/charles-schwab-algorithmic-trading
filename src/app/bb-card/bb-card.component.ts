@@ -122,6 +122,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       setTimeout(async () => {
         if (!this.order) {
           console.log('Order not found', this);
+          this.ngOnDestroy();
         } else if (this.order.holding.symbol === item.symbol || (this.order.id !== undefined && this.order.id === item.id) ||
           (this.machineControlled.value && this.order.id === 'MACHINE')) {
           if (item.reset) {
@@ -624,17 +625,17 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
         ).toPromise();
       const strangleOrderDescription = calls.concat(puts).map(v => v.description).join(',');
       this.reportingService.addAuditLog(this.order.holding.symbol, `Selling ${strangleOrderDescription}`);
-
+      console.log(`Selling ${strangleOrderDescription}`);
       if (callsTotalPrice > putsTotalPrice) {
         if (analysis.recommendation.toLowerCase() === 'sell') {
-          if (mlResult && (mlResult as any)?.nextOutput < 0.4) {
+          if (mlResult && (mlResult as any)?.nextOutput < 0.5) {
             this.portfolioService.sendMultiOrderSell(calls,
               puts, callsTotalPrice + putsTotalPrice).subscribe();
           }
         }
       } else {
         if (analysis.recommendation.toLowerCase() === 'buy') {
-          if (mlResult && (mlResult as any)?.nextOutput > 0.6) {
+          if (mlResult && (mlResult as any)?.nextOutput > 0.5) {
             this.portfolioService.sendMultiOrderSell(calls,
               puts, callsTotalPrice + putsTotalPrice).subscribe();
           }

@@ -6,6 +6,7 @@ import BaseController from '../templates/base.controller';
 import BacktestService from './backtest.service';
 import MfiService from './mfi.service';
 import BacktestAggregationService from './backtest-aggregation.service';
+import DaytradeRecommendations from './daytrade-recommendations';
 
 class BacktestController extends BaseController {
 
@@ -220,7 +221,7 @@ class BacktestController extends BaseController {
   }
 
   getDaytradeIndicators(request, response) {
-    BacktestService.getCurrentDaytradeIndicators(request.body.symbol, request.body.period, request.body.dataSource)
+    BacktestService.processIndicators(request.body.quotes, request.body.period)
       .then((data) => BaseController.requestGetSuccessHandler(response, data))
       .catch((err) => BaseController.requestErrorHandler(response, err));
   }

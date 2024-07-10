@@ -13,20 +13,20 @@ export enum OrderType {
 export interface Recommendation {
   name?: string,
   time?: string,
-  recommendation: OrderType;
-  mfi?: DaytradeRecommendation;
-  roc?: DaytradeRecommendation;
-  bband?: DaytradeRecommendation;
-  vwma?: DaytradeRecommendation;
-  mfiTrade?: DaytradeRecommendation;
-  macd?: DaytradeRecommendation;
-  demark9?: DaytradeRecommendation;
+  recommendation?: OrderType;
+  mfi: DaytradeRecommendation;
+  roc: DaytradeRecommendation;
+  bband: DaytradeRecommendation;
+  vwma: DaytradeRecommendation;
+  mfiTrade: DaytradeRecommendation;
+  macd: DaytradeRecommendation;
+  demark9: DaytradeRecommendation;
   mfiLow?: DaytradeRecommendation;
   mfiDivergence?: DaytradeRecommendation;
   mfiDivergence2?: DaytradeRecommendation;
   overboughtMomentum?: DaytradeRecommendation;
   data?: any;
-  bbandBreakout?: DaytradeRecommendation;
+  bbandBreakout: DaytradeRecommendation;
 }
 
 export interface Indicators {
