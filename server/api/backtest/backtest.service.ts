@@ -126,7 +126,6 @@ class BacktestService {
 
   processIndicators(intradayObj, period: number) {
     const getIndicatorQuotes = [];
-    console.log('intradayObj000', intradayObj.length, Boolean(intradayObj.candles));
     const quotes = intradayObj.candles ? intradayObj.candles : intradayObj;
     _.forEach(quotes, (value, key) => {
       const idx = Number(key);
