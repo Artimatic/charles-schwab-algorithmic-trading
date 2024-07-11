@@ -146,7 +146,6 @@ class BacktestService {
 
     return DaytradeRecommendations.getIntradayQuotes(symbol, dataSource)
       .then(intradayObj => {
-        console.log('getCurrentDaytradeIndicators', intradayObj);
         return this.processIndicators(intradayObj, period);
       })
       .then(indicators => {
@@ -295,7 +294,6 @@ class BacktestService {
   runDaytradeBacktest(symbol, currentDate, startDate, parameters) {
     return this.initDaytradeStrategy(symbol, startDate, currentDate, parameters)
       .then(indicators => {
-        console.log('runDaytradeBacktest indicators', indicators);
         const testResults = this.backtestDaytradingIndicators(this.createDaytradeRecommendation,
           indicators,
           parameters);
@@ -759,7 +757,6 @@ class BacktestService {
 
     return QuoteService.queryForIntraday(symbol, startDate, currentDate)
       .then(quotes => {
-        console.log('initDaytradeStrategy quotes', quotes);
         if (quotes.length === 0) {
           console.log(`No quotes returned for ${startDate} - ${currentDate}`);
         }
