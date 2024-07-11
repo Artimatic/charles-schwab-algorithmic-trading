@@ -276,7 +276,16 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.backtestService.getDaytradeIndicators('SPY').subscribe(data => {
             console.log('daytrade indicators', data);
           });
-          this.backtestService.getDaytradeRecommendation('HUBS', null, null, { minQuotes: 81 }).subscribe(data => console.log('getDaytradeRecommendation', data));
+          this.backtestService.getDaytradeRecommendation('SPY', null, null, { minQuotes: 81 }).subscribe(data => console.log('getDaytradeRecommendation', data));
+          this.machineLearningService
+          .trainDaytrade('SPY',
+            moment().add({ days: 1 }).format('YYYY-MM-DD'),
+            moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
+            1,
+            this.globalSettingsService.daytradeAlgo
+          ).subscribe(data => {
+            console.log('ml daytrade data', data);
+          });
         }
       },
       {

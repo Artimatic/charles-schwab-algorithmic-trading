@@ -18,15 +18,15 @@ class IntradayPredicationService extends PredictionService {
   train(symbol, startDate, endDate, trainingSize, featureUse) {
     return this.getQuotes(symbol, moment(startDate).valueOf(), moment(endDate).valueOf())
       .then((data) => {
-        console.log('Got quotes ', data[0].date, data[data.length - 1].date);
+        if (!data) {
+          console.log('Get quotes failed');
+        }
         return QuoteService.postIntradayData(data);
       })
       .catch((error) => {
         console.error('Error posting intraday data: ', error.message);
       })
       .then(() => {
-        console.log('Get backtest ', symbol, startDate, endDate);
-
         return BacktestService.runDaytradeBacktest(symbol, endDate, startDate,
           {
             lossThreshold: 0.003,
@@ -86,8 +86,6 @@ class IntradayPredicationService extends PredictionService {
 
   processBacktestResults(results: BacktestResults, featureUse): any[] {
     const signals = results.signals;
-    console.log('Got backtest: ', signals[0].date, signals[signals.length - 1].date);
-
     const finalDataSet = [];
     signals.forEach((signal, idx) => {
       if (this.withinBounds(idx, signals.length)) {

@@ -126,8 +126,7 @@ class BacktestService {
 
   processIndicators(intradayObj, period: number) {
     const getIndicatorQuotes = [];
-
-    const quotes = (intradayObj as any).candles;
+    const quotes = intradayObj.candles ? intradayObj.candles : intradayObj;
     _.forEach(quotes, (value, key) => {
       const idx = Number(key);
       const minLength = idx - period > 0 ? idx - period : idx - 14;
@@ -138,8 +137,7 @@ class BacktestService {
     });
     return Promise.all(getIndicatorQuotes)
       .then((indicators: Indicators[]) => {
-        indicators = this.addOnDaytradeIndicators(indicators);
-        return indicators[indicators.length - 1];
+        return this.addOnDaytradeIndicators(indicators);
       });
   }
 
@@ -148,6 +146,9 @@ class BacktestService {
     return DaytradeRecommendations.getIntradayQuotes(symbol, dataSource)
       .then(intradayObj => {
         return this.processIndicators(intradayObj, period);
+      })
+      .then(indicators => {
+        return indicators[indicators.length - 1];
       })
       .catch(err => {
         console.log('ERROR! getIntradayV2', err);
