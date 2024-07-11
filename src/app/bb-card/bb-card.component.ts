@@ -399,17 +399,27 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   incrementBuy(order) {
-    this.orders.push(order);
-    this.buyCount += order.quantity;
-    this.positionCount += order.quantity;
+    if (order) {
+      this.orders.push(order);
+      this.buyCount += order.quantity;
+      this.positionCount += order.quantity;
+    } else {
+      this.buyCount += order.quantity;
+      this.positionCount += 1;
+    }
     this.order.positionCount = this.positionCount;
     this.cartService.updateOrder(this.order);
   }
 
-  incrementSell(order) {
-    this.orders.push(order);
-    this.sellCount += order.quantity;
-    this.positionCount -= order.quantity;
+  incrementSell(order = null) {
+    if (order) {
+      this.orders.push(order);
+      this.sellCount += order.quantity;
+      this.positionCount -= order.quantity;
+    } else {
+      this.sellCount += 1;
+      this.positionCount -= 1;
+    }
     this.order.positionCount = this.positionCount;
     this.cartService.updateOrder(this.order);
   }
@@ -628,14 +638,16 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       console.log(`Selling ${strangleOrderDescription}`);
       if (callsTotalPrice > putsTotalPrice) {
         if (analysis.recommendation.toLowerCase() === 'sell') {
-          if (mlResult && (mlResult as any)?.nextOutput < 0.5) {
+          if (mlResult && mlResult[0].nextOutput < 0.5 || !mlResult) {
+            this.incrementSell();
             this.portfolioService.sendMultiOrderSell(calls,
               puts, callsTotalPrice + putsTotalPrice).subscribe();
           }
         }
       } else {
         if (analysis.recommendation.toLowerCase() === 'buy') {
-          if (mlResult && (mlResult as any)?.nextOutput > 0.5) {
+          if (mlResult && mlResult[0].nextOutput > 0.5 || !mlResult) {
+            this.incrementSell();
             this.portfolioService.sendMultiOrderSell(calls,
               puts, callsTotalPrice + putsTotalPrice).subscribe();
           }

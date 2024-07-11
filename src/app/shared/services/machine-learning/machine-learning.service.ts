@@ -5,8 +5,19 @@ import {
 } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { AiPicksPredictionDate } from '../ai-picks.service';
 
 const BASE_URL = environment.appUrl;
+
+interface MLResult {
+  nextOutput: number;
+  algorithm: string;
+  correct: number;
+  guesses: number;
+  predictionHistory: AiPicksPredictionDate[];
+  score: number;
+  symbol: string;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -35,7 +46,7 @@ export class MachineLearningService {
     if (features) {
       options.params.features = String(features);
     }
-    return this.http.get(`${BASE_URL}api/machine-learning/v3/train`,
+    return this.http.get<MLResult[]>(`${BASE_URL}api/machine-learning/v3/train`,
       options);
   }
 

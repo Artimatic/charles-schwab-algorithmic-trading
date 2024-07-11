@@ -464,7 +464,7 @@ class PortfolioService {
             session: 'NORMAL',
             duration: 'DAY',
             orderStrategyType: 'SINGLE',
-            complexOrderStrategyType: 'CUSTOM',
+            complexOrderStrategyType: 'STRANGLE',
             price: price,
             orderLegCollection
           }
@@ -514,7 +514,7 @@ class PortfolioService {
         session: extendedHours ? 'SEAMLESS' : 'NORMAL',
         duration: 'DAY',
         orderStrategyType: 'SINGLE',
-        complexOrderStrategyType: 'CUSTOM',
+        complexOrderStrategyType: 'STRANGLE',
         price: price,
         orderLegCollection: [
           {

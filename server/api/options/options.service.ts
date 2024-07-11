@@ -73,6 +73,17 @@ class OptionService {
   calculateImpliedMove(accountId, symbol, strikeCount, optionType, minExpiration = 29, response) {
     return PortfolioService.getOptionsStrangle(accountId, symbol, strikeCount, optionType, response)
       .then((strangleOptionsChain: OptionsChain) => {
+        if (!strangleOptionsChain || !strangleOptionsChain.monthlyStrategyList) {
+          console.log('monthlyStrategyList not found', strangleOptionsChain);
+          return {
+            move: null,
+            upperPrice: null,
+            lowerPrice: null,
+            strategyCost: null,
+            strategy: null,
+            optionsChain: strangleOptionsChain
+          };
+        }
         const strategyList = strangleOptionsChain.monthlyStrategyList.find(element => element.daysToExp >= minExpiration);
         const goal = strangleOptionsChain.underlyingPrice;
 
