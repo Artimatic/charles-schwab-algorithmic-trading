@@ -48,7 +48,7 @@ export class SimulationChartComponent implements OnInit {
             radius: 6
           },
           name: `${info}`,
-          data: analysis
+          analysis
         };
       case 'BUY':
         return {
@@ -59,13 +59,13 @@ export class SimulationChartComponent implements OnInit {
             radius: 6
           },
           name: `${info}`,
-          data: analysis
+          analysis
         };
       default:
         return {
           y: closePrice,
           name: `${info}`,
-          data: analysis
+          analysis
         };
     }
   }
@@ -101,10 +101,10 @@ export class SimulationChartComponent implements OnInit {
   simulateIntraday(symbol: string) {
     this.symbol = symbol;
     const clickHandler = (event) => {
-      this.lastSelectedSignal = event.point.data;
+      this.lastSelectedSignal = event.point.analysis;
       this.currentState.push(this.convertPointToRecommendation(event.point.name));
       this.currentState = [].concat(this.currentState);
-      console.log(event);
+      console.log(this.lastSelectedSignal);
     };
 
     const start = moment().subtract({ days: 3 }).format('YYYY-MM-DD');
@@ -160,7 +160,7 @@ export class SimulationChartComponent implements OnInit {
       const queueItem: AlgoQueueItem = {
         symbol: this.symbol,
         reset: false,
-        analysis: this.lastSelectedSignal.data,
+        analysis: this.lastSelectedSignal,
         ml: null
       };
       this.tradeService.algoQueue.next(queueItem);
