@@ -10,6 +10,7 @@ import * as moment from 'moment-timezone';
 import { environment } from '../../../environments/environment';
 import { AuthenticationService } from './authentication.service';
 import { delay } from 'rxjs/operators';
+import { Recommendation } from '@shared/stock-backtest.interface';
 
 const BASE_URL = environment.appUrl;
 
@@ -376,11 +377,12 @@ export class BacktestService {
     return this.http.get(`${BASE_URL}api/machine-learning/current-activation-data`, options);
   }
 
-  getDaytradeIndicators(symbol: string): Observable<any> {
+  getDaytradeIndicators(quotes: string, period: number): Observable<any> {
     const data = {
-      symbol
+      quotes,
+      period
     };
-    return this.http.post(`${BASE_URL}api/backtest/daytrade-indicators`, data, {});
+    return this.http.post<Recommendation>(`${BASE_URL}api/backtest/daytrade-indicators`, data, {});
   }
 
   getDaytradeBacktest(symbol: any, currentDate: string, startDate: string,
@@ -404,6 +406,18 @@ export class BacktestService {
       dataSource
     };
     return this.http.post(`${BASE_URL}api/backtest/daytrade-recommendation`, data, {});
+  }
+
+  getDaytradeRecommendationFn(symbol: string, price: number, paidPrice: number,
+    parameters: DaytradeParameters, indicators): Observable<any> {
+    const data = {
+      symbol,
+      price,
+      paidPrice,
+      parameters,
+      indicators
+    };
+    return this.http.post(`${BASE_URL}api/backtest/recommendation-fn`, data, {});
   }
 
   calibrateDaytrade(symbols: string[], currentDate: string, startDate: string): Observable<any> {

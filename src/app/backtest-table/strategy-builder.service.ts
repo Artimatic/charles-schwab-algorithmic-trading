@@ -79,11 +79,16 @@ export class StrategyBuilderService {
       this.countNet++;
       const averageNet = (this.sumNet / this.countNet);
       const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
-      const optionsChain = optionsData.optionsChain.monthlyStrategyList;
+      let optionsVolume = null;
+      let optionsChain = [];
+      if (optionsData.optionsChain.monthlyStrategyList) {
+        optionsChain = optionsData.optionsChain.monthlyStrategyList;
+        const callsCount = optionsData.optionsChain.monthlyStrategyList[0].optionStrategyList[0].secondaryLeg.totalVolume;
+        const putsCount = optionsData.optionsChain.monthlyStrategyList[0].optionStrategyList[0].primaryLeg.totalVolume;
+        optionsVolume = Number(callsCount) + Number(putsCount);
+      }
       const instruments = await this.portfolioService.getInstrument(symbol).toPromise();
-      const callsCount = optionsData.optionsChain.monthlyStrategyList[0].optionStrategyList[0].secondaryLeg.totalVolume;
-      const putsCount = optionsData.optionsChain.monthlyStrategyList[0].optionStrategyList[0].primaryLeg.totalVolume;
-      const optionsVolume = Number(callsCount) + Number(putsCount);
+
       let latestMlResult = null;
       try {
         latestMlResult = await this.aiPicksService.trainAndActivate(symbol);
@@ -109,12 +114,12 @@ export class StrategyBuilderService {
         ml: latestMlResult ? latestMlResult.value : null,
         impliedMovement: optionsData.move,
         optionsVolume: optionsVolume,
-        marketCap: instruments[symbol]?.fundamental.marketCap,
+        marketCap: instruments[symbol] ? instruments[symbol]?.fundamental.marketCap : instruments[0]?.fundamental.marketCap,
         strongbuySignals: [],
         buySignals: buySignals,
         strongsellSignals: [],
         sellSignals: sellSignals,
-        high52: instruments[symbol]?.fundamental.high52,
+        high52: instruments[symbol] ? instruments[symbol]?.fundamental.high52 : instruments[0]?.fundamental.high52,
         backtestDate: moment().format(),
         optionsChainLength: optionsChain.length
       };

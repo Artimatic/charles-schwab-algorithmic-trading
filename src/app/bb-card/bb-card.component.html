@@ -42,9 +42,6 @@
         <label for="float-input">Orders</label>
       </span>
       <div class="bb-form-field">
-        <p-checkbox formControlName="useML" label="Enable machine learning" (onChange)="checkMLService()"></p-checkbox>
-      </div>
-      <div class="bb-form-field">
         <p-dropdown [options]="algorithmList" [formControl]="selectedAlgorithm"
           optionLabel="Select an Algorithm"></p-dropdown>
       </div>
@@ -78,7 +75,7 @@
         <p-chip label="Stalled"></p-chip>
       </div>
       <div>
-        Orders Submitted: {{ buyCount + sellCount}}/{{firstFormGroup.value.quantity || 0}} shares
+        Orders Submitted: {{ order.buyCount + order.sellCount}}/{{firstFormGroup.value.quantity || 0}} shares
       </div>
       <div class="toolbar-content" fxLayout fxLayout.xs="column" fxLayoutAlign="center center" fxLayoutGap="10px"
         fxLayoutGap.xs="0">
@@ -138,13 +135,7 @@
           <button pButton class="p-button-info" (click)="backtest()">Backtest</button>
         </div>
         <div class="card-actions">
-          <button pButton class="p-button-info" (click)="test()">Test</button>
-        </div>
-        <div class="card-actions">
-          <button pButton class="p-button-info" (click)="buyAll()">Buy All</button>
-        </div>
-        <div class="card-actions">
-          <button pButton class="p-button-info" (click)="sellAll()">Sell All</button>
+          <button pButton class="p-button-info" (click)="simulate()">Simulate</button>
         </div>
         <div class="card-actions">
           <button pButton class="p-button-info" (click)="buyStrangle()">Buy Strangle</button>

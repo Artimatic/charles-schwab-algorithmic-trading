@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
+import { Recommendation } from '@shared/stock-backtest.interface';
 import { Subject } from 'rxjs';
+import { TrainingResults } from 'src/app/machine-learning/ask-model/ask-model.component';
 
 export interface AlgoQueueItem  {
   symbol: string;
@@ -7,7 +9,9 @@ export interface AlgoQueueItem  {
   reset: boolean;
   updateOrder?: boolean;
   triggerMlBuySell?: boolean;
-  delay?: number
+  delay?: number;
+  analysis?: Recommendation;
+  ml?: TrainingResults;
 }
 
 @Injectable()

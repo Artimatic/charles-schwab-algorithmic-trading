@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { DaytradeIndicator, DaytradeRecommendation, Recommendation } from '@shared/stock-backtest.interface';
+import { Recommendation, DaytradeRecommendation } from '@shared/stock-backtest.interface';
 import { BaseStrategiesService } from './base-strategies.service';
 
 @Injectable({
@@ -7,7 +7,7 @@ import { BaseStrategiesService } from './base-strategies.service';
 })
 export class DaytradeStrategiesService extends BaseStrategiesService {
   skipNextCheck = {};
-  states: { [key: string]: DaytradeIndicator[] } = {};
+  states: { [key: string]: Recommendation[] } = {};
   buyStates: Recommendation[][] = [
     [
       { bband: DaytradeRecommendation.Bullish, bbandBreakout: DaytradeRecommendation.Neutral, demark9: DaytradeRecommendation.Neutral, macd: DaytradeRecommendation.Neutral, mfi: DaytradeRecommendation.Neutral, mfiTrade: DaytradeRecommendation.Neutral, roc: DaytradeRecommendation.Neutral, vwma: DaytradeRecommendation.Bullish },
@@ -28,7 +28,7 @@ export class DaytradeStrategiesService extends BaseStrategiesService {
     super();
   }
 
-  hasRecommendations(current: DaytradeIndicator): boolean {
+  hasRecommendations(current: Recommendation): boolean {
     let recommendationsCount = 0;
     for (const indicator in current) {
       if (current.recommendation.hasOwnProperty(indicator)) {
@@ -46,23 +46,23 @@ export class DaytradeStrategiesService extends BaseStrategiesService {
     return recommendationsCount > 1;
   }
 
-  isPotentialBuy(analysis: DaytradeIndicator) {
+  isPotentialBuy(analysis: Recommendation) {
     return (this.hasRecommendations(analysis) || analysis.data.indicator.mfiLeft && analysis.data.indicator.mfiLeft < 30) ||
       analysis.data.indicator.bbandBreakout || (analysis.data.indicator.bband80[0][0] &&
         analysis.data.indicator.close < (1.1 * analysis.data.indicator.bband80[0][0]));
   }
 
-  isPotentialSell(analysis: DaytradeIndicator) {
+  isPotentialSell(analysis: Recommendation) {
     return (analysis.data.indicator.mfiLeft && analysis.data.indicator.mfiLeft > 65) ||
       analysis.data.indicator.bbandBreakout || (analysis.data.indicator.bband80[0][0] &&
         analysis.data.indicator.close > (0.9 * analysis.data.indicator.bband80[2][0]));
   }
 
-  getName(analysis: DaytradeIndicator) {
+  getName(analysis: Recommendation) {
     return analysis.name;
   }
 
-  analyse(analysis: DaytradeIndicator) {
+  analyse(analysis: Recommendation) {
     if (this.isPotentialBuy(analysis) || this.isPotentialSell(analysis)) {
       this.skipNextCheck[analysis.name] = false;
     } else {

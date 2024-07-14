@@ -124,7 +124,7 @@ class BacktestService {
     return { perfectSell, perfectBuy };
   }
 
-  processIndicators(intradayObj, period: number) {
+  processIndicators(intradayObj, period: number = 80) {
     const getIndicatorQuotes = [];
     const quotes = intradayObj.candles ? intradayObj.candles : intradayObj;
     _.forEach(quotes, (value, key) => {
@@ -142,7 +142,6 @@ class BacktestService {
   }
 
   getCurrentDaytradeIndicators(symbol, period = 80, dataSource = 'td'): Promise<Indicators> {
-
     return DaytradeRecommendations.getIntradayQuotes(symbol, dataSource)
       .then(intradayObj => {
         return this.processIndicators(intradayObj, period);
@@ -350,42 +349,6 @@ class BacktestService {
     };
   }
 
-  getCurrentDaytrade(symbol: string, price: number, paidPrice: number, parameters, dataSource = 'td', response) {
-    if (this.lastRequest && moment().diff(this.lastRequest, 'milliseconds') < 100) {
-      if (this.lastRequestCount > 10) {
-        response.status(429).send({ message: 'Last request was to soon.' });
-        return Promise.reject();
-      } else {
-        this.lastRequestCount++;
-      }
-    } else {
-      this.lastRequest = moment();
-      this.lastRequestCount = 0;
-    }
-    return this.getCurrentDaytradeIndicators(symbol, parameters.minQuotes || 80, dataSource)
-      .then((currentIndicators: Indicators) => {
-        let recommendation = {
-          recommendation: OrderType.None
-        };
-
-        const avgPrice = Number(paidPrice);
-        const lossThreshold = Number(parameters.lossThreshold);
-        const profitThreshold = Number(parameters.profitThreshold);
-        const isAtLimit = this.determineStopProfit(avgPrice, price,
-          lossThreshold, profitThreshold);
-        if (isAtLimit) {
-          recommendation.recommendation = OrderType.Sell;
-        } else {
-          recommendation = this.createDaytradeRecommendation(currentIndicators.close, currentIndicators, symbol);
-        }
-        response.status(200).send(recommendation);
-      })
-      .catch(error => {
-        console.log(error);
-        response.status(500).send({ message: error });
-      });
-  }
-
   createDaytradeRecommendation(price: number, indicator: Indicators, name = '', includeData = true): Recommendation {
     let counter = {
       bullishCounter: 0,
@@ -458,6 +421,46 @@ class BacktestService {
     recommendations.bbandBreakout = bbandBreakoutRecommendation;
     
     return recommendations;
+  }
+
+  getCurrentDaytrade(symbol: string, price: number, paidPrice: number, parameters, dataSource = 'td', response) {
+    if (this.lastRequest && moment().diff(this.lastRequest, 'milliseconds') < 100) {
+      if (this.lastRequestCount > 10) {
+        response.status(429).send({ message: 'Last request was to soon.' });
+        return Promise.reject();
+      } else {
+        this.lastRequestCount++;
+      }
+    } else {
+      this.lastRequest = moment();
+      this.lastRequestCount = 0;
+    }
+    return this.getCurrentDaytradeIndicators(symbol, parameters.minQuotes || 80, dataSource)
+      .then((currentIndicators: Indicators) => {
+        response.status(200).send(this.getDaytradeRecommendation(symbol, paidPrice, price, parameters, currentIndicators));
+      })
+      .catch(error => {
+        console.log(error);
+        response.status(500).send({ message: error });
+      });
+  }
+
+  getDaytradeRecommendation(symbol: string, price: number, paidPrice: number, parameters, currentIndicators: Indicators) {
+    let recommendation = {
+      recommendation: OrderType.None
+    };
+
+    const avgPrice = Number(paidPrice);
+    const lossThreshold = Number(parameters.lossThreshold);
+    const profitThreshold = Number(parameters.profitThreshold);
+    const isAtLimit = this.determineStopProfit(avgPrice, price,
+      lossThreshold, profitThreshold);
+    if (isAtLimit) {
+      recommendation.recommendation = OrderType.Sell;
+    } else {
+      recommendation = this.createDaytradeRecommendation(currentIndicators.close, currentIndicators, symbol);
+    }
+    return recommendation;
   }
 
   getIndicatorAction(recommendation: string): string {

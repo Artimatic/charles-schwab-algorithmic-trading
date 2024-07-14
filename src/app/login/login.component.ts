@@ -1,5 +1,5 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { DynamicDialogRef } from 'primeng/dynamicdialog';
 import { AuthenticationService } from '../shared';
 import { FormGroup, FormControl, Validators } from '@angular/forms';
 
@@ -21,7 +21,7 @@ export class LoginComponent implements OnInit {
   code = null;
   dialogRef;
 
-  constructor(private dialogService: DialogService,
+  constructor(
     private ref: DynamicDialogRef,
     private authenticationService: AuthenticationService) { }
 

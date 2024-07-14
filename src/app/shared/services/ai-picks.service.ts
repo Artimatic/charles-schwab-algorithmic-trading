@@ -53,7 +53,6 @@ export class AiPicksService {
         range,
         limit
       ).toPromise();
-      console.log('training result', trainingResult)
     } catch (error) {
       console.log('error: ', error);
     }

@@ -11,6 +11,8 @@ export enum OrderTypes {
 export interface SmartOrder extends Order {
     splits?: number;
     positionCount?: number;
+    buyCount?: number;
+    sellCount?: number;
     timeSubmitted?: string;
     signalTime?: number;
     lossThreshold?: number;
