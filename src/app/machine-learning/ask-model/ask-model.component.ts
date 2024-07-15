@@ -391,7 +391,6 @@ export class AskModelComponent implements OnInit, OnDestroy {
       limit
     )
       .subscribe((data) => {
-        console.log('training results: ', data);
         this.machineLearningService.activateDailyV4(symbol,
           null,
           range,
@@ -539,7 +538,6 @@ export class AskModelComponent implements OnInit, OnDestroy {
 
   getIntradayQuotes() {
     this.stockList = this.form.value.query.toUpperCase().split(',').trim();
-
     const start = moment(this.startDate).subtract({ days: 1 }).format('YYYY-MM-DD');
     const end = moment(this.endDate).add({ days: 1 }).format('YYYY-MM-DD');
     this.stockList.forEach(stock => {

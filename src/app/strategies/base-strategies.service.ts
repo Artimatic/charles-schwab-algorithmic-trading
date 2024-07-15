@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { DaytradeIndicator, DaytradeRecommendation, Recommendation, StockBacktest } from '@shared/stock-backtest.interface';
+import { DaytradeRecommendation, Recommendation, StockBacktest } from '@shared/stock-backtest.interface';
 
 @Injectable({
   providedIn: 'root'
@@ -10,7 +10,7 @@ export class BaseStrategiesService {
   
   constructor() {}
 
-  modifyRecommendations(currentStates: any[], analysis: StockBacktest | DaytradeIndicator) {
+  modifyRecommendations(currentStates: any[], analysis: StockBacktest | Recommendation): StockBacktest | Recommendation {
     if (this.isBuy(currentStates)) {
       analysis.recommendation = 'Sell';
     } else if (this.isSell(currentStates)) {
@@ -19,7 +19,7 @@ export class BaseStrategiesService {
     return analysis;
   }
 
-  private recommendationMatch(stateOne: StockBacktest | DaytradeIndicator, stateTwo: StockBacktest | DaytradeIndicator) {
+  private recommendationMatch(stateOne: StockBacktest | Recommendation, stateTwo: StockBacktest | Recommendation) {
     let isMatch = false;
     for (const rec in stateOne) {
       if (stateOne.hasOwnProperty(rec)) {
@@ -35,7 +35,7 @@ export class BaseStrategiesService {
     return isMatch;
   }
 
-  getName(analysis: StockBacktest | DaytradeIndicator): string {
+  getName(analysis: StockBacktest | Recommendation): string {
     return '';
   }
 

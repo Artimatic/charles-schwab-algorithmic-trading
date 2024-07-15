@@ -7,6 +7,7 @@ import { MessageService } from 'primeng/api';
 import { Subject } from 'rxjs';
 import * as moment from 'moment-timezone';
 import { Options } from '@shared/models/options';
+import { ReportingService } from './reporting.service';
 
 @Injectable()
 export class CartService {
@@ -18,6 +19,7 @@ export class CartService {
   constructor(
     private portfolioService: PortfolioService,
     private tradeService: TradeService,
+    private reportingService: ReportingService,
     private messageService: MessageService) { }
 
   addToCart(order: SmartOrder, replaceAnyExistingOrders = false) {
@@ -299,9 +301,27 @@ export class CartService {
   }
 
   removeCompletedOrders() {
-    this.buyOrders = this.buyOrders.filter(order => !order.stopped);
-    this.sellOrders = this.sellOrders.filter(order => !order.stopped);
-    this.otherOrders = this.otherOrders.filter(order => !order.stopped);
+    this.buyOrders = this.buyOrders.filter(order => {
+      const keep = !order.stopped && order.buyCount < order.quantity;
+      if (!keep) {
+        this.reportingService.addAuditLog(order.holding.symbol, `Removing finished buy order ${order.holding.symbol}`);
+      }
+      return keep;
+    });
+    this.sellOrders = this.sellOrders.filter(order => {
+      const keep = !order.stopped && order.sellCount < order.quantity;
+      if (!keep) {
+        this.reportingService.addAuditLog(order.holding.symbol, `Removing finished sell order ${order.holding.symbol}`);
+      }
+      return keep;
+    });
+    this.otherOrders = this.otherOrders.filter(order => {
+      const keep = !order.stopped && order.buyCount + order.sellCount < (order.quantity * 2);
+      if (!keep) {
+        this.reportingService.addAuditLog(order.holding.symbol, `Removing finished order ${order.holding.symbol}`);
+      }
+      return keep;
+    });
     this.cartObserver.next(true);
   }
 }

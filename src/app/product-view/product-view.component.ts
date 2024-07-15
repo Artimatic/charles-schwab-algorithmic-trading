@@ -1,7 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { Chart } from 'angular-highcharts';
 import * as moment from 'moment';
-import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { BacktestService } from '../shared';
 import { ChartParam } from '../shared/services/backtest.service';
@@ -9,6 +7,7 @@ import { AiPicksService } from '@shared/services';
 import { AiPicksPredictionData } from '@shared/services/ai-picks.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { ChartService } from '../simulation/chart.service';
 
 @Component({
   selector: 'app-product-view',
@@ -23,9 +22,10 @@ export class ProductViewComponent implements OnInit, OnDestroy {
   destroy$ = new Subject();
 
   constructor(
-    public snackBar: MatSnackBar,
     private algo: BacktestService,
-    private aiPicksService: AiPicksService) { }
+    private aiPicksService: AiPicksService,
+    private chartService: ChartService
+  ) { }
 
   ngOnInit() {
     this.aiPicksService.predictionData
@@ -109,9 +109,6 @@ export class ProductViewComponent implements OnInit, OnDestroy {
         },
         err => {
           this.resolving = false;
-          this.snackBar.open(`Error: ${err}`, 'Dismiss', {
-            duration: 20000,
-          });
         }
       );
   }
@@ -134,9 +131,6 @@ export class ProductViewComponent implements OnInit, OnDestroy {
         },
         err => {
           this.resolving = false;
-          this.snackBar.open(`Error: ${err}`, 'Dismiss', {
-            duration: 20000,
-          });
         }
       );
   }
@@ -157,9 +151,6 @@ export class ProductViewComponent implements OnInit, OnDestroy {
         },
         err => {
           this.resolving = false;
-          this.snackBar.open(`Error: ${err}`, 'Dismiss', {
-            duration: 20000,
-          });
         }
       );
   }
@@ -180,9 +171,6 @@ export class ProductViewComponent implements OnInit, OnDestroy {
         },
         err => {
           this.resolving = false;
-          this.snackBar.open(`Error: ${err}`, 'Dismiss', {
-            duration: 20000,
-          });
         }
       );
   }
@@ -197,13 +185,13 @@ export class ProductViewComponent implements OnInit, OnDestroy {
       const signal = this.buildSignal(day.action, day.close, day.volume, '');
       seriesData.push(signal);
 
-      this.initChart(symbol, time, seriesData);
+     this.chart = this.chartService.initChart(symbol, time, seriesData);
     });
   }
 
-  initDefaultResults(symbol, result, signals, indicator: string) {
-    if (indicator) {
-      result.algo = indicator;
+  initDefaultResults(symbol, result, signals, algoName: string) {
+    if (algoName) {
+      result.algo = algoName;
     }
     this.backtestResults = [result];
     const time = [];
@@ -211,8 +199,8 @@ export class ProductViewComponent implements OnInit, OnDestroy {
 
     signals.forEach(day => {
       let action = day.action;
-      if (indicator) {
-        const recommendation = day.recommendation[indicator].toUpperCase();
+      if (algoName) {
+        const recommendation = day.recommendation[algoName].toUpperCase();
         switch (recommendation) {
           case 'BEARISH': {
             action = 'STRONGSELL';
@@ -234,8 +222,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
       // }
       const signal = this.buildSignal(action, day.close, day.volume, day.recommendation);
       seriesData.push(signal);
-
-      this.initChart(symbol, time, seriesData);
+      this.chart = this.chartService.initChart(symbol, time, seriesData);
     });
   }
 
@@ -260,9 +247,6 @@ export class ProductViewComponent implements OnInit, OnDestroy {
         },
         err => {
           this.resolving = false;
-          this.snackBar.open(`Error: ${err}`, 'Dismiss', {
-            duration: 20000,
-          });
         }
       );
   }
@@ -286,11 +270,11 @@ export class ProductViewComponent implements OnInit, OnDestroy {
 
       seriesData.push(signal);
 
-      this.initChart(symbol, time, seriesData);
+      this.chart = this.chartService.initChart(symbol, time, seriesData);
     });
   }
 
-  loadDefaultChart(data: ChartParam, indicator: string) {
+  loadDefaultChart(data: ChartParam, algoName: string) {
     const defaultPeriod = 500;
     data.algorithm = 'daily-indicators';
     this.resolving = true;
@@ -302,7 +286,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
         if (result.signals > defaultPeriod) {
           result.signals = result.signals.slice(result.signals.length - defaultPeriod, result.signals.length);
         }
-        this.initDefaultResults(data.symbol, result, result.signals, indicator);
+        this.initDefaultResults(data.symbol, result, result.signals, algoName);
       })
       .subscribe(
         response => {
@@ -311,9 +295,6 @@ export class ProductViewComponent implements OnInit, OnDestroy {
         },
         err => {
           this.resolving = false;
-          this.snackBar.open(`Error: ${err}`, 'Dismiss', {
-            duration: 20000,
-          });
         }
       );
   }
@@ -388,7 +369,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
           seriesData.push(signal);
         });
 
-        this.initChart(data.symbol, time, seriesData);
+        this.chart = this.chartService.initChart(data.symbol, time, seriesData);
 
         return result;
       })
@@ -399,9 +380,6 @@ export class ProductViewComponent implements OnInit, OnDestroy {
         },
         err => {
           this.resolving = false;
-          this.snackBar.open('There was an error.', 'Dismiss', {
-            duration: 2000,
-          });
         }
       );
   }
@@ -501,79 +479,8 @@ export class ProductViewComponent implements OnInit, OnDestroy {
         },
         err => {
           this.resolving = false;
-          this.snackBar.open(`Error: ${err}`, 'Dismiss', {
-            duration: 20000,
-          });
         }
       );
-  }
-
-  initChart(title, timeArr, seriesData) {
-    this.chart = new Chart({
-      chart: {
-        type: 'spline',
-        zoomType: 'x'
-      },
-      title: {
-        text: title
-      },
-      subtitle: {
-        text: 'Daily Price'
-      },
-      xAxis: {
-        type: 'datetime',
-        dateTimeLabelFormats: {
-          month: '%e. %b',
-          year: '%b'
-        },
-        labels: {
-          formatter: function () {
-            return moment(this.value).format('MMM D');
-          }
-        },
-        categories: timeArr
-      },
-      yAxis: {
-        title: {
-          text: 'Price'
-        },
-        labels: {
-          formatter: function () {
-            return '$' + this.value;
-          }
-        }
-      },
-      tooltip: {
-        crosshairs: true,
-        shared: true,
-        formatter: function () {
-          return '<b>Date:</b>' +
-            moment(this.x).format('YYYY-MM-DD') +
-            '<br><b>Price:</b> ' +
-            this.y + '<br>' + this.points[0].key;
-        }
-      },
-      plotOptions: {
-        spline: {
-          marker: {
-            radius: 1,
-            lineColor: '#666666',
-            lineWidth: 1
-          }
-        },
-        series: {
-          marker: {
-            enabled: true
-          },
-          turboThreshold: 5000
-        }
-      },
-      series: [{
-        name: 'Stock',
-        data: seriesData
-      }]
-    });
-
   }
 
   ngOnDestroy() {

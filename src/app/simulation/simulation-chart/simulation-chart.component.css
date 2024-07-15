@@ -1,0 +1,12 @@
+.recommendation-states {
+    width: 96vw;
+    height: 13vh;
+    overflow: auto;
+}
+
+.state-buttons {
+    p-button {
+        margin-left: auto;
+        margin-right: 1rem;
+    }
+}

@@ -2,7 +2,7 @@ const path = require('path');
 const _ = require('lodash');
 let credentials;
 try {
-  credentials = require('./credentials');
+  credentials = require('./credentials.js');
 } catch(error) {
   console.log('Credentials are missing. Continuing without credentials.');
 }

@@ -221,7 +221,7 @@ class BacktestController extends BaseController {
   }
 
   getDaytradeIndicators(request, response) {
-    BacktestService.processIndicators(request.body.quotes, request.body.period)
+    BacktestService.processIndicators(request.body.quotes, Number(request.body.period))
       .then((data) => BaseController.requestGetSuccessHandler(response, data))
       .catch((err) => BaseController.requestErrorHandler(response, err));
   }
@@ -254,6 +254,20 @@ class BacktestController extends BaseController {
       request.body.parameters,
       request.body.dataSource,
       response);
+  }
+
+  getCurrentDaytradeRecommendation(request, response) {
+    if (_.isEmpty(request.body) ||
+      !request.body.symbol) {
+      return response.status(Boom.badRequest().output.statusCode).send(Boom.badRequest().output);
+    }
+    const recommendation = BacktestService.getDaytradeRecommendation(
+      request.body.symbol,
+      request.body.price,
+      request.body.paidPrice,
+      request.body.parameters,
+      request.body.indicators);
+    BaseController.requestGetSuccessHandler(response, recommendation);
   }
 
   calibrateDaytrade(request, response) {

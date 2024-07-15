@@ -29,19 +29,16 @@ export class ScoreKeeperService {
   addProfitLoss(stock: string, sum: number, isSell = true) {
     sum = Number(sum);
     this.total += sum;
-    console.log('Adding pl ', this.profitLossHash[stock], sum);
     if (this.profitLossHash[stock]) {
       this.profitLossHash[stock] = Number(this.profitLossHash[stock].toFixed(2)) + sum;
     } else {
       this.profitLossHash[stock] = Number(sum.toFixed(2));
     }
-    console.log('Final pl ', this.profitLossHash[stock]);
 
     if (isSell) {
       this.addSell(stock, sum);
     }
     const log = `${this.profitLossHash[stock].toFixed(2)}`;
-    console.log(stock, ': ', log);
     this.reportingService.addAuditLog(stock, log);
   }
 

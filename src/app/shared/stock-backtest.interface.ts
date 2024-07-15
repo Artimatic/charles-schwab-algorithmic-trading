@@ -25,7 +25,7 @@ export interface Recommendation {
   mfiDivergence?: DaytradeRecommendation;
   mfiDivergence2?: DaytradeRecommendation;
   overboughtMomentum?: DaytradeRecommendation;
-  data?: any;
+  data?: { indicator: Indicators };
   bbandBreakout: DaytradeRecommendation;
 }
 
@@ -52,7 +52,7 @@ export interface Indicators {
   macdPrevious?: any;
   bbandBreakout?: boolean;
   rsi?: number;
-  data?: any;
+  data?: { indicator: Indicators };
 }
 
 export interface StockBacktest {  
@@ -75,19 +75,4 @@ export interface StockBacktest {
   stock: string;
   totalReturns: number;
   averageMove?: number;
-}
-
-export interface DaytradeIndicator {
-  name?: string;
-  time?: string;
-  recommendation?: 'None' | 'Sell' | 'Buy';
-  mfi: 'Bearish' | 'Bullish' | 'Neutral';
-  roc: 'Bearish' | 'Bullish' | 'Neutral';
-  bband: 'Bearish' | 'Bullish' | 'Neutral';
-  vwma: 'Bearish' | 'Bullish' | 'Neutral';
-  macd: 'Bearish' | 'Bullish' | 'Neutral';
-  demark9: 'Bearish' | 'Bullish' | 'Neutral';
-  bbandBreakout: 'Bearish' | 'Bullish' | 'Neutral';
-  mfiTrade: 'Bearish' | 'Bullish' | 'Neutral';
-  data?: { indicator: Indicators };
 }

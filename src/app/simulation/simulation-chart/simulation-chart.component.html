@@ -1,0 +1,47 @@
+<div [chart]="chart"></div>
+<div class="recommendation-states">
+    <h3>Buy States</h3>
+    <div *ngFor="let state of buyStates">
+        <p-timeline [value]="state" layout="horizontal">
+            <ng-template pTemplate="content" let-event>
+                <div *ngFor="let item of event | keyvalue">
+                    <span *ngIf="item.value === 'Bullish' || item.value === 'Bearish'">
+                        <b>{{item.key}}:</b>&nbsp;<b>{{item.value}}</b>
+                    </span>
+                </div>
+            </ng-template>
+            <ng-template pTemplate="opposite" let-event>
+            </ng-template>
+        </p-timeline>
+    </div>
+    <h3>Sell States</h3>
+    <div *ngFor="let state of sellStates">
+        <p-timeline [value]="state" layout="horizontal">
+            <ng-template pTemplate="content" let-event>
+                <div *ngFor="let item of event | keyvalue">
+                    <span *ngIf="item.value === 'Bullish' || item.value === 'Bearish'">
+                        <b>{{item.key}}:</b>&nbsp;<b>{{item.value}}</b>
+                    </span>
+                </div>
+            </ng-template>
+            <ng-template pTemplate="opposite" let-event>
+            </ng-template>
+        </p-timeline>
+    </div>
+    <p-timeline [value]="currentState" layout="horizontal">
+        <ng-template pTemplate="content" let-event>
+            <div *ngFor="let item of event | keyvalue">
+                <span *ngIf="item.value === 'Bullish' || item.value === 'Bearish'">
+                    <b>{{item.key}}:</b>&nbsp;<b>{{item.value}}</b>
+                </span>
+            </div>
+        </ng-template>
+        <ng-template pTemplate="opposite" let-event>
+        </ng-template>
+    </p-timeline>
+</div>
+<div class="state-buttons">
+    <p-button class="ui-button-success" label="Add buy state" (click)="addBuyState()"></p-button>
+    <p-button class="ui-button-success" label="Add sell state" (click)="addSellState()"></p-button>
+    <p-button class="ui-button-warn" label="Send signals" (click)="sendSignals()"></p-button>
+</div>
