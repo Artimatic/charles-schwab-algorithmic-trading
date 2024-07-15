@@ -39,7 +39,6 @@ export class ScoreKeeperService {
       this.addSell(stock, sum);
     }
     const log = `${this.profitLossHash[stock].toFixed(2)}`;
-    console.log(stock, ': ', log);
     this.reportingService.addAuditLog(stock, log);
   }
 

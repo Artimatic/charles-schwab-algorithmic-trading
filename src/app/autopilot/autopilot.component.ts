@@ -1214,63 +1214,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
   }
 
-  checkPersonalLists() {
-    AlwaysBuy.forEach(async (stock) => {
-      const name = stock.ticker;
-      try {
-        const backtestResults = await this.strategyBuilderService.getBacktestData(name);
-
-        if (backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.5) {
-          if (backtestResults?.optionsVolume > 500) {
-            const optionStrategy = await this.strategyBuilderService.getCallTrade(name);
-            const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
-            this.strategyBuilderService.addStrangle(optionStrategy.call.symbol + '/' + optionStrategy.put.symbol, price, optionStrategy);
-          } else {
-            const stock: PortfolioInfoHolding = {
-              name: name,
-              pl: 0,
-              netLiq: 0,
-              shares: 0,
-              alloc: 0,
-              recommendation: 'None',
-              buyReasons: '',
-              sellReasons: '',
-              buyConfidence: 0,
-              sellConfidence: 0,
-              prediction: null
-            };
-            await this.addBuy(stock);
-            const log = `Adding swing trade ${stock.name}`;
-            this.reportingService.addAuditLog(null, log);
-          }
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    });
-
-    PersonalBearishPicks.forEach(async (stock) => {
-      const name = stock.ticker;
-      try {
-        const backtestResults = await this.strategyBuilderService.getBacktestData(name);
-
-        if (backtestResults && backtestResults.ml !== null && backtestResults.ml < 0.3) {
-          const sellHolding = this.currentHoldings.find(holdingInfo => {
-            return holdingInfo.name === name;
-          });
-          if (sellHolding) {
-            this.portfolioSell(sellHolding);
-          }
-          const optionStrategy = await this.strategyBuilderService.getPutTrade(name);
-          const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
-          this.strategyBuilderService.addStrangle(optionStrategy.put.symbol + '/' + optionStrategy.call.symbol, price, optionStrategy);
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    });
-  }
-
   removeStrategy(item) {
     console.log('TODO remove', item);
     this.strategies = this.strategies.filter(s => s.key !== item.key || s.name !== item.name || s.date !== item.date);

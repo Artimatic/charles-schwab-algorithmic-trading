@@ -118,6 +118,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     private orderHandlingService: OrderHandlingService) { }
 
   ngOnInit() {
+    this.init();
     this.subscriptions = [];
     const algoQueueSub = this.tradeService.algoQueue.subscribe(async (item: AlgoQueueItem) => {
       setTimeout(async () => {
@@ -129,8 +130,6 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             this.setup();
             this.alive = true;
             this.setLive();
-          } else if (item.updateOrder) {
-            this.init();
           } else if (item.triggerMlBuySell) {
             if (this.lastTriggeredTime !== this.getTimeStamp()) {
               this.lastTriggeredTime = this.getTimeStamp();
@@ -171,8 +170,6 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   ngOnChanges(changes: SimpleChanges) {
     if (_.get(changes, 'tearDown.currentValue')) {
       this.stop();
-    } else if (_.get(changes, 'order')) {
-      this.init();
     }
   }
 
@@ -347,6 +344,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     this.stopped = true;
     this.order.stopped = true;
     this.cartService.updateOrder(this.order);
+    this.cartService.removeCompletedOrders();
     if (this.sub) {
       this.sub.unsubscribe();
     }
