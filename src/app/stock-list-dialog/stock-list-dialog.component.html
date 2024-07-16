@@ -4,7 +4,7 @@
     <button pButton type="button" label="Add Stock" (click)="addRow()"></button>
 </div>
 
-<p-table [value]="stockList" dataKey="ticker" [paginator]="true" [rows]="10" [showCurrentPageReport]="true"
+<p-table [value]="stockList" dataKey="ticker" [paginator]="true" [rows]="5" [showCurrentPageReport]="true"
     currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries" [rowsPerPageOptions]="[10,25,50]">
     <ng-template pTemplate="body" let-stock let-ri="rowIndex">
         <tr [pEditableRow]="stock">
