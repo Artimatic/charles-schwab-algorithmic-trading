@@ -98,28 +98,33 @@ export class OrderHandlingService {
     }
   }
 
-  intradayStep(symbol: string) {
+  async intradayStep(symbol: string) {
     if (!this.daytradeStrategiesService.shouldSkip(symbol)) {
-      this.machineLearningService
-        .trainDaytrade(symbol.toUpperCase(),
-          moment().add({ days: 1 }).format('YYYY-MM-DD'),
-          moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
-          1,
-          this.globalSettingsService.daytradeAlgo
-        ).subscribe((mlResult: TrainingResults[]) => {
-          this.backtestService.getDaytradeRecommendation(symbol.toUpperCase(), null, null, { minQuotes: 81 })
-            .subscribe(
-              async (analysis) => {
-                const queueItem: AlgoQueueItem = {
-                  symbol: symbol,
-                  reset: false,
-                  analysis: analysis,
-                  ml: mlResult ? mlResult[0] : null
-                };
-                this.tradeService.algoQueue.next(queueItem);
-              }
-            );
-        });
+      let mlResult;
+      try {
+        mlResult = await this.machineLearningService.activate(symbol,
+          this.globalSettingsService.daytradeAlgo).toPromise();
+      } catch {
+        mlResult = await this.machineLearningService
+          .trainDaytrade(symbol.toUpperCase(),
+            moment().add({ days: 1 }).format('YYYY-MM-DD'),
+            moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
+            1,
+            this.globalSettingsService.daytradeAlgo
+          ).toPromise()[0];
+      }
+      this.backtestService.getDaytradeRecommendation(symbol.toUpperCase(), null, null, { minQuotes: 81 })
+        .subscribe(
+          async (analysis) => {
+            const queueItem: AlgoQueueItem = {
+              symbol: symbol,
+              reset: false,
+              analysis: analysis,
+              ml: mlResult ? mlResult : null
+            };
+            this.tradeService.algoQueue.next(queueItem);
+          }
+        );
     }
   }
 }
