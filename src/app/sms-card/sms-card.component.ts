@@ -101,8 +101,8 @@ export class SmsCardComponent implements OnInit, OnDestroy {
     this.interval = this.defaultInterval;
     this.messagesSent = 0;
     this.sub = TimerObservable.create(0, this.interval)
-    .pipe(
-      takeWhile(() => this.alive))
+      .pipe(
+        takeWhile(() => this.alive))
       .subscribe(async () => {
         this.interval = 900000;
         if (this.testing.value || (moment().isAfter(moment(this.startTime)) &&
@@ -177,7 +177,6 @@ export class SmsCardComponent implements OnInit, OnDestroy {
       if (analysis.recommendation.toLowerCase() === 'buy') {
         this.machineLearningService.activate(ticker,
           this.globalSettingsService.daytradeAlgo)
-          .pipe(take(1))
           .subscribe((machineResult: { nextOutput: number }) => {
             const mlLog = `${ticker} @ ${moment().format('hh:mm')} RNN model result(${machineResult.nextOutput})`;
             console.log(mlLog);

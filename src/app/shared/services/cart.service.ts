@@ -273,6 +273,7 @@ export class CartService {
   }
 
   addProtectivePutOrder(symbol: string, 
+    primaryLegs: Options[],
     price: number, 
     quantity: number) {
     const order: SmartOrder = {
@@ -294,6 +295,7 @@ export class CartService {
       useTakeProfit: true,
       sellAtClose: false,
       allocation: 0.05,
+      primaryLegs,
       type: OrderTypes.protectivePut
     };
 

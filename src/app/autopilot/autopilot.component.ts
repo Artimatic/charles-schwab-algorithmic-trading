@@ -11,7 +11,6 @@ import { MenuItem, MessageService } from 'primeng/api';
 import { AlgoQueueItem } from '@shared/services/trade.service';
 import { ScoringIndex } from '@shared/services/score-keeper.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
-import { BearList, AlwaysBuy, PersonalBearishPicks } from '../rh-table/backtest-stocks.constant';
 import { CurrentStockList } from '../rh-table/stock-list.constant';
 import { AiPicksPredictionData, AiPicksService } from '@shared/services/ai-picks.service';
 import { FindPatternService } from '../strategies/find-pattern.service';
@@ -29,6 +28,9 @@ import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.ser
 import { SimulationService } from '../simulation/simulation.service';
 import { SimulationChartComponent } from '../simulation/simulation-chart/simulation-chart.component';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
+import { TrainingData } from 'server/api/machine-learning/training.service';
+import { TrainingResults } from '../machine-learning/ask-model/ask-model.component';
+import { AlwaysBuy } from '../rh-table/backtest-stocks.constant';
 
 export interface PositionHoldings {
   name: string;
@@ -241,6 +243,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       },
       {
+        label: 'Hedge',
+        command: () => {
+          this.hedge();
+        }
+      },
+      {
         label: 'Update stock list',
         command: () => {
           this.updateStockList();
@@ -255,7 +263,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Sell all strangles',
         command: () => {
-          this.testSellStrangle();
+          this.sellAllStrangle();
         }
       },
       {
@@ -312,11 +320,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.sellStrangle(holding);
         } else {
           const foundExpiringOption = holding.primaryLegs.concat(holding.secondaryLegs).find((option: Options) => {
-            const expiry = option.description.match(/[0-9]{2}\/[0-9]{2}\/[0-9]{2}/)[0];
-            console.log(`${option.description} is expiring on ${moment(expiry).format()}`);
-            return moment(expiry).diff(moment(), 'days') < 40;
+            const expiry = option.description.match(/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/)[0];
+            console.log(`${option.description} is expiring on ${moment(expiry).format()} ${expiry}`);
+            return moment(expiry).diff(moment(), 'days') < 30;
           });
           if (foundExpiringOption) {
+            console.log(`${holding.name} options are expiring soon`);
             this.sellStrangle(holding);
           }
         }
@@ -470,20 +479,28 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     await this.findCurrentPositions();
     await this.modifyCurrentHoldings();
-
+    await this.checkPersonalLists();
     this.setProfitLoss();
     try {
-      const backtestResults = await this.strategyBuilderService.getBacktestData('SPY');
+      this.machineLearningService
+        .trainDaytrade('AAPL',
+          moment().add({ days: 1 }).format('YYYY-MM-DD'),
+          moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
+          1,
+          this.globalSettingsService.daytradeAlgo
+        ).subscribe((mlResults: TrainingResults[]) => {
+          if (mlResults && mlResults[0] !== null) {
+            console.log('Next output', mlResults[0]?.nextOutput);
+            if (mlResults[0]?.nextOutput > 0.5) {
+              this.increaseRiskTolerance();
+              this.increaseDayTradeRiskTolerance();
+            } else if (mlResults[0]?.nextOutput < 0.5) {
+              this.decreaseRiskTolerance();
+              this.decreaseDayTradeRiskTolerance();
+            }
+          }
+        });
 
-      if (backtestResults && backtestResults.ml !== null) {
-        if (backtestResults.ml > 0.5) {
-          this.increaseRiskTolerance();
-          this.increaseDayTradeRiskTolerance();
-        } else if (backtestResults.ml < 0.5) {
-          this.decreaseRiskTolerance();
-          this.decreaseDayTradeRiskTolerance();
-        }
-      }
     } catch (error) {
       console.log(error);
     }
@@ -493,7 +510,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async findTradeCallBack(symbol: string, prediction: number, backtestData: any) {
-    if (symbol === 'TQQQ' || (prediction => 0.3 && prediction <= 0.7 )) {
+    if (symbol === 'TQQQ' || (prediction => 0.3 && prediction <= 0.7)) {
       return;
     }
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
@@ -643,27 +660,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
   }
 
-  async findDaytradeShort() {
-    console.log('finding bearish day trade');
-
-    let idx = 0;
-    while (idx < BearList.length) {
-      idx++;
-      const stock = BearList[idx].ticker;
-      const backtestDate = this.getLastTradeDate();
-      console.log('last date', backtestDate);
-      const trainingResults = await this.machineDaytradingService.trainStock(stock, backtestDate.subtract({ days: 1 }).format('YYYY-MM-DD'), backtestDate.add({ days: 1 }).format('YYYY-MM-DD'));
-      console.log('training daytrade results ', trainingResults);
-      if (trainingResults[0].correct / trainingResults[0].guesses > 0.6 && trainingResults[0].guesses > 50) {
-        await this.addDaytrade(stock);
-        if ((this.cartService.buyOrders.length + this.cartService.otherOrders.length) > this.maxTradeCount) {
-          break;
-        }
-      }
-    }
-    this.setLoading(false);
-  }
-
   triggerBacktestNext() {
     this.backtestBuffer$.next();
   }
@@ -741,13 +737,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     this.orderListTimer = TimerObservable.create(100, 1500)
       .pipe(take(orders.length))
-      .subscribe(() => {
+      .subscribe(async () => {
         if (this.lastOrderListIndex >= orders.length) {
           this.lastOrderListIndex = 0;
         }
         const symbol = orders[this.lastOrderListIndex].holding.symbol;
         if (!this.daytradeStrategiesService.shouldSkip(symbol)) {
-          this.orderHandlingService.intradayStep(symbol);
+          await this.orderHandlingService.intradayStep(symbol);
         }
 
         this.lastOrderListIndex++;
@@ -941,7 +937,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async createProtectivePutOrder(holding: PortfolioInfoHolding) {
-    console.log('create protective put order', holding);
     if (holding.shares) {
       let putsNeeded = 0;
       if ((holding.primaryLegs && !holding.secondaryLegs && holding.primaryLegs[0].putCallInd === 'P')) {
@@ -949,7 +944,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       } else if (!holding.primaryLegs && holding.secondaryLegs && holding.secondaryLegs[0].putCallInd === 'P') {
         putsNeeded = Math.floor((holding.shares / 100) - holding.secondaryLegs.length) || 1;
       } else if (!holding.primaryLegs && !holding.secondaryLegs) {
-        putsNeeded = 0;
+        putsNeeded = Math.floor(holding.shares / 100);
       }
 
       putsNeeded -= this.protectivePutCount(holding);
@@ -958,10 +953,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const putOption = await this.strategyBuilderService.getProtectivePut(holding.name);
         const estimatedPrice = this.strategyBuilderService.findOptionsPrice(putOption.put.bid, putOption.put.ask);
 
-        if (estimatedPrice > 100) {
-          this.cartService.addProtectivePutOrder(holding.name, estimatedPrice, putsNeeded);
+        if ((estimatedPrice * 100) > 100) {
+          console.log('addProtectivePutOrder', holding.name, putOption, estimatedPrice);
+          this.cartService.addProtectivePutOrder(holding.name, [putOption.put], estimatedPrice, putsNeeded);
         } else {
-          console.log('Protective put option too cheap.', estimatedPrice);
+          console.log('Protective put option too cheap.', holding.name, estimatedPrice);
         }
       }
     }
@@ -1039,7 +1035,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async analyseRecommendations(holding: PortfolioInfoHolding) {
     if (holding.recommendation.toLowerCase() === 'buy') {
-      console.log('Adding buy based on recommendation')
       await this.addBuy(holding);
     } else if (holding.recommendation.toLowerCase() === 'sell') {
       this.portfolioSell(holding);
@@ -1274,14 +1269,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       secondaryLegs, price).subscribe();
   }
 
-  async testSellStrangle() {
+  async sellAllStrangle() {
     this.currentHoldings.forEach(async (holding) => {
       if (this.isStrangle(holding)) {
         const seenPuts = {};
         const seenCalls = {};
         holding.primaryLegs.concat(holding.secondaryLegs).forEach((option: Options) => {
           const putCall = option.putCallInd;
-          const expiry = option.description.match(/[0-9]{2}\/[0-9]{2}\/[0-9]{2}/)[0];
+          const expiry = option.description.match(/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/)[0];
           if (putCall === 'C') {
             if (!seenCalls[expiry]) {
               seenCalls[expiry] = [];
@@ -1322,7 +1317,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       const seenCalls = {};
       holding.primaryLegs.concat(holding.secondaryLegs).forEach((option: Options) => {
         const putCall = option.putCallInd;
-        const expiry = option.description.match(/[0-9]{2}\/[0-9]{2}\/[0-9]{2}/)[0];
+        const expiry = option.description.match(/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/)[0];
         if (putCall === 'C') {
           if (!seenCalls[expiry]) {
             seenCalls[expiry] = [];
@@ -1380,6 +1375,47 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   getPreferences() {
     this.portfolioService.getUserPreferences().subscribe(pref => {
       console.log('pref', pref);
+    });
+  }
+
+  async checkPersonalLists() {
+    AlwaysBuy.forEach(async (stock) => {
+      const name = stock.ticker;
+      try {
+        const backtestResults = await this.strategyBuilderService.getBacktestData(name);
+        const stock: PortfolioInfoHolding = {
+          name: name,
+          pl: 0,
+          netLiq: 0,
+          shares: 0,
+          alloc: 0,
+          recommendation: 'None',
+          buyReasons: '',
+          sellReasons: '',
+          buyConfidence: 0,
+          sellConfidence: 0,
+          prediction: null
+        };
+        if (backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.5) {
+          await this.addBuy(stock);
+          const log = `Adding buy ${stock.name}`;
+          this.reportingService.addAuditLog(null, log);
+        } else {
+          await this.addBuy(stock, RiskTolerance.Zero);
+          const log = `Adding buy ${stock.name}`;
+          this.reportingService.addAuditLog(null, log);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    });
+  }
+  async hedge() {
+    await this.findCurrentPositions();
+    this.currentHoldings.forEach(async (holding) => {
+      if (!this.isStrangle(holding)) {
+        await this.createProtectivePutOrder(holding);
+      }
     });
   }
 
