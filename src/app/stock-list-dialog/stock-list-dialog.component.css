@@ -1,3 +1,16 @@
 .actions {
     margin-top: 1rem;
 }
+
+.pick-list-container {
+    margin-top: 1rem;
+    flex-direction: row;
+}
+
+.product-list-action {
+    float: right;
+}
+
+.product-list-detail {
+    float: left;
+}
