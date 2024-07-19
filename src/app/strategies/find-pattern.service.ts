@@ -40,7 +40,7 @@ export class FindPatternService {
     private machineDaytradingService: MachineDaytradingService
   ) { }
 
-  async developStrategy() {
+  async developPattern() {
     this.searchCount = 0;
     this.startPatternSearch$.complete();
     this.startPatternSearch$ = new Subject();

@@ -1,27 +1,25 @@
-<p-selectButton [options]="listType" [(ngModel)]="activeList" optionLabel="label" (click)="changedList()"></p-selectButton>
+<p-selectButton [options]="listType" [(ngModel)]="activeList" optionLabel="label"
+    (click)="changedList()"></p-selectButton>
 <div class="actions">
-    <input type="text" pInputText [(ngModel)]="newStock"/>
+    <input type="text" pInputText [(ngModel)]="newStock" />
     <button pButton type="button" label="Add Stock" (click)="addRow()"></button>
+    <p-splitButton label="Get winners" icon="pi pi-check" (onClick)="getWinners()" [model]="items"></p-splitButton>
 </div>
 
-<p-table [value]="stockList" dataKey="ticker" [paginator]="true" [rows]="5" [showCurrentPageReport]="true"
-    currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries" [rowsPerPageOptions]="[10,25,50]">
-    <ng-template pTemplate="body" let-stock let-ri="rowIndex">
-        <tr [pEditableRow]="stock">
-            <td>
-                <p-cellEditor>
-                    <ng-template pTemplate="input">
-                        <input pInputText type="text" [(ngModel)]="stock.ticker">
-                    </ng-template>
-                    <ng-template pTemplate="output">
-                        {{stock.ticker}}
-                    </ng-template>
-                </p-cellEditor>
-            </td>
-            <td style="text-align:center">
-                <button pButton pRipple type="button" pCancelEditableRow icon="pi pi-times"
-                    (click)="deleteRow(stock, ri)" class="p-button-rounded p-button-text p-button-danger"></button>
-            </td>
-        </tr>
-    </ng-template>
-</p-table>
+<div class="pick-list-container">
+    <p-pickList [source]="stockList" [target]="newList" sourceHeader="Current List" targetHeader="Optional Items"
+        [dragdrop]="true" [responsive]="true" [sourceStyle]="{'height':'30rem'}" [targetStyle]="{'height':'30rem'}"
+        filterBy="name" sourceFilterPlaceholder="Search by name" targetFilterPlaceholder="Search by name">
+        <ng-template let-stock pTemplate="item">
+            <div class="product-item">
+                <div class="product-list-detail">
+                    <h5 class="p-mb-2">{{stock.ticker}}</h5>
+                </div>
+                <div class="product-list-action">
+                    <button pButton pRipple type="button" icon="pi pi-times" (click)="deleteRow(stock, ri)"
+                        class="p-button-rounded p-button-text p-button-danger"></button>
+                </div>
+            </div>
+        </ng-template>
+    </p-pickList>
+</div>
