@@ -482,7 +482,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       .subscribe(patternsResponse => console.log('found patterns ', patternsResponse));
 
     await this.findCurrentPositions();
-    await this.modifyCurrentHoldings();
+
     this.setProfitLoss();
     const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
     if (lastProfitLoss && lastProfitLoss.profit !== undefined) {
@@ -518,6 +518,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         console.log(error);
       }
     }
+    
+    await this.modifyCurrentHoldings();
+    await this.checkPersonalLists();
+
     switch (this.strategyList[this.strategyCounter]) {
       case Strategy.OptionsStrangle:
         const buyStrangleCb = async (symbol: string, prediction: number, backtestData: any) => {
