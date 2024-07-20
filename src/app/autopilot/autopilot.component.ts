@@ -988,7 +988,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           } else if (callsTotalPrice > putsTotalPrice && backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.7) {
             this.sellStrangle(holding);
           }
-        } else if ((backtestResults && backtestResults.ml !== null && backtestResults.ml < 0.3) || holding.name === 'TQQQ') {
+        } else if ((backtestResults && backtestResults.ml !== null && 
+            (backtestResults.ml < 0.3 || backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL')) || holding.name === 'TQQQ') {
           console.log('Backtest indicates sell', backtestResults);
           this.portfolioSell(holding);
         } else if (backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.7) {
