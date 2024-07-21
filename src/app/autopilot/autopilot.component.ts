@@ -237,8 +237,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     this.multibuttonOptions = [
       {
-        command: () => {
-          this.testTrading();
+        label: 'Test',
+        command: async () => {
           await this.optionsOrderBuilderService.createTradingPair();
         }
       },
