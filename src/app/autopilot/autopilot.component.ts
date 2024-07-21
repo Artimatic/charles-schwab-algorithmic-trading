@@ -1,34 +1,34 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { DailyBacktestService } from '@shared/daily-backtest.service';
+import { SmartOrder } from '@shared/index';
+import { Options } from '@shared/models/options';
+import { Trade } from '@shared/models/trade';
+import { BacktestService, CartService, DaytradeService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
+import { AiPicksPredictionData, AiPicksService } from '@shared/services/ai-picks.service';
+import { ScoringIndex } from '@shared/services/score-keeper.service';
+import { AlgoQueueItem } from '@shared/services/trade.service';
+import { divide, floor, round } from 'lodash';
+import * as moment from 'moment-timezone';
+import { MenuItem, MessageService } from 'primeng/api';
+import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { Subject, Subscription } from 'rxjs';
 import { TimerObservable } from 'rxjs-compat/observable/TimerObservable';
-import { finalize, takeUntil, take, delay } from 'rxjs/operators';
-import * as moment from 'moment-timezone';
-import { BacktestService, CartService, DaytradeService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
-import { SmartOrder } from '@shared/index';
-import { divide, floor, round } from 'lodash';
-import { DailyBacktestService } from '@shared/daily-backtest.service';
-import { MenuItem, MessageService } from 'primeng/api';
-import { AlgoQueueItem } from '@shared/services/trade.service';
-import { ScoringIndex } from '@shared/services/score-keeper.service';
-import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
-import { CurrentStockList } from '../rh-table/stock-list.constant';
-import { AiPicksPredictionData, AiPicksService } from '@shared/services/ai-picks.service';
-import { FindPatternService } from '../strategies/find-pattern.service';
-import { GlobalSettingsService } from '../settings/global-settings.service';
-import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
+import { delay, finalize, take, takeUntil } from 'rxjs/operators';
 import { PotentialTrade } from '../backtest-table/potential-trade.constant';
-import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
+import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
+import { TrainingResults } from '../machine-learning/ask-model/ask-model.component';
+import { OptionsOrderBuilderService } from '../options-order-builder.service';
+import { OrderHandlingService } from '../order-handling/order-handling.service';
+import { PricingService } from '../pricing/pricing.service';
+import { AlwaysBuy } from '../rh-table/backtest-stocks.constant';
+import { CurrentStockList } from '../rh-table/stock-list.constant';
+import { GlobalSettingsService } from '../settings/global-settings.service';
+import { StockListDialogComponent } from '../stock-list-dialog/stock-list-dialog.component';
+import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
+import { FindPatternService } from '../strategies/find-pattern.service';
 import { AddOptionsTradeComponent } from './add-options-trade/add-options-trade.component';
 import { FindDaytradeService } from './find-daytrade.service';
-import { Trade } from '@shared/models/trade';
-import { StockListDialogComponent } from '../stock-list-dialog/stock-list-dialog.component';
-import { Options } from '@shared/models/options';
-import { PricingService } from '../pricing/pricing.service';
-import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
-import { SimulationChartComponent } from '../simulation/simulation-chart/simulation-chart.component';
-import { OrderHandlingService } from '../order-handling/order-handling.service';
-import { TrainingResults } from '../machine-learning/ask-model/ask-model.component';
-import { AlwaysBuy } from '../rh-table/backtest-stocks.constant';
 
 export interface PositionHoldings {
   name: string;
@@ -88,7 +88,7 @@ export enum Strategy {
   SingleStockPick = 'SingleStockPick',
   MLSpy = 'MLSpy',
   OptionsStrangle = 'OptionsStrangle',
-  BuyList = 'BuyList'
+  TradingPairs = 'TradingPairs'
 }
 
 export enum RiskTolerance {
@@ -138,7 +138,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     // Strategy.InverseSwingtrade,
     //Strategy.DaytradeShort,
     Strategy.Short,
-    Strategy.BuyList,
+    Strategy.TradingPairs,
     // Strategy.DaytradeFullList,
   ];
 
@@ -211,7 +211,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private aiPicksService: AiPicksService,
     private pricingService: PricingService,
     private daytradeStrategiesService: DaytradeStrategiesService,
-    private orderHandlingService: OrderHandlingService
+    private orderHandlingService: OrderHandlingService,
+    private optionsOrderBuilderService: OptionsOrderBuilderService
   ) { }
 
   ngOnInit(): void {
@@ -236,9 +237,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     this.multibuttonOptions = [
       {
-        label: 'Test trading functionalities',
-        command: () => {
-          this.testTrading();
+        label: 'Test',
+        command: async () => {
+          await this.optionsOrderBuilderService.createTradingPair();
         }
       },
       {
@@ -518,22 +519,23 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         console.log(error);
       }
     }
-    
+
     await this.modifyCurrentHoldings();
     await this.checkPersonalLists();
+    await this.optionsOrderBuilderService.createTradingPair();
 
     switch (this.strategyList[this.strategyCounter]) {
       case Strategy.OptionsStrangle:
         const buyStrangleCb = async (symbol: string, prediction: number, backtestData: any) => {
           if (backtestData?.optionsVolume > 230 && backtestData.sellSignals.length > 1) {
             if (prediction < 0.3 && backtestData.sellSignals.length > 0) {
-              const optionStrategy = await this.strategyBuilderService.getPutTrade(symbol);
+              const optionStrategy = await this.strategyBuilderService.getPutStrangleTrade(symbol);
               const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
               this.strategyBuilderService.addStrangle(symbol, price, optionStrategy);
               console.log('Adding Bearish strangle', symbol, price, optionStrategy);
             } else {
               if (prediction > 0.6 && backtestData.buySignals.length > 0) {
-                const optionStrategy = await this.strategyBuilderService.getCallTrade(symbol);
+                const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade(symbol);
                 const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
                 this.strategyBuilderService.addStrangle(symbol, price, optionStrategy);
                 console.log('Adding Bullish strangle', symbol, price, optionStrategy);
@@ -543,9 +545,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         };
         await this.getNewTrades(buyStrangleCb);
         break;
-      case Strategy.BuyList: 
-        await this.checkPersonalLists();
-      break;
+      case Strategy.TradingPairs:
+        await this.optionsOrderBuilderService.createTradingPair();
+        break;
       case Strategy.TrimHoldings:
         this.trimHoldings();
         break;
@@ -553,7 +555,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const buyBearishStrangle = async (symbol: string, prediction: number, backtestData: any) => {
           if (backtestData?.optionsVolume > 230 && backtestData.sellSignals.length > 1) {
             if (prediction < 0.3) {
-              const optionStrategy = await this.strategyBuilderService.getPutTrade(symbol);
+              const optionStrategy = await this.strategyBuilderService.getPutStrangleTrade(symbol);
               const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
               this.strategyBuilderService.addStrangle(symbol, price, optionStrategy);
               console.log('Adding Bearish strangle', symbol, price, optionStrategy);
@@ -613,12 +615,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         backtestData?.optionsVolume > 230 && (prediction > 0.7 || prediction < 0.3)) {
         let optionStrategy;
         if (prediction > 0.7) {
-          optionStrategy = await this.strategyBuilderService.getCallTrade(symbol);
+          optionStrategy = await this.strategyBuilderService.getCallStrangleTrade(symbol);
           const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
           this.strategyBuilderService.addStrangle(symbol, price, optionStrategy);
           console.log('Adding Bullish strangle', symbol, price, optionStrategy);
         } else if (prediction < 0.3) {
-          optionStrategy = await this.strategyBuilderService.getPutTrade(symbol);
+          optionStrategy = await this.strategyBuilderService.getPutStrangleTrade(symbol);
           const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
           this.strategyBuilderService.addStrangle(symbol, price, optionStrategy);
           console.log('Adding Bearish strangle', symbol, price, optionStrategy);
@@ -843,22 +845,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       (holding.primaryLegs[0].putCallInd !== holding.secondaryLegs[0].putCallInd);
   }
 
-  private protectivePutCount(holding: PortfolioInfoHolding): number {
-    if (holding.shares) {
-      if (!holding.primaryLegs && holding.secondaryLegs) {
-        if (holding.secondaryLegs[0].putCallInd === 'P') {
-          return holding.secondaryLegs.reduce((acc, curr) => acc + curr.quantity, 0);
-        }
-      } else if (holding.primaryLegs && !holding.secondaryLegs) {
-        if (holding.primaryLegs[0].putCallInd === 'P') {
-          return holding.primaryLegs.reduce((acc, curr) => acc + curr.quantity, 0);
-        }
-      }
-    }
-
-    return 0;
-  }
-
   async findCurrentPositions() {
     this.currentHoldings = [];
     this.setLoading(true);
@@ -988,46 +974,20 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           } else if (callsTotalPrice > putsTotalPrice && backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.7) {
             this.sellStrangle(holding);
           }
-        } else if ((backtestResults && backtestResults.ml !== null && backtestResults.ml < 0.3) || holding.name === 'TQQQ') {
+        } else if ((backtestResults && backtestResults.ml !== null &&
+          (backtestResults.ml < 0.3 || backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL')) || holding.name === 'TQQQ') {
           console.log('Backtest indicates sell', backtestResults);
           this.portfolioSell(holding);
         } else if (backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.7) {
           console.log('Backtest indicates buying', backtestResults);
-          await this.addBuy(this.createHoldingObj(holding.name));
+          await this.addBuy(this.createHoldingObj(holding.name), RiskTolerance.Zero);
         } else {
-          await this.createProtectivePutOrder(holding);
+          await this.optionsOrderBuilderService.createProtectivePutOrder(holding);
         }
       } catch (error) {
         console.log('Backtest error', error);
       }
     });
-  }
-
-  async createProtectivePutOrder(holding: PortfolioInfoHolding) {
-    if (holding.shares) {
-      let putsNeeded = 0;
-      if ((holding.primaryLegs && !holding.secondaryLegs && holding.primaryLegs[0].putCallInd === 'P')) {
-        putsNeeded = Math.floor((holding.shares / 100) - holding.primaryLegs.length) || 1;
-      } else if (!holding.primaryLegs && holding.secondaryLegs && holding.secondaryLegs[0].putCallInd === 'P') {
-        putsNeeded = Math.floor((holding.shares / 100) - holding.secondaryLegs.length) || 1;
-      } else if (!holding.primaryLegs && !holding.secondaryLegs) {
-        putsNeeded = Math.floor(holding.shares / 100);
-      }
-
-      putsNeeded -= this.protectivePutCount(holding);
-
-      if (putsNeeded > 0) {
-        const putOption = await this.strategyBuilderService.getProtectivePut(holding.name);
-        const estimatedPrice = this.strategyBuilderService.findOptionsPrice(putOption.put.bid, putOption.put.ask);
-
-        if ((estimatedPrice * 100) > 100) {
-          console.log('addProtectivePutOrder', holding.name, putOption, estimatedPrice);
-          this.cartService.addProtectivePutOrder(holding.name, [putOption.put], estimatedPrice, putsNeeded);
-        } else {
-          console.log('Protective put option too cheap.', holding.name, estimatedPrice);
-        }
-      }
-    }
   }
 
   getTechnicalIndicators(stock: string, startDate: string, currentDate: string) {
@@ -1160,14 +1120,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       orderSizePct, null, null, null);
     this.cartService.addToCart(order, true);
     this.initializeOrder(order);
-  }
-
-  async enterSellOptionOrder(holding: PortfolioInfoHolding) {
-    // this.backtestService.getLastPriceTiingo({ symbol: holding.primaryLegSymbol })
-    //   .subscribe(tiingoQuote => {
-    //     const lastPrice = tiingoQuote[holding.primaryLegSymbol].quote.lastPrice;
-    //     this.strategyBuilderService.addOptionOrder(holding.name, holding.primaryLegSymbol, 'P', lastPrice, holding.shares, 'Sell');
-    //   });
   }
 
   async buildBuyOrder(holding: PortfolioInfoHolding,
@@ -1475,7 +1427,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.findCurrentPositions();
     this.currentHoldings.forEach(async (holding) => {
       if (!this.isStrangle(holding)) {
-        await this.createProtectivePutOrder(holding);
+        await this.optionsOrderBuilderService.createProtectivePutOrder(holding);
       }
     });
   }
@@ -1492,37 +1444,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       }
     });
     await this.sellAllStrangle();
-  }
-
-  testTrading() {
-    this.dialogService.open(SimulationChartComponent, {
-      header: 'Simulation',
-      contentStyle: { 'overflow-y': 'unset' },
-      width: '100vw',
-      height: '100vh',
-      data: {
-        symbol: 'META'
-      }
-    });
-    // this.portfolioService.getIntradayPriceHistoryQuotes('MSFT').subscribe(data => {
-    //   console.log('getIntradayPriceHistoryQuotes', data);
-    //   this.backtestService.getDaytradeIndicators(data.candles, 80).subscribe(data => {
-    //     console.log('daytrade indicators', data);
-    //     this.backtestService.getDaytradeRecommendationFn('MSFT', null, null, { minQuotes: 80 }, data[data.length - 1])
-    //       .subscribe(data => console.log('recommendation', data));
-    //   });
-    // });
-
-    // this.backtestService.getDaytradeRecommendation('SPY', null, null, { minQuotes: 81 }).subscribe(data => console.log('getDaytradeRecommendation', data));
-    // this.machineLearningService
-    // .trainDaytrade('SPY',
-    //   moment().add({ days: 1 }).format('YYYY-MM-DD'),
-    //   moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
-    //   1,
-    //   this.globalSettingsService.daytradeAlgo
-    // ).subscribe(data => {
-    //   console.log('ml daytrade data', data);
-    // });
   }
 
   unsubscribeStockFinder() {

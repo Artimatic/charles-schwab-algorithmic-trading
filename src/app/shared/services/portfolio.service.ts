@@ -261,14 +261,12 @@ export class PortfolioService {
       return of(null);
     }
     const body = {
-      primaryLegSymbol,
+      symbol: primaryLegSymbol,
       quantity: quantity,
       price: price,
-      type: 'NET_DEBIT',
-      extendedHours: extended,
       accountId
     };
-    return this.http.post('/api/portfolio/v2/options-buy', body);
+    return this.http.post('/api/portfolio/v2/option-buy', body);
   }
 
   sendOptionSell(primaryLegSymbol: string, quantity: number, price: number, extended: boolean): Observable<any> {
@@ -277,14 +275,12 @@ export class PortfolioService {
       return of(null);
     }
     const body = {
-      primaryLegSymbol,
+      symbol: primaryLegSymbol,
       quantity: quantity,
       price: price,
-      type: 'NET_CREDIT',
-      extendedHours: extended,
       accountId
     };
-    return this.http.post('/api/portfolio/v2/options-sell', body);
+    return this.http.post('/api/portfolio/v2/option-sell', body);
   }
 
   sendTwoLegOrder(primaryLegSymbol: string, secondaryLegSymbol: string,
