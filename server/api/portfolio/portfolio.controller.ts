@@ -106,8 +106,6 @@ class PortfolioController extends BaseController {
     PortfolioService.optionBuy(request.body.symbol,
       request.body.quantity,
       request.body.price,
-      request.body.type,
-      request.body.extendedHours,
       request.body.accountId,
       response)
       .then((data) => BaseController.requestGetSuccessHandler(response, data))
@@ -118,8 +116,6 @@ class PortfolioController extends BaseController {
     PortfolioService.optionSell(request.body.symbol,
       request.body.quantity,
       request.body.price,
-      request.body.type,
-      request.body.extendedHours,
       request.body.accountId,
       response)
       .then((data) => BaseController.requestGetSuccessHandler(response, data))

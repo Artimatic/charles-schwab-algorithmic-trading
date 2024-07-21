@@ -581,11 +581,10 @@ class PortfolioService {
     return request.post(options);
   }
 
-  optionBuy(primaryLegSymbol,
+  optionBuy(symbol,
     quantity,
     price,
-    type = 'LIMIT',
-    extendedHours = false, accountId, response) {
+    accountId, response) {
     const headers = {
       'Accept': '*/*',
       'Accept-Encoding': 'gzip',
@@ -599,24 +598,24 @@ class PortfolioService {
       headers: headers,
       json: true,
       gzip: true,
-      body: {
-        orderType: type,
-        session: extendedHours ? 'SEAMLESS' : 'NORMAL',
-        duration: 'DAY',
-        orderStrategyType: 'SINGLE',
-        price: price,
-        taxLotMethod: 'LIFO',
-        orderLegCollection: [
-          {
-            instruction: 'BUY_TO_OPEN',
-            quantity: quantity,
-            instrument: {
-              symbol: primaryLegSymbol,
-              assetType: 'OPTION'
-            }
-          }
-        ]
-      }
+      body: { 
+        "complexOrderStrategyType": "NONE", 
+        "orderType": "LIMIT", 
+        "session": "NORMAL", 
+        "price": price, 
+        "duration": "DAY", 
+        "orderStrategyType": "SINGLE", 
+        "orderLegCollection": [ 
+         { 
+          "instruction": "BUY_TO_OPEN", 
+          "quantity": quantity, 
+          "instrument": { 
+           "symbol": symbol, 
+           "assetType": "OPTION" 
+          } 
+         } 
+        ] 
+      }      
     };
 
     return this.renewAuth(accountId, response)
@@ -625,11 +624,10 @@ class PortfolioService {
       });
   }
 
-  optionSell(primaryLegSymbol,
+  optionSell(symbol,
     quantity,
     price,
-    type = 'LIMIT',
-    extendedHours = false, accountId, response) {
+    accountId, response) {
     const headers = {
       'Accept': '*/*',
       'Accept-Encoding': 'gzip',
@@ -643,24 +641,24 @@ class PortfolioService {
       headers: headers,
       json: true,
       gzip: true,
-      body: {
-        orderType: type,
-        session: extendedHours ? 'SEAMLESS' : 'NORMAL',
-        duration: 'DAY',
-        orderStrategyType: 'SINGLE',
-        price: price,
-        taxLotMethod: 'LIFO',
-        orderLegCollection: [
-          {
-            instruction: 'BUY_TO_OPEN',
-            quantity: quantity,
-            instrument: {
-              symbol: primaryLegSymbol,
-              assetType: 'OPTION'
-            }
-          }
-        ]
-      }
+      body: { 
+        "complexOrderStrategyType": "NONE", 
+        "orderType": "LIMIT", 
+        "session": "NORMAL", 
+        "price": price, 
+        "duration": "DAY", 
+        "orderStrategyType": "SINGLE", 
+        "orderLegCollection": [ 
+         { 
+          "instruction": "SELL_TO_CLOSE", 
+          "quantity": quantity, 
+          "instrument": { 
+           "symbol": symbol, 
+           "assetType": "OPTION" 
+          } 
+         } 
+        ] 
+      }   
     };
 
     return this.renewAuth(accountId, response)

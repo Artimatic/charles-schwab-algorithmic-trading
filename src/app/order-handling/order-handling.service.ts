@@ -8,7 +8,7 @@ import { BacktestService, CartService, PortfolioService, TradeService } from '@s
 import { Options } from '@shared/models/options';
 import { AlgoQueueItem } from '@shared/services/trade.service';
 import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
-import { TrainingResults } from '../machine-learning/ask-model/ask-model.component';
+import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 
 @Injectable({
   providedIn: 'root'
@@ -24,7 +24,8 @@ export class OrderHandlingService {
     private portfolioService: PortfolioService,
     private tradeService: TradeService,
     private daytradeStrategiesService: DaytradeStrategiesService,
-    private backtestService: BacktestService
+    private backtestService: BacktestService,
+    private strategyBuilderService: StrategyBuilderService
   ) { }
 
   async hasPositions(symbols: string[]) {
@@ -126,5 +127,21 @@ export class OrderHandlingService {
           }
         );
     }
+  }
+
+  sellOption(symbol: string, quantity: number) {
+    this.backtestService.getLastPriceTiingo({ symbol: symbol })
+      .subscribe(tiingoQuote => {
+        const estPrice = this.strategyBuilderService.findOptionsPrice(tiingoQuote[symbol].quote.bidPrice, tiingoQuote[symbol].quote.askPrice);
+        this.portfolioService.sendOptionSell(symbol, quantity, estPrice, false).subscribe();
+      });
+  }
+
+  buyOption(symbol: string, quantity: number) {
+    this.backtestService.getLastPriceTiingo({ symbol: symbol })
+      .subscribe(tiingoQuote => {
+        const estPrice = this.strategyBuilderService.findOptionsPrice(tiingoQuote[symbol].quote.bidPrice, tiingoQuote[symbol].quote.askPrice);
+        this.portfolioService.sendOptionBuy(symbol, quantity, estPrice, false).subscribe();
+      });
   }
 }

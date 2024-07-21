@@ -49,9 +49,9 @@ export class AddOptionsTradeComponent implements OnInit, OnDestroy {
       let optionStrategy = null;
       const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
       if (backtestResults && backtestResults.ml > 0.6) {
-        optionStrategy = await this.strategyBuilderService.getCallTrade(symbol);
+        optionStrategy = await this.strategyBuilderService.getCallStrangleTrade(symbol);
       } else if (backtestResults && backtestResults.ml < 0.2) {
-        optionStrategy = await this.strategyBuilderService.getPutTrade(symbol);
+        optionStrategy = await this.strategyBuilderService.getPutStrangleTrade(symbol);
       }
 
       if (optionStrategy.call && optionStrategy.put) {

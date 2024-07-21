@@ -281,15 +281,15 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             this.runStrategy(1 * lastPrice, queueItem.analysis);
           } else {
             this.machineLearningService
-            .trainDaytrade(this.order.holding.symbol.toUpperCase(),
-              moment().add({ days: 1 }).format('YYYY-MM-DD'),
-              moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
-              1,
-              this.globalSettingsService.daytradeAlgo
-            ).subscribe((mlResult: TrainingResults[]) => {
-              this.lastMlResult = mlResult[0];
-              this.runStrategy(1 * lastPrice, queueItem.analysis);
-            });
+              .trainDaytrade(this.order.holding.symbol.toUpperCase(),
+                moment().add({ days: 1 }).format('YYYY-MM-DD'),
+                moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
+                1,
+                this.globalSettingsService.daytradeAlgo
+              ).subscribe((mlResult: TrainingResults[]) => {
+                this.lastMlResult = mlResult[0];
+                this.runStrategy(1 * lastPrice, queueItem.analysis);
+              });
           }
         });
 
@@ -468,11 +468,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
               this.setWarning(`Trying to sell position that doesn\'t exists`);
             };
 
-            if (this.order.type === OrderTypes.options) {
-              this.sellOptions(sellOrder);
-            } else {
-              this.daytradeService.sendSell(sellOrder, 'limit', resolve, reject, handleNotFound);
-            }
+            this.daytradeService.sendSell(sellOrder, 'limit', resolve, reject, handleNotFound);
           } else {
             this.incrementSell(sellOrder);
 
@@ -598,6 +594,22 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     const initialQuantity = this.multiplierPreference.value * this.firstFormGroup.value.quantity;
     if (this.hasReachedOrderLimit()) {
       this.stop();
+    } else if (this.order.type === OrderTypes.call) {
+      if (this.firstFormGroup.value.orderType.toLowerCase() === 'buy' && analysis.recommendation.toLowerCase() === 'buy') {
+        if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
+          this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity);
+        }
+      } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'sell') {
+        if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
+          this.orderHandlingService.sellOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity);
+        }
+      }
+    } else if (this.order.type === OrderTypes.put) {
+      if (this.firstFormGroup.value.orderType.toLowerCase() === 'buy' && analysis.recommendation.toLowerCase() === 'sell') {
+        this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity);
+      } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'buy') {
+        this.orderHandlingService.sellOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity);
+      }
     } else if (this.order.type === OrderTypes.protectivePut && analysis.recommendation.toLowerCase() === 'sell') {
       if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
         this.buyProtectivePut();
@@ -954,7 +966,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   async buyStrangle() {
-    const bullishStrangle = await this.strategyBuilderService.getCallTrade(this.order.holding.symbol);
+    const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(this.order.holding.symbol);
     // const price = bullishStrangle.call.bid + bullishStrangle.put.bid;
     const price = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) +
       this.strategyBuilderService.findOptionsPrice(bullishStrangle.put.bid, bullishStrangle.put.ask);
@@ -968,10 +980,6 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
   async buyProtectivePut() {
     await this.strategyBuilderService.buyProtectivePut(this.order.holding.symbol, this.order.quantity)
-  }
-
-  async sellOptions(order: SmartOrder) {
-
   }
 
   ngOnDestroy() {

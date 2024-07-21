@@ -158,7 +158,7 @@ export class StrategyBuilderService {
     return !prevObj || (currTotalVolume > prevObj.totalVolume);
   }
 
-  async getCallTrade(symbol: string): Promise<Strangle> {
+  async getCallStrangleTrade(symbol: string): Promise<Strangle> {
     const minExpiration = 45;
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     const optionsChain = optionsData.optionsChain;
@@ -187,7 +187,7 @@ export class StrategyBuilderService {
     }, { call: null, put: null });
   }
 
-  async getPutTrade(symbol: string) {
+  async getPutStrangleTrade(symbol: string) {
     const minExpiration = 65;
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     const optionsChain = optionsData.optionsChain;
@@ -423,10 +423,10 @@ export class StrategyBuilderService {
         }
 
         storage = storage.filter(s => moment().diff(moment(s.date), 'days') < 3);
-        localStorage.setItem('tradingStrategy', JSON.stringify(storage));
+        this.setTradingStrategies(storage);
       } else {
         const newStorageObj = [trade];
-        localStorage.setItem('tradingStrategy', JSON.stringify(newStorageObj));
+        this.setTradingStrategies(newStorageObj);
       }
     }
   }

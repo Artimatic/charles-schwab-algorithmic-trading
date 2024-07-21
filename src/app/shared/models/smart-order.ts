@@ -5,7 +5,9 @@ export enum OrderTypes {
     equity,
     options,
     protectivePut,
-    strangle
+    strangle,
+    put,
+    call
 }
 
 export interface SmartOrder extends Order {

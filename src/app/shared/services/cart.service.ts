@@ -15,7 +15,7 @@ export class CartService {
   buyOrders: SmartOrder[] = [];
   otherOrders: SmartOrder[] = [];
   cartObserver: Subject<boolean> = new Subject<boolean>();
-  
+
   constructor(
     private portfolioService: PortfolioService,
     private tradeService: TradeService,
@@ -79,20 +79,20 @@ export class CartService {
 
   deleteSell(deleteOrder: SmartOrder) {
     console.log('Deleting sell orders that match', deleteOrder.holding.symbol);
-    this.sellOrders = this.sellOrders.filter(fullOrder => fullOrder.holding.symbol !== deleteOrder.holding.symbol );
+    this.sellOrders = this.sellOrders.filter(fullOrder => fullOrder.holding.symbol !== deleteOrder.holding.symbol);
     this.cartObserver.next(true);
   }
 
   deleteBuy(deleteOrder: SmartOrder) {
     console.log('Deleting buy orders that match', deleteOrder.holding.symbol);
-    this.buyOrders = this.buyOrders.filter(fullOrder => fullOrder.holding.symbol !== deleteOrder.holding.symbol );
+    this.buyOrders = this.buyOrders.filter(fullOrder => fullOrder.holding.symbol !== deleteOrder.holding.symbol);
     this.cartObserver.next(true);
 
   }
 
   deleteDaytrade(deleteOrder: SmartOrder) {
     console.log('Deleting day trades that match', deleteOrder.holding.symbol);
-    this.otherOrders = this.otherOrders.filter(fullOrder => fullOrder.holding.symbol !== deleteOrder.holding.symbol );
+    this.otherOrders = this.otherOrders.filter(fullOrder => fullOrder.holding.symbol !== deleteOrder.holding.symbol);
     this.cartObserver.next(true);
   }
 
@@ -184,7 +184,7 @@ export class CartService {
               severity: 'danger',
               summary: `Sell error for ${sell.holding.symbol}`
             });
-            
+
             sell.pending = false;
             sell.submitted = false;
           });
@@ -209,7 +209,7 @@ export class CartService {
               severity: 'danger',
               summary: `Buy error for ${buy.holding.symbol}`
             });
-            
+
             buy.pending = false;
             buy.submitted = false;
           });
@@ -240,10 +240,10 @@ export class CartService {
     };
   }
 
-  addSellStrangleOrder(symbol: string, 
+  addSellStrangleOrder(symbol: string,
     primaryLegs: Options[],
     secondaryLegs: Options[],
-    price: number, 
+    price: number,
     quantity: number) {
     const order: SmartOrder = {
       holding: {
@@ -272,10 +272,15 @@ export class CartService {
     this.addToCart(order);
   }
 
-  addProtectivePutOrder(symbol: string, 
+  async addOptionOrder(symbol: string,
     primaryLegs: Options[],
-    price: number, 
-    quantity: number) {
+    price: number,
+    quantity: number,
+    optionType) {
+    if ((price * 100) < 100) {
+      console.log('Options price too low.', primaryLegs[0], price);
+      return;
+    }
     const order: SmartOrder = {
       holding: {
         instrument: null,
@@ -290,13 +295,13 @@ export class CartService {
       lossThreshold: -0.05,
       profitTarget: 0.1,
       trailingStop: -0.05,
-      useStopLoss: true,
-      useTrailingStopLoss: true,
-      useTakeProfit: true,
+      useStopLoss: false,
+      useTrailingStopLoss: false,
+      useTakeProfit: false,
       sellAtClose: false,
       allocation: 0.05,
       primaryLegs,
-      type: OrderTypes.protectivePut
+      type: optionType
     };
 
     this.addToCart(order);
