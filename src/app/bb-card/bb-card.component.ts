@@ -377,7 +377,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
-  incrementBuy(order) {
+  incrementBuy(order = null) {
     if (order) {
       this.orders.push(order);
       this.order.buyCount += order.quantity;
@@ -597,21 +597,26 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     } else if (this.order.type === OrderTypes.call) {
       if (this.firstFormGroup.value.orderType.toLowerCase() === 'buy' && analysis.recommendation.toLowerCase() === 'buy') {
         if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
-          await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity);
+          this.incrementBuy();
+          await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.quantity);
         }
       } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'sell') {
         if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
-          await this.orderHandlingService.sellOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity);
+          this.incrementSell();
+          await this.orderHandlingService.sellOption(this.order.primaryLegs[0].symbol, this.order.quantity);
         }
       }
     } else if (this.order.type === OrderTypes.put) {
       if (this.firstFormGroup.value.orderType.toLowerCase() === 'buy' && analysis.recommendation.toLowerCase() === 'sell') {
-        await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity);
+        this.incrementBuy();
+        await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.quantity);
       } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'buy') {
-        await this.orderHandlingService.sellOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity);
+        this.incrementSell();
+        await this.orderHandlingService.sellOption(this.order.primaryLegs[0].symbol, this.order.quantity);
       }
     } else if (this.order.type === OrderTypes.protectivePut && analysis.recommendation.toLowerCase() === 'sell') {
       if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
+        this.incrementBuy();
         this.buyProtectivePut();
       }
     } else if (this.order.type === OrderTypes.strangle && this.order.side.toLowerCase() == 'sell') {
@@ -966,6 +971,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   async buyStrangle() {
+    this.incrementBuy();
     const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(this.order.holding.symbol);
     // const price = bullishStrangle.call.bid + bullishStrangle.put.bid;
     const price = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) +
