@@ -597,18 +597,18 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     } else if (this.order.type === OrderTypes.call) {
       if (this.firstFormGroup.value.orderType.toLowerCase() === 'buy' && analysis.recommendation.toLowerCase() === 'buy') {
         if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
-          this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity);
+          await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity);
         }
       } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'sell') {
         if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
-          this.orderHandlingService.sellOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity);
+          await this.orderHandlingService.sellOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity);
         }
       }
     } else if (this.order.type === OrderTypes.put) {
       if (this.firstFormGroup.value.orderType.toLowerCase() === 'buy' && analysis.recommendation.toLowerCase() === 'sell') {
-        this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity);
+        await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity);
       } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'buy') {
-        this.orderHandlingService.sellOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity);
+        await this.orderHandlingService.sellOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity);
       }
     } else if (this.order.type === OrderTypes.protectivePut && analysis.recommendation.toLowerCase() === 'sell') {
       if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {

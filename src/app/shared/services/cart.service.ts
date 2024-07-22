@@ -276,7 +276,8 @@ export class CartService {
     primaryLegs: Options[],
     price: number,
     quantity: number,
-    optionType) {
+    optionType,
+    side = 'Buy') {
     if ((price * 100) < 100) {
       console.log('Options price too low.', primaryLegs[0], price);
       return;
@@ -291,7 +292,7 @@ export class CartService {
       submitted: false,
       pending: false,
       orderSize: 1,
-      side: 'Buy',
+      side: side,
       lossThreshold: -0.05,
       profitTarget: 0.1,
       trailingStop: -0.05,

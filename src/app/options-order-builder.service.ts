@@ -52,14 +52,6 @@ export class OptionsOrderBuilderService {
     }
   }
 
-  async createCallOrder(stock: string, quantity: number, primaryLegs: Options[], price: number) {
-    this.cartService.addOptionOrder(stock, primaryLegs, price, quantity, OrderTypes.call);
-  }
-
-  async createPutOrder(stock: string, quantity: number, primaryLegs: Options[], price: number) {
-    this.cartService.addOptionOrder(stock, primaryLegs, price, quantity, OrderTypes.put);
-  }
-
   async createTradingPair() {
     this.strategyBuilderService.getTradingStrategies().forEach(async (strat) => {
       const buys: string[] = strat.strategy.buy;
@@ -93,8 +85,8 @@ export class OptionsOrderBuilderService {
                   if (callQuantity + putQuantity < 15) {
                     bullishStrangle.call.quantity = callQuantity;
                     bearishStrangle.put.quantity = putQuantity;
-                    this.createCallOrder(buy, callQuantity, [bullishStrangle.call], callPrice);
-                    this.createPutOrder(sell, putQuantity, [bearishStrangle.put], putPrice);
+                    this.cartService.addOptionOrder(buy, [bullishStrangle.call], callPrice, callQuantity, OrderTypes.call, 'Buy');
+                    this.cartService.addOptionOrder(sell, [bullishStrangle.put], putPrice, putQuantity, OrderTypes.put, 'Buy');
                   }
                 }
               }
@@ -103,6 +95,5 @@ export class OptionsOrderBuilderService {
         }
       }
     });
-
   }
 }
