@@ -29,6 +29,7 @@ import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.ser
 import { FindPatternService } from '../strategies/find-pattern.service';
 import { AddOptionsTradeComponent } from './add-options-trade/add-options-trade.component';
 import { FindDaytradeService } from './find-daytrade.service';
+import { OrderTypes } from '@shared/models/smart-order';
 
 export interface PositionHoldings {
   name: string;
@@ -312,7 +313,22 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   analyseCurrentOptions() {
     this.currentHoldings.forEach(async (holding) => {
+      if (this.isExpiring(holding)) {
+        console.log(`${holding.name} options are expiring soon`);
+        if (this.isStrangle(holding)) {
+          this.sellStrangle(holding);
+        } else {
+          if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
+            const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
+            this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, OrderTypes.call, 'Sell');
+          } else if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
+            const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
+            this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, OrderTypes.put, 'Sell');
+          }
+        }
+      }
       if (this.isStrangle(holding)) {
+
         const price = await this.backtestService.getLastPriceTiingo({ symbol: holding.name }).toPromise();
         const lastPrice = price[holding.name].quote.lastPrice;
         const closePrice = price[holding.name].quote.closePrice;
@@ -324,15 +340,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove && Math.abs(lastPrice - closePrice) > (backtestResults.averageMove * 1.15)) {
           console.log(`Large move detected for ${holding.name}. Selling strangle. Last price ${lastPrice}. Close price ${closePrice}.`);
           this.sellStrangle(holding);
-        } else {
-          const foundExpiringOption = holding.primaryLegs.concat(holding.secondaryLegs).find((option: Options) => {
-            const expiry = option.description.match(/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/)[0];
-            return moment(expiry).diff(moment(), 'days') < 30;
-          });
-          if (foundExpiringOption) {
-            console.log(`${holding.name} options are expiring soon`);
-            this.sellStrangle(holding);
-          }
         }
       }
     });
@@ -990,6 +997,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     });
   }
 
+  isExpiring(holding: PortfolioInfoHolding) {
+    return holding.primaryLegs.concat(holding.secondaryLegs ? holding.secondaryLegs : []).find((option: Options) => {
+      const expiry = option.description.match(/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/)[0];
+      return moment(expiry).diff(moment(), 'days') < 30;
+    });
+  }
+
   getTechnicalIndicators(stock: string, startDate: string, currentDate: string) {
     return this.backtestService.getBacktestEvaluation(stock, startDate, currentDate, 'daily-indicators');
   }
@@ -1308,13 +1322,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             const fullOrderList = seenCalls[key].concat(seenPuts[key]);
             let fullPrice = 0;
             for (let i = 0; i < fullOrderList.length; i++) {
-              const price = await this.backtestService.getLastPriceTiingo({ symbol: fullOrderList[i].symbol }).toPromise();
-
-              const askPrice = price[fullOrderList[i].symbol].quote.askPrice;
-              const bidPrice = price[fullOrderList[i].symbol].quote.bidPrice;
-
-              const estimatedPrice = this.strategyBuilderService.findOptionsPrice(bidPrice, askPrice);
-              fullPrice += estimatedPrice;
+              fullPrice += await this.orderHandlingService.getEstimatedPrice(fullOrderList[i].symbol);
             }
 
             this.cartService.addSellStrangleOrder(holding.name, holding.primaryLegs, holding.secondaryLegs, fullPrice, holding.primaryLegs[0].quantity);
@@ -1349,13 +1357,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           const fullOrderList = seenCalls[key].concat(seenPuts[key]);
           let fullPrice = 0;
           for (let i = 0; i < fullOrderList.length; i++) {
-            const price = await this.backtestService.getLastPriceTiingo({ symbol: fullOrderList[i].symbol }).toPromise();
-
-            const askPrice = price[fullOrderList[i].symbol].quote.askPrice;
-            const bidPrice = price[fullOrderList[i].symbol].quote.bidPrice;
-
-            const estimatedPrice = this.strategyBuilderService.findOptionsPrice(bidPrice, askPrice);
-            fullPrice += estimatedPrice;
+            fullPrice += await this.orderHandlingService.getEstimatedPrice(fullOrderList[i].symbol);
           }
           this.cartService.addSellStrangleOrder(holding.name, holding.primaryLegs, holding.secondaryLegs, fullPrice, holding.primaryLegs[0].quantity);
         }

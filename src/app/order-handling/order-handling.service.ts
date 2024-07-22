@@ -129,19 +129,22 @@ export class OrderHandlingService {
     }
   }
 
-  sellOption(symbol: string, quantity: number) {
-    this.backtestService.getLastPriceTiingo({ symbol: symbol })
-      .subscribe(tiingoQuote => {
-        const estPrice = this.strategyBuilderService.findOptionsPrice(tiingoQuote[symbol].quote.bidPrice, tiingoQuote[symbol].quote.askPrice);
-        this.portfolioService.sendOptionSell(symbol, quantity, estPrice, false).subscribe();
-      });
+  async getEstimatedPrice(symbol: string) {
+    const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
+
+    const askPrice = price[symbol].quote.askPrice;
+    const bidPrice = price[symbol].quote.bidPrice;
+
+    return this.strategyBuilderService.findOptionsPrice(bidPrice, askPrice);
   }
 
-  buyOption(symbol: string, quantity: number) {
-    this.backtestService.getLastPriceTiingo({ symbol: symbol })
-      .subscribe(tiingoQuote => {
-        const estPrice = this.strategyBuilderService.findOptionsPrice(tiingoQuote[symbol].quote.bidPrice, tiingoQuote[symbol].quote.askPrice);
-        this.portfolioService.sendOptionBuy(symbol, quantity, estPrice, false).subscribe();
-      });
+  async sellOption(symbol: string, quantity: number) {
+    const estPrice = await this.getEstimatedPrice(symbol);
+    this.portfolioService.sendOptionSell(symbol, quantity, estPrice, false).subscribe();
+  }
+
+  async buyOption(symbol: string, quantity: number) {
+    const estPrice = await this.getEstimatedPrice(symbol);
+    this.portfolioService.sendOptionBuy(symbol, quantity, estPrice, false).subscribe();
   }
 }
