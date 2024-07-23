@@ -150,7 +150,7 @@ export class DaytradeActiveSearchComponent implements OnInit, OnDestroy {
           1,
           this.globalSettingsService.daytradeAlgo
         ).toPromise();
-      if (mlResult[0]?.nextOutput > 0.6) {
+      if (mlResult && mlResult[0]?.nextOutput > 0.6) {
         this.addTrade(symbol, daytradeData);
       } else if ((indicator?.mfiLeft && indicator?.mfiLeft < 25) || indicator.bbandBreakout || (indicator.bband80[0][0] && indicator.close < indicator.bband80[0][0])) {
         this.addTrade(symbol, daytradeData);

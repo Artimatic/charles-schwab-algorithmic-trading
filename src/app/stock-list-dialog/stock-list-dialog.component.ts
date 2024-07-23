@@ -3,6 +3,8 @@ import { CurrentStockList } from '../rh-table/stock-list.constant';
 import { PersonalBearishPicks, AlwaysBuy } from '../rh-table/backtest-stocks.constant';
 import { AlgoParam } from '@shared/algo-param.interface';
 import { MenuItem } from 'primeng/api';
+import { BacktestService } from '@shared/services';
+import * as moment from 'moment-timezone';
 
 @Component({
   selector: 'app-stock-list-dialog',
@@ -18,7 +20,7 @@ export class StockListDialogComponent implements OnInit {
   newStock = '';
   items: MenuItem[];
 
-  constructor() { }
+  constructor(private backtestService: BacktestService) { }
 
   ngOnInit(): void {
     this.listType = [
@@ -30,20 +32,32 @@ export class StockListDialogComponent implements OnInit {
     this.stockList = CurrentStockList;
     this.items = [
       {
-        label: 'Update', icon: 'pi pi-refresh', 
+        label: 'Get losers',
         command: () => {
-          this.update();
+          this.getLosers();
         }
       }
     ];
   }
 
-  getWinners() {
-
+  async getWinners() {
+    this.stockList.filter(async (stock) => {
+      const current = moment().format('YYYY-MM-DD');
+      const start = moment().subtract(30, 'days').format('YYYY-MM-DD');
+      const results = await this.backtestService.getBacktestEvaluation(stock.ticker, start, current, 'daily-indicators').toPromise();
+      const lastSignal = results.signals[results.signals.length - 1];
+      return lastSignal.close > lastSignal.bband80[1][0];
+    });
   }
 
-  update() {
-
+  async getLosers() {
+    this.stockList.filter(async (stock) => {
+      const current = moment().format('YYYY-MM-DD');
+      const start = moment().subtract(30, 'days').format('YYYY-MM-DD');
+      const results = await this.backtestService.getBacktestEvaluation(stock.ticker, start, current, 'daily-indicators').toPromise();
+      const lastSignal = results.signals[results.signals.length - 1];
+      return lastSignal.close < lastSignal.bband80[1][0];
+    });
   }
 
   deleteRow(stock, rowIndex: number) {

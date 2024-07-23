@@ -25,6 +25,7 @@ export interface PortfolioInfoHolding {
   prediction: number;
   primaryLegs?: Options[];
   secondaryLegs?: Options[];
+  assetType?: string;
 }
 
 export interface Balance {

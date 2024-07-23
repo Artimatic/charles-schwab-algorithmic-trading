@@ -4,6 +4,7 @@ import { StrategyBuilderService } from './backtest-table/strategy-builder.servic
 import { OrderTypes } from '@shared/models/smart-order';
 import { Options } from '@shared/models/options';
 import { OptionsDataService } from '@shared/options-data.service';
+import { OrderHandlingService } from './order-handling/order-handling.service';
 
 @Injectable({
   providedIn: 'root'
@@ -12,7 +13,8 @@ export class OptionsOrderBuilderService {
 
   constructor(private strategyBuilderService: StrategyBuilderService,
     private cartService: CartService,
-    private optionsDataService: OptionsDataService
+    private optionsDataService: OptionsDataService,
+    private orderHandlingService: OrderHandlingService
   ) { }
 
   private protectivePutCount(holding: PortfolioInfoHolding): number {
@@ -61,32 +63,22 @@ export class OptionsOrderBuilderService {
         if (buyOptionsData && buyOptionsData.move && buyOptionsData.move < 0.15) {
           const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(buy);
           const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
-          if (callPrice > 800) {
+          if (callPrice > 500) {
             for (const sell of sells) {
               const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
               const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.call.bid, bearishStrangle.call.ask) * 100;
-              if (putPrice > 800 && (callPrice / putPrice)) {
+              if (putPrice > 500) {
                 const sellOptionsData = await this.optionsDataService.getImpliedMove(sell).toPromise();
                 if (sellOptionsData && sellOptionsData.move && sellOptionsData.move < 0.15) {
                   const multiple = (callPrice > putPrice) ? Math.round(callPrice / putPrice) : Math.round(putPrice / callPrice);
-                  let callQuantity = 1;
-                  let putQuantity = multiple;
-                  while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) < 500 &&
-                    callQuantity + putQuantity < 15) {
-                    if (callPrice > putPrice) {
-                      callQuantity++;
-                      putQuantity *= multiple;
-                    } else {
-                      putQuantity++;
-                      callQuantity *= multiple;
-                    }
-                  }
-
-                  if (callQuantity + putQuantity < 15) {
+                  let initialCallQuantity = 1;
+                  let initialPutQuantity = multiple;
+                  const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple);
+                  if (callQuantity + putQuantity < 5) {
                     bullishStrangle.call.quantity = callQuantity;
                     bearishStrangle.put.quantity = putQuantity;
                     this.cartService.addOptionOrder(buy, [bullishStrangle.call], callPrice, callQuantity, OrderTypes.call, 'Buy');
-                    this.cartService.addOptionOrder(sell, [bullishStrangle.put], putPrice, putQuantity, OrderTypes.put, 'Buy');
+                    this.cartService.addOptionOrder(sell, [bearishStrangle.put], putPrice, putQuantity, OrderTypes.put, 'Buy');
                   }
                 }
               }
@@ -96,4 +88,49 @@ export class OptionsOrderBuilderService {
       }
     });
   }
+
+  getCallPutQuantities(callPrice, callQuantity, putPrice, putQuantity, multiple) {
+    while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) < 500 &&
+      callQuantity + putQuantity < 15) {
+      if (callPrice > putPrice) {
+        callQuantity++;
+        putQuantity *= multiple;
+      } else {
+        putQuantity++;
+        callQuantity *= multiple;
+      }
+    }
+
+    return { callQuantity, putQuantity };
+  }
+
+  hedgeCallTrade(stock: string, currentHoldings: PortfolioInfoHolding[]) {
+    const pairTrades = this.strategyBuilderService.getTradingStrategies().find(s => s.name === stock);
+    const foundHedge = currentHoldings.find(ch => ch.name === stock);
+    let hedgeUnderlyingStock;
+    if (foundHedge) {
+      hedgeUnderlyingStock = foundHedge.name;
+    } else {
+      hedgeUnderlyingStock = pairTrades.strategy.sell.find(async (stockSymbol: string) => {
+        const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(stockSymbol);
+        const price = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
+        return price > 500;
+      });
+    }
+    if (!hedgeUnderlyingStock) {
+      return;
+    } else {
+      // const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(hedgeUnderlyingStock);
+      // const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
+
+      // const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple);
+      
+    }
+  }
+
+  hedgePutTrade(stock: string, currentHoldings: PortfolioInfoHolding[]) {
+
+  }
+
+
 }

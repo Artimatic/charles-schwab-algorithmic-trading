@@ -173,3 +173,6 @@ const fullList = [
 export const CurrentStockList = fullList.map(s => {
     return { ticker: s };
 });
+
+export const LongTermBuyList = [];
+export const ShortTermBuyList = [];
