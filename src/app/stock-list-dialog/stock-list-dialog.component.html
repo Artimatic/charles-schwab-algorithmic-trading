@@ -7,7 +7,7 @@
 </div>
 
 <div class="pick-list-container">
-    <p-pickList [source]="stockList" [target]="newList" sourceHeader="Current List" targetHeader="Optional Items"
+    <p-pickList [source]="stockList" [target]="newList" sourceHeader="Current List" targetHeader="New List"
         [dragdrop]="true" [responsive]="true" [sourceStyle]="{'height':'30rem'}" [targetStyle]="{'height':'30rem'}"
         filterBy="name" sourceFilterPlaceholder="Search by name" targetFilterPlaceholder="Search by name">
         <ng-template let-stock pTemplate="item">
