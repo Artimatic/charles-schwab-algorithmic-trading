@@ -114,6 +114,7 @@ export class OrderHandlingService {
             this.globalSettingsService.daytradeAlgo
           ).toPromise()[0];
       }
+
       this.backtestService.getDaytradeRecommendation(symbol.toUpperCase(), null, null, { minQuotes: 81 })
         .subscribe(
           async (analysis) => {

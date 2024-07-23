@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { CartService, PortfolioInfoHolding } from '@shared/services';
 import { StrategyBuilderService } from './backtest-table/strategy-builder.service';
 import { OrderTypes } from '@shared/models/smart-order';
-import { Options } from '@shared/models/options';
 import { OptionsDataService } from '@shared/options-data.service';
 import { OrderHandlingService } from './order-handling/order-handling.service';
 
@@ -13,8 +12,7 @@ export class OptionsOrderBuilderService {
 
   constructor(private strategyBuilderService: StrategyBuilderService,
     private cartService: CartService,
-    private optionsDataService: OptionsDataService,
-    private orderHandlingService: OrderHandlingService
+    private optionsDataService: OptionsDataService
   ) { }
 
   private protectivePutCount(holding: PortfolioInfoHolding): number {
@@ -77,8 +75,11 @@ export class OptionsOrderBuilderService {
                   if (callQuantity + putQuantity < 5) {
                     bullishStrangle.call.quantity = callQuantity;
                     bearishStrangle.put.quantity = putQuantity;
-                    this.cartService.addOptionOrder(buy, [bullishStrangle.call], callPrice, callQuantity, OrderTypes.call, 'Buy');
-                    this.cartService.addOptionOrder(sell, [bearishStrangle.put], putPrice, putQuantity, OrderTypes.put, 'Buy');
+                    const availableFunds = await this.cartService.getAvailableFunds(true);
+                    if (availableFunds >= (callPrice * callQuantity + putPrice * putQuantity)) {
+                      this.cartService.addOptionOrder(buy, [bullishStrangle.call], callPrice, callQuantity, OrderTypes.call, 'Buy');
+                      this.cartService.addOptionOrder(sell, [bearishStrangle.put], putPrice, putQuantity, OrderTypes.put, 'Buy');
+                    }
                   }
                 }
               }

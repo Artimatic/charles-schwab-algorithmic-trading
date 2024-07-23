@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { PortfolioService } from './portfolio.service';
+import { PortfolioInfoHolding, PortfolioService } from './portfolio.service';
 import { OrderTypes, SmartOrder } from '../models/smart-order';
 import { TradeService, AlgoQueueItem } from './trade.service';
 import * as _ from 'lodash';
@@ -332,5 +332,116 @@ export class CartService {
       return keep;
     });
     this.cartObserver.next(true);
+  }
+
+  createOptionObj(holding): Options {
+    return {
+      symbol: holding.instrument.symbol,
+      putCall: holding.instrument.putCall,
+      putCallInd: (holding.instrument.putCall.toLowerCase() === 'call' ? 'C' : (holding.instrument.putCall.toLowerCase() === 'put' ? 'P' : null)),
+      quantity: holding.longQuantity,
+      description: holding.instrument.description,
+      averagePrice: holding.averagePrice * 100,
+      underlyingSymbol: holding.instrument.underlyingSymbol
+    };
+  }
+
+  async findCurrentPositions() {
+    let currentHoldings = [];
+    const data = await this.portfolioService.getTdPortfolio().toPromise();
+
+    if (data) {
+      for (const holding of data) {
+        if (holding.instrument.assetType.toLowerCase() === 'option') {
+          const symbol = holding.instrument.underlyingSymbol;
+          const pl = holding.marketValue - (holding.averagePrice * holding.longQuantity) * 100;
+          let found = false;
+          currentHoldings = currentHoldings.map(holdingInfo => {
+            if (holdingInfo.name === symbol) {
+              found = true;
+              if (!holdingInfo.primaryLegs) {
+                holdingInfo.primaryLegs = [];
+                holdingInfo.primaryLegs.push(this.createOptionObj(holding));
+              } else {
+                if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'c' &&
+                  holding.instrument.putCall.toLowerCase() === 'call') {
+                  holdingInfo.primaryLegs.push(this.createOptionObj(holding));
+                } else if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'c' &&
+                  holding.instrument.putCall.toLowerCase() === 'put') {
+                  if (!holdingInfo.secondaryLegs) {
+                    holdingInfo.secondaryLegs = [];
+                  }
+                  holdingInfo.secondaryLegs.push(this.createOptionObj(holding));
+                } else if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'p' &&
+                  holding.instrument.putCall.toLowerCase() === 'put') {
+                  holdingInfo.primaryLegs.push(this.createOptionObj(holding));
+                } else if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'p' &&
+                  holding.instrument.putCall.toLowerCase() === 'call') {
+                  if (!holdingInfo.secondaryLegs) {
+                    holdingInfo.secondaryLegs = [];
+                  }
+                  holdingInfo.secondaryLegs.push(this.createOptionObj(holding));
+                }
+              }
+
+              holdingInfo.pl = holdingInfo.pl + (holding.marketValue - (holding.averagePrice * holding.longQuantity) * 100);
+            }
+
+            return holdingInfo;
+          });
+          if (!found) {
+            const tempHoldingObj: PortfolioInfoHolding = {
+              name: symbol,
+              pl,
+              netLiq: 0,
+              shares: 0,
+              alloc: 0,
+              recommendation: null,
+              buyReasons: '',
+              sellReasons: '',
+              buyConfidence: 0,
+              sellConfidence: 0,
+              prediction: null,
+              primaryLegs: [this.createOptionObj(holding)],
+              assetType: holding.instrument.assetType.toLowerCase()
+            };
+            currentHoldings.push(tempHoldingObj);
+          }
+        } else if (holding.instrument.assetType.toLowerCase() === 'equity' || holding.instrument.assetType === 'COLLECTIVE_INVESTMENT') {
+          const symbol = holding.instrument.symbol;
+
+          const pl = holding.marketValue - (holding.averagePrice * holding.longQuantity);
+
+          const tempHoldingObj = {
+            name: symbol,
+            pl,
+            netLiq: holding.marketValue,
+            shares: holding.longQuantity,
+            alloc: 0,
+            recommendation: null,
+            buyReasons: '',
+            sellReasons: '',
+            buyConfidence: 0,
+            sellConfidence: 0,
+            prediction: null
+          };
+
+          currentHoldings.push(tempHoldingObj);
+        }
+      }
+    }
+
+    return currentHoldings;
+  }
+
+  async getAvailableFunds(useCashBalance: boolean) {
+    const balance = await this.portfolioService.getTdBalance().toPromise();
+    let usableBalance = useCashBalance ? Number(balance.cashBalance) : Number(balance.availableFunds);
+    const currentHoldings = await this.findCurrentPositions();
+    const vtiHolding = currentHoldings.find(holding => holding.name === 'VTI');
+    if (vtiHolding) {
+      usableBalance += Number(vtiHolding.netLiq);
+    }
+    return usableBalance;
   }
 }
