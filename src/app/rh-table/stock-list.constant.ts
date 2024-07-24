@@ -1,4 +1,5 @@
 const fullList = [
+    'RDDT',
     'AAPL',
     'MSFT',
     'GOOG',
@@ -138,7 +139,6 @@ const fullList = [
     'TWLO',
     'MTCH',
     'Z',
-    'PLAY',
     'EA',
     'BIDU',
     'BABA',

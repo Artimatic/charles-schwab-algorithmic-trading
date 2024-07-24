@@ -313,19 +313,21 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   analyseCurrentOptions() {
     this.currentHoldings.forEach(async (holding) => {
-      const callPutInd = holding.primaryLegs[0].putCallInd.toLowerCase();
-      const isStrangle = this.isStrangle(holding);
-      const shouldSell = this.shouldSellOptions(holding, isStrangle, callPutInd);
+      if (holding.primaryLegs) {
+        const callPutInd = holding.primaryLegs[0].putCallInd.toLowerCase();
+        const isStrangle = this.isStrangle(holding);
+        const shouldSell = this.shouldSellOptions(holding, isStrangle, callPutInd);
 
-      if (shouldSell) {
-        if (isStrangle) {
-          this.sellStrangle(holding);
-        } else if (callPutInd === 'c') {
-          const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
-          this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, OrderTypes.call, 'Sell');
-        } else if (callPutInd === 'p') {
-          const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
-          this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, OrderTypes.put, 'Sell');
+        if (shouldSell) {
+          if (isStrangle) {
+            this.sellStrangle(holding);
+          } else if (callPutInd === 'c') {
+            const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
+            this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, OrderTypes.call, 'Sell');
+          } else if (callPutInd === 'p') {
+            const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
+            this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, OrderTypes.put, 'Sell');
+          }
         }
       }
     });
@@ -1126,7 +1128,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           sellConfidence: 0,
           prediction: null
         };
-  
+
         const vtiOrderHolding: PortfolioInfoHolding = {
           name: 'VTI',
           pl: 0,
@@ -1142,7 +1144,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         };
         const tqqqOrder = await this.buildBuyOrder(tqqqOrderHolding, trainingResult.value, null, null, true);
         const vtiOrder = await this.buildBuyOrder(vtiOrderHolding, 1 - trainingResult.value, null, null, true);
-  
+
         this.daytradeService.sendBuy(tqqqOrder, 'limit', () => { }, () => { });
         this.daytradeService.sendBuy(vtiOrder, 'limit', () => { }, () => { });
       }
