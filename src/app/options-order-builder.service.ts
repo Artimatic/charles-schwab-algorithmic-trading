@@ -79,6 +79,7 @@ export class OptionsOrderBuilderService {
                     if (availableFunds >= (callPrice * callQuantity + putPrice * putQuantity)) {
                       this.cartService.addOptionOrder(buy, [bullishStrangle.call], callPrice, callQuantity, OrderTypes.call, 'Buy');
                       this.cartService.addOptionOrder(sell, [bearishStrangle.put], putPrice, putQuantity, OrderTypes.put, 'Buy');
+                      break;
                     }
                   }
                 }
@@ -105,33 +106,63 @@ export class OptionsOrderBuilderService {
     return { callQuantity, putQuantity };
   }
 
-  hedgeCallTrade(stock: string, currentHoldings: PortfolioInfoHolding[]) {
+  async hedgeCallTrade(stock: string, quantity: number, currentHoldings: PortfolioInfoHolding[]) {
+    const tradingPairs = JSON.parse(localStorage.getItem('tradingPairs'));
+    const foundPairs = tradingPairs.find(s => s.name === stock);
+    if (foundPairs) {
+      const existingHedges = currentHoldings.reduce((acc, holding) => {
+        if (foundPairs.find(pair => pair.symbol === holding.name) &&
+          holding.primaryLegs &&
+          holding.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
+            acc.push(holding);
+        }
+        return acc;
+      }, []);
+
+    }
     const pairTrades = this.strategyBuilderService.getTradingStrategies().find(s => s.name === stock);
-    const foundHedge = currentHoldings.find(ch => ch.name === stock);
+    const foundCurrentHoldingHedge = currentHoldings.find(ch => pairTrades.strategy.sell.find(s => s === ch.name));
     let hedgeUnderlyingStock;
-    if (foundHedge) {
-      hedgeUnderlyingStock = foundHedge.name;
+    if (foundCurrentHoldingHedge) {
+      hedgeUnderlyingStock = foundCurrentHoldingHedge.name;
     } else {
+      let foundBearishStrangle = null;
+      let foundPrice = null;
       hedgeUnderlyingStock = pairTrades.strategy.sell.find(async (stockSymbol: string) => {
-        const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(stockSymbol);
-        const price = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
-        return price > 500;
+        const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(stockSymbol);
+        const price = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
+        if (price > 500) {
+          foundBearishStrangle = bearishStrangle;
+          foundPrice = price;
+          return true;
+        }
+        return false;
       });
     }
     if (!hedgeUnderlyingStock) {
-      return;
-    } else {
-      // const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(hedgeUnderlyingStock);
-      // const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
+      return false;
+    }
+    const bullishStrangle = await this.strategyBuilderService.getPutStrangleTrade(hedgeUnderlyingStock);
+    const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
 
-      // const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple);
-      
+    //const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple);
+    return true;
+  }
+
+  hedgePutTrade(stock: string, quantity: number, currentHoldings: PortfolioInfoHolding[]) {
+    const tradingPairs = JSON.parse(localStorage.getItem('tradingPairs'));
+    const foundPairs = tradingPairs.find(s => s.name === stock);
+    if (foundPairs) {
+      const existingHedges = currentHoldings.reduce((acc, holding) => {
+        if (foundPairs.find(pair => pair.symbol === holding.name) &&
+          holding.primaryLegs &&
+          holding.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
+            acc.push(holding);
+        }
+        return acc;
+      }, []);
+
     }
   }
-
-  hedgePutTrade(stock: string, currentHoldings: PortfolioInfoHolding[]) {
-
-  }
-
 
 }

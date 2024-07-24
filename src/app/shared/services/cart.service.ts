@@ -283,30 +283,36 @@ export class CartService {
       console.log('Options price too low.', primaryLegs[0], price);
       return;
     }
-    const order: SmartOrder = {
-      holding: {
-        instrument: null,
-        symbol,
-      },
-      quantity: quantity,
-      price,
-      submitted: false,
-      pending: false,
-      orderSize: 1,
-      side: side,
-      lossThreshold: -0.05,
-      profitTarget: 0.1,
-      trailingStop: -0.05,
-      useStopLoss: false,
-      useTrailingStopLoss: false,
-      useTakeProfit: false,
-      sellAtClose: false,
-      allocation: 0.05,
-      primaryLegs,
-      type: optionType
-    };
+    const foundExistingOrder = this.buyOrders.find(order => order.holding.symbol === symbol && order.primaryLegs[0].symbol === primaryLegs[0].symbol && !order.secondaryLegs);
+    if (foundExistingOrder) {
+      foundExistingOrder.primaryLegs[0].quantity += quantity
+      this.updateOrder(foundExistingOrder);
+    } else {
+      const order: SmartOrder = {
+        holding: {
+          instrument: null,
+          symbol,
+        },
+        quantity: quantity,
+        price,
+        submitted: false,
+        pending: false,
+        orderSize: 1,
+        side: side,
+        lossThreshold: -0.05,
+        profitTarget: 0.1,
+        trailingStop: -0.05,
+        useStopLoss: false,
+        useTrailingStopLoss: false,
+        useTakeProfit: false,
+        sellAtClose: false,
+        allocation: 0.05,
+        primaryLegs,
+        type: optionType
+      };
 
-    this.addToCart(order);
+      this.addToCart(order);
+    }
   }
 
   removeCompletedOrders() {
