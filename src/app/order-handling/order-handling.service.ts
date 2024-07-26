@@ -101,30 +101,31 @@ export class OrderHandlingService {
 
   async intradayStep(symbol: string) {
     if (!this.daytradeStrategiesService.shouldSkip(symbol)) {
-      let mlResult;
-      try {
-        mlResult = await this.machineLearningService.activate(symbol,
-          this.globalSettingsService.daytradeAlgo).toPromise();
-      } catch {
-        mlResult = await this.machineLearningService
-          .trainDaytrade(symbol.toUpperCase(),
-            moment().add({ days: 1 }).format('YYYY-MM-DD'),
-            moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
-            1,
-            this.globalSettingsService.daytradeAlgo
-          ).toPromise()[0];
-      }
-
       this.backtestService.getDaytradeRecommendation(symbol.toUpperCase(), null, null, { minQuotes: 81 })
         .subscribe(
           async (analysis) => {
-            const queueItem: AlgoQueueItem = {
-              symbol: symbol,
-              reset: false,
-              analysis: analysis,
-              ml: mlResult ? mlResult : null
-            };
-            this.tradeService.algoQueue.next(queueItem);
+            if (this.daytradeStrategiesService.isPotentialBuy(analysis) || this.daytradeStrategiesService.isPotentialSell(analysis)) {
+              try {
+                await this.machineLearningService.activate(symbol,
+                  this.globalSettingsService.daytradeAlgo).subscribe(mlResult => {
+                    const queueItem: AlgoQueueItem = {
+                      symbol: symbol,
+                      reset: false,
+                      analysis: analysis,
+                      ml: mlResult ? mlResult : null
+                    };
+                    this.tradeService.algoQueue.next(queueItem);
+                  });
+              } catch {
+                this.machineLearningService
+                  .trainDaytrade(symbol.toUpperCase(),
+                    moment().add({ days: 1 }).format('YYYY-MM-DD'),
+                    moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
+                    1,
+                    this.globalSettingsService.daytradeAlgo
+                  ).toPromise()[0];
+              }
+            }
           }
         );
     }

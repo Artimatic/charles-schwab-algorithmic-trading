@@ -116,8 +116,8 @@ export enum RiskTolerance {
 export class AutopilotComponent implements OnInit, OnDestroy {
   display = false;
   isLoading = true;
-  defaultInterval = 80000;
-  interval = 80000;
+  defaultInterval = 120000;
+  interval = 120000;
   oneDayInterval;
   timer: Subscription;
   orderListTimer: Subscription;
@@ -240,6 +240,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test',
         command: async () => {
+          await this.orderHandlingService.sellOption('AAPL  241018P00225000', 1);
+          await this.orderHandlingService.buyOption('AAPL  241018P00225000', 1);
           await this.optionsOrderBuilderService.createTradingPair();
         }
       },
@@ -321,12 +323,21 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         if (shouldSell) {
           if (isStrangle) {
             this.sellStrangle(holding);
-          } else if (callPutInd === 'c') {
+          } else {
             const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
-            this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, OrderTypes.call, 'Sell');
-          } else if (callPutInd === 'p') {
-            const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
-            this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, OrderTypes.put, 'Sell');
+            const isOpened = await this.isMarketOpened();
+            let orderType = null;
+            if (callPutInd === 'c') {
+              orderType = OrderTypes.call;
+            } else if (callPutInd === 'p') {
+              orderType = OrderTypes.put;
+            }
+            if (isOpened) {
+              this.cartService.deleteBySymbol(holding.name);
+              await this.orderHandlingService.sellOption(holding.primaryLegs[0].symbol, holding.primaryLegs[0].quantity);
+            } else {
+              this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell');
+            }
           }
         }
       }
@@ -890,8 +901,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const percentLoss = divide(holding.pl, holding.netLiq);
     if (percentLoss < -0.045) {
       this.portfolioSell(holding);
-    } else if (percentLoss > 0.01) {
-      await this.addBuy(holding);
     }
   }
 

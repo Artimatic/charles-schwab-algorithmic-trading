@@ -28,13 +28,6 @@ export class CartService {
     let noDup = true;
     for (const idx of indices) {
       if (idx > -1) {
-        const msg = `Order for ${order.holding.symbol} already exists`;
-        console.log(msg);
-
-        this.messageService.add({
-          severity: 'danger',
-          summary: msg
-        });
         noDup = false;
         break;
       }
@@ -156,6 +149,12 @@ export class CartService {
 
   getOrderIndex(orderList: SmartOrder[], targetOrder: SmartOrder) {
     return orderList.findIndex((order) => order.holding.symbol === targetOrder.holding.symbol);
+  }
+
+  deleteBySymbol(symbol: string) {
+    this.sellOrders = this.sellOrders.filter(order => order.holding.symbol !== symbol);
+    this.buyOrders = this.buyOrders.filter(order => order.holding.symbol !== symbol);
+    this.otherOrders = this.otherOrders.filter(order => order.holding.symbol !== symbol);
   }
 
   deleteCart() {
@@ -283,7 +282,7 @@ export class CartService {
       console.log('Options price too low.', primaryLegs[0], price);
       return;
     }
-    const foundExistingOrder = this.buyOrders.find(order => order.holding.symbol === symbol && order.primaryLegs[0].symbol === primaryLegs[0].symbol && !order.secondaryLegs);
+    const foundExistingOrder = this.buyOrders.find(order => order.primaryLegs && order.holding.symbol === symbol && order.primaryLegs[0].symbol === primaryLegs[0].symbol && !order.secondaryLegs);
     if (foundExistingOrder) {
       foundExistingOrder.primaryLegs[0].quantity += quantity
       this.updateOrder(foundExistingOrder);
