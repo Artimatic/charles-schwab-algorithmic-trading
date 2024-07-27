@@ -240,9 +240,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test',
         command: async () => {
-          await this.orderHandlingService.sellOption('AAPL  241018P00225000', 1);
-          await this.orderHandlingService.buyOption('AAPL  241018P00225000', 1);
-          await this.optionsOrderBuilderService.createTradingPair();
+          this.currentHoldings = await this.cartService.findCurrentPositions();
+          const oneOption = this.currentHoldings.find(holding => holding.primaryLegs && !holding.secondaryLegs);
+          if (oneOption) {
+            await this.orderHandlingService.sellOption(oneOption.primaryLegs[0].symbol, 1);
+          }
+          // await this.optionsOrderBuilderService.createTradingPair();
         }
       },
       {
@@ -325,19 +328,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             this.sellStrangle(holding);
           } else {
             const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
-            const isOpened = await this.isMarketOpened();
             let orderType = null;
             if (callPutInd === 'c') {
               orderType = OrderTypes.call;
             } else if (callPutInd === 'p') {
               orderType = OrderTypes.put;
             }
-            if (isOpened) {
-              this.cartService.deleteBySymbol(holding.name);
-              await this.orderHandlingService.sellOption(holding.primaryLegs[0].symbol, holding.primaryLegs[0].quantity);
-            } else {
-              this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell');
-            }
+
+            this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell');
           }
         }
       }
@@ -358,7 +356,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.findNewTrade(true, false);
         } else if (moment().isAfter(moment(startStopTime.endDateTime).subtract(8, 'minutes')) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
-          this.buySellAtClose();
+          // this.buySellAtClose();
           if (this.reportingService.logs.length > 0) {
             this.modifyStrategy();
             const profitLog = `Profit ${this.scoreKeeperService.total}`;

@@ -597,8 +597,14 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     } else if (this.order.type === OrderTypes.call) {
       if (this.firstFormGroup.value.orderType.toLowerCase() === 'buy' && analysis.recommendation.toLowerCase() === 'buy') {
         if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
-          this.incrementBuy();
-          await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize);
+          this.machineDaytradingService.getPortfolioBalance().subscribe(async (balance) => {
+            this.currentBalance = balance.cashBalance;
+            const usage = (balance.liquidationValue - this.currentBalance) / balance.liquidationValue;
+            if (usage < this.globalSettingsService.maxAccountUsage) {
+              this.incrementBuy();
+              await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize);
+            }
+          });
         }
       } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'sell') {
         if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
@@ -608,16 +614,28 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       }
     } else if (this.order.type === OrderTypes.put) {
       if (this.firstFormGroup.value.orderType.toLowerCase() === 'buy' && analysis.recommendation.toLowerCase() === 'sell') {
-        this.incrementBuy();
-        await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize);
+        this.machineDaytradingService.getPortfolioBalance().subscribe(async (balance) => {
+          this.currentBalance = balance.cashBalance;
+          const usage = (balance.liquidationValue - this.currentBalance) / balance.liquidationValue;
+          if (usage < this.globalSettingsService.maxAccountUsage) {
+            this.incrementBuy();
+            await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize);
+          }
+        });
       } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'buy') {
         this.incrementSell();
         await this.orderHandlingService.sellOption(this.order.primaryLegs[0].symbol, this.order.orderSize);
       }
     } else if (this.order.type === OrderTypes.protectivePut && analysis.recommendation.toLowerCase() === 'sell') {
       if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
-        this.incrementBuy();
-        this.buyProtectivePut();
+        this.machineDaytradingService.getPortfolioBalance().subscribe(async (balance) => {
+          this.currentBalance = balance.cashBalance;
+          const usage = (balance.liquidationValue - this.currentBalance) / balance.liquidationValue;
+          if (usage < this.globalSettingsService.maxAccountUsage) {
+            this.incrementBuy();
+            this.buyProtectivePut();
+          }
+        });
       }
     } else if (this.order.type === OrderTypes.strangle && this.order.side.toLowerCase() == 'sell') {
       await this.orderHandlingService.sellStrangle(this.order, analysis);
