@@ -650,7 +650,7 @@ class PortfolioService {
         "orderStrategyType": "SINGLE", 
         "orderLegCollection": [ 
          { 
-          "instruction": "SELL_TO_CLOSE", 
+          "instruction": "SELL", 
           "quantity": quantity, 
           "instrument": { 
            "symbol": symbol, 
