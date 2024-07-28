@@ -140,13 +140,6 @@ export class OrderHandlingService {
     return this.strategyBuilderService.findOptionsPrice(bidPrice, askPrice);
   }
 
-  async sellOption(symbol: string, quantity: number) {
-    const estPrice = await this.getEstimatedPrice(symbol);
-    this.portfolioService.sendOptionSell(symbol, quantity, estPrice, false).subscribe(data => {
-      console.log('Sold', symbol, data)
-    });
-  }
-
   async buyOption(symbol: string, quantity: number) {
     const estPrice = await this.getEstimatedPrice(symbol);
     this.portfolioService.sendOptionBuy(symbol, quantity, estPrice, false).subscribe(data => {
