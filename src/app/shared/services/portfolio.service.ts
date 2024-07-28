@@ -270,7 +270,7 @@ export class PortfolioService {
     return this.http.post('/api/portfolio/v2/option-buy', body);
   }
 
-  sendOptionSell(primaryLegSymbol: string, quantity: number, price: number, extended: boolean): Observable<any> {
+  sendOptionSell(primaryLegSymbol: string, quantity: number, price: number): Observable<any> {
     const accountId = this.getAccountId();
     if (!accountId) {
       return of(null);

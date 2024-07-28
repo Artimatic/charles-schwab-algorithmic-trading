@@ -10,6 +10,7 @@ import { IndicatorsService } from './indicators.service';
 import { CartService } from './cart.service';
 import { CardOptions } from '../models/card-options';
 import { GlobalSettingsService, Brokerage } from '../../settings/global-settings.service';
+import { OrderHandlingService } from 'src/app/order-handling/order-handling.service';
 
 @Injectable()
 export class DaytradeService {
@@ -18,6 +19,7 @@ export class DaytradeService {
     private portfolioService: PortfolioService,
     private indicatorsService: IndicatorsService,
     private cartService: CartService,
+    private orderHandlingService: OrderHandlingService,
     private globalSettingsService: GlobalSettingsService) { }
 
   getDefaultOrderSize(quantity) {
@@ -200,6 +202,37 @@ export class DaytradeService {
         }
       });
     return sellOrder;
+  }
+
+  sendOptionSell(symbol: string, quantity: number, resolve: Function, reject: Function, handleNotFound: Function) {
+    this.portfolioService.getTdPortfolio()
+      .subscribe(async (result) => {
+        const foundPosition = result.find((pos) => {
+          return pos.instrument.symbol === symbol;
+        });
+
+        if (foundPosition) {
+          const positionCount = Number(foundPosition.longQuantity);
+          if (positionCount === 0) {
+            handleNotFound();
+          } else {
+            quantity = quantity < positionCount ? quantity : positionCount;
+
+            const price = await this.orderHandlingService.getEstimatedPrice(symbol);
+
+            this.portfolioService.sendOptionSell(symbol, quantity, price)
+              .subscribe(
+                response => {
+                  resolve(response);
+                },
+                error => {
+                  reject(error);
+                });
+          }
+        } else {
+          handleNotFound();
+        }
+      });
   }
 
   closeTdPosition(sellOrder: SmartOrder, type: string, resolve: Function, reject: Function, handleNotFound: Function): SmartOrder {
@@ -416,7 +449,7 @@ export class DaytradeService {
         } else {
           cost += Number(pos.quantity) * Number(pos.price);
           sellSize -= pos.quantity;
-        }  
+        }
       } else {
         break;
       }

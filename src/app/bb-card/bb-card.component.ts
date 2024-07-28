@@ -510,7 +510,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
         const handleNotFound = () => {
           this.removeOrder(order);
-          this.setWarning(`Trying to sell position that doesn\'t exists`);
+          this.setWarning(`Trying to sell position that doesn\'t exists ${order.holding.name}`);
         };
 
 
@@ -607,9 +607,8 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           });
         }
       } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'sell') {
-        if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
-          this.incrementSell();
-          await this.orderHandlingService.sellOption(this.order.primaryLegs[0].symbol, this.order.orderSize);
+        if ((Math.abs(this.startingPrice - quote) / this.startingPrice) > 0.01) {
+          await this.sellOptions();
         }
       }
     } else if (this.order.type === OrderTypes.put) {
@@ -623,8 +622,9 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           }
         });
       } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'buy') {
-        this.incrementSell();
-        await this.orderHandlingService.sellOption(this.order.primaryLegs[0].symbol, this.order.orderSize);
+        if ((Math.abs(this.startingPrice - quote) / this.startingPrice) > 0.01) {
+          await this.sellOptions();
+        }
       }
     } else if (this.order.type === OrderTypes.protectivePut && analysis.recommendation.toLowerCase() === 'sell') {
       if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
@@ -970,6 +970,26 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
         this.orderingService.executeMlOrder(this.order.holding.symbol, orderQuantity);
       }
     }
+  }
+
+  async sellOptions() {
+     this.incrementSell();
+
+     const resolve = (response) => {
+      const log = `Sell option sent ${this.order.orderSize} ${ this.order.primaryLegs[0].symbol}`;
+      console.log(`${moment().format('hh:mm')} ${log}`);
+      this.reportingService.addAuditLog(this.order.holding.symbol, log);
+    };
+
+    const reject = (error) => {
+      this.error = error._body;
+      this.stop();
+    };
+
+    const handleNotFound = () => {
+      this.setWarning(`Trying to sell position that doesn\'t exists ${this.order.primaryLegs[0].symbol}`);
+    };
+     await this.daytradeService.sendOptionSell(this.order.primaryLegs[0].symbol, this.order.orderSize, resolve, reject, handleNotFound);
   }
 
   toggleSettingsVisible() {

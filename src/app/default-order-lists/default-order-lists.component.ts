@@ -12,6 +12,7 @@ import { MachineDaytradingService } from '../machine-daytrading/machine-daytradi
 import { SchedulerService } from '@shared/service/scheduler.service';
 import { MenuItem, SelectItem } from 'primeng/api';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
+import { OrderHandlingService } from '../order-handling/order-handling.service';
 
 export interface DefaultOrders {
   label: string;
@@ -50,6 +51,7 @@ export class DefaultOrderListsComponent implements OnInit, OnChanges, OnDestroy 
     private cartService: CartService,
     private strategyBuilderService: StrategyBuilderService,
     private schedulerService: SchedulerService,
+    private orderHandlingService: OrderHandlingService,
     private machineDaytradingService: MachineDaytradingService) { }
 
   ngOnInit() {
@@ -76,10 +78,27 @@ export class DefaultOrderListsComponent implements OnInit, OnChanges, OnDestroy 
         distinctUntilChanged(),
         takeUntil(this.destroy$)
       )
-      .subscribe(value => {
+      .subscribe(async (value) => {
         this.cashBalance = value;
-        if (!this.defaultLists?.length) {
+        if (!this.defaultLists || !this.defaultLists.length) {
           this.defaultLists = this.createDefaultList();
+          // if (!this.defaultLists || !this.defaultLists.length) {
+          //   const currentHoldings = await this.cartService.findCurrentPositions();
+          //   this.defaultLists = currentHoldings.reduce((accumulator, currentValue) => {
+          //     let price = Number(currentValue.price);
+          //     if (currentValue.instrument.assetType.toLowerCase() === 'option') {
+          //       price = this.orderHandlingService.getEstimatedPrice(currentValue.);
+          //     }
+          //     const currentValueAllocation = Number((price * Number(currentValue.quantity) / Number(this.cashBalance)).toFixed(2));
+          //     const newItem = {
+          //       label: currentValue.holding.symbol,
+          //       allocation:  currentValueAllocation < 1 && currentValueAllocation > 0 ? currentValueAllocation : this.addOrderFormGroup.value.allocation,
+          //       side: currentValue.side
+          //     };
+          //     accumulator.push(newItem);
+          //     return accumulator;
+          //   }, []);
+          // }
         }
       });
 

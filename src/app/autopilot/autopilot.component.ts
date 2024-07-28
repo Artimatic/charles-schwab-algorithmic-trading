@@ -240,11 +240,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test',
         command: async () => {
-          this.currentHoldings = await this.cartService.findCurrentPositions();
-          const oneOption = this.currentHoldings.find(holding => holding.primaryLegs && !holding.secondaryLegs);
-          if (oneOption) {
-            await this.orderHandlingService.sellOption(oneOption.primaryLegs[0].symbol, 1);
-          }
+          // this.currentHoldings = await this.cartService.findCurrentPositions();
+          // const oneOption = this.currentHoldings.find(holding => holding.primaryLegs && !holding.secondaryLegs);
+          // if (oneOption) {
+          //   await this.dayTradeService.sellOption(oneOption.primaryLegs[0].symbol, 1);
+          // }
           // await this.optionsOrderBuilderService.createTradingPair();
         }
       },
