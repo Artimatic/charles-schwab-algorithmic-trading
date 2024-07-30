@@ -82,23 +82,30 @@ export class DefaultOrderListsComponent implements OnInit, OnChanges, OnDestroy 
         this.cashBalance = value;
         if (!this.defaultLists || !this.defaultLists.length) {
           this.defaultLists = this.createDefaultList();
-          // if (!this.defaultLists || !this.defaultLists.length) {
-          //   const currentHoldings = await this.cartService.findCurrentPositions();
-          //   this.defaultLists = currentHoldings.reduce((accumulator, currentValue) => {
-          //     let price = Number(currentValue.price);
-          //     if (currentValue.instrument.assetType.toLowerCase() === 'option') {
-          //       price = this.orderHandlingService.getEstimatedPrice(currentValue.);
-          //     }
-          //     const currentValueAllocation = Number((price * Number(currentValue.quantity) / Number(this.cashBalance)).toFixed(2));
-          //     const newItem = {
-          //       label: currentValue.holding.symbol,
-          //       allocation:  currentValueAllocation < 1 && currentValueAllocation > 0 ? currentValueAllocation : this.addOrderFormGroup.value.allocation,
-          //       side: currentValue.side
-          //     };
-          //     accumulator.push(newItem);
-          //     return accumulator;
-          //   }, []);
-          // }
+          const currentHoldings = await this.cartService.findCurrentPositions();
+          this.defaultLists = this.defaultLists.concat(currentHoldings.reduce(async (accumulator, currentValue) => {
+            if (currentValue.quantity) {
+              let price = Number(currentValue.price);
+              const currentValueAllocation = Number((price * Number(currentValue.quantity) / Number(this.cashBalance)).toFixed(2));
+              accumulator.push({
+                label: currentValue.holding.symbol,
+                allocation: currentValueAllocation < 1 && currentValueAllocation > 0 ? currentValueAllocation : this.addOrderFormGroup.value.allocation,
+                side: currentValue.side
+              });
+            }
+            if (currentValue.primaryLegs) {
+              if (!this.cartService.isStrangle(currentValue)) {
+                const price = await this.orderHandlingService.getEstimatedPrice(currentValue.primaryLegs[0].symbol);
+                const currentValueAllocation = Number((price * 100 * Number(currentValue.primaryLegs[0].quantity) / Number(this.cashBalance)).toFixed(2));
+                accumulator.push({
+                  label: currentValue.holding.symbol,
+                  allocation: currentValueAllocation < 1 && currentValueAllocation > 0 ? currentValueAllocation : this.addOrderFormGroup.value.allocation,
+                  side: currentValue.side
+                });
+              }
+            }
+            return accumulator;
+          }, []));
         }
       });
 
@@ -277,7 +284,7 @@ export class DefaultOrderListsComponent implements OnInit, OnChanges, OnDestroy 
           const currentValueAllocation = Number((Number(currentValue.price) * Number(currentValue.quantity) / Number(this.cashBalance)).toFixed(2));
           const newItem = {
             label: currentValue.holding.symbol,
-            allocation:  currentValueAllocation < 1 && currentValueAllocation > 0 ? currentValueAllocation : this.addOrderFormGroup.value.allocation,
+            allocation: currentValueAllocation < 1 && currentValueAllocation > 0 ? currentValueAllocation : this.addOrderFormGroup.value.allocation,
             side: currentValue.side
           };
           accumulator.push(newItem);

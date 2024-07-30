@@ -277,7 +277,6 @@ export class CartService {
     quantity: number,
     optionType,
     side = 'Buy') {
-    console.log('Adding options order', symbol, primaryLegs, price, side);
     if ((price * 100) < 100) {
       console.log('Options price too low.', primaryLegs[0], price);
       return;
@@ -286,6 +285,8 @@ export class CartService {
     if (foundExistingOrder) {
       foundExistingOrder.primaryLegs[0].quantity += quantity
       this.updateOrder(foundExistingOrder);
+    } if (this.sellOrders.find(order => order.primaryLegs && order.holding.symbol === symbol && order.primaryLegs[0].symbol === primaryLegs[0].symbol && !order.secondaryLegs)){
+      return null;
     } else {
       const order: SmartOrder = {
         holding: {
@@ -448,5 +449,11 @@ export class CartService {
       usableBalance += Number(vtiHolding.netLiq);
     }
     return usableBalance;
+  }
+
+  isStrangle(holding: PortfolioInfoHolding) {
+    return (holding.primaryLegs && holding.secondaryLegs) &&
+      (holding.primaryLegs.length === holding.secondaryLegs.length) &&
+      (holding.primaryLegs[0].putCallInd !== holding.secondaryLegs[0].putCallInd);
   }
 }
