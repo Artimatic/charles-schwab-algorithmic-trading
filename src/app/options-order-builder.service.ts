@@ -3,7 +3,6 @@ import { CartService, PortfolioInfoHolding } from '@shared/services';
 import { StrategyBuilderService } from './backtest-table/strategy-builder.service';
 import { OrderTypes } from '@shared/models/smart-order';
 import { OptionsDataService } from '@shared/options-data.service';
-import { OrderHandlingService } from './order-handling/order-handling.service';
 
 @Injectable({
   providedIn: 'root'
@@ -61,6 +60,13 @@ export class OptionsOrderBuilderService {
         if (buyOptionsData && buyOptionsData.move && buyOptionsData.move < 0.15) {
           const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(buy);
           const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
+          let currentCall = {
+            call: bullishStrangle.call,
+            price: callPrice,
+            quantity: 0,
+            underlying: buy
+          };
+          let currentPut = null;
           if (callPrice > 500) {
             for (const sell of sells) {
               const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
@@ -77,14 +83,19 @@ export class OptionsOrderBuilderService {
                     bearishStrangle.put.quantity = putQuantity;
                     const availableFunds = await this.cartService.getAvailableFunds(true);
                     if (availableFunds >= (callPrice * callQuantity + putPrice * putQuantity)) {
-                      this.cartService.addOptionOrder(buy, [bullishStrangle.call], callPrice, callQuantity, OrderTypes.call, 'Buy');
-                      this.cartService.addOptionOrder(sell, [bearishStrangle.put], putPrice, putQuantity, OrderTypes.put, 'Buy');
+                      currentCall.quantity = callQuantity;
+                      currentPut.put = bearishStrangle.put;
+                      currentPut.quantity = putQuantity;
+                      currentPut.price = putPrice;
+                      currentPut.underlying = sell;
                       break;
                     }
                   }
                 }
               }
             }
+            this.cartService.addOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy');
+            this.cartService.addOptionOrder(currentPut.underlying, [currentPut.put], currentPut.price, currentPut.quantity, OrderTypes.put, 'Buy');
           }
         }
       }

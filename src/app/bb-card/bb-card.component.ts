@@ -287,7 +287,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
                 1,
                 this.globalSettingsService.daytradeAlgo
               ).subscribe((mlResult: TrainingResults[]) => {
-                this.lastMlResult = mlResult[0];
+                this.lastMlResult = mlResult && mlResult[0] ? mlResult[0] : null;
                 this.runStrategy(1 * lastPrice, queueItem.analysis);
               });
           }
@@ -607,6 +607,8 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           });
         }
       } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'sell') {
+        console.log(`Sell call ${ this.order.primaryLegs[0].symbol} ${this.startingPrice} ${quote} ${this.startingPrice}`);
+
         if ((Math.abs(this.startingPrice - quote) / this.startingPrice) > 0.01) {
           await this.sellOptions();
         }
@@ -622,6 +624,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           }
         });
       } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'buy') {
+        console.log(`Sell put ${ this.order.primaryLegs[0].symbol} ${this.startingPrice} ${quote} ${this.startingPrice}`);
         if ((Math.abs(this.startingPrice - quote) / this.startingPrice) > 0.01) {
           await this.sellOptions();
         }
@@ -889,7 +892,9 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
   async runStrategy(lastPrice: number, analysis: Recommendation = null) {
     if (!this.startingPrice) {
-      this.startingPrice = lastPrice;
+      const price = await this.backtestService.getLastPriceTiingo({ symbol: this.order.holding.symbol }).toPromise();
+      const closePrice = price[this.order.holding.symbol].quote.closePrice;
+      this.startingPrice = closePrice;
     }
     const orderProcessed = this.handleStoploss(lastPrice, moment().valueOf());
 
@@ -973,6 +978,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   async sellOptions() {
+    console.log(`Sell option ${ this.order.primaryLegs[0].symbol}`);
      this.incrementSell();
 
      const resolve = (response) => {

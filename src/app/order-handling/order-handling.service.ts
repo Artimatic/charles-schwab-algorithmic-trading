@@ -4,7 +4,7 @@ import { Recommendation } from '@shared/stock-backtest.interface';
 import { PricingService } from '../pricing/pricing.service';
 import * as moment from 'moment-timezone';
 import { GlobalSettingsService } from '../settings/global-settings.service';
-import { BacktestService, CartService, PortfolioService, TradeService } from '@shared/services';
+import { BacktestService, CartService, PortfolioInfoHolding, PortfolioService, TradeService } from '@shared/services';
 import { Options } from '@shared/models/options';
 import { AlgoQueueItem } from '@shared/services/trade.service';
 import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
