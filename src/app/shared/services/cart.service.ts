@@ -297,7 +297,7 @@ export class CartService {
         price,
         submitted: false,
         pending: false,
-        orderSize: 1,
+        orderSize: Math.floor(quantity / 2),
         side: side,
         lossThreshold: -0.05,
         profitTarget: 0.1,

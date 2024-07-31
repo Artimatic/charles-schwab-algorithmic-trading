@@ -491,6 +491,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     await this.modifyCurrentHoldings();
     await this.checkPersonalLists();
+    await this.hedge();
     // await this.optionsOrderBuilderService.createTradingPair();
 
     switch (this.strategyList[this.strategyCounter]) {
@@ -889,6 +890,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const percentLoss = divide(holding.pl, holding.netLiq);
     if (percentLoss < -0.045) {
       this.portfolioSell(holding);
+    } else if (percentLoss > 0.01) {
+      await this.addBuy(holding);
     }
   }
 
@@ -1278,12 +1281,16 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       }
     });
   }
+  
   async hedge() {
     this.currentHoldings = await this.cartService.findCurrentPositions();
-    this.currentHoldings.forEach(async (holding) => {
-      if (!this.cartService.isStrangle(holding)) {
-        await this.optionsOrderBuilderService.createProtectivePutOrder(holding);
-      }
+    this.machineDaytradingService.getPortfolioBalance().subscribe(async (balance) => {
+      this.currentHoldings.forEach(async (holding) => {
+        if (!this.cartService.isStrangle(holding)) {
+          if (holding.netLiq && (holding.netLiq / balance.liquidationValue) > 0.15)
+          await this.optionsOrderBuilderService.createProtectivePutOrder(holding);
+        }
+      });
     });
   }
 
