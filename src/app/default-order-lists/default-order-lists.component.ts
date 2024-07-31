@@ -13,6 +13,7 @@ import { SchedulerService } from '@shared/service/scheduler.service';
 import { MenuItem, SelectItem } from 'primeng/api';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
+import { OrderType } from '@shared/stock-backtest.interface';
 
 export interface DefaultOrders {
   label: string;
@@ -51,10 +52,9 @@ export class DefaultOrderListsComponent implements OnInit, OnChanges, OnDestroy 
     private cartService: CartService,
     private strategyBuilderService: StrategyBuilderService,
     private schedulerService: SchedulerService,
-    private orderHandlingService: OrderHandlingService,
     private machineDaytradingService: MachineDaytradingService) { }
 
-  ngOnInit() {
+  async ngOnInit() {
     this.display = false;
     this.hideButton = false;
     this.templateOrders = [];
@@ -83,27 +83,29 @@ export class DefaultOrderListsComponent implements OnInit, OnChanges, OnDestroy 
         if (!this.defaultLists || !this.defaultLists.length) {
           this.defaultLists = this.createDefaultList();
           const currentHoldings = await this.cartService.findCurrentPositions();
-          this.defaultLists = this.defaultLists.concat(currentHoldings.reduce(async (accumulator, currentValue) => {
+          this.defaultLists = this.defaultLists.concat(currentHoldings.reduce((accumulator, currentValue) => {
             if (currentValue.quantity) {
               let price = Number(currentValue.price);
               const currentValueAllocation = Number((price * Number(currentValue.quantity) / Number(this.cashBalance)).toFixed(2));
               accumulator.push({
                 label: currentValue.holding.symbol,
                 allocation: currentValueAllocation < 1 && currentValueAllocation > 0 ? currentValueAllocation : this.addOrderFormGroup.value.allocation,
-                side: currentValue.side
+                side: currentValue.side ? currentValue.side : OrderType.Buy
               });
             }
             if (currentValue.primaryLegs) {
               if (!this.cartService.isStrangle(currentValue)) {
-                const price = await this.orderHandlingService.getEstimatedPrice(currentValue.primaryLegs[0].symbol);
-                const currentValueAllocation = Number((price * 100 * Number(currentValue.primaryLegs[0].quantity) / Number(this.cashBalance)).toFixed(2));
+                // const price = await this.orderHandlingService.getEstimatedPrice(currentValue.primaryLegs[0].symbol);
+                // const currentValueAllocation = Number((price * 100 * Number(currentValue.primaryLegs[0].quantity) / Number(this.cashBalance)).toFixed(2));
                 accumulator.push({
-                  label: currentValue.holding.symbol,
-                  allocation: currentValueAllocation < 1 && currentValueAllocation > 0 ? currentValueAllocation : this.addOrderFormGroup.value.allocation,
-                  side: currentValue.side
+                  label: currentValue.primaryLegs[0].symbol,
+                  allocation: this.addOrderFormGroup.value.allocation,
+                  //allocation: currentValueAllocation < 1 && currentValueAllocation > 0 ? currentValueAllocation : this.addOrderFormGroup.value.allocation,
+                  side: currentValue.side ? currentValue.side : OrderType.Buy
                 });
               }
             }
+            
             return accumulator;
           }, []));
         }
@@ -235,7 +237,7 @@ export class DefaultOrderListsComponent implements OnInit, OnChanges, OnDestroy 
       defaultSide = this.prefillOrderForm.side;
       defaultSymbol = this.prefillOrderForm.holding.symbol;
     }
-    const initAllocation = 1;
+    const initAllocation = 0.1;
     this.addOrderFormGroup = this._formBuilder.group({
       allocation: [initAllocation, Validators.required],
       symbol: [defaultSymbol, Validators.required],

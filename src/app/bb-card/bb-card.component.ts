@@ -607,7 +607,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           });
         }
       } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'sell') {
-        console.log(`Sell call ${ this.order.primaryLegs[0].symbol} ${this.startingPrice} ${quote} ${this.startingPrice}`);
+        console.log(`Sell call ${this.order.primaryLegs[0].symbol} ${this.startingPrice} ${quote} ${this.startingPrice}`);
 
         if ((Math.abs(this.startingPrice - quote) / this.startingPrice) > 0.01) {
           await this.sellOptions();
@@ -624,7 +624,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           }
         });
       } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'buy') {
-        console.log(`Sell put ${ this.order.primaryLegs[0].symbol} ${this.startingPrice} ${quote} ${this.startingPrice}`);
+        console.log(`Sell put ${this.order.primaryLegs[0].symbol} ${this.startingPrice} ${quote} ${this.startingPrice}`);
         if ((Math.abs(this.startingPrice - quote) / this.startingPrice) > 0.01) {
           await this.sellOptions();
         }
@@ -978,11 +978,11 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   async sellOptions() {
-    console.log(`Sell option ${ this.order.primaryLegs[0].symbol}`);
-     this.incrementSell();
+    console.log(`Sell option ${this.order.primaryLegs[0].symbol}`);
+    this.incrementSell();
 
-     const resolve = (response) => {
-      const log = `Sell option sent ${this.order.orderSize} ${ this.order.primaryLegs[0].symbol}`;
+    const resolve = (response) => {
+      const log = `Sell option sent ${this.order.orderSize} ${this.order.primaryLegs[0].symbol}`;
       console.log(`${moment().format('hh:mm')} ${log}`);
       this.reportingService.addAuditLog(this.order.holding.symbol, log);
     };
@@ -995,7 +995,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     const handleNotFound = () => {
       this.setWarning(`Trying to sell position that doesn\'t exists ${this.order.primaryLegs[0].symbol}`);
     };
-     await this.daytradeService.sendOptionSell(this.order.primaryLegs[0].symbol, this.order.orderSize, resolve, reject, handleNotFound);
+    await this.daytradeService.sendOptionSell(this.order.primaryLegs[0].symbol, this.order.orderSize || 1, resolve, reject, handleNotFound);
   }
 
   toggleSettingsVisible() {
