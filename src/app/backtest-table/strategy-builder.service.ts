@@ -444,8 +444,8 @@ export class StrategyBuilderService {
     if (symbol === 'TQQQ') {
       return null;
     }
-    const balance: any = await this.portfolioService.getTdBalance().toPromise();
-    const quantity = Math.floor((balance * 0.1) / (price * 100)) | 1;
+    const cash = await this.cartService.getAvailableFunds(true);
+    const quantity = Math.floor((cash * 0.1) / (price * 100)) | 1;
     if (quantity < 10) {
       const order = {
         holding: {

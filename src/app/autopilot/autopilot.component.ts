@@ -1100,9 +1100,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (this.boughtAtClose) {
       return;
     }
-    const cash = await this.cartService.getAvailableFunds(true);
+    const balance = await this.portfolioService.getTdBalance().toPromise();
 
-    if (cash <= 0) {
+    if (Number(balance.cashBalance) <= 0) {
       this.currentHoldings = await this.cartService.findCurrentPositions();
       this.currentHoldings.forEach(async (holding) => {
         if (holding.name === 'VTI' || holding.name === 'TQQQ') {
