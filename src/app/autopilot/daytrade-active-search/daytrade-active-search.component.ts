@@ -111,6 +111,7 @@ export class DaytradeActiveSearchComponent implements OnInit, OnDestroy {
 
   async getCashBalance() {
     const balance = await this.portfolioService.getTdBalance().toPromise();
+    
     this.dollarAmount = Math.floor((balance?.buyingPower | 0) * 0.05);
   }
 
