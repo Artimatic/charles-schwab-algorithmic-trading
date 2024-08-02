@@ -379,6 +379,8 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
   incrementBuy(order = null) {
     if (order) {
+      console.log('Sent buy order', order);
+
       this.orders.push(order);
       this.order.buyCount += order.quantity;
       this.order.positionCount += order.quantity;
@@ -391,6 +393,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
   incrementSell(order = null) {
     if (order) {
+      console.log('Sent sell order', order);
       this.orders.push(order);
       this.order.sellCount += order.quantity;
       this.order.positionCount -= order.quantity;
@@ -406,14 +409,14 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       const log = `ORDER SENT ${buyOrder.side} ${buyOrder.quantity} ${buyOrder.holding.symbol}@${buyOrder.price}`;
 
       if (this.live && this.smsOption.value !== 'only_sms') {
+        const resolvedOrder = {
+          holding: buyOrder.holding,
+          quantity: buyOrder.quantity,
+          price: buyOrder.price,
+          side: 'Buy',
+          timeSubmitted: moment().valueOf()
+        };
         const resolve = (response) => {
-          const resolvedOrder = {
-            holding: buyOrder.holding,
-            quantity: buyOrder.quantity,
-            price: buyOrder.price,
-            side: 'Buy',
-            timeSubmitted: moment().valueOf()
-          };
           this.incrementBuy(resolvedOrder);
 
           console.log(`${moment().format('hh:mm')} ${log}`);
@@ -453,7 +456,14 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           sellOrder.price = _.round(lastPrice, 2);
           const log = `ORDER SENT ${sellOrder.side} ${sellOrder.quantity} ${sellOrder.holding.symbol}@${sellOrder.price}`;
           if (this.live && this.smsOption.value !== 'only_sms') {
-            this.incrementSell(sellOrder);
+            const resolvedOrder = {
+              holding: sellOrder.holding,
+              quantity: sellOrder.quantity,
+              price: sellOrder.price,
+              side: 'Sell',
+              timeSubmitted: moment().valueOf()
+            };
+            this.incrementSell(resolvedOrder);
 
             const resolve = (response) => {
               if (this.order.side.toLowerCase() !== 'sell') {
@@ -504,7 +514,6 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             const pl = this.daytradeService.estimateSellProfitLoss(this.orders);
             console.log(`Estimated pl on stop loss ${order.holding.symbol} ${pl}`);
             this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
-            console.log('orders: ', this.orders);
           }
 
           console.log(`${moment().format('hh:mm')} ${log}`);
@@ -654,7 +663,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       if (daytradeType === 'buy' || this.isDayTrading()) {
         this.daytradeService.sellDefaultHolding();
 
-        console.log('Received Buy recommendation: ', analysis, this.order.holding.symbol);
+        // console.log('Received Buy recommendation: ', analysis, this.order.holding.symbol);
         this.machineDaytradingService.getPortfolioBalance().subscribe((balance) => {
           this.currentBalance = this.isDayTrading() ? balance.availableFunds : balance.cashBalance;
           // const availableFunds = data.availableFunds;
@@ -693,7 +702,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
         });
       }
     } else if (analysis.recommendation.toLowerCase() === 'sell' && (daytradeType === 'sell' || this.isDayTrading())) {
-      console.log('Received sell recommendation: ', analysis, this.order.holding.symbol);
+      // console.log('Received sell recommendation: ', analysis, this.order.holding.symbol);
       if (this.order.buyCount >= this.order.sellCount || daytradeType === 'sell') {
         let orderQuantity = 0;
         if (this.order.allocation) {
