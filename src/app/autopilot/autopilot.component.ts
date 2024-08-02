@@ -354,19 +354,21 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           moment().isBefore(moment(startStopTime.endDateTime))) {
           this.buySellAtClose();
           if (this.reportingService.logs.length > 0) {
-            this.modifyStrategy();
             const profitLog = `Profit ${this.scoreKeeperService.total}`;
             this.reportingService.addAuditLog(null, profitLog);
             this.reportingService.exportAuditHistory();
-            this.setProfitLoss();
-            this.scoreKeeperService.resetTotal();
-            this.resetCart();
           }
         } else if (moment().isAfter(moment(startStopTime.startDateTime)) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
           const isOpened = await this.isMarketOpened();
           if (isOpened) {
             if (!this.developedStrategy) {
+              if (this.reportingService.logs.length > 0) {
+                this.modifyStrategy();
+                this.setProfitLoss();
+                this.scoreKeeperService.resetTotal();
+                this.resetCart();
+              }
               this.developStrategy();
               return;
             }
