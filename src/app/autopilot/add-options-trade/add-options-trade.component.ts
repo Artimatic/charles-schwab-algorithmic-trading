@@ -54,7 +54,7 @@ export class AddOptionsTradeComponent implements OnInit, OnDestroy {
         optionStrategy = await this.strategyBuilderService.getPutStrangleTrade(symbol);
       }
 
-      if (optionStrategy.call && optionStrategy.put) {
+      if (optionStrategy && optionStrategy.call && optionStrategy.put) {
         const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
         console.log('optionStrategy', optionStrategy, price);
 

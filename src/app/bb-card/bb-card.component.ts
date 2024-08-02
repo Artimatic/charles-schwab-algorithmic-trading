@@ -407,7 +407,14 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
       if (this.live && this.smsOption.value !== 'only_sms') {
         const resolve = (response) => {
-          this.incrementBuy(buyOrder);
+          const resolvedOrder = {
+            holding: buyOrder.holding,
+            quantity: buyOrder.quantity,
+            price: buyOrder.price,
+            side: 'Buy',
+            timeSubmitted: moment().valueOf()
+          };
+          this.incrementBuy(resolvedOrder);
 
           console.log(`${moment().format('hh:mm')} ${log}`);
           this.reportingService.addAuditLog(this.order.holding.symbol, log);
@@ -495,8 +502,9 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
         const resolve = (response) => {
           if (this.order.side.toLowerCase() !== 'sell') {
             const pl = this.daytradeService.estimateSellProfitLoss(this.orders);
-            console.log('Estimated sell pl on stop loss', pl);
+            console.log(`Estimated pl on stop loss ${order.holding.symbol} ${pl}`);
             this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
+            console.log('orders: ', this.orders);
           }
 
           console.log(`${moment().format('hh:mm')} ${log}`);
@@ -851,7 +859,6 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
         }
         return false;
       });
-      console.log('age of order: ', currentOrders);
       return stagnantOrderIdx > -1;
     }
     return false;
