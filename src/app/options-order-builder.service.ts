@@ -83,12 +83,15 @@ export class OptionsOrderBuilderService {
                     bearishStrangle.put.quantity = putQuantity;
                     const availableFunds = await this.cartService.getAvailableFunds(true);
                     if (availableFunds >= (callPrice * callQuantity + putPrice * putQuantity)) {
-                      currentCall.quantity = callQuantity;
-                      currentPut.put = bearishStrangle.put;
-                      currentPut.quantity = putQuantity;
-                      currentPut.price = putPrice;
-                      currentPut.underlying = sell;
-                      break;
+                      if (!currentPut || 
+                        (currentCall.quantity * currentCall.price + 
+                          currentPut.quantity * currentPut.price) > (currentCall.quantity * currentCall.price + putQuantity * putPrice)) {
+                        currentCall.quantity = callQuantity;
+                        currentPut.put = bearishStrangle.put;
+                        currentPut.quantity = putQuantity;
+                        currentPut.price = putPrice;
+                        currentPut.underlying = sell;
+                      }
                     }
                   }
                 }

@@ -530,7 +530,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       case Strategy.Short:
         const buyBearishStrangle = async (symbol: string, prediction: number, backtestData: any) => {
           if (backtestData?.optionsVolume > 230 && backtestData.sellSignals.length > 1) {
-            if (prediction < 0.3 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
+            if (prediction < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
               const optionStrategy = await this.strategyBuilderService.getPutStrangleTrade(symbol);
               const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
               this.strategyBuilderService.addStrangle(symbol, price, optionStrategy);
