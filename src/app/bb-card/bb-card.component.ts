@@ -447,10 +447,10 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     return buyOrder;
   }
 
-  sendSell(sellOrder: SmartOrder) {
+  async sendSell(sellOrder: SmartOrder) {
     if (sellOrder) {
       this.backtestService.getLastPriceTiingo({ symbol: this.order.holding.symbol })
-        .subscribe(tiingoQuote => {
+        .subscribe(async (tiingoQuote) => {
           const lastPrice = tiingoQuote[this.order.holding.symbol].quote.lastPrice;
 
           sellOrder.price = _.round(lastPrice, 2);
@@ -464,14 +464,15 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
               timeSubmitted: moment().valueOf()
             };
             this.incrementSell(resolvedOrder);
+            if (this.order.side.toLowerCase() !== 'sell') {
+              this.daytradeService.estimateSellProfitLoss(this.order.holding.name)
+                .subscribe(pl => {
+                  console.log('Estimated sell pl', pl);
+                  this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
+                });
+            }
 
             const resolve = (response) => {
-              if (this.order.side.toLowerCase() !== 'sell') {
-                const pl = this.daytradeService.estimateSellProfitLoss(this.orders);
-                console.log('Estimated sell pl', pl);
-                this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
-              }
-
               console.log(`${moment().format('hh:mm')} ${log}`);
               this.reportingService.addAuditLog(this.order.holding.symbol, log);
             };
@@ -489,9 +490,12 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           } else {
             this.incrementSell(sellOrder);
 
-            const pl = this.daytradeService.estimateSellProfitLoss(this.orders);
             if (this.order.side.toLowerCase() !== 'sell') {
-              this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
+              this.daytradeService.estimateSellProfitLoss(this.order.holding.name)
+                .subscribe(pl => {
+                  console.log('Estimated sell pl', pl);
+                  this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
+                });
             }
 
             console.log(`${moment(sellOrder.signalTime).format('hh:mm')} ${log}`);
@@ -508,14 +512,14 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       const log = `MARKET ORDER SENT ${order.side} ${order.quantity} ${order.holding.symbol}@${order.price}`;
       if (this.live && this.smsOption.value !== 'only_sms') {
         this.incrementSell(order);
-
+        if (this.order.side.toLowerCase() !== 'sell') {
+          this.daytradeService.estimateSellProfitLoss(this.order.holding.name)
+            .subscribe(pl => {
+              console.log('Estimated sell pl', pl);
+              this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
+            });
+        }
         const resolve = (response) => {
-          if (this.order.side.toLowerCase() !== 'sell') {
-            const pl = this.daytradeService.estimateSellProfitLoss(this.orders);
-            console.log(`Estimated pl on stop loss ${order.holding.symbol} ${pl}`);
-            this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
-          }
-
           console.log(`${moment().format('hh:mm')} ${log}`);
           this.reportingService.addAuditLog(this.order.holding.symbol, log);
         };
@@ -534,10 +538,12 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
         this.daytradeService.sendSell(order, 'market', resolve, reject, handleNotFound);
       } else {
         this.incrementSell(order);
-
         if (this.order.side.toLowerCase() !== 'sell') {
-          const pl = this.daytradeService.estimateSellProfitLoss(this.orders);
-          this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
+          this.daytradeService.estimateSellProfitLoss(this.order.holding.name)
+            .subscribe(pl => {
+              console.log('Estimated sell pl', pl);
+              this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
+            });
         }
         console.log(`${moment(order.signalTime).format('hh:mm')} ${log}`);
         this.reportingService.addAuditLog(this.order.holding.symbol, log);

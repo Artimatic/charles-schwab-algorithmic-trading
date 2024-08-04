@@ -78,7 +78,7 @@ export class PortfolioService {
     return this.http.get('/api/portfolio/positions/', options);
   }
 
-  getTdPortfolio(): Observable<any> {
+  getTdPortfolio() {
     const accountId = this.getAccountId();
     if (!accountId) {
       return of(null);
