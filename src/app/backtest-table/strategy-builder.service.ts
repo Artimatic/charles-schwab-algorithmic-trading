@@ -8,6 +8,7 @@ import { Strangle } from '@shared/models/options';
 import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
 import { SwingtradeStrategiesService } from '../strategies/swingtrade-strategies.service';
 import { Indicators } from '@shared/stock-backtest.interface';
+import { MessageService } from 'primeng/api';
 
 @Injectable({
   providedIn: 'root'
@@ -22,6 +23,7 @@ export class StrategyBuilderService {
     private aiPicksService: AiPicksService,
     private optionsDataService: OptionsDataService,
     private portfolioService: PortfolioService,
+    private messageService: MessageService,
     private swingtradeStrategiesService: SwingtradeStrategiesService,
     private cartService: CartService) { }
 
@@ -444,35 +446,42 @@ export class StrategyBuilderService {
     if (symbol === 'TQQQ') {
       return null;
     }
-    const cash = await this.cartService.getAvailableFunds(true);
-    const quantity = Math.floor((cash * 0.1) / (price * 100)) | 1;
-    if (quantity < 10) {
-      const order = {
-        holding: {
-          instrument: null,
-          symbol: symbol.toUpperCase().match(/[A-Za-z]{1,6}/)[0],
-        },
-        quantity: quantity,
-        price,
-        submitted: false,
-        pending: false,
-        orderSize: 1,
-        side: 'Buy',
-        lossThreshold: -0.05,
-        profitTarget: 0.1,
-        trailingStop: -0.05,
-        useStopLoss: true,
-        useTrailingStopLoss: true,
-        useTakeProfit: true,
-        sellAtClose: false,
-        allocation: 0.05,
-        primaryLeg: optionStrategy.call,
-        secondaryLeg: optionStrategy.put,
-        type: OrderTypes.strangle
-      };
-
-      this.cartService.addToCart(order);
+    if (price < 1) {
+      this.messageService.add({
+        severity: 'danger',
+        summary: `Price is too low for ${optionStrategy.call.symbol}/${optionStrategy.put.symbol} strangle`
+      });
+      return null;
     }
+
+    const cash = await this.cartService.getAvailableFunds(true);
+    const proposedQuantity = Math.floor((cash * 0.1) / (price * 100));
+    const quantity = proposedQuantity > 10 ? 10 : proposedQuantity;
+    const order = {
+      holding: {
+        instrument: null,
+        symbol: symbol.toUpperCase().match(/[A-Za-z]{1,6}/)[0],
+      },
+      quantity: quantity,
+      price,
+      submitted: false,
+      pending: false,
+      orderSize: 1,
+      side: 'Buy',
+      lossThreshold: -0.05,
+      profitTarget: 0.1,
+      trailingStop: -0.05,
+      useStopLoss: true,
+      useTrailingStopLoss: true,
+      useTakeProfit: true,
+      sellAtClose: false,
+      allocation: 0.05,
+      primaryLeg: optionStrategy.call,
+      secondaryLeg: optionStrategy.put,
+      type: OrderTypes.strangle
+    };
+
+    this.cartService.addToCart(order);
   }
 
 
