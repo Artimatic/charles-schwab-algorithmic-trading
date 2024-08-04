@@ -365,7 +365,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           if (isOpened) {
             if (!this.developedStrategy) {
               if (this.reportingService.logs.length > 0) {
-                this.modifyStrategy();
+                await this.modifyStrategy();
                 this.setProfitLoss();
                 this.scoreKeeperService.resetTotal();
                 this.resetCart();
@@ -1062,39 +1062,47 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     });
   }
 
-  modifyStrategy() {
-    const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
-    if (lastProfitLoss && lastProfitLoss.profit !== undefined) {
-      if (Number(this.calculatePl(lastProfitLoss.profitRecord)) > 0) {
-        this.increaseDayTradeRiskTolerance();
-        this.increaseRiskTolerance();
-      } else if (Number(this.calculatePl(lastProfitLoss.profitRecord)) < 0) {
-        this.decreaseDayTradeRiskTolerance();
-        this.decreaseRiskTolerance();
-      }
-    } else {
-      try {
-        this.machineLearningService
-          .trainDaytrade('AAPL',
-            moment().add({ days: 1 }).format('YYYY-MM-DD'),
-            moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
-            1,
-            this.globalSettingsService.daytradeAlgo
-          ).subscribe((mlResults: TrainingResults[]) => {
-            if (mlResults && mlResults[0] !== null) {
-              console.log('Next output', mlResults[0]?.nextOutput);
-              if (mlResults[0]?.nextOutput > 0.5) {
-                this.increaseRiskTolerance();
-                this.increaseDayTradeRiskTolerance();
-              } else if (mlResults[0]?.nextOutput < 0.5) {
-                this.decreaseRiskTolerance();
-                this.decreaseDayTradeRiskTolerance();
-              }
-            }
-          });
+  async modifyStrategy() {
+    const backtestResults = await this.strategyBuilderService.getBacktestData('SPY');
 
-      } catch (error) {
-        console.log(error);
+    if (backtestResults && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL')) {
+      this.decreaseDayTradeRiskTolerance();
+      this.decreaseRiskTolerance();
+      this.trimHoldings();
+    } else {
+      const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
+      if (lastProfitLoss && lastProfitLoss.profit !== undefined) {
+        if (Number(this.calculatePl(lastProfitLoss.profitRecord)) > 0) {
+          this.increaseDayTradeRiskTolerance();
+          this.increaseRiskTolerance();
+        } else if (Number(this.calculatePl(lastProfitLoss.profitRecord)) < 0) {
+          this.decreaseDayTradeRiskTolerance();
+          this.decreaseRiskTolerance();
+        }
+      } else {
+        try {
+          this.machineLearningService
+            .trainDaytrade('AAPL',
+              moment().add({ days: 1 }).format('YYYY-MM-DD'),
+              moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
+              1,
+              this.globalSettingsService.daytradeAlgo
+            ).subscribe((mlResults: TrainingResults[]) => {
+              if (mlResults && mlResults[0] !== null) {
+                console.log('Next output', mlResults[0]?.nextOutput);
+                if (mlResults[0]?.nextOutput > 0.5) {
+                  this.increaseRiskTolerance();
+                  this.increaseDayTradeRiskTolerance();
+                } else if (mlResults[0]?.nextOutput < 0.5) {
+                  this.decreaseRiskTolerance();
+                  this.decreaseDayTradeRiskTolerance();
+                }
+              }
+            });
+  
+        } catch (error) {
+          console.log(error);
+        }
       }
     }
   }

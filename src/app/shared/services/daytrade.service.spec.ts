@@ -277,7 +277,7 @@ describe('DaytradeService', () => {
       }
     ];
 
-    const estimate = service.estimateSellProfitLoss(testOrders);
+    const estimate = service.estimateSellProfitLoss('SPYL');
     expect(estimate).toEqual(-10.30);
   }));
 });

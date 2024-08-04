@@ -11,6 +11,7 @@ import { CartService } from './cart.service';
 import { CardOptions } from '../models/card-options';
 import { GlobalSettingsService, Brokerage } from '../../settings/global-settings.service';
 import { OrderHandlingService } from 'src/app/order-handling/order-handling.service';
+import { map } from 'rxjs/operators';
 
 @Injectable()
 export class DaytradeService {
@@ -401,64 +402,16 @@ export class DaytradeService {
   /*
   * Estimate the profit/loss of the last sell order
   */
-  estimateSellProfitLoss(orders: SmartOrder[]) {
-    const ordersLength = orders.length;
-    if (ordersLength < 2) {
-      return 0;
-    }
-
-    const lastOrder = orders[ordersLength - 1];
-
-    if (lastOrder.side.toLowerCase() !== 'sell') {
-      throw new Error(`Estimating sell p/l: ${orders[orders.length - 1]} is not a sell order.`);
-    }
-
-    const finalPositions: SmartOrder[] = [];
-
-    for (let j = 0; j < ordersLength - 1; j++) {
-      const currentOrder: SmartOrder = orders[j];
-      if (currentOrder.side.toLowerCase() === 'sell') {
-        let sellSize: number = currentOrder.quantity;
-        let i = 0;
-        while (sellSize > 0 && i < finalPositions.length) {
-          if (finalPositions[i].side.toLowerCase() === 'buy') {
-            if (finalPositions[i].quantity > sellSize) {
-              finalPositions[i].quantity -= sellSize;
-              sellSize = 0;
-            } else {
-              sellSize -= finalPositions[i].quantity;
-              finalPositions[i].quantity = 0;
-            }
-          }
-          i++;
+  estimateSellProfitLoss(symbol: string) {
+    return this.portfolioService.getTdPortfolio()
+      .pipe(map((response) => {
+        const foundPosition = response.find((pos) => {
+          return pos.instrument.symbol === symbol;
+        });
+        if (foundPosition) {
+          return foundPosition.currentDayProfitLoss;
         }
-      } else if (currentOrder.side.toLowerCase() === 'buy') {
-        finalPositions.push(currentOrder);
-      }
-    }
-
-    let sellSize = lastOrder.quantity;
-    let cost = 0;
-    let k = 0;
-    while (k < finalPositions.length - 1) {
-      const pos = finalPositions[k];
-      if (pos.quantity && sellSize > 0) {
-        if (pos.quantity > sellSize) {
-          cost += Number(sellSize) * Number(pos.price);
-          sellSize = 0;
-        } else {
-          cost += Number(pos.quantity) * Number(pos.price);
-          sellSize -= pos.quantity;
-        }
-      } else {
-        break;
-      }
-      k++;
-    }
-
-    const lastOrderTotal = Number(lastOrder.quantity) * Number(lastOrder.price);
-
-    return _.round(lastOrderTotal - cost, 2);
+      }));
   }
 
   findMostCurrentQuoteIndex(quotes, firstIndex, lastIndex) {
