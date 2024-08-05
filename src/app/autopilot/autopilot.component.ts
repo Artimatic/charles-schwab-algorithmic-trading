@@ -354,25 +354,20 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else if (moment().isAfter(moment(startStopTime.endDateTime).subtract(8, 'minutes')) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
           this.buySellAtClose();
-          if (this.reportingService.logs.length > 0) {
-            const profitLog = `Profit ${this.scoreKeeperService.total}`;
-            this.reportingService.addAuditLog(null, profitLog);
-            this.reportingService.exportAuditHistory();
-          }
+        } else if (moment().isAfter(moment(startStopTime.endDateTime).add(3, 'hours')) &&
+          this.reportingService.logs.length > 0) {
+          const profitLog = `Profit ${this.scoreKeeperService.total}`;
+          this.reportingService.addAuditLog(null, profitLog);
+          this.reportingService.exportAuditHistory();
+          await this.modifyStrategy();
+          this.setProfitLoss();
+          this.scoreKeeperService.resetTotal();
+          this.resetCart();
+          this.developStrategy();
         } else if (moment().isAfter(moment(startStopTime.startDateTime)) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
           const isOpened = await this.isMarketOpened();
           if (isOpened) {
-            if (!this.developedStrategy) {
-              if (this.reportingService.logs.length > 0) {
-                await this.modifyStrategy();
-                this.setProfitLoss();
-                this.scoreKeeperService.resetTotal();
-                this.resetCart();
-              }
-              this.developStrategy();
-              return;
-            }
             this.executeOrderList();
             if (this.cartService.otherOrders.length < this.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
               this.findDaytradeService.getRefreshObserver().next(true);
@@ -484,6 +479,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async developStrategy() {
+    this.developedStrategy = true;
+
     this.boughtAtClose = false;
     this.machineLearningService.getFoundPatterns()
       .subscribe(patternsResponse => console.log('found patterns ', patternsResponse));
@@ -545,7 +542,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         break;
       }
     }
-    this.developedStrategy = true;
   }
 
   async findSwingStockCallback(symbol: string, prediction: number, backtestData: any) {
@@ -1099,7 +1095,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
                 }
               }
             });
-  
+
         } catch (error) {
           console.log(error);
         }
@@ -1288,14 +1284,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       }
     });
   }
-  
+
   async hedge() {
     this.currentHoldings = await this.cartService.findCurrentPositions();
     this.machineDaytradingService.getPortfolioBalance().subscribe(async (balance) => {
       this.currentHoldings.forEach(async (holding) => {
         if (!this.cartService.isStrangle(holding)) {
           if (holding.netLiq && (holding.netLiq / balance.liquidationValue) > 0.15)
-          await this.optionsOrderBuilderService.createProtectivePutOrder(holding);
+            await this.optionsOrderBuilderService.createProtectivePutOrder(holding);
         }
       });
     });

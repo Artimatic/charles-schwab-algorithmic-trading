@@ -424,7 +424,7 @@ export class StrategyBuilderService {
           storage.push(trade)
         }
 
-        storage = storage.filter(s => moment().diff(moment(s.date), 'days') < 3);
+        storage = storage.filter(s => moment().diff(moment(s.date), 'days') < 7);
         this.setTradingStrategies(storage);
       } else {
         const newStorageObj = [trade];
