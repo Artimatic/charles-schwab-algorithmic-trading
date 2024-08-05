@@ -465,7 +465,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             };
             this.incrementSell(resolvedOrder);
             if (this.order.side.toLowerCase() !== 'sell') {
-              this.daytradeService.estimateSellProfitLoss(this.order.holding.name)
+              this.daytradeService.estimateSellProfitLoss(this.order.holding.symbol)
                 .subscribe(pl => {
                   console.log('Estimated sell pl', pl);
                   this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
@@ -491,7 +491,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             this.incrementSell(sellOrder);
 
             if (this.order.side.toLowerCase() !== 'sell') {
-              this.daytradeService.estimateSellProfitLoss(this.order.holding.name)
+              this.daytradeService.estimateSellProfitLoss(this.order.holding.symbol)
                 .subscribe(pl => {
                   console.log('Estimated sell pl', pl);
                   this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
@@ -513,7 +513,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       if (this.live && this.smsOption.value !== 'only_sms') {
         this.incrementSell(order);
         if (this.order.side.toLowerCase() !== 'sell') {
-          this.daytradeService.estimateSellProfitLoss(this.order.holding.name)
+          this.daytradeService.estimateSellProfitLoss(this.order.holding.symbol)
             .subscribe(pl => {
               console.log('Estimated sell pl', pl);
               this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
@@ -539,7 +539,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       } else {
         this.incrementSell(order);
         if (this.order.side.toLowerCase() !== 'sell') {
-          this.daytradeService.estimateSellProfitLoss(this.order.holding.name)
+          this.daytradeService.estimateSellProfitLoss(this.order.holding.symbol)
             .subscribe(pl => {
               console.log('Estimated sell pl', pl);
               this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
@@ -834,7 +834,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
       const sellTime = moment.tz(`${moment().format('YYYY-MM-DD')} 15:30`, 'America/New_York').toDate();
       if (this.order.sellAtClose && moment().isAfter(moment(sellTime))) {
-        const log = `${this.order.holding.name} Current time: ${moment.tz('America/New_York').format()} is after ${sellTime} Is sell at close order: ${this.order.sellAtClose} Closing positions: ${closePrice}/${estimatedPrice}`;
+        const log = `${this.order.holding.symbol} Current time: ${moment.tz('America/New_York').format()} is after ${sellTime} Is sell at close order: ${this.order.sellAtClose} Closing positions: ${closePrice}/${estimatedPrice}`;
         this.reportingService.addAuditLog(this.order.holding.symbol, log);
         console.log(log);
         const stopLossOrder = this.daytradeService.createOrder(this.order.holding, 'Sell', this.order.positionCount, closePrice, signalTime);

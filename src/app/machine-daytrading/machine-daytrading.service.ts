@@ -148,6 +148,9 @@ export class MachineDaytradingService {
     if (this.counter > this.currentStockList.length - 1) {
       this.counter = 0;
     }
+    if (!this.currentStockList[this.counter]) {
+      return CurrentStockList[0].ticker;
+    }
     return this.currentStockList[this.counter].ticker ? this.currentStockList[this.counter].ticker : this.currentStockList[this.counter].name;
   }
 

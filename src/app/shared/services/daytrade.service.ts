@@ -409,8 +409,10 @@ export class DaytradeService {
           return pos.instrument.symbol === symbol;
         });
         if (foundPosition) {
+          console.log('Found position', foundPosition, foundPosition.currentDayProfitLoss);
           return foundPosition.currentDayProfitLoss;
         }
+        return null;
       }));
   }
 
