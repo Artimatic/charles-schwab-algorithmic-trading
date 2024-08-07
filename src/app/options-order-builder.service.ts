@@ -32,17 +32,10 @@ export class OptionsOrderBuilderService {
 
   async createProtectivePutOrder(holding: PortfolioInfoHolding) {
     if (holding.shares) {
-      let putsNeeded = 0;
-      if ((holding.primaryLegs && !holding.secondaryLegs && holding.primaryLegs[0].putCallInd === 'P')) {
-        putsNeeded = Math.floor((holding.shares / 100) - holding.primaryLegs.length) || 1;
-      } else if (!holding.primaryLegs && holding.secondaryLegs && holding.secondaryLegs[0].putCallInd === 'P') {
-        putsNeeded = Math.floor((holding.shares / 100) - holding.secondaryLegs.length) || 1;
-      } else if (!holding.primaryLegs && !holding.secondaryLegs) {
-        putsNeeded = Math.floor(holding.shares / 100);
-      }
+      let putsNeeded = Math.floor(holding.shares / 100);
 
       putsNeeded -= this.protectivePutCount(holding);
-
+      console.log('Protective puts needed', holding.name, putsNeeded);
       if (putsNeeded > 0) {
         const putOption = await this.strategyBuilderService.getProtectivePut(holding.name);
         const estimatedPrice = this.strategyBuilderService.findOptionsPrice(putOption.put.bid, putOption.put.ask);
@@ -51,7 +44,7 @@ export class OptionsOrderBuilderService {
     }
   }
 
-  async createTradingPair() {
+  async createTradingPair(tradingPairs: any[]) {
     this.strategyBuilderService.getTradingStrategies().forEach(async (strat) => {
       const buys: string[] = strat.strategy.buy;
       const sells: string[] = strat.strategy.sell;
@@ -83,8 +76,8 @@ export class OptionsOrderBuilderService {
                     bearishStrangle.put.quantity = putQuantity;
                     const availableFunds = await this.cartService.getAvailableFunds(true);
                     if (availableFunds >= (callPrice * callQuantity + putPrice * putQuantity)) {
-                      if (!currentPut || 
-                        (currentCall.quantity * currentCall.price + 
+                      if (!currentPut ||
+                        (currentCall.quantity * currentCall.price +
                           currentPut.quantity * currentPut.price) > (currentCall.quantity * currentCall.price + putQuantity * putPrice)) {
                         currentCall.quantity = callQuantity;
                         currentPut.put = bearishStrangle.put;
@@ -97,8 +90,9 @@ export class OptionsOrderBuilderService {
                 }
               }
             }
-            this.cartService.addOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy');
-            this.cartService.addOptionOrder(currentPut.underlying, [currentPut.put], currentPut.price, currentPut.quantity, OrderTypes.put, 'Buy');
+            const option1 = await this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy');
+            const option2 = await this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put], currentPut.price, currentPut.quantity, OrderTypes.put, 'Buy');
+            tradingPairs.push([option1, option2]);
           }
         }
       }
@@ -128,7 +122,7 @@ export class OptionsOrderBuilderService {
         if (foundPairs.find(pair => pair.symbol === holding.name) &&
           holding.primaryLegs &&
           holding.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
-            acc.push(holding);
+          acc.push(holding);
         }
         return acc;
       }, []);
@@ -171,7 +165,7 @@ export class OptionsOrderBuilderService {
         if (foundPairs.find(pair => pair.symbol === holding.name) &&
           holding.primaryLegs &&
           holding.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
-            acc.push(holding);
+          acc.push(holding);
         }
         return acc;
       }, []);

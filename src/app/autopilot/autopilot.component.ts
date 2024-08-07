@@ -78,6 +78,7 @@ export enum SwingtradeAlgorithms {
 }
 
 export enum Strategy {
+  Default = 'Default',
   DaytradeShort = 'DaytradeShort',
   Daytrade = 'Daytrade',
   Swingtrade = 'Swingtrade',
@@ -130,14 +131,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   developedStrategy = false;
 
   strategyList = [
-    Strategy.OptionsStrangle,
+    Strategy.Default,
+    // Strategy.OptionsStrangle,
     Strategy.Swingtrade,
     // Strategy.SingleStockPick,
     // Strategy.StateMachine,
-    Strategy.Daytrade,
     // Strategy.InverseSwingtrade,
     //Strategy.DaytradeShort,
-    Strategy.TradingPairs,
+    // Strategy.TradingPairs,
     Strategy.TrimHoldings,
     Strategy.Short,
     // Strategy.DaytradeFullList,
@@ -192,6 +193,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   lastReceivedRecommendation = null;
   boughtAtClose = false;
   multibuttonOptions: MenuItem[];
+  tradingPairs = [];
 
   constructor(
     private portfolioService: PortfolioService,
@@ -277,8 +279,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       },
       {
         label: 'Show strategies',
-        command: () => {
+        command: async () => {
           this.revealPotentialStrategy = !this.revealPotentialStrategy;
+          await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs);
+          setTimeout(() => {
+            console.log(this.tradingPairs);
+          }, 300000);
         }
       },
       {
@@ -355,7 +361,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           moment().isBefore(moment(startStopTime.endDateTime))) {
           this.buySellAtClose();
         } else if (moment().isAfter(moment(startStopTime.endDateTime).add(3, 'hours')) &&
-          this.reportingService.logs.length > 0) {
+          this.reportingService.logs.length > 0 &&
+          moment().isBefore(moment(startStopTime.endDateTime).add(5, 'minute'))) {
           const profitLog = `Profit ${this.scoreKeeperService.total}`;
           this.reportingService.addAuditLog(null, profitLog);
           this.reportingService.exportAuditHistory();
@@ -516,7 +523,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.getNewTrades(buyStrangleCb);
         break;
       case Strategy.TradingPairs:
-        await this.optionsOrderBuilderService.createTradingPair();
+        await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs);
         break;
       case Strategy.Swingtrade:
         await this.findNewTrade(true);
@@ -1067,7 +1074,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       this.trimHoldings();
     } else {
       const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
-      if (lastProfitLoss && lastProfitLoss.profit !== undefined) {
+      if (lastProfitLoss && lastProfitLoss.profit) {
         if (Number(this.calculatePl(lastProfitLoss.profitRecord)) > 0) {
           this.increaseDayTradeRiskTolerance();
           this.increaseRiskTolerance();
@@ -1289,9 +1296,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.currentHoldings = await this.cartService.findCurrentPositions();
     this.machineDaytradingService.getPortfolioBalance().subscribe(async (balance) => {
       this.currentHoldings.forEach(async (holding) => {
-        if (!this.cartService.isStrangle(holding)) {
+        if (!holding.primaryLegs) {
           if (holding.netLiq && (holding.netLiq / balance.liquidationValue) > 0.15)
-            await this.optionsOrderBuilderService.createProtectivePutOrder(holding);
+            console.log('Adding protective put for', holding.name);
+          await this.optionsOrderBuilderService.createProtectivePutOrder(holding);
         }
       });
     });
