@@ -468,6 +468,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
               this.daytradeService.estimateSellProfitLoss(this.order.holding.symbol)
                 .subscribe(pl => {
                   console.log('Estimated sell pl', pl);
+                  this.scoringService.resetProfitLoss(this.order.holding.symbol);
                   this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
                 });
             }
@@ -494,6 +495,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
               this.daytradeService.estimateSellProfitLoss(this.order.holding.symbol)
                 .subscribe(pl => {
                   console.log('Estimated sell pl', pl);
+                  this.scoringService.resetProfitLoss(this.order.holding.symbol);
                   this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
                 });
             }
@@ -516,6 +518,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           this.daytradeService.estimateSellProfitLoss(this.order.holding.symbol)
             .subscribe(pl => {
               console.log('Estimated sell pl', pl);
+              this.scoringService.resetProfitLoss(this.order.holding.symbol);
               this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
             });
         }
@@ -542,6 +545,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           this.daytradeService.estimateSellProfitLoss(this.order.holding.symbol)
             .subscribe(pl => {
               console.log('Estimated sell pl', pl);
+              this.scoringService.resetProfitLoss(this.order.holding.symbol);
               this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
             });
         }

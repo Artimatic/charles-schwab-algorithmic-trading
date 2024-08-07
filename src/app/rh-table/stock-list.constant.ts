@@ -137,7 +137,6 @@ const fullList = [
     'ELV',
     'VRTX',
     'REGN',
-    'CRL',
     'RGEN',
     'HD',
     'LOW',
