@@ -13,7 +13,7 @@ import { MenuItem, MessageService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { Subject, Subscription } from 'rxjs';
 import { TimerObservable } from 'rxjs-compat/observable/TimerObservable';
-import { delay, finalize, take, takeUntil } from 'rxjs/operators';
+import { delay, take, takeUntil } from 'rxjs/operators';
 import { PotentialTrade } from '../backtest-table/potential-trade.constant';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
@@ -21,7 +21,6 @@ import { TrainingResults } from '../machine-learning/ask-model/ask-model.compone
 import { OptionsOrderBuilderService } from '../options-order-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { PricingService } from '../pricing/pricing.service';
-import { AlwaysBuy } from '../rh-table/backtest-stocks.constant';
 import { CurrentStockList } from '../rh-table/stock-list.constant';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { StockListDialogComponent } from '../stock-list-dialog/stock-list-dialog.component';
@@ -1323,7 +1322,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async checkPersonalLists() {
-    AlwaysBuy.forEach(async (stock) => {
+    this.strategyBuilderService.getBuyList().forEach(async (stock) => {
       const name = stock.ticker;
       try {
         const backtestResults = await this.strategyBuilderService.getBacktestData(name);

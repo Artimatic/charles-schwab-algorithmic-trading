@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CurrentStockList } from '../rh-table/stock-list.constant';
-import { PersonalBearishPicks, AlwaysBuy } from '../rh-table/backtest-stocks.constant';
+import { PersonalBearishPicks } from '../rh-table/backtest-stocks.constant';
 import { AlgoParam } from '@shared/algo-param.interface';
 import { MenuItem } from 'primeng/api';
 import { BacktestService } from '@shared/services';
 import * as moment from 'moment-timezone';
+import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 
 @Component({
   selector: 'app-stock-list-dialog',
@@ -20,7 +21,7 @@ export class StockListDialogComponent implements OnInit {
   newStock = '';
   items: MenuItem[];
 
-  constructor(private backtestService: BacktestService) { }
+  constructor(private backtestService: BacktestService, private strategyBuilderService: StrategyBuilderService) { }
 
   ngOnInit(): void {
     this.listType = [
@@ -67,7 +68,8 @@ export class StockListDialogComponent implements OnInit {
         CurrentStockList.splice(rowIndex, 1);
         break;
       case 'buy':
-        AlwaysBuy.splice(rowIndex, 1);
+        this.strategyBuilderService.removeFromBuyList(stock);
+        this.setToAlwaysBuyList();
         break;
       case 'sell':
         PersonalBearishPicks.splice(rowIndex, 1);
@@ -81,12 +83,16 @@ export class StockListDialogComponent implements OnInit {
         this.stockList = CurrentStockList;
         break;
       case 'buy':
-        this.stockList = AlwaysBuy;
+        this.setToAlwaysBuyList();
         break;
       case 'sell':
         this.stockList = PersonalBearishPicks;
         break;
     }
+  }
+
+  setToAlwaysBuyList() {
+    this.stockList = this.strategyBuilderService.getBuyList();
   }
 
   addRow() {
@@ -95,7 +101,8 @@ export class StockListDialogComponent implements OnInit {
         CurrentStockList.push({ ticker: this.newStock });
         break;
       case 'buy':
-        AlwaysBuy.push({ ticker: this.newStock } as AlgoParam);
+        this.strategyBuilderService.addToBuyList(this.newStock);
+        this.setToAlwaysBuyList();
         break;
       case 'sell':
         PersonalBearishPicks.push({ ticker: this.newStock } as AlgoParam);
