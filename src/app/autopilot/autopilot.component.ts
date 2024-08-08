@@ -13,7 +13,7 @@ import { MenuItem, MessageService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { Subject, Subscription } from 'rxjs';
 import { TimerObservable } from 'rxjs-compat/observable/TimerObservable';
-import { delay, finalize, take, takeUntil } from 'rxjs/operators';
+import { delay, take, takeUntil } from 'rxjs/operators';
 import { PotentialTrade } from '../backtest-table/potential-trade.constant';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
@@ -21,7 +21,6 @@ import { TrainingResults } from '../machine-learning/ask-model/ask-model.compone
 import { OptionsOrderBuilderService } from '../options-order-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { PricingService } from '../pricing/pricing.service';
-import { AlwaysBuy } from '../rh-table/backtest-stocks.constant';
 import { CurrentStockList } from '../rh-table/stock-list.constant';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { StockListDialogComponent } from '../stock-list-dialog/stock-list-dialog.component';
@@ -126,7 +125,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   destroy$ = new Subject();
   currentHoldings: PortfolioInfoHolding[] = [];
   strategyCounter = null;
-  maxTradeCount = 20;
+  maxTradeCount = 11;
   maxHoldings = 15;
   developedStrategy = false;
 
@@ -233,7 +232,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((trade: Trade) => {
         this.lastReceivedRecommendation = moment();
-        if (this.cartService.otherOrders.length < this.maxTradeCount) {
+        if ((this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.maxTradeCount) {
           this.addDaytrade(trade.stock);
           this.cartService.removeCompletedOrders();
         }
@@ -281,6 +280,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         label: 'Show strategies',
         command: async () => {
           this.revealPotentialStrategy = !this.revealPotentialStrategy;
+          await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs);
+          setTimeout(() => {
+            console.log(this.tradingPairs);
+          }, 120000);
         }
       },
       {
@@ -397,7 +400,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           const isOpened = await this.isMarketOpened();
           if (isOpened) {
             this.executeOrderList();
-            if (this.cartService.otherOrders.length < this.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
+            if ((this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
               this.findDaytradeService.getRefreshObserver().next(true);
             } else {
               this.cartService.removeCompletedOrders();
@@ -410,8 +413,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
                 }
               });
             }
-            this.currentHoldings = await this.cartService.findCurrentPositions();
-            this.analyseCurrentOptions();
+            if (moment().isAfter(moment(startStopTime.startDateTime).add(1, 'hours'))) {
+              this.currentHoldings = await this.cartService.findCurrentPositions();
+              this.analyseCurrentOptions();
+            }
           }
         } else {
           if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 3) {
@@ -820,18 +825,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async modifyCurrentHoldings() {
-    const sellHolding = this.currentHoldings.find(holdingInfo => {
-      return holdingInfo.name === 'TQQQ';
-    });
-    if (sellHolding) {
-      this.portfolioSell(sellHolding);
-    }
-
     const currentDate = moment().format('YYYY-MM-DD');
     const startDate = moment().subtract(365, 'days').format('YYYY-MM-DD');
     this.currentHoldings.forEach(async (holding) => {
       await this.checkStopLoss(holding);
-
       const indicatorsResponse = await this.getTechnicalIndicators(holding.name,
         startDate,
         currentDate)
@@ -1323,7 +1320,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async checkPersonalLists() {
-    AlwaysBuy.forEach(async (stock) => {
+    this.strategyBuilderService.getBuyList().forEach(async (stock) => {
       const name = stock.ticker;
       try {
         const backtestResults = await this.strategyBuilderService.getBacktestData(name);

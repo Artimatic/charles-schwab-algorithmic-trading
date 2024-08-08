@@ -8,9 +8,7 @@ import { MessageService } from 'primeng/api';
 import { FindDaytradeService, StockTrade } from '../find-daytrade.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { AlwaysBuy } from 'src/app/rh-table/backtest-stocks.constant';
 import { GlobalSettingsService } from 'src/app/settings/global-settings.service';
-import { CurrentStockList } from 'src/app/rh-table/stock-list.constant';
 
 interface Daytrade {
   stock: string;
@@ -175,10 +173,7 @@ export class DaytradeActiveSearchComponent implements OnInit, OnDestroy {
     await this.getCurrentHoldings();
 
     if (!this.currentCycleList.length) {
-      const personalPicks = AlwaysBuy.map(pick => {
-        return { stock: pick.ticker, daytradeIndicators: null };
-      });
-      this.currentCycleList = this.mostRelevantStockList.concat(personalPicks)
+      this.currentCycleList = this.mostRelevantStockList;
 
       const savedBacktestData = this.strategyBuilderService.getStorage('backtest');
       for (const backtestDataKey in savedBacktestData) {

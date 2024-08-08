@@ -9,6 +9,7 @@ import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
 import { SwingtradeStrategiesService } from '../strategies/swingtrade-strategies.service';
 import { Indicators } from '@shared/stock-backtest.interface';
 import { MessageService } from 'primeng/api';
+import { AlwaysBuy } from '../rh-table/backtest-stocks.constant';
 
 @Injectable({
   providedIn: 'root'
@@ -565,5 +566,40 @@ export class StrategyBuilderService {
     const orderQuantity = quantity;
 
     this.portfolioService.sendOptionBuy(putOption.put.symbol, orderQuantity, price, false).subscribe();
+  }
+
+  getBuyList() {
+    const alwaysBuyStorage = this.getStorage('always_buy');
+    if (alwaysBuyStorage && alwaysBuyStorage.length) {
+      return AlwaysBuy.concat(alwaysBuyStorage);
+    }
+    return AlwaysBuy;
+  }
+
+  addToBuyList(ticker: string) {
+    const list = this.getBuyList();
+    if (list && list.length) {
+      if (!list.find(val => val.ticker === ticker)) {
+        list.push({
+          ticker, start: null,
+          end: null
+        });
+        localStorage.setItem('always_buy', JSON.stringify(list));
+      }
+    } else {
+      localStorage.setItem('always_buy', JSON.stringify([{
+        ticker, start: null,
+        end: null
+      }]));
+    }
+  }
+
+  removeFromBuyList(ticker: string) {
+    const list = this.getBuyList();
+    if (list && list.length) {
+        localStorage.setItem('always_buy', JSON.stringify(list.filter(val => val.ticker !== ticker)));
+    } else {
+      localStorage.setItem('always_buy', JSON.stringify([]));
+    }
   }
 }

@@ -3998,7 +3998,7 @@ for (const b of bearList) {
   BearList.push(createParam(b));
 }
 
-export const AlwaysBuy = ['VTI'].map(b => createParam(b));
+export const AlwaysBuy = [].map(b => createParam(b));
 
 export const PersonalBearishPicks = ['TWLO',
   'MDB',

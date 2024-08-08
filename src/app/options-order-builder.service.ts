@@ -69,8 +69,8 @@ export class OptionsOrderBuilderService {
                 const sellOptionsData = await this.optionsDataService.getImpliedMove(sell).toPromise();
                 if (sellOptionsData && sellOptionsData.move && sellOptionsData.move < 0.15) {
                   const multiple = (callPrice > putPrice) ? Math.round(callPrice / putPrice) : Math.round(putPrice / callPrice);
-                  let initialCallQuantity = 1;
-                  let initialPutQuantity = multiple;
+                  let initialCallQuantity = (callPrice > putPrice) ? 1 : multiple;
+                  let initialPutQuantity = (callPrice > putPrice) ? multiple : 1;
                   const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple);
                   if (callQuantity + putQuantity < 5) {
                     bullishStrangle.call.quantity = callQuantity;
@@ -113,7 +113,7 @@ export class OptionsOrderBuilderService {
   }
 
   getCallPutQuantities(callPrice, callQuantity, putPrice, putQuantity, multiple) {
-    while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) < 500 &&
+    while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > 500 &&
       callQuantity + putQuantity < 15) {
       if (callPrice > putPrice) {
         callQuantity++;
