@@ -442,7 +442,7 @@ export class StrategyBuilderService {
     }
   }
 
-  async addStrangle(symbol: string, price: number, optionStrategy: Strangle) {
+  async addStrangleOrder(symbol: string, price: number, optionStrategy: Strangle) {
     if (symbol === 'TQQQ') {
       return null;
     }
@@ -457,7 +457,7 @@ export class StrategyBuilderService {
     const cash = await this.cartService.getAvailableFunds(true);
     const proposedQuantity = Math.floor((cash * 0.1) / (price * 100));
     const quantity = proposedQuantity > 10 ? 10 : proposedQuantity;
-    const order = {
+    return {
       holding: {
         instrument: null,
         symbol: symbol.toUpperCase().match(/[A-Za-z]{1,6}/)[0],
@@ -481,6 +481,10 @@ export class StrategyBuilderService {
       type: OrderTypes.strangle
     };
 
+  }
+
+  async addStrangle(symbol: string, price: number, optionStrategy: Strangle) {
+    const order = await this.addStrangleOrder(symbol, price, optionStrategy);
     this.cartService.addToCart(order);
   }
 

@@ -311,7 +311,7 @@ export class CartService {
         type: optionType
       };
 
-      this.addToCart(order);
+      return order;
     }
   }
   async addOptionOrder(symbol: string,
