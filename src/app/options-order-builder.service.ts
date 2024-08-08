@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { CartService, PortfolioInfoHolding } from '@shared/services';
+import { BacktestService, CartService, PortfolioInfoHolding } from '@shared/services';
 import { StrategyBuilderService } from './backtest-table/strategy-builder.service';
 import { OrderTypes } from '@shared/models/smart-order';
 import { OptionsDataService } from '@shared/options-data.service';
@@ -11,7 +11,8 @@ export class OptionsOrderBuilderService {
 
   constructor(private strategyBuilderService: StrategyBuilderService,
     private cartService: CartService,
-    private optionsDataService: OptionsDataService
+    private optionsDataService: OptionsDataService,
+    private backtestService: BacktestService
   ) { }
 
   private protectivePutCount(holding: PortfolioInfoHolding): number {
@@ -80,19 +81,31 @@ export class OptionsOrderBuilderService {
                         (currentCall.quantity * currentCall.price +
                           currentPut.quantity * currentPut.price) > (currentCall.quantity * currentCall.price + putQuantity * putPrice)) {
                         currentCall.quantity = callQuantity;
-                        currentPut.put = bearishStrangle.put;
-                        currentPut.quantity = putQuantity;
-                        currentPut.price = putPrice;
-                        currentPut.underlying = sell;
+                        if (currentPut) {
+                          currentPut.put = bearishStrangle.put;
+                          currentPut.quantity = putQuantity;
+                          currentPut.price = putPrice;
+                          currentPut.underlying = sell;
+                        } else {
+                          currentPut = {
+                            put: bearishStrangle.put,
+                            price: putPrice,
+                            quantity: putQuantity,
+                            underlying: sell
+                          };
+                        }
                       }
                     }
                   }
                 }
               }
             }
-            const option1 = await this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy');
-            const option2 = await this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put], currentPut.price, currentPut.quantity, OrderTypes.put, 'Buy');
-            tradingPairs.push([option1, option2]);
+            if (currentPut && currentCall) {
+              console.log(currentPut, currentCall);
+              const option1 = await this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy');
+              const option2 = await this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put], currentPut.price, currentPut.quantity, OrderTypes.put, 'Buy');
+              tradingPairs.push([option1, option2]);
+            }
           }
         }
       }
@@ -173,4 +186,39 @@ export class OptionsOrderBuilderService {
     }
   }
 
+  async shouldBuyStrangle(symbol: string) {
+    const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
+    const lastPrice = price[symbol].quote.lastPrice;
+    const closePrice = price[symbol].quote.closePrice;
+    const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
+
+    if (!backtestResults.averageMove) {
+      backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
+    }
+    if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
+      if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.90)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  async shouldBuyOption(symbol: string) {
+    const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
+    const lastPrice = price[symbol].quote.lastPrice;
+    const closePrice = price[symbol].quote.closePrice;
+    const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
+
+    if (!backtestResults.averageMove) {
+      backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
+    }
+    if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
+      if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.8)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
 }

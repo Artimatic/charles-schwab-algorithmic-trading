@@ -281,10 +281,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         label: 'Show strategies',
         command: async () => {
           this.revealPotentialStrategy = !this.revealPotentialStrategy;
-          await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs);
-          setTimeout(() => {
-            console.log(this.tradingPairs);
-          }, 300000);
         }
       },
       {
@@ -340,6 +336,31 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
             this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell');
           }
+        }
+      }
+    });
+
+    this.tradingPairs.forEach(async (trade) => {
+      if (trade.length === 1) {
+        const price = await this.backtestService.getLastPriceTiingo({ symbol: trade[0].holding.symbol }).toPromise();
+        const lastPrice = price[trade[0].holding.symbol].quote.lastPrice;
+        const closePrice = price[trade[0].holding.symbol].quote.closePrice;
+        const backtestResults = await this.strategyBuilderService.getBacktestData(trade[0].holding.symbol);
+
+        if (!backtestResults.averageMove) {
+          backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
+        }
+        if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
+          if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.90)) {
+            this.cartService.addToCart(trade[0]);
+          }
+        }
+      } else if (trade.length === 2) {
+        const shouldBuyCall = await this.optionsOrderBuilderService.shouldBuyOption(trade[0].holding.symbol);
+        const shouldBuyPut = await this.optionsOrderBuilderService.shouldBuyOption(trade[1].holding.symbol);
+        if (shouldBuyCall && shouldBuyPut) {
+          this.cartService.addToCart(trade[0]);
+          this.cartService.addToCart(trade[1]);
         }
       }
     });
@@ -486,6 +507,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async developStrategy() {
+    this.tradingPairs = [];
     this.developedStrategy = true;
 
     this.boughtAtClose = false;
@@ -499,28 +521,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.modifyCurrentHoldings();
     await this.checkPersonalLists();
     await this.hedge();
+    await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs);
+    await this.addStrangleToList();
     // await this.optionsOrderBuilderService.createTradingPair();
 
     switch (this.strategyList[this.strategyCounter]) {
       case Strategy.OptionsStrangle:
-        const buyStrangleCb = async (symbol: string, prediction: number, backtestData: any) => {
-          if (backtestData?.optionsVolume > 230 && backtestData.sellSignals.length > 1) {
-            if (prediction < 0.3 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
-              const optionStrategy = await this.strategyBuilderService.getPutStrangleTrade(symbol);
-              const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
-              this.strategyBuilderService.addStrangle(symbol, price, optionStrategy);
-              console.log('Adding Bearish strangle', symbol, price, optionStrategy);
-            } else {
-              if (prediction > 0.6 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
-                const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade(symbol);
-                const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
-                this.strategyBuilderService.addStrangle(symbol, price, optionStrategy);
-                console.log('Adding Bullish strangle', symbol, price, optionStrategy);
-              }
-            }
-          }
-        };
-        await this.getNewTrades(buyStrangleCb);
+        await this.findStrangleTrade();
         break;
       case Strategy.TradingPairs:
         await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs);
@@ -549,6 +556,62 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         break;
       }
     }
+  }
+
+  async addStrangleToList() {
+    const buyStrangleCb = async (symbol: string, prediction: number, backtestData: any) => {
+      if (backtestData?.optionsVolume > 230) {
+        const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
+        const lastPrice = price[symbol].quote.lastPrice;
+        const closePrice = price[symbol].quote.closePrice;
+        const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
+
+        if (!backtestResults.averageMove) {
+          backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
+        }
+        if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
+          if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.90)) {
+            if (prediction < 0.3 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
+              const optionStrategy = await this.strategyBuilderService.getPutStrangleTrade(symbol);
+              const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
+              const order = await this.strategyBuilderService.addStrangleOrder(symbol, price, optionStrategy);
+              console.log('Adding Bearish strangle', symbol, price, optionStrategy);
+              this.tradingPairs.push([order]);
+            } else {
+              if (prediction > 0.6 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
+                const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade(symbol);
+                const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
+                const order = await this.strategyBuilderService.addStrangleOrder(symbol, price, optionStrategy);
+                console.log('Adding Bullish strangle', symbol, price, optionStrategy);
+                this.tradingPairs.push([order]);
+              }
+            }
+          }
+        }
+      }
+    };
+    await this.getNewTrades(buyStrangleCb);
+  }
+
+  async findStrangleTrade() {
+    const buyStrangleCb = async (symbol: string, prediction: number, backtestData: any) => {
+      if (backtestData?.optionsVolume > 230) {
+        if (prediction < 0.3 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
+          const optionStrategy = await this.strategyBuilderService.getPutStrangleTrade(symbol);
+          const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
+          this.strategyBuilderService.addStrangle(symbol, price, optionStrategy);
+          console.log('Adding Bearish strangle', symbol, price, optionStrategy);
+        } else {
+          if (prediction > 0.6 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
+            const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade(symbol);
+            const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
+            this.strategyBuilderService.addStrangle(symbol, price, optionStrategy);
+            console.log('Adding Bullish strangle', symbol, price, optionStrategy);
+          }
+        }
+      }
+    };
+    await this.getNewTrades(buyStrangleCb);
   }
 
   async findSwingStockCallback(symbol: string, prediction: number, backtestData: any) {
