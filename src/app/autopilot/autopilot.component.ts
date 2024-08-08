@@ -409,8 +409,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
                 }
               });
             }
-            this.currentHoldings = await this.cartService.findCurrentPositions();
-            this.analyseCurrentOptions();
+            if (moment().isAfter(moment(startStopTime.startDateTime).add(1, 'hours'))) {
+              this.currentHoldings = await this.cartService.findCurrentPositions();
+              this.analyseCurrentOptions();
+            }
           }
         } else {
           if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 3) {
