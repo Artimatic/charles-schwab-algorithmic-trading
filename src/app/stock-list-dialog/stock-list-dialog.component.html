@@ -13,7 +13,7 @@
         <ng-template let-stock pTemplate="item">
             <div class="product-item">
                 <div class="product-list-detail">
-                    <h5 class="p-mb-2">{{stock.ticker}}</h5>
+                    <h5 class="p-mb-2">{{stock?.ticker}}</h5>
                 </div>
                 <div class="product-list-action">
                     <button pButton pRipple type="button" icon="pi pi-times" (click)="deleteRow(stock, ri)"

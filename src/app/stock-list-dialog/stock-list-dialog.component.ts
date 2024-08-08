@@ -61,14 +61,14 @@ export class StockListDialogComponent implements OnInit {
     });
   }
 
-  deleteRow(stock, rowIndex: number) {
+  deleteRow(stock: AlgoParam, rowIndex: number) {
     console.log('delete', stock, rowIndex);
     switch (this.activeList.value) {
       case 'full':
         CurrentStockList.splice(rowIndex, 1);
         break;
       case 'buy':
-        this.strategyBuilderService.removeFromBuyList(stock);
+        this.strategyBuilderService.removeFromBuyList(stock.ticker);
         this.setToAlwaysBuyList();
         break;
       case 'sell':
@@ -96,6 +96,7 @@ export class StockListDialogComponent implements OnInit {
   }
 
   addRow() {
+    this.newStock = this.newStock.toUpperCase();
     switch (this.activeList.value) {
       case 'full':
         CurrentStockList.push({ ticker: this.newStock });

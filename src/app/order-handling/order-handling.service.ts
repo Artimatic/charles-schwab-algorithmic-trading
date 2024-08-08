@@ -112,7 +112,7 @@ export class OrderHandlingService {
                       symbol: symbol,
                       reset: false,
                       analysis: analysis,
-                      ml: mlResult ? mlResult : null
+                      ml: mlResult
                     };
                     this.tradeService.algoQueue.next(queueItem);
                   });
@@ -124,6 +124,13 @@ export class OrderHandlingService {
                     1,
                     this.globalSettingsService.daytradeAlgo
                   ).toPromise()[0];
+                const queueItem: AlgoQueueItem = {
+                  symbol: symbol,
+                  reset: false,
+                  analysis: analysis,
+                  ml: { guesses: null, correct: null, score: null, nextOutput: 0}
+                };
+                this.tradeService.algoQueue.next(queueItem);
               }
             }
           }

@@ -125,7 +125,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   destroy$ = new Subject();
   currentHoldings: PortfolioInfoHolding[] = [];
   strategyCounter = null;
-  maxTradeCount = 20;
+  maxTradeCount = 11;
   maxHoldings = 15;
   developedStrategy = false;
 
@@ -232,7 +232,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((trade: Trade) => {
         this.lastReceivedRecommendation = moment();
-        if (this.cartService.otherOrders.length < this.maxTradeCount) {
+        if ((this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.maxTradeCount) {
           this.addDaytrade(trade.stock);
           this.cartService.removeCompletedOrders();
         }
@@ -280,6 +280,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         label: 'Show strategies',
         command: async () => {
           this.revealPotentialStrategy = !this.revealPotentialStrategy;
+          await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs);
+          setTimeout(() => {
+            console.log(this.tradingPairs);
+          }, 120000);
         }
       },
       {
@@ -396,7 +400,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           const isOpened = await this.isMarketOpened();
           if (isOpened) {
             this.executeOrderList();
-            if (this.cartService.otherOrders.length < this.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
+            if ((this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
               this.findDaytradeService.getRefreshObserver().next(true);
             } else {
               this.cartService.removeCompletedOrders();
@@ -821,18 +825,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async modifyCurrentHoldings() {
-    const sellHolding = this.currentHoldings.find(holdingInfo => {
-      return holdingInfo.name === 'TQQQ';
-    });
-    if (sellHolding) {
-      this.portfolioSell(sellHolding);
-    }
-
     const currentDate = moment().format('YYYY-MM-DD');
     const startDate = moment().subtract(365, 'days').format('YYYY-MM-DD');
     this.currentHoldings.forEach(async (holding) => {
       await this.checkStopLoss(holding);
-
       const indicatorsResponse = await this.getTechnicalIndicators(holding.name,
         startDate,
         currentDate)
