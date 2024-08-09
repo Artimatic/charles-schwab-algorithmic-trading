@@ -61,11 +61,11 @@ export class OptionsOrderBuilderService {
             underlying: buy
           };
           let currentPut = null;
-          if (callPrice > 500) {
+          if (callPrice > 300) {
             for (const sell of sells) {
               const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
-              const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.call.bid, bearishStrangle.call.ask) * 100;
-              if (putPrice > 500) {
+              const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
+              if (putPrice > 300) {
                 const sellOptionsData = await this.optionsDataService.getImpliedMove(sell).toPromise();
                 if (sellOptionsData && sellOptionsData.move && sellOptionsData.move < 0.15) {
                   const multiple = (callPrice > putPrice) ? Math.round(callPrice / putPrice) : Math.round(putPrice / callPrice);
@@ -77,8 +77,7 @@ export class OptionsOrderBuilderService {
                     bearishStrangle.put.quantity = putQuantity;
                     const availableFunds = await this.cartService.getAvailableFunds(true);
                     if (availableFunds >= (callPrice * callQuantity + putPrice * putQuantity)) {
-                      if (!currentPut ||
-                        (currentCall.quantity * currentCall.price +
+                      if (!currentPut || (currentCall.quantity * currentCall.price +
                           currentPut.quantity * currentPut.price) > (currentCall.quantity * currentCall.price + putQuantity * putPrice)) {
                         currentCall.quantity = callQuantity;
                         if (currentPut) {
