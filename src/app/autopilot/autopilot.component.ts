@@ -1184,23 +1184,18 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       });
     } else {
-      const trainingResult = await this.aiPicksService.trainAndActivate('VTI');
+      this.boughtAtClose = true;
 
-      console.log('buy at close training results', trainingResult);
-      if (trainingResult) {
-        this.boughtAtClose = true;
+      const price = await this.portfolioService.getPrice('VTI').toPromise();
+      const balance = await this.portfolioService.getTdBalance().toPromise();
 
-        const price = await this.portfolioService.getPrice('VTI').toPromise();
-        const balance = await this.portfolioService.getTdBalance().toPromise();
+      const quantity = this.getQuantity(price, 1, balance.cashBalance);
+      const orderSizePct = (this.riskToleranceList[this.riskCounter] > 0.5) ? 0.5 : 0.3;
 
-        const quantity = this.getQuantity(price, trainingResult.value, balance.cashBalance);
-        const orderSizePct = (this.riskToleranceList[this.riskCounter] > 0.5) ? 0.5 : 0.3;
-
-        const order = this.buildOrder('VTI', quantity, price, 'Buy',
-          orderSizePct, null, null,
-          null, trainingResult.value);
-        this.daytradeService.sendBuy(order, 'limit', () => { }, () => { });
-      }
+      const order = this.buildOrder('VTI', quantity, price, 'Buy',
+        orderSizePct, null, null,
+        null, 1);
+      this.daytradeService.sendBuy(order, 'limit', () => { }, () => { });
     }
   }
 
