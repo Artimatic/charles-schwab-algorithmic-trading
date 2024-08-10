@@ -162,7 +162,7 @@ export class StrategyBuilderService {
   }
 
   async getCallStrangleTrade(symbol: string): Promise<Strangle> {
-    const minExpiration = 45;
+    const minExpiration = 65;
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     const optionsChain = optionsData.optionsChain;
     const impliedMovement = optionsData.move;
