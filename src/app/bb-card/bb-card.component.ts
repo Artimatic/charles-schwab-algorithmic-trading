@@ -629,7 +629,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             const usage = (balance.liquidationValue - this.currentBalance) / balance.liquidationValue;
             if (usage < this.globalSettingsService.maxAccountUsage) {
               this.incrementBuy();
-              await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize);
+              await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize || 1);
             }
           });
         }
@@ -647,7 +647,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           const usage = (balance.liquidationValue - this.currentBalance) / balance.liquidationValue;
           if (usage < this.globalSettingsService.maxAccountUsage) {
             this.incrementBuy();
-            await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize);
+            await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize || 1);
           }
         });
       } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'buy') {
@@ -836,9 +836,9 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
         return true;
       }
 
-      const sellTime = moment.tz(`${moment().format('YYYY-MM-DD')} 15:30`, 'America/New_York').toDate();
-      if (this.order.sellAtClose && moment().isAfter(moment(sellTime))) {
-        const log = `${this.order.holding.symbol} Current time: ${moment.tz('America/New_York').format()} is after ${sellTime} Is sell at close order: ${this.order.sellAtClose} Closing positions: ${closePrice}/${estimatedPrice}`;
+      const startStopTime = this.globalSettingsService.getStartStopTime();
+      if (this.order.sellAtClose && moment().isAfter(moment(startStopTime.endDateTime).subtract(15, 'minutes'))) {
+        const log = `${this.order.holding.symbol} Current time: ${moment.tz('America/New_York').format()} is after ${moment(startStopTime.endDateTime).subtract(15, 'minutes').format()} Is sell at close order: ${this.order.sellAtClose} Closing positions: ${closePrice}/${estimatedPrice}`;
         this.reportingService.addAuditLog(this.order.holding.symbol, log);
         console.log(log);
         const stopLossOrder = this.daytradeService.createOrder(this.order.holding, 'Sell', this.order.positionCount, closePrice, signalTime);
