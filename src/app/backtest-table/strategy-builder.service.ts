@@ -161,8 +161,7 @@ export class StrategyBuilderService {
     return !prevObj || (currTotalVolume > prevObj.totalVolume);
   }
 
-  async getCallStrangleTrade(symbol: string): Promise<Strangle> {
-    const minExpiration = 65;
+  async getCallStrangleTrade(symbol: string, minExpiration = 65): Promise<Strangle> {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     const optionsChain = optionsData.optionsChain;
     const impliedMovement = optionsData.move;
@@ -190,8 +189,7 @@ export class StrategyBuilderService {
     }, { call: null, put: null });
   }
 
-  async getPutStrangleTrade(symbol: string) {
-    const minExpiration = 65;
+  async getPutStrangleTrade(symbol: string, minExpiration = 65) {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     const optionsChain = optionsData.optionsChain;
     const impliedMovement = optionsData.move;
@@ -219,8 +217,7 @@ export class StrategyBuilderService {
     }, { call: null, put: null });
   }
 
-  async getProtectivePut(symbol: string) {
-    const minExpiration = 65;
+  async getProtectivePut(symbol: string, minExpiration = 65) {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     const optionsChain = optionsData.optionsChain;
     const impliedMovement = optionsData.move;

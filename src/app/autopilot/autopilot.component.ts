@@ -384,9 +384,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else if (moment().isAfter(moment(startStopTime.endDateTime).subtract(8, 'minutes')) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
           this.buySellAtClose();
-        } else if (moment().isAfter(moment(startStopTime.endDateTime).add(3, 'hours')) &&
+        } else if (moment().isAfter(moment(startStopTime.endDateTime).add(120, 'minutes')) &&
           this.reportingService.logs.length > 0 &&
-          moment().isBefore(moment(startStopTime.endDateTime).add(5, 'minute'))) {
+          moment().isBefore(moment(startStopTime.endDateTime).add(123, 'minutes'))) {
           const profitLog = `Profit ${this.scoreKeeperService.total}`;
           this.reportingService.addAuditLog(null, profitLog);
           this.reportingService.exportAuditHistory();
@@ -525,7 +525,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     await this.modifyCurrentHoldings();
     await this.checkPersonalLists();
-    await this.hedge();
+    //await this.hedge();
     await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs);
     await this.addStrangleToList();
     // await this.optionsOrderBuilderService.createTradingPair();
