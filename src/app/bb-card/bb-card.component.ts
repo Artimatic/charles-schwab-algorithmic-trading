@@ -353,7 +353,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   setup() {
     this.order.buyCount = 0;
     this.order.sellCount = 0;
-    this.order.positionCount = 0;
+    this.order.positionCount = this.isSellOrder() ? this.firstFormGroup.value.quantity : 0;
     this.orders = [];
     this.config = this.daytradeService.parsePreferences(this.preferences.value);
     this.warning = '';
@@ -837,7 +837,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       }
 
       const startStopTime = this.globalSettingsService.getStartStopTime();
-      if (this.order.sellAtClose && moment().isAfter(moment(startStopTime.endDateTime).subtract(15, 'minutes'))) {
+      if (this.order.sellAtClose && moment().isAfter(moment(startStopTime.endDateTime).subtract(33, 'minutes'))) {
         const log = `${this.order.holding.symbol} Current time: ${moment.tz('America/New_York').format()} is after ${moment(startStopTime.endDateTime).subtract(15, 'minutes').format()} Is sell at close order: ${this.order.sellAtClose} Closing positions: ${closePrice}/${estimatedPrice}`;
         this.reportingService.addAuditLog(this.order.holding.symbol, log);
         console.log(log);
@@ -896,7 +896,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   isSellOrder(): boolean {
-    return this.order.side.toLowerCase() === 'sell';
+    return this.firstFormGroup.value.orderType.toLowerCase() === 'sell';
   }
 
   removeOrder(oldOrder) {
