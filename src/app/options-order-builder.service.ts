@@ -100,7 +100,6 @@ export class OptionsOrderBuilderService {
               }
             }
             if (currentPut && currentCall) {
-              console.log(currentPut, currentCall);
               const option1 = await this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy');
               const option2 = await this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put], currentPut.price, currentPut.quantity, OrderTypes.put, 'Buy');
               tradingPairs.push([option1, option2]);
@@ -213,7 +212,7 @@ export class OptionsOrderBuilderService {
       backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
     }
     if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
-      if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.8)) {
+      if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.7)) {
         return true;
       }
     }

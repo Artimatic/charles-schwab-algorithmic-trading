@@ -23,7 +23,7 @@ class AlgoService {
   }
 
   checkMfi(mfi: number): DaytradeRecommendation {
-    if (mfi < 20) {
+    if (mfi < 23) {
       return DaytradeRecommendation.Bullish;
     } else if (mfi > 80) {
       return DaytradeRecommendation.Bearish;
