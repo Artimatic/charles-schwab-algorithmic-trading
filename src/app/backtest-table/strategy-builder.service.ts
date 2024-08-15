@@ -363,11 +363,11 @@ export class StrategyBuilderService {
       const pairs = tradingPairs[key];
       const bObj = backtests[key];
       if (bObj !== undefined && bObj !== null && bObj.ml !== null) {
-        if ((!bObj.optionsChainLength || bObj.optionsChainLength > 10) && (bObj.buySignals.length + bObj.sellSignals.length) > 0 || bObj.recommendation.toLowerCase() !== 'indeterminant') {
+        if ((!bObj.optionsChainLength || bObj.optionsChainLength > 10) && (bObj.buySignals.length > bObj.sellSignals.length || bObj.recommendation.toLowerCase() === 'buy')) {
           if (bObj.ml > 0.6) {
             for (const pairVal of pairs) {
               if (pairVal !== null && backtests[pairVal.symbol] && backtests[pairVal.symbol].ml !== null && (!backtests[pairVal.symbol].optionsChainLength || backtests[pairVal.symbol].optionsChainLength > 10)) {
-                if (backtests[pairVal.symbol].ml < 0.4) {
+                if (backtests[pairVal.symbol].ml < 0.4 && (bObj.sellSignals.length > bObj.buySignals.length || bObj.recommendation.toLowerCase() === 'sell')) {
                   const trade = {
                     name: `${bObj.stock} Pair trade`,
                     date: moment().format(),

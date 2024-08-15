@@ -354,7 +354,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
         }
         if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
-          if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.90)) {
+          if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.80)) {
             this.cartService.addToCart(trade[0]);
           }
         }
@@ -388,8 +388,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             const profitLog = `Profit ${this.scoreKeeperService.total}`;
             this.reportingService.addAuditLog(null, profitLog);
             this.reportingService.exportAuditHistory();
-            await this.modifyStrategy();
             this.setProfitLoss();
+          }, 600000);
+
+          setTimeout(async () => {
+            await this.modifyStrategy();
             this.scoreKeeperService.resetTotal();
             this.resetCart();
             this.developStrategy();
@@ -541,6 +544,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         break;
       case Strategy.TrimHoldings:
         this.trimHoldings();
+        this.hedge();
         break;
       case Strategy.Short:
         const buyBearishStrangle = async (symbol: string, prediction: number, backtestData: any) => {

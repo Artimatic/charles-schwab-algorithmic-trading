@@ -96,7 +96,6 @@ const fullList = [
     'U',
     'CCL',
     'CLF',
-    'PLUG',
     'AAL',
     'BJ',
     'SPOT',
