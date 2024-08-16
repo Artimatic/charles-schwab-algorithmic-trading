@@ -89,7 +89,9 @@ export enum Strategy {
   SingleStockPick = 'SingleStockPick',
   MLSpy = 'MLSpy',
   OptionsStrangle = 'OptionsStrangle',
-  TradingPairs = 'TradingPairs'
+  TradingPairs = 'TradingPairs',
+  BuyCalls = 'BuyCalls',
+  BuyPuts = 'BuyPuts'
 }
 
 export enum RiskTolerance {
@@ -128,7 +130,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   maxTradeCount = 11;
   maxHoldings = 15;
   developedStrategy = false;
-
+  tradingPairsCounter = 0;
   strategyList = [
     Strategy.Default,
     // Strategy.OptionsStrangle,
@@ -141,6 +143,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     Strategy.TrimHoldings,
     Strategy.Short,
     // Strategy.DaytradeFullList,
+    Strategy.BuyPuts,
+    Strategy.BuyCalls
   ];
 
   bearishStrategy = [
@@ -211,7 +215,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private daytradeService: DaytradeService,
     public dialogService: DialogService,
     private findDaytradeService: FindDaytradeService,
-    private aiPicksService: AiPicksService,
     private pricingService: PricingService,
     private daytradeStrategiesService: DaytradeStrategiesService,
     private orderHandlingService: OrderHandlingService,
@@ -243,7 +246,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         label: 'Sell options',
         command: async () => {
           this.currentHoldings = await this.cartService.findCurrentPositions();
-          this.analyseCurrentOptions();
+          await this.analyseCurrentOptions();
         }
       },
       {
@@ -318,7 +321,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     });
   }
 
-  analyseCurrentOptions() {
+  async analyseCurrentOptions() {
     this.currentHoldings.forEach(async (holding) => {
       if (holding.primaryLegs) {
         const callPutInd = holding.primaryLegs[0].putCallInd.toLowerCase();
@@ -343,30 +346,33 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       }
     });
 
-    this.tradingPairs.forEach(async (trade) => {
-      if (trade.length === 1) {
-        const price = await this.backtestService.getLastPriceTiingo({ symbol: trade[0].holding.symbol }).toPromise();
-        const lastPrice = price[trade[0].holding.symbol].quote.lastPrice;
-        const closePrice = price[trade[0].holding.symbol].quote.closePrice;
-        const backtestResults = await this.strategyBuilderService.getBacktestData(trade[0].holding.symbol);
+    if (this.tradingPairsCounter >= this.tradingPairs.length) {
+      this.tradingPairsCounter = 0;
+    }
+    const trade = this.tradingPairs[this.tradingPairsCounter];
+    if (trade.length === 1) {
+      const price = await this.backtestService.getLastPriceTiingo({ symbol: trade[0].holding.symbol }).toPromise();
+      const lastPrice = price[trade[0].holding.symbol].quote.lastPrice;
+      const closePrice = price[trade[0].holding.symbol].quote.closePrice;
+      const backtestResults = await this.strategyBuilderService.getBacktestData(trade[0].holding.symbol);
 
-        if (!backtestResults.averageMove) {
-          backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
-        }
-        if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
-          if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.80)) {
-            this.cartService.addToCart(trade[0]);
-          }
-        }
-      } else if (trade.length === 2) {
-        const shouldBuyCall = await this.optionsOrderBuilderService.shouldBuyOption(trade[0].holding.symbol);
-        const shouldBuyPut = await this.optionsOrderBuilderService.shouldBuyOption(trade[1].holding.symbol);
-        if (shouldBuyCall && shouldBuyPut) {
+      if (!backtestResults.averageMove) {
+        backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
+      }
+      if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
+        if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.80)) {
           this.cartService.addToCart(trade[0]);
-          this.cartService.addToCart(trade[1]);
         }
       }
-    });
+    } else if (trade.length === 2) {
+      const shouldBuyCall = await this.optionsOrderBuilderService.shouldBuyOption(trade[0].holding.symbol);
+      const shouldBuyPut = await this.optionsOrderBuilderService.shouldBuyOption(trade[1].holding.symbol);
+      if (shouldBuyCall && shouldBuyPut) {
+        this.cartService.addToCart(trade[0]);
+        this.cartService.addToCart(trade[1]);
+      }
+    }
+    this.tradingPairsCounter++;
   }
 
   startInterval() {
@@ -415,9 +421,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
                 }
               });
             }
-            if (moment().isAfter(moment(startStopTime.startDateTime).add(1, 'hours'))) {
+            if (moment().isAfter(moment(startStopTime.startDateTime).add(90, 'minutes'))) {
               this.currentHoldings = await this.cartService.findCurrentPositions();
-              this.analyseCurrentOptions();
+              await this.analyseCurrentOptions();
             }
           }
         } else {
@@ -558,6 +564,20 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           }
         };
         await this.getNewTrades(buyBearishStrangle);
+        break;
+      case Strategy.BuyCalls:
+        this.tradingPairs.forEach(async (trade) => {
+          if (trade.length === 2) {
+            this.cartService.addToCart(trade[0]);
+          }
+        });
+        break;
+      case Strategy.BuyPuts:
+        this.tradingPairs.forEach(async (trade) => {
+          if (trade.length === 2) {
+            this.cartService.addToCart(trade[1]);
+          }
+        });
         break;
       default: {
         await this.getNewTrades();
@@ -1177,6 +1197,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (this.boughtAtClose) {
       return;
     }
+    this.boughtAtClose = true;
+
     const balance = await this.portfolioService.getTdBalance().toPromise();
 
     if (Number(balance.cashBalance) <= 0) {
@@ -1187,8 +1209,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       });
     } else {
-      this.boughtAtClose = true;
-
       const price = await this.portfolioService.getPrice('VTI').toPromise();
       const balance = await this.portfolioService.getTdBalance().toPromise();
 
