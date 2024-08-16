@@ -235,7 +235,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe((trade: Trade) => {
         this.lastReceivedRecommendation = moment();
-        if ((this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.maxTradeCount) {
+        if (this.hasTradeCapacity()) {
           this.addDaytrade(trade.stock);
           this.cartService.removeCompletedOrders();
         }
@@ -346,6 +346,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       }
     });
 
+    if (!this.hasTradeCapacity()) {
+      return;
+    }
     if (this.tradingPairsCounter >= this.tradingPairs.length) {
       this.tradingPairsCounter = 0;
     }
@@ -1439,6 +1442,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       }
     }
+  }
+
+  hasTradeCapacity() {
+    return this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length < this.maxTradeCount;
   }
 
   unsubscribeStockFinder() {
