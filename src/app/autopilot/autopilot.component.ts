@@ -392,20 +392,25 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.findNewTrade(true, false);
         } else if (moment().isAfter(moment(startStopTime.endDateTime).subtract(8, 'minutes')) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
-          this.buySellAtClose();
-          setTimeout(async () => {
-            const profitLog = `Profit ${this.scoreKeeperService.total}`;
-            this.reportingService.addAuditLog(null, profitLog);
-            this.reportingService.exportAuditHistory();
-            this.setProfitLoss();
-          }, 600000);
+          if (!this.boughtAtClose) {
+            this.buySellAtClose();
+            setTimeout(async () => {
+              const profitLog = `Profit ${this.scoreKeeperService.total}`;
+              this.reportingService.addAuditLog(null, profitLog);
+              this.reportingService.exportAuditHistory();
+              this.setProfitLoss();
+            }, 600000);
+  
+            setTimeout(async () => {
+              await this.modifyStrategy();
+              this.scoreKeeperService.resetTotal();
+              this.resetCart();
+              this.developStrategy();
+              this.boughtAtClose = false;
+            }, 10800000);
+          }
 
-          setTimeout(async () => {
-            await this.modifyStrategy();
-            this.scoreKeeperService.resetTotal();
-            this.resetCart();
-            this.developStrategy();
-          }, 10800000);
+          this.boughtAtClose = true;
         } else if (moment().isAfter(moment(startStopTime.startDateTime)) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
           const isOpened = await this.isMarketOpened();
@@ -452,16 +457,18 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   setProfitLoss() {
     const tempProfitRecord = this.scoreKeeperService.profitLossHash;
 
-    const profit = this.calculatePl(tempProfitRecord);
+    if (tempProfitRecord) {
+      const profit = this.calculatePl(tempProfitRecord);
 
-    const profitObj: ProfitLossRecord = {
-      'date': moment().format(),
-      profit: profit,
-      lastStrategy: this.strategyList[this.strategyCounter],
-      lastRiskTolerance: this.riskCounter,
-      profitRecord: tempProfitRecord
-    };
-    localStorage.setItem('profitLoss', JSON.stringify(profitObj));
+      const profitObj: ProfitLossRecord = {
+        'date': moment().format(),
+        profit: profit,
+        lastStrategy: this.strategyList[this.strategyCounter],
+        lastRiskTolerance: this.riskCounter,
+        profitRecord: tempProfitRecord
+      };
+      localStorage.setItem('profitLoss', JSON.stringify(profitObj));
+    }
   }
 
   stop() {
@@ -477,7 +484,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   resetCart() {
     this.lastOrderListIndex = 0;
     //this.cartService.removeCompletedOrders();
-    this.cartService.deleteCart();
+    this.cartService.removeCompletedOrders();
     this.developedStrategy = false;
   }
 
@@ -1197,9 +1204,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async buySellAtClose() {
-    if (this.boughtAtClose) {
-      return;
-    }
     this.boughtAtClose = true;
 
     const balance = await this.portfolioService.getTdBalance().toPromise();
