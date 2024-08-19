@@ -16,7 +16,7 @@ import { AlwaysBuy } from '../rh-table/backtest-stocks.constant';
 })
 export class StrategyBuilderService {
   orderHistory = {};
-  correlationThreshold = 0.6;
+  correlationThreshold = 0.65;
   sumNet = 0;
   countNet = 0;
 
