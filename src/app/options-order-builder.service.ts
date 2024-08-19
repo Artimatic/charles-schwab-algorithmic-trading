@@ -3,6 +3,15 @@ import { BacktestService, CartService, PortfolioInfoHolding } from '@shared/serv
 import { StrategyBuilderService } from './backtest-table/strategy-builder.service';
 import { OrderTypes } from '@shared/models/smart-order';
 import { OptionsDataService } from '@shared/options-data.service';
+import { Options } from '@shared/models/options';
+
+export interface TradingPair {
+  put?: Options;
+  call?: Options;
+  quantity: number;
+  price: number;
+  underlying: string;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -100,8 +109,8 @@ export class OptionsOrderBuilderService {
               }
             }
             if (currentPut && currentCall) {
-              const option1 = await this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy');
-              const option2 = await this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put], currentPut.price, currentPut.quantity, OrderTypes.put, 'Buy');
+              const option1 = await this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy', currentCall.quantity);
+              const option2 = await this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put], currentPut.price, currentPut.quantity, OrderTypes.put, 'Buy', currentCall.quantity);
               tradingPairs.push([option1, option2]);
             }
           }

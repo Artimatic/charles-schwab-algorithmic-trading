@@ -4,7 +4,7 @@ import { SmartOrder } from '@shared/index';
 import { Options } from '@shared/models/options';
 import { Trade } from '@shared/models/trade';
 import { BacktestService, CartService, DaytradeService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
-import { AiPicksPredictionData, AiPicksService } from '@shared/services/ai-picks.service';
+import { AiPicksPredictionData } from '@shared/services/ai-picks.service';
 import { ScoringIndex } from '@shared/services/score-keeper.service';
 import { AlgoQueueItem } from '@shared/services/trade.service';
 import { divide, floor, round } from 'lodash';
@@ -18,7 +18,7 @@ import { PotentialTrade } from '../backtest-table/potential-trade.constant';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
 import { TrainingResults } from '../machine-learning/ask-model/ask-model.component';
-import { OptionsOrderBuilderService } from '../options-order-builder.service';
+import { OptionsOrderBuilderService, TradingPair } from '../options-order-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { PricingService } from '../pricing/pricing.service';
 import { CurrentStockList } from '../rh-table/stock-list.constant';
@@ -196,7 +196,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   lastReceivedRecommendation = null;
   boughtAtClose = false;
   multibuttonOptions: MenuItem[];
-  tradingPairs = [];
+  tradingPairs: SmartOrder[][] = [];
 
   constructor(
     private portfolioService: PortfolioService,
@@ -259,6 +259,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         label: 'Sell All',
         command: async () => {
           await this.sellAll();
+        }
+      },
+      {
+        label: 'Sell All Options',
+        command: async () => {
+          await this.sellAllOptions();
         }
       },
       {
@@ -369,10 +375,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       }
     } else if (trade.length === 2) {
       const shouldBuyCall = await this.optionsOrderBuilderService.shouldBuyOption(trade[0].holding.symbol);
-      const shouldBuyPut = await this.optionsOrderBuilderService.shouldBuyOption(trade[1].holding.symbol);
-      if (shouldBuyCall && shouldBuyPut) {
+      // const shouldBuyPut = await this.optionsOrderBuilderService.shouldBuyOption(trade[1].holding.symbol);
+      //if (shouldBuyCall && shouldBuyPut) {
+      if (shouldBuyCall) {
         this.cartService.addToCart(trade[0]);
-        this.cartService.addToCart(trade[1]);
+        // this.cartService.addToCart(trade[1]);
       }
     }
     this.tradingPairsCounter++;
@@ -393,14 +400,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else if (moment().isAfter(moment(startStopTime.endDateTime).subtract(8, 'minutes')) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
           if (!this.boughtAtClose) {
-            this.buySellAtClose();
+            await this.buySellAtClose();
             setTimeout(async () => {
               const profitLog = `Profit ${this.scoreKeeperService.total}`;
               this.reportingService.addAuditLog(null, profitLog);
               this.reportingService.exportAuditHistory();
               this.setProfitLoss();
             }, 600000);
-  
+
             setTimeout(async () => {
               await this.modifyStrategy();
               this.scoreKeeperService.resetTotal();
@@ -543,7 +550,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     await this.modifyCurrentHoldings();
     await this.checkPersonalLists();
-    //await this.hedge();
+    await this.hedge();
     await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs);
     await this.addStrangleToList();
     // await this.optionsOrderBuilderService.createTradingPair();
@@ -1204,6 +1211,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async buySellAtClose() {
+    if (this.boughtAtClose) {
+      return;
+    }
+    console.log('Buy sell at close', moment().format());
+
     this.boughtAtClose = true;
 
     const balance = await this.portfolioService.getTdBalance().toPromise();
@@ -1212,6 +1224,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       this.currentHoldings = await this.cartService.findCurrentPositions();
       this.currentHoldings.forEach(async (holding) => {
         if (holding.name === 'VTI' || holding.name === 'TQQQ') {
+          console.log('Selling to create cash position', balance.cashBalance);
           this.portfolioSell(holding);
         }
       });
@@ -1225,6 +1238,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       const order = this.buildOrder('VTI', quantity, price, 'Buy',
         orderSizePct, null, null,
         null, 1);
+      console.log('Sending buy', order);
+
       this.daytradeService.sendBuy(order, 'limit', () => { }, () => { });
     }
   }
@@ -1385,6 +1400,16 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           if (holding.netLiq && (holding.netLiq / balance.liquidationValue) > 0.15)
             console.log('Adding protective put for', holding.name);
           await this.optionsOrderBuilderService.createProtectivePutOrder(holding);
+        } else {
+          if (!this.cartService.isStrangle(holding)) {
+            const callPutInd = holding.primaryLegs[0].putCallInd.toLowerCase();
+            if (callPutInd === 'c') {
+              const pair = this.tradingPairs.find(tradeArr => tradeArr[0].holding.symbol === holding.name);
+              if (!this.currentHoldings.find(curr => curr.name === pair[1].holding.name && curr.primaryLegs[0].putCallInd.toLowerCase() === 'p' && !this.cartService.isStrangle(curr))) {
+                this.cartService.addToCart(pair[1]);
+              }
+            }
+          }
         }
       });
     });
@@ -1430,6 +1455,28 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.sellAllStrangle();
   }
 
+  async sellAllOptions() {
+    this.currentHoldings.forEach(async (holding) => {
+      if (holding.primaryLegs) {
+        const callPutInd = holding.primaryLegs[0].putCallInd.toLowerCase();
+        const isStrangle = this.cartService.isStrangle(holding);
+
+        if (isStrangle) {
+          this.sellStrangle(holding);
+        } else {
+          const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
+          let orderType = null;
+          if (callPutInd === 'c') {
+            orderType = OrderTypes.call;
+          } else if (callPutInd === 'p') {
+            orderType = OrderTypes.put;
+          }
+
+          this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell');
+        }
+      }
+    });
+  }
   async findExtremeIntradayMoves() {
     const recentBacktests = this.strategyBuilderService.sanitizeData();
     for (const symbol in recentBacktests) {
