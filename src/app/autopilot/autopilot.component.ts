@@ -341,7 +341,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else {
           let orderType = null;
           const backtestData = await this.strategyBuilderService.getBacktestData(holding.name);
-
           if (callPutInd === 'c') {
             orderType = OrderTypes.call;
             if (shouldSell || (backtestData && backtestData.ml < 0.4 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'))) {
@@ -352,7 +351,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             orderType = OrderTypes.put;
             if (shouldSell || (backtestData && backtestData.ml > 0.6 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY'))) {
               const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
-              this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell');  
+              this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell');
             }
           }
         }
