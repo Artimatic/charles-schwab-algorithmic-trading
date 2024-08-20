@@ -1229,19 +1229,21 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (Number(balance.cashBalance) <= 0) {
       this.currentHoldings = await this.cartService.findCurrentPositions();
       this.currentHoldings.forEach(async (holding) => {
-        if (holding.name === 'VTI' || holding.name === 'TQQQ') {
+        if (holding.name === 'VTI' || holding.name === 'TQQQ' || holding.name === 'UPRO') {
           console.log('Selling to create cash position', balance.cashBalance);
           this.portfolioSell(holding);
         }
       });
     } else {
-      const price = await this.portfolioService.getPrice('VTI').toPromise();
+      const backtestData = await this.strategyBuilderService.getBacktestData('VTI');
+
+      const price = await this.portfolioService.getPrice('UPRO').toPromise();
       const balance = await this.portfolioService.getTdBalance().toPromise();
 
-      const quantity = this.getQuantity(price, 1, balance.cashBalance);
-      const orderSizePct = (this.riskToleranceList[this.riskCounter] > 0.5) ? 0.5 : 0.3;
+      const quantity = this.getQuantity(price, backtestData?.ml || 0.1, balance.cashBalance);
+      const orderSizePct = 1;
 
-      const order = this.buildOrder('VTI', quantity, price, 'Buy',
+      const order = this.buildOrder('UPRO', quantity, price, 'Buy',
         orderSizePct, null, null,
         null, 1);
       console.log('Sending buy', order);
