@@ -334,19 +334,26 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const isStrangle = this.cartService.isStrangle(holding);
         const shouldSell = this.shouldSellOptions(holding, isStrangle, callPutInd);
 
-        if (shouldSell) {
-          if (isStrangle) {
+        if (isStrangle) {
+          if (shouldSell) {
             this.sellStrangle(holding);
-          } else {
-            const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
-            let orderType = null;
-            if (callPutInd === 'c') {
-              orderType = OrderTypes.call;
-            } else if (callPutInd === 'p') {
-              orderType = OrderTypes.put;
-            }
+          }
+        } else {
+          let orderType = null;
+          const backtestData = await this.strategyBuilderService.getBacktestData(holding.name);
 
-            this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell');
+          if (callPutInd === 'c') {
+            orderType = OrderTypes.call;
+            if (shouldSell || (backtestData && backtestData.ml < 0.4 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'))) {
+              const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
+              this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell');
+            }
+          } else if (callPutInd === 'p') {
+            orderType = OrderTypes.put;
+            if (shouldSell || (backtestData && backtestData.ml > 0.6 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY'))) {
+              const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
+              this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell');  
+            }
           }
         }
       }
