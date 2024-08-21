@@ -133,18 +133,18 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   tradingPairsCounter = 0;
   strategyList = [
     Strategy.Default,
-    // Strategy.OptionsStrangle,
+    Strategy.OptionsStrangle,
     Strategy.Swingtrade,
     // Strategy.SingleStockPick,
     // Strategy.StateMachine,
     // Strategy.InverseSwingtrade,
     //Strategy.DaytradeShort,
     // Strategy.TradingPairs,
+    Strategy.Daytrade,
     Strategy.TrimHoldings,
     Strategy.Short,
     // Strategy.DaytradeFullList,
-    Strategy.BuyPuts,
-    Strategy.BuyCalls
+    Strategy.BuyCalls,
   ];
 
   bearishStrategy = [
@@ -429,7 +429,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           const isOpened = await this.isMarketOpened();
           if (isOpened) {
             this.executeOrderList();
-            if ((this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
+            if (this.strategyList[this.strategyCounter] === Strategy.Daytrade &&
+              (this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
               this.findDaytradeService.getRefreshObserver().next(true);
             } else {
               this.cartService.removeCompletedOrders();
@@ -576,6 +577,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         this.hedge();
         break;
       case Strategy.Short:
+        this.tradingPairs.forEach(async (trade) => {
+          if (trade.length === 2) {
+            this.cartService.addToCart(trade[1]);
+          }
+        });
         const buyBearishStrangle = async (symbol: string, prediction: number, backtestData: any) => {
           if (backtestData?.optionsVolume > 230 && backtestData.sellSignals.length > 1) {
             if (prediction < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
@@ -592,13 +598,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         this.tradingPairs.forEach(async (trade) => {
           if (trade.length === 2) {
             this.cartService.addToCart(trade[0]);
-          }
-        });
-        break;
-      case Strategy.BuyPuts:
-        this.tradingPairs.forEach(async (trade) => {
-          if (trade.length === 2) {
-            this.cartService.addToCart(trade[1]);
           }
         });
         break;
