@@ -239,6 +239,32 @@ export class CartService {
     };
   }
 
+  buildOrderWithAllocation(symbol: string, quantity = 0, price = 0,
+    side = 'DayTrade', orderSizePct = 0.5, lossThreshold = -0.004,
+    profitTarget = 0.008, trailingStop = -0.003, allocation = null): SmartOrder {
+    return {
+      holding: {
+        instrument: null,
+        symbol,
+      },
+      quantity,
+      price,
+      submitted: false,
+      pending: false,
+      orderSize: side.toLowerCase() === 'sell' ? quantity : Math.floor(quantity * orderSizePct) || quantity,
+      side,
+      lossThreshold: lossThreshold,
+      profitTarget: profitTarget,
+      trailingStop: trailingStop,
+      useStopLoss: true,
+      useTrailingStopLoss: true,
+      useTakeProfit: true,
+      sellAtClose: (side.toLowerCase() === 'sell' || side.toLowerCase() === 'daytrade') ? true : false,
+      // sellAtClose: false,
+      allocation
+    };
+  }
+
   addSellStrangleOrder(symbol: string,
     primaryLegs: Options[],
     secondaryLegs: Options[],
@@ -253,7 +279,7 @@ export class CartService {
       price,
       submitted: false,
       pending: false,
-      orderSize: 1,
+      orderSize: quantity,
       side: 'Sell',
       lossThreshold: -0.05,
       profitTarget: 0.1,
@@ -278,10 +304,6 @@ export class CartService {
     optionType,
     side = 'Buy',
     orderSize = 1) {
-    if ((price * 100) < 100) {
-      console.log('Options price too low.', primaryLegs[0], price);
-      return;
-    }
     const foundExistingOrder = this.buyOrders.find(order => order.primaryLegs && order.holding.symbol === symbol && order.primaryLegs[0].symbol === primaryLegs[0].symbol && !order.secondaryLegs);
     if (foundExistingOrder) {
       foundExistingOrder.primaryLegs[0].quantity += quantity
@@ -298,7 +320,7 @@ export class CartService {
         price,
         submitted: false,
         pending: false,
-        orderSize: !orderSize ? (Math.floor(quantity / 2) || 1) : orderSize,
+        orderSize: side.toLowerCase() === 'sell' ? quantity : (!orderSize ? (Math.floor(quantity / 2) || 1) : orderSize),
         side: side,
         lossThreshold: -0.05,
         profitTarget: 0.1,

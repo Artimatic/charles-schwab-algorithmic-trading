@@ -7,7 +7,7 @@ import { BacktestService, CartService, DaytradeService, MachineLearningService, 
 import { AiPicksPredictionData } from '@shared/services/ai-picks.service';
 import { ScoringIndex } from '@shared/services/score-keeper.service';
 import { AlgoQueueItem } from '@shared/services/trade.service';
-import { divide, floor, round } from 'lodash';
+import { divide, round } from 'lodash';
 import * as moment from 'moment-timezone';
 import { MenuItem, MessageService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
@@ -558,7 +558,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.modifyCurrentHoldings();
     await this.checkPersonalLists();
     await this.hedge();
-    await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs);
+    await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs, this.currentHoldings);
     await this.addStrangleToList();
     // await this.optionsOrderBuilderService.createTradingPair();
 
@@ -1018,31 +1018,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
   }
 
-  buildOrder(symbol: string, quantity = 0, price = 0,
-    side = 'DayTrade', orderSizePct = 0.5, lossThreshold = -0.004,
-    profitTarget = 0.008, trailingStop = -0.003, allocation = null): SmartOrder {
-    return {
-      holding: {
-        instrument: null,
-        symbol,
-      },
-      quantity,
-      price,
-      submitted: false,
-      pending: false,
-      orderSize: floor(quantity * orderSizePct) || 1,
-      side,
-      lossThreshold: lossThreshold,
-      profitTarget: profitTarget,
-      trailingStop: trailingStop,
-      useStopLoss: true,
-      useTrailingStopLoss: true,
-      useTakeProfit: true,
-      sellAtClose: (side.toLowerCase() === 'sell' || side.toLowerCase() === 'daytrade') ? true : false,
-      // sellAtClose: false,
-      allocation
-    };
-  }
 
   getAllocationPct(totalAllocationPct: number = 0.1, numberOfOrders: number) {
     return round(divide(totalAllocationPct, numberOfOrders), 2);
@@ -1051,7 +1026,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async portfolioSell(holding: PortfolioInfoHolding) {
     const price = await this.portfolioService.getPrice(holding.name).toPromise();
     const orderSizePct = 0.5;
-    const order = this.buildOrder(holding.name, holding.shares, price, 'Sell',
+    const order = this.cartService.buildOrderWithAllocation(holding.name, holding.shares, price, 'Sell',
       orderSizePct, null, null, null);
     this.cartService.addToCart(order, true);
     this.initializeOrder(order);
@@ -1066,7 +1041,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const cash = await this.cartService.getAvailableFunds(useCashBalance);
     const quantity = this.getQuantity(price, allocation, cash);
     const orderSizePct = (this.riskToleranceList[this.riskCounter] > 0.5) ? 0.5 : 0.3;
-    const order = this.buildOrder(holding.name, quantity, price, 'Buy',
+    const order = this.cartService.buildOrderWithAllocation(holding.name, quantity, price, 'Buy',
       orderSizePct, stopLossThreshold, profitThreshold,
       stopLossThreshold, allocation);
     return order;
@@ -1091,7 +1066,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const balance = await this.portfolioService.getTdBalance().toPromise();
     const quantity = this.getQuantity(price, allocation, balance.buyingPower);
     const orderSizePct = 0.5;
-    const order = this.buildOrder(symbol,
+    const order = this.cartService.buildOrderWithAllocation(symbol,
       quantity,
       price,
       'DayTrade',
@@ -1219,7 +1194,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (this.boughtAtClose) {
       return;
     }
-    console.log('Buy sell at close', moment().format());
 
     this.boughtAtClose = true;
 
@@ -1242,10 +1216,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       const quantity = this.getQuantity(price, backtestData?.ml || 0.1, balance.cashBalance);
       const orderSizePct = 1;
 
-      const order = this.buildOrder('UPRO', quantity, price, 'Buy',
+      const order = this.cartService.buildOrderWithAllocation('UPRO', quantity, price, 'Buy',
         orderSizePct, null, null,
         null, 1);
-      console.log('Sending buy', order);
+      console.log('Sending buy', order, 'ml result:', backtestData?.ml);
 
       this.daytradeService.sendBuy(order, 'limit', () => { }, () => { });
     }
