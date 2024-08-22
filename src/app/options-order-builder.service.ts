@@ -54,7 +54,7 @@ export class OptionsOrderBuilderService {
     }
   }
 
-  async createTradingPair(tradingPairs: any[]) {
+  async createTradingPair(tradingPairs: any[], currentHoldings = null) {
     this.strategyBuilderService.getTradingStrategies().forEach(async (strat) => {
       const buys: string[] = strat.strategy.buy;
       const sells: string[] = strat.strategy.sell;
@@ -72,35 +72,37 @@ export class OptionsOrderBuilderService {
           let currentPut = null;
           if (callPrice > 300) {
             for (const sell of sells) {
-              const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
-              const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
-              if (putPrice > 300) {
-                const sellOptionsData = await this.optionsDataService.getImpliedMove(sell).toPromise();
-                if (sellOptionsData && sellOptionsData.move && sellOptionsData.move < 0.15) {
-                  const multiple = (callPrice > putPrice) ? Math.round(callPrice / putPrice) : Math.round(putPrice / callPrice);
-                  let initialCallQuantity = (callPrice > putPrice) ? 1 : multiple;
-                  let initialPutQuantity = (callPrice > putPrice) ? multiple : 1;
-                  const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple);
-                  if (callQuantity + putQuantity < 5) {
-                    bullishStrangle.call.quantity = callQuantity;
-                    bearishStrangle.put.quantity = putQuantity;
-                    const availableFunds = await this.cartService.getAvailableFunds(true);
-                    if (availableFunds >= (callPrice * callQuantity + putPrice * putQuantity)) {
-                      if (!currentPut || (currentCall.quantity * currentCall.price +
+              if (!currentHoldings || !currentHoldings.find(holding => holding.name === sell)) {
+                const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
+                const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
+                if (putPrice > 300) {
+                  const sellOptionsData = await this.optionsDataService.getImpliedMove(sell).toPromise();
+                  if (sellOptionsData && sellOptionsData.move && sellOptionsData.move < 0.15) {
+                    const multiple = (callPrice > putPrice) ? Math.round(callPrice / putPrice) : Math.round(putPrice / callPrice);
+                    let initialCallQuantity = (callPrice > putPrice) ? 1 : multiple;
+                    let initialPutQuantity = (callPrice > putPrice) ? multiple : 1;
+                    const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple);
+                    if (callQuantity + putQuantity < 5) {
+                      bullishStrangle.call.quantity = callQuantity;
+                      bearishStrangle.put.quantity = putQuantity;
+                      const availableFunds = await this.cartService.getAvailableFunds(true);
+                      if (availableFunds >= (callPrice * callQuantity + putPrice * putQuantity)) {
+                        if (!currentPut || (currentCall.quantity * currentCall.price +
                           currentPut.quantity * currentPut.price) > (currentCall.quantity * currentCall.price + putQuantity * putPrice)) {
-                        currentCall.quantity = callQuantity;
-                        if (currentPut) {
-                          currentPut.put = bearishStrangle.put;
-                          currentPut.quantity = putQuantity;
-                          currentPut.price = putPrice;
-                          currentPut.underlying = sell;
-                        } else {
-                          currentPut = {
-                            put: bearishStrangle.put,
-                            price: putPrice,
-                            quantity: putQuantity,
-                            underlying: sell
-                          };
+                          currentCall.quantity = callQuantity;
+                          if (currentPut) {
+                            currentPut.put = bearishStrangle.put;
+                            currentPut.quantity = putQuantity;
+                            currentPut.price = putPrice;
+                            currentPut.underlying = sell;
+                          } else {
+                            currentPut = {
+                              put: bearishStrangle.put,
+                              price: putPrice,
+                              quantity: putQuantity,
+                              underlying: sell
+                            };
+                          }
                         }
                       }
                     }

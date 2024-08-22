@@ -45,10 +45,10 @@
 <ng-template #header>
     <h3>Auto Manage</h3>
     <span *ngIf="strategyList[strategyCounter] === 'Daytrade'">
-        <p-tag [value]="strategyList[strategyCounter]" severity="warning"></p-tag>
+        <p-tag [value]="strategyList[strategyCounter]" pTooltip="Current strategy" severity="warning"></p-tag>
     </span>
     <span *ngIf="strategyList[strategyCounter] !== 'Daytrade'">
-        <p-tag [value]="strategyList[strategyCounter]" severity="danger"></p-tag>
+        <p-tag [value]="strategyList[strategyCounter]" pTooltip="Current strategy" severity="danger"></p-tag>
     </span>
     <p-tag [value]="dayTradingRiskToleranceList[dayTradeRiskCounter]" severity="warning"
         pTooltip="Day trade allocation - percentage of total bp"></p-tag>
