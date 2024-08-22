@@ -1,27 +1,19 @@
-<div class="shopping-list">
-  <p-accordion>
-    <p-accordionTab header="Import Orders">
+<div class="p-grid">
+  <div class="p-col-6">
+    <p-card header="Import Order">
       <app-xls-import (onImport)="import($event)"></app-xls-import>
-    </p-accordionTab>
-    <p-accordionTab header="Settings">
-      <app-setting-controls></app-setting-controls>
-    </p-accordionTab>
-    <p-accordionTab header="Profit Loss Table">
+    </p-card>
+  </div>
+  <div class="p-col-6">
+    <p-card header="Profit Loss Table">
       <app-daytrade-score-board [buyOrders]="cartService.buyOrders" [otherOrders]="cartService.otherOrders"
         [totalScore]="scoreKeeperService.total"></app-daytrade-score-board>
-    </p-accordionTab>
-    <p-accordionTab header="Logs">
-      <app-terminal-view></app-terminal-view>
-    </p-accordionTab>
-  </p-accordion>
-
-  <h1 mat-subheader>Shopping List</h1>
-  <!-- <app-pokerhand></app-pokerhand> -->
-  <div class="action-buttons">
-    <p-splitButton label="Start Orders" (onClick)="confirmStart()" [model]="multibuttonOptions" icon="pi pi-dollar"
-      styleClass="ui-button-success"></p-splitButton>
-    <app-default-order-lists class="default-orders-button"></app-default-order-lists>
+    </p-card>
   </div>
-
-  <app-orders-list></app-orders-list>
 </div>
+<p-card header="Logs" [style]="{'margin': '1rem'}">
+  <app-terminal-view></app-terminal-view>
+</p-card>
+<p-card header="Settings" [style]="{'margin': '1rem'}">
+  <app-setting-controls></app-setting-controls>
+</p-card>

@@ -627,7 +627,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           this.machineDaytradingService.getPortfolioBalance().subscribe(async (balance) => {
             this.currentBalance = balance.cashBalance;
             const usage = (balance.liquidationValue - this.currentBalance) / balance.liquidationValue;
-            if (usage < this.globalSettingsService.maxAccountUsage) {
+            if (usage < 1) {
               this.incrementBuy();
               await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize || 1);
             }
@@ -645,7 +645,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
         this.machineDaytradingService.getPortfolioBalance().subscribe(async (balance) => {
           this.currentBalance = balance.cashBalance;
           const usage = (balance.liquidationValue - this.currentBalance) / balance.liquidationValue;
-          if (usage < this.globalSettingsService.maxAccountUsage) {
+          if (usage < 1) {
             this.incrementBuy();
             await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize || 1);
           }
@@ -660,7 +660,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
         this.machineDaytradingService.getPortfolioBalance().subscribe(async (balance) => {
           this.currentBalance = balance.cashBalance;
           const usage = (balance.liquidationValue - this.currentBalance) / balance.liquidationValue;
-          if (usage < this.globalSettingsService.maxAccountUsage) {
+          if (usage < 1) {
             this.incrementBuy();
             this.buyProtectivePut();
           }
@@ -670,14 +670,10 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       await this.orderHandlingService.sellStrangle(this.order, analysis);
     } else if (analysis.recommendation.toLowerCase() === 'buy') {
       if (daytradeType === 'buy' || this.isDayTrading()) {
-        // this.daytradeService.sellDefaultHolding();
-
-        // console.log('Received Buy recommendation: ', analysis, this.order.holding.symbol);
         this.machineDaytradingService.getPortfolioBalance().subscribe((balance) => {
           this.currentBalance = this.isDayTrading() ? balance.availableFunds : balance.cashBalance;
-          // const availableFunds = data.availableFunds;
           const usage = (balance.liquidationValue - this.currentBalance) / balance.liquidationValue;
-          if (usage < this.globalSettingsService.maxAccountUsage) {
+          if (usage < 1) {
             const log = `${moment().format()} Received buy recommendation`;
             this.reportingService.addAuditLog(this.order.holding.symbol, log);
 

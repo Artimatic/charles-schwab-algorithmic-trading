@@ -6,7 +6,7 @@ import { map } from 'rxjs/operators';
 import { AuthenticationService } from './authentication.service';
 import { Holding } from '../models';
 import * as _ from 'lodash';
-import { GlobalSettingsService, Brokerage } from '../../settings/global-settings.service';
+import { GlobalSettingsService } from '../../settings/global-settings.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, of } from 'rxjs';
 import { Options } from '@shared/models/options';
@@ -97,19 +97,11 @@ export class PortfolioService {
   }
 
   sell(holding: Holding, quantity: number, price: number, type: string): Observable<any> {
-    if (this.globalSettingsService.brokerage === Brokerage.Robinhood) {
-      return this.sellRh(holding, quantity, price, type);
-    } else if (this.globalSettingsService.brokerage === Brokerage.Td) {
-      return this.sendTdSell(holding, quantity, price, false);
-    }
+    return this.sendTdSell(holding, quantity, price, false);
   }
 
   buy(holding: Holding, quantity: number, price: number, type: string): Observable<any> {
-    if (this.globalSettingsService.brokerage === Brokerage.Robinhood) {
-      return this.buyRh(holding, quantity, price, type);
-    } else if (this.globalSettingsService.brokerage === Brokerage.Td) {
-      return this.sendTdBuy(holding, quantity, price, false);
-    }
+    return this.sendTdBuy(holding, quantity, price, false);
   }
 
   sellRh(holding: Holding, quantity: number, price: number, type: string): Observable<any> {
@@ -152,11 +144,7 @@ export class PortfolioService {
   }
 
   extendedHoursBuy(holding: Holding, quantity: number, price: number): Observable<any> {
-    if (this.globalSettingsService.brokerage === Brokerage.Robinhood) {
-      return this.extendedHoursRhBuy(holding, quantity, price);
-    } else if (this.globalSettingsService.brokerage === Brokerage.Td) {
-      return this.sendTdBuy(holding, quantity, price, true);
-    }
+    return this.sendTdBuy(holding, quantity, price, true);
   }
 
   extendedHoursRhBuy(holding: Holding, quantity: number, price: number): Observable<any> {

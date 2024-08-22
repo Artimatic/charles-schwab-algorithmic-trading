@@ -12,7 +12,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { PortfolioService, DaytradeService, ReportingService, BacktestService } from '../shared';
 import { Holding } from '../shared/models';
-import { GlobalSettingsService, Brokerage } from '../settings/global-settings.service';
+import { GlobalSettingsService } from '../settings/global-settings.service';
 import { takeWhile } from 'rxjs/operators';
 
 export interface StockAllocation {
@@ -279,21 +279,17 @@ export class MlBatchCardComponent implements OnInit, OnDestroy {
   buy(order: SmartOrder, modifier: number) {
     return this.getQuote(order.holding.symbol)
       .subscribe((bid) => {
-        if (this.globalSettingsService.brokerage === Brokerage.Td) {
-          this.portfolioService.getTdBalance()
-            .subscribe(balance => {
-              const totalBalance = _.add(balance.cashBalance, balance.moneyMarketFund);
-              let totalBuyAmount = this.firstFormGroup.value.amount;
+        this.portfolioService.getTdBalance()
+          .subscribe(balance => {
+            const totalBalance = _.add(balance.cashBalance, balance.moneyMarketFund);
+            let totalBuyAmount = this.firstFormGroup.value.amount;
 
-              if (totalBuyAmount > totalBalance) {
-                totalBuyAmount = totalBalance;
-              }
+            if (totalBuyAmount > totalBalance) {
+              totalBuyAmount = totalBalance;
+            }
 
-              this.initiateBuy(modifier, totalBuyAmount, bid, order);
-            });
-        } else if (this.globalSettingsService.brokerage === Brokerage.Robinhood) {
-          this.initiateBuy(modifier, this.firstFormGroup.value.amount, bid, order);
-        }
+            this.initiateBuy(modifier, totalBuyAmount, bid, order);
+          });
       });
   }
 

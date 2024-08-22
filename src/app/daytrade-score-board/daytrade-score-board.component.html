@@ -1,6 +1,9 @@
-<p-table [value]="scoreTable">
+<p-table [value]="scoreTable" [paginator]="true" [rows]="20">
   <ng-template pTemplate="header" let-columns>
     <tr>
+      <th>
+        Close Date
+      </th>
       <th>
         Stock
       </th>
@@ -12,10 +15,13 @@
   <ng-template pTemplate="body" let-rowData>
     <tr>
       <td>
-        {{rowData.stock}}
+        {{rowData.closeDate}}
       </td>
       <td>
-        {{rowData.profit | currency}}
+        {{rowData.symbol}}
+      </td>
+      <td>
+        {{rowData.pl | currency}}
       </td>
     </tr>
   </ng-template>

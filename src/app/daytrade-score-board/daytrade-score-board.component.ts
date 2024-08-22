@@ -1,4 +1,5 @@
 import { Component, OnChanges, SimpleChanges, Input, OnInit } from '@angular/core';
+import * as moment from 'moment-timezone';
 import { Order } from '../shared/models/order';
 import { ScoreKeeperService } from '../shared';
 
@@ -25,22 +26,6 @@ export class DaytradeScoreBoardComponent implements OnChanges, OnInit {
   }
 
   getScores() {
-    this.scoreTable = [];
-
-    this.buyOrders.forEach((order) => {
-      const tableItem = {
-        stock: order.holding.symbol,
-        profit: this.scoreKeeperService.profitLossHash[order.holding.symbol]
-      };
-      this.scoreTable.push(tableItem);
-    });
-
-    this.otherOrders.forEach((order) => {
-      const tableItem = {
-        stock: order.holding.symbol,
-        profit: this.scoreKeeperService.profitLossHash[order.holding.symbol]
-      };
-      this.scoreTable.push(tableItem);
-    });
+    this.scoreTable = this.scoreKeeperService.recentTradeArr.sort((a, b) => moment(a.closeDate).valueOf() -  moment(b.closeDate).valueOf());
   }
 }
