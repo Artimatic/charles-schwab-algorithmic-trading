@@ -9,7 +9,7 @@ import * as _ from 'lodash';
 import { IndicatorsService } from './indicators.service';
 import { CartService } from './cart.service';
 import { CardOptions } from '../models/card-options';
-import { GlobalSettingsService, Brokerage } from '../../settings/global-settings.service';
+import { GlobalSettingsService } from '../../settings/global-settings.service';
 import { OrderHandlingService } from 'src/app/order-handling/order-handling.service';
 import { map } from 'rxjs/operators';
 
@@ -146,15 +146,11 @@ export class DaytradeService {
   }
 
   sendSell(sellOrder: SmartOrder, type: string, resolve: Function, reject: Function, handleNotFound: Function): SmartOrder {
-    if (this.globalSettingsService.brokerage === Brokerage.Td) {
-      return this.sendTdSell(sellOrder, type, resolve, reject, handleNotFound);
-    }
+    return this.sendTdSell(sellOrder, type, resolve, reject, handleNotFound);
   }
 
   closePosition(sellOrder: SmartOrder, type: string, resolve: Function, reject: Function, handleNotFound: Function): SmartOrder {
-    if (this.globalSettingsService.brokerage === Brokerage.Td) {
-      return this.closeTdPosition(sellOrder, type, resolve, reject, handleNotFound);
-    }
+    return this.closeTdPosition(sellOrder, type, resolve, reject, handleNotFound);
   }
 
   sellAll(sellOrder: SmartOrder, type: string, resolve: Function, reject: Function, handleNotFound: Function) {

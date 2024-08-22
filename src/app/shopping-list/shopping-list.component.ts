@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CartService } from '../shared/services/cart.service';
 import { SmartOrder } from '../shared/models/smart-order';
-import { ScoreKeeperService, ReportingService, DaytradeService, PortfolioService } from '../shared';
+import { ScoreKeeperService, ReportingService, PortfolioService } from '../shared';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog.component';
@@ -46,11 +46,11 @@ export class ShoppingListComponent implements OnInit, OnDestroy {
 
   multibuttonOptions: MenuItem[];
   destroy$ = new Subject();
+
   constructor(public cartService: CartService,
     public scoreKeeperService: ScoreKeeperService,
     public dialog: MatDialog,
     private reportingService: ReportingService,
-    private daytradeService: DaytradeService,
     public snackBar: MatSnackBar,
     private portfolioService: PortfolioService,
     public globalSettingsService: GlobalSettingsService,
@@ -212,7 +212,7 @@ export class ShoppingListComponent implements OnInit, OnDestroy {
             const profitLog = `Profit ${this.scoreKeeperService.total}`;
             this.reportingService.addAuditLog(null, profitLog);
             this.reportingService.exportAuditHistory();
-            const profitObj = {'date': moment().format(), profit: this.scoreKeeperService.total};
+            const profitObj = { 'date': moment().format(), profit: this.scoreKeeperService.total };
             sessionStorage.setItem('profitLoss', JSON.stringify(profitObj));
             this.scoreKeeperService.resetTotal();
           }

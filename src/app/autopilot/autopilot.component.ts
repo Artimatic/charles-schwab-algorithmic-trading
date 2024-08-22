@@ -91,7 +91,8 @@ export enum Strategy {
   OptionsStrangle = 'OptionsStrangle',
   TradingPairs = 'TradingPairs',
   BuyCalls = 'BuyCalls',
-  BuyPuts = 'BuyPuts'
+  BuyPuts = 'BuyPuts',
+  None = 'None'
 }
 
 export enum RiskTolerance {
@@ -145,6 +146,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     Strategy.Short,
     // Strategy.DaytradeFullList,
     Strategy.BuyCalls,
+    Strategy.None
   ];
 
   bearishStrategy = [
@@ -196,7 +198,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   lastReceivedRecommendation = null;
   boughtAtClose = false;
   multibuttonOptions: MenuItem[];
+  startButtonOptions: MenuItem[];
   tradingPairs: SmartOrder[][] = [];
+  manualStart = false;
 
   constructor(
     private portfolioService: PortfolioService,
@@ -241,6 +245,15 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       });
 
+    this.startButtonOptions = [
+      {
+        label: 'Start orders',
+        command: async () => {
+          this.manualStart = true;
+        }
+      }
+    ];
+
     this.multibuttonOptions = [
       {
         label: 'Sell options',
@@ -265,12 +278,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         label: 'Sell All Options',
         command: async () => {
           await this.sellAllOptions();
-        }
-      },
-      {
-        label: 'Update stock list',
-        command: () => {
-          this.updateStockList();
         }
       },
       {
@@ -312,6 +319,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   open() {
+    this.manualStart = false;
+
     this.destroy$ = new Subject();
     if (this.backtestBuffer$) {
       this.backtestBuffer$.unsubscribe();
@@ -328,6 +337,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async analyseCurrentOptions() {
+    if (this.manualStart) {
+      return;
+    }
     this.currentHoldings.forEach(async (holding) => {
       if (holding.primaryLegs) {
         const callPutInd = holding.primaryLegs[0].putCallInd.toLowerCase();
@@ -544,6 +556,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async developStrategy() {
+    if (this.manualStart) {
+      return;
+    }
     this.tradingPairs = [];
     this.developedStrategy = true;
 
@@ -600,6 +615,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             this.cartService.addToCart(trade[0]);
           }
         });
+        break;
+      case Strategy.None:
         break;
       default: {
         await this.getNewTrades();
@@ -1191,7 +1208,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async buySellAtClose() {
-    if (this.boughtAtClose) {
+    if (this.boughtAtClose || this.manualStart) {
       return;
     }
 

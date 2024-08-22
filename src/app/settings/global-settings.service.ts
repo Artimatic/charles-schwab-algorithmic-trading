@@ -4,11 +4,6 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, Subject, Subscription } from 'rxjs';
 import { TimerObservable } from 'rxjs-compat/observable/TimerObservable';
 
-export enum Brokerage {
-  Robinhood = 'Robinhood',
-  Td = 'TD Ameritrade'
-}
-
 @Injectable({
   providedIn: 'root'
 })
@@ -17,7 +12,6 @@ export class GlobalSettingsService {
   sellAtCloseTime: Date;
   stopTime: Date;
   maxLoss: number;
-  brokerage: Brokerage;
   backtesting: boolean;
   backtestDate: string;
   deviation: number;
@@ -29,7 +23,6 @@ export class GlobalSettingsService {
   daytradeAlgoSelection;
   featureList: number[][];
   autostart = false;
-  maxAccountUsage = 1;
 
   timer: Subscription;
   timerInterval = 70800;
@@ -163,7 +156,6 @@ export class GlobalSettingsService {
     this.initBacktestDate();
 
     this.maxLoss = 500;
-    this.brokerage = Brokerage.Td;
 
     this.daytradeAlgo = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
 

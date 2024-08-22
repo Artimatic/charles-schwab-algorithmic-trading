@@ -12,7 +12,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 
 import { PortfolioService, DaytradeService, ReportingService, BacktestService, MachineLearningService } from '../shared';
 import { Holding } from '../shared/models';
-import { GlobalSettingsService, Brokerage } from '../settings/global-settings.service';
+import { GlobalSettingsService } from '../settings/global-settings.service';
 import { takeWhile } from 'rxjs/operators';
 import { SchedulerService } from '@shared/service/scheduler.service';
 
@@ -333,24 +333,19 @@ export class MlCardComponent implements OnInit {
     this.schedulerService.schedule(() => {
       this.getQuote(order.holding.symbol)
         .subscribe((bid) => {
-          if (this.globalSettingsService.brokerage === Brokerage.Td) {
-            this.schedulerService.schedule(() => {
-              this.portfolioService.getTdBalance()
-                .subscribe(balance => {
-                  const totalBalance = _.add(balance.cashBalance, balance.moneyMarketFund);
-                  let totalBuyAmount = this.firstFormGroup.value.amount;
+          this.schedulerService.schedule(() => {
+            this.portfolioService.getTdBalance()
+              .subscribe(balance => {
+                const totalBalance = _.add(balance.cashBalance, balance.moneyMarketFund);
+                let totalBuyAmount = this.firstFormGroup.value.amount;
 
-                  if (this.allIn.value === true || totalBuyAmount > totalBalance) {
-                    totalBuyAmount = totalBalance;
-                  }
+                if (this.allIn.value === true || totalBuyAmount > totalBalance) {
+                  totalBuyAmount = totalBalance;
+                }
 
-                  this.initiateBuy(modifier, totalBuyAmount, bid, order);
-                });
-            }, 'ml_card_getbalance');
-
-          } else if (this.globalSettingsService.brokerage === Brokerage.Robinhood) {
-            this.initiateBuy(modifier, this.firstFormGroup.value.amount, bid, order);
-          }
+                this.initiateBuy(modifier, totalBuyAmount, bid, order);
+              });
+          }, 'ml_card_getbalance');
         });
     }, 'ml_card_quote');
   }

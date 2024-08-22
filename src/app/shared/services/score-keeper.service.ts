@@ -1,10 +1,18 @@
 import { Injectable } from '@angular/core';
+import * as moment from 'moment-timezone';
+
 import { Winloss } from '../models/winloss';
 
 import { ReportingService } from './reporting.service';
 
 export interface ScoringIndex<TValue> {
   [id: string]: TValue;
+}
+
+export interface RecentTrades {
+  symbol: string;
+  closeDate: string;
+  pl: number;
 }
 
 interface WinLossIndex {
@@ -20,6 +28,8 @@ export class ScoreKeeperService {
   lossTally: ScoringIndex<number> = {};
   percentReturns = {};
   bettingIndex = -1;
+  recentTradeArr: RecentTrades[] = [];
+  
   constructor(private reportingService: ReportingService) { }
 
   resetTotal() {
@@ -47,6 +57,12 @@ export class ScoreKeeperService {
   }
 
   addSell(stock: string, gains: number) {
+    this.recentTradeArr.push({
+      closeDate: moment().format('YYYY-MM-DD hh:mm'),
+      symbol: stock,
+      pl: gains
+    });
+
     if (this.winlossHash[stock]) {
       if (gains > 0) {
         this.winlossHash[stock].wins++;
