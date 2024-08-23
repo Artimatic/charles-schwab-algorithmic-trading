@@ -36,7 +36,7 @@
         <app-daytrade-active-search></app-daytrade-active-search>
     </div>
     <div class="p-toolbar-group-right">
-        <p-splitButton label="Manage" icon="pi pi-play" *ngIf="!display" (onClick)="open()" [model]="startButtonOptions" styleClass="ui-button-success"></p-splitButton>
+        <p-splitButton label="Auto Manage" icon="pi pi-play" *ngIf="!display" (onClick)="open()" [model]="startButtonOptions" styleClass="ui-button-success"></p-splitButton>
         <p-button label="Stop" icon="pi pi-times" *ngIf="display" styleClass="p-button-danger" (click)="stop()"></p-button>
         <p-splitButton label="Change strategy" (onClick)="changeStrategy()" [model]="multibuttonOptions" styleClass="ui-button-success"></p-splitButton>
         <p-button label="Update stock list" styleClass="p-button-warn" (click)="updateStockList()"></p-button>
