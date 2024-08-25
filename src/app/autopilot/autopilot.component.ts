@@ -568,8 +568,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     this.currentHoldings = await this.cartService.findCurrentPositions();
 
-    this.setProfitLoss();
-
     await this.modifyCurrentHoldings();
     await this.checkPersonalLists();
     await this.hedge();
