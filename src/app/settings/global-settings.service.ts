@@ -22,7 +22,6 @@ export class GlobalSettingsService {
   daytradeAlgo: number[];
   daytradeAlgoSelection;
   featureList: number[][];
-  autostart = false;
 
   timer: Subscription;
   timerInterval = 70800;
@@ -143,12 +142,6 @@ export class GlobalSettingsService {
       return time.add({ day: 1 });
     }
     return time;
-  }
-
-  setAutoStart(newAutostart = null) {
-    this.autostart = newAutostart === null ? !this.autostart : newAutostart;
-    this.setStartTimes(newAutostart);
-    console.log('starttime ', this.startTime, this.stopTime, this.sellAtCloseTime);
   }
 
   initGlobalSettings() {

@@ -19,10 +19,6 @@ export class SettingControlsComponent {
     this.globalSettingsService.backtesting = !this.globalSettingsService.backtesting;
   }
 
-  toggleAutostart(): void {
-    this.globalSettingsService.setAutoStart();
-  }
-
   setTradeDate(event) {
     console.log(event);
     this.globalSettingsService.tradeDate = moment(event);

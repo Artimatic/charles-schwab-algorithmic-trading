@@ -6,7 +6,7 @@
 
   <div class="ui-g order-list-container" *ngIf="cartStep===0">
     <div class="ui-g-6 order-list-column">
-      <p-table [value]="defaultLists" dataKey="label" editMode="row" [(selection)]="selectedDefaultOrders">
+      <p-table [value]="defaultLists" dataKey="label" editMode="row" [paginator]="true" [rows]="3" [(selection)]="selectedDefaultOrders">
         <ng-template pTemplate="caption">
           <div class="default-list-actions">
             <span *ngIf="isLoading" class="loading-screen">
@@ -25,7 +25,7 @@
                       <div style="font-size:18px;float:right;margin:10px 10px 0 0">{{searchItem.label}}</div>
                     </ng-template>
                   </p-autoComplete>
-                  <p-button icon="pi pi-check" class="check-button" (click)="readStockList()"></p-button>
+                  <p-button label="Add symbols" class="check-button" (click)="readStockList()"></p-button>
                 </div>
               </div>
               <div class="card-form">
@@ -44,7 +44,7 @@
                       &nbsp;x 100%
                     </div>
                     <div class="order-form-item">
-                      <button pButton type="button" icon="pi pi-plus-circle" (click)="addCustomList()"
+                      <button pButton type="button" label="Add symbol" (click)="addCustomList()"
                         class="ui-button-success" type="submit" (keyup.enter)="addCustomList()"></button>
                       &nbsp;
                       <div *ngIf="errorMsg" class="error-message">{{errorMsg}}</div>

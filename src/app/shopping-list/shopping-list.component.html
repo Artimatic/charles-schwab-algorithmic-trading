@@ -1,7 +1,7 @@
 <div class="p-grid">
   <div class="p-col-6">
-    <p-card header="Import Order">
-      <app-xls-import (onImport)="import($event)"></app-xls-import>
+    <p-card header="Logs" [style]="{'margin': '1rem'}">
+      <app-terminal-view></app-terminal-view>
     </p-card>
   </div>
   <div class="p-col-6">
@@ -11,9 +11,9 @@
     </p-card>
   </div>
 </div>
-<p-card header="Logs" [style]="{'margin': '1rem'}">
-  <app-terminal-view></app-terminal-view>
-</p-card>
 <p-card header="Settings" [style]="{'margin': '1rem'}">
   <app-setting-controls></app-setting-controls>
+</p-card>
+<p-card header="Import Order">
+  <app-xls-import (onImport)="import($event)"></app-xls-import>
 </p-card>
