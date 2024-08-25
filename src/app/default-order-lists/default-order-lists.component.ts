@@ -12,7 +12,6 @@ import { MachineDaytradingService } from '../machine-daytrading/machine-daytradi
 import { SchedulerService } from '@shared/service/scheduler.service';
 import { MenuItem, SelectItem } from 'primeng/api';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
-import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { OrderType } from '@shared/stock-backtest.interface';
 
 export interface DefaultOrders {

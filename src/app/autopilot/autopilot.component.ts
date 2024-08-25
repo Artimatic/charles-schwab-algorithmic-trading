@@ -919,7 +919,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           } else if (!holding.secondaryLegs) {
             //this.optionsOrderBuilderService.hedgeTrade(holding.name, this.currentHoldings);
           }
-        } else if ((backtestResults && (backtestResults.net < 0 || (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL') || holding.name === 'TQQQ'))) {
+        } else if ((backtestResults && (backtestResults.net < 0 || backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL' || holding.name === 'TQQQ'))) {
           console.log('Backtest indicates sell', backtestResults);
           this.portfolioSell(holding);
         } else if (backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.7 && (backtestResults.recommendation === 'STRONGBUY' || backtestResults.recommendation === 'BUY')) {

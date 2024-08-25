@@ -100,7 +100,6 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     private backtestService: BacktestService,
     private daytradeService: DaytradeService,
     private reportingService: ReportingService,
-    private scoringService: ScoreKeeperService,
     private portfolioService: PortfolioService,
     public cartService: CartService,
     private globalSettingsService: GlobalSettingsService,
@@ -316,12 +315,12 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
         minQuotes: 81
       }).subscribe(results => {
         if (results.returns) {
-          this.scoringService.resetProfitLoss(this.order.holding.symbol);
-          this.scoringService.addProfitLoss(this.order.holding.symbol, results.returns * 100);
+          this.scoreKeeperService.resetProfitLoss(this.order.holding.symbol);
+          this.scoreKeeperService.addProfitLoss(this.order.holding.symbol, results.returns * 100);
         }
 
         if (results.profitableTrades && results.totalTrades) {
-          this.scoringService.winlossHash[this.order.holding.symbol] = {
+          this.scoreKeeperService.winlossHash[this.order.holding.symbol] = {
             wins: results.profitableTrades,
             losses: null,
             total: results.totalTrades
@@ -359,7 +358,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     this.warning = '';
     this.stopped = false;
     this.startingPrice = null;
-    this.scoringService.resetScore(this.order.holding.symbol);
+    this.scoreKeeperService.resetScore(this.order.holding.symbol);
 
     switch (this.firstFormGroup.value.orderType.side) {
       case 'Buy':
@@ -468,8 +467,8 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
               this.daytradeService.estimateSellProfitLoss(this.order.holding.symbol)
                 .subscribe(pl => {
                   console.log('Estimated sell pl', pl);
-                  this.scoringService.resetProfitLoss(this.order.holding.symbol);
-                  this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
+                  this.scoreKeeperService.resetProfitLoss(this.order.holding.symbol);
+                  this.scoreKeeperService.addProfitLoss(this.order.holding.symbol, pl);
                 });
             }
 
@@ -495,8 +494,8 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
               this.daytradeService.estimateSellProfitLoss(this.order.holding.symbol)
                 .subscribe(pl => {
                   console.log('Estimated sell pl', pl);
-                  this.scoringService.resetProfitLoss(this.order.holding.symbol);
-                  this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
+                  this.scoreKeeperService.resetProfitLoss(this.order.holding.symbol);
+                  this.scoreKeeperService.addProfitLoss(this.order.holding.symbol, pl);
                 });
             }
 
@@ -518,8 +517,8 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           this.daytradeService.estimateSellProfitLoss(this.order.holding.symbol)
             .subscribe(pl => {
               console.log('Estimated sell pl', pl);
-              this.scoringService.resetProfitLoss(this.order.holding.symbol);
-              this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
+              this.scoreKeeperService.resetProfitLoss(this.order.holding.symbol);
+              this.scoreKeeperService.addProfitLoss(this.order.holding.symbol, pl);
             });
         }
         const resolve = (response) => {
@@ -545,8 +544,8 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           this.daytradeService.estimateSellProfitLoss(this.order.holding.symbol)
             .subscribe(pl => {
               console.log('Estimated sell pl', pl);
-              this.scoringService.resetProfitLoss(this.order.holding.symbol);
-              this.scoringService.addProfitLoss(this.order.holding.symbol, pl);
+              this.scoreKeeperService.resetProfitLoss(this.order.holding.symbol);
+              this.scoreKeeperService.addProfitLoss(this.order.holding.symbol, pl);
             });
         }
         console.log(`${moment(order.signalTime).format('hh:mm')} ${log}`);
@@ -843,7 +842,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     if (this.order) {
-      const score = this.scoringService.getScore(this.order.holding.symbol);
+      const score = this.scoreKeeperService.getScore(this.order.holding.symbol);
       if (score && score.total > 3) {
         const scorePct = _.round(_.divide(score.wins, score.total), 2);
         if (scorePct < 0.10) {
@@ -999,13 +998,18 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   async sellOptions() {
-    console.log(`Sell option ${this.order.primaryLegs[0].symbol}`);
+    const symbol = this.order.primaryLegs[0].symbol;
+    console.log(`Sell option ${symbol}`);
     this.incrementSell();
-
+    this.daytradeService.estimateSellProfitLoss(symbol)
+    .subscribe(pl => {
+      this.scoreKeeperService.resetProfitLoss(symbol);
+      this.scoreKeeperService.addProfitLoss(symbol, pl);
+    });
     const resolve = (response) => {
-      const log = `Sell option sent ${this.order.orderSize} ${this.order.primaryLegs[0].symbol}`;
+      const log = `Sell option sent ${this.order.orderSize} ${symbol}`;
       console.log(`${moment().format('hh:mm')} ${log}`);
-      this.reportingService.addAuditLog(this.order.holding.symbol, log);
+      this.reportingService.addAuditLog(symbol, log);
     };
 
     const reject = (error) => {
@@ -1014,9 +1018,9 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     };
 
     const handleNotFound = () => {
-      this.setWarning(`Trying to sell position that doesn\'t exists ${this.order.primaryLegs[0].symbol}`);
+      this.setWarning(`Trying to sell position that doesn\'t exists ${symbol}`);
     };
-    await this.daytradeService.sendOptionSell(this.order.primaryLegs[0].symbol, this.order.orderSize || 1, resolve, reject, handleNotFound);
+    await this.daytradeService.sendOptionSell(symbol, this.order.orderSize || 1, resolve, reject, handleNotFound);
   }
 
   toggleSettingsVisible() {

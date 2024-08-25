@@ -1,61 +1,33 @@
 <div class="setting-controls-container">
-  <mat-grid-list cols="4" rowHeight="50px">
-    <mat-grid-tile>
+  <div class="p-grid">
+    <div class="p-col-3">
       <label matTooltip="Orders trade date">
         Date
       </label>
       <span>&nbsp;</span>
       <input type="date" [ngModel]="globalSettingsService.tradeDate | date:'yyyy-MM-dd'"
         (ngModelChange)="setTradeDate($event)">
-    </mat-grid-tile>
-    <mat-grid-tile>
+    </div>
+    <div class="p-col-3">
       <label matTooltip="Orders start time">
         Start
       </label>
       <span>&nbsp;</span>
       <timepicker [(ngModel)]="globalSettingsService.startTime" [showMeridian]="ismeridian"></timepicker>
-    </mat-grid-tile>
-    <mat-grid-tile>
+    </div>
+    <div class="p-col-3">
       <label matTooltip="When to close order if 'sell on the close' is set. Must be before stop time">
         Sell to Close
       </label>
       <span>&nbsp;</span>
       <timepicker [(ngModel)]="globalSettingsService.sellAtCloseTime" [showMeridian]="ismeridian"></timepicker>
-    </mat-grid-tile>
-    <mat-grid-tile>
+    </div>
+    <div class="p-col-3">
       <label matTooltip="Orders stop time">
         Stop
       </label>
       <span>&nbsp;</span>
       <timepicker [(ngModel)]="globalSettingsService.stopTime" [showMeridian]="ismeridian"></timepicker>
-    </mat-grid-tile>
-    <mat-grid-tile>
-      <div class="dropdown-selection">
-        <p-dropdown appendTo="body" [options]="globalSettingsService.daytradeAlgoSelection"
-          [(ngModel)]="globalSettingsService.daytradeAlgo" placeholder="Select a daytrade algorithm">
-        </p-dropdown>
-      </div>
-    </mat-grid-tile>
-    <mat-grid-tile>
-      <label matTooltip="Max loss threshold. Buying will stop if met.">
-        Loss threshold
-      </label>
-      <span>$&nbsp;</span>
-      <input [(ngModel)]="globalSettingsService.maxLoss">
-    </mat-grid-tile>
-    <mat-grid-tile>
-      <label matTooltip="Backtesting on/off">
-        Backtesting:
-      </label>
-      <mat-slide-toggle (change)="toggleBacktesting()">
-      </mat-slide-toggle>
-    </mat-grid-tile>
-    <mat-grid-tile>
-      <label matTooltip="Restart cards for next day when trading is finished">
-        Auto start:
-      </label>
-      <mat-slide-toggle (change)="toggleAutostart()">
-      </mat-slide-toggle>
-    </mat-grid-tile>
-  </mat-grid-list>
+    </div>
+  </div>
 </div>

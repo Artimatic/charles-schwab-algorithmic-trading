@@ -108,7 +108,7 @@ export class MachineDaytradingService {
       this.portfolioService.getTdPortfolio().subscribe((data) => {
         data.forEach((holding) => {
           if (holding.instrument.symbol === stock) {
-            const sellQuantity = holding.longQuantity;
+            const sellQuantity = Math.floor(holding.longQuantity * allocationPct) || 1;
             if (!lastPrice) {
               this.portfolioService.getPrice(stock).subscribe((price) => {
                 cb(sellQuantity, price);
