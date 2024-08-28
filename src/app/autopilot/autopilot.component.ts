@@ -418,7 +418,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else if (moment().isAfter(moment(startStopTime.endDateTime).subtract(8, 'minutes')) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
           if (!this.boughtAtClose) {
-            await this.buySellAtClose();
+            // await this.buySellAtClose();
             setTimeout(async () => {
               const profitLog = `Profit ${this.scoreKeeperService.total}`;
               this.reportingService.addAuditLog(null, profitLog);
@@ -1400,7 +1400,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             const callPutInd = holding.primaryLegs[0].putCallInd.toLowerCase();
             if (callPutInd === 'c') {
               const pair = this.tradingPairs.find(tradeArr => tradeArr[0].holding.symbol === holding.name);
-              if (!this.currentHoldings.find(curr => curr.name === pair[1].holding.name && curr.primaryLegs[0].putCallInd.toLowerCase() === 'p' && !this.cartService.isStrangle(curr))) {
+              if (pair && pair.length === 2 && !this.currentHoldings.find(curr => curr.name === pair[1].holding.name && curr.primaryLegs[0].putCallInd.toLowerCase() === 'p' && !this.cartService.isStrangle(curr))) {
                 this.cartService.addToCart(pair[1]);
               }
             }
