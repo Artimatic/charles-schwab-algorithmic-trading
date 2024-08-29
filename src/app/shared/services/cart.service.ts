@@ -389,7 +389,6 @@ export class CartService {
   async findCurrentPositions() {
     let currentHoldings = [];
     const data = await this.portfolioService.getTdPortfolio().toPromise();
-
     if (data) {
       for (const holding of data) {
         if (holding.instrument.assetType.toLowerCase() === 'option') {

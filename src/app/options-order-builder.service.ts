@@ -41,7 +41,7 @@ export class OptionsOrderBuilderService {
   }
 
   async createProtectivePutOrder(holding: PortfolioInfoHolding) {
-    if (holding.shares) {
+    if (holding.shares && holding.assetType === 'equity') {
       let putsNeeded = Math.floor(holding.shares / 100);
 
       putsNeeded -= this.protectivePutCount(holding);
@@ -49,6 +49,10 @@ export class OptionsOrderBuilderService {
       if (putsNeeded > 0) {
         const putOption = await this.strategyBuilderService.getProtectivePut(holding.name);
         const estimatedPrice = this.strategyBuilderService.findOptionsPrice(putOption.put.bid, putOption.put.ask);
+        if (estimatedPrice < 10) {
+          console.log('Protective put price is too low', estimatedPrice);
+          return;
+        }
         this.cartService.addOptionOrder(holding.name, [putOption.put], estimatedPrice, putsNeeded, OrderTypes.protectivePut);
       }
     }

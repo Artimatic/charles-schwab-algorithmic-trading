@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { round } from 'lodash';
 import { OptionsDataService } from '@shared/options-data.service';
 import { AiPicksService, BacktestService, CartService, PortfolioService } from '@shared/services';
 import { Stock } from '@shared/stock.interface';
@@ -598,5 +599,30 @@ export class StrategyBuilderService {
     } else {
       localStorage.setItem('always_buy', JSON.stringify([]));
     }
+  }
+
+  getQuantity(stockPrice: number, allocationPct: number, total: number) {
+    const totalCost = round(total * allocationPct, 2);
+    if (!totalCost) {
+      return 0;
+    }
+    return Math.floor(totalCost / stockPrice);
+  }
+
+  async buySnP() {
+    const backtestData = await this.getBacktestData('VTI');
+
+    const price = await this.portfolioService.getPrice('UPRO').toPromise();
+    const balance = await this.portfolioService.getTdBalance().toPromise();
+
+    const quantity = this.getQuantity(price, backtestData?.ml || 0.1, balance.cashBalance);
+    const orderSizePct = 1;
+
+    const order = this.cartService.buildOrderWithAllocation('UPRO', quantity, price, 'Buy',
+      orderSizePct, null, null,
+      null, 1);
+    console.log('Adding buy', order, 'ml result:', backtestData?.ml);
+
+    this.cartService.addToCart(order);
   }
 }

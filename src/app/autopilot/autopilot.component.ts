@@ -92,6 +92,7 @@ export enum Strategy {
   TradingPairs = 'TradingPairs',
   BuyCalls = 'BuyCalls',
   BuyPuts = 'BuyPuts',
+  BuySnP = 'BuySnP',
   None = 'None'
 }
 
@@ -134,6 +135,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   tradingPairsCounter = 0;
   strategyList = [
     Strategy.Default,
+    Strategy.BuySnP,
     Strategy.OptionsStrangle,
     Strategy.Swingtrade,
     // Strategy.SingleStockPick,
@@ -614,6 +616,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           }
         });
         break;
+      case Strategy.BuySnP:
+        this.strategyBuilderService.buySnP();
+        break;
       case Strategy.None:
         break;
       default: {
@@ -923,8 +928,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else if (backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.7 && (backtestResults.recommendation === 'STRONGBUY' || backtestResults.recommendation === 'BUY')) {
           console.log('Backtest indicates buying', backtestResults);
           await this.addBuy(this.createHoldingObj(holding.name), RiskTolerance.Zero);
-        } else {
-          //await this.optionsOrderBuilderService.createProtectivePutOrder(holding);
         }
       } catch (error) {
         console.log('Backtest error', error);
@@ -1053,7 +1056,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     useCashBalance = true) {
     const price = await this.portfolioService.getPrice(holding.name).toPromise();
     const cash = await this.cartService.getAvailableFunds(useCashBalance);
-    const quantity = this.getQuantity(price, allocation, cash);
+    const quantity = this.strategyBuilderService.getQuantity(price, allocation, cash);
     const orderSizePct = (this.riskToleranceList[this.riskCounter] > 0.5) ? 0.5 : 0.3;
     const order = this.cartService.buildOrderWithAllocation(holding.name, quantity, price, 'Buy',
       orderSizePct, stopLossThreshold, profitThreshold,
@@ -1078,7 +1081,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     stopLossThreshold: number = null) {
     const price = await this.portfolioService.getPrice(symbol).toPromise();
     const balance = await this.portfolioService.getTdBalance().toPromise();
-    const quantity = this.getQuantity(price, allocation, balance.buyingPower);
+    const quantity = this.strategyBuilderService.getQuantity(price, allocation, balance.buyingPower);
     const orderSizePct = 0.5;
     const order = this.cartService.buildOrderWithAllocation(symbol,
       quantity,
@@ -1094,14 +1097,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     this.cartService.addToCart(order);
     this.initializeOrder(order);
-  }
-
-  private getQuantity(stockPrice: number, allocationPct: number, total: number) {
-    const totalCost = round(total * allocationPct, 2);
-    if (!totalCost) {
-      return 0;
-    }
-    return Math.floor(totalCost / stockPrice);
   }
 
   getRecommendationReason(recommendation) {
@@ -1227,7 +1222,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       const price = await this.portfolioService.getPrice('UPRO').toPromise();
       const balance = await this.portfolioService.getTdBalance().toPromise();
 
-      const quantity = this.getQuantity(price, backtestData?.ml || 0.1, balance.cashBalance);
+      const quantity = this.strategyBuilderService.getQuantity(price, backtestData?.ml || 0.1, balance.cashBalance);
       const orderSizePct = 1;
 
       const order = this.cartService.buildOrderWithAllocation('UPRO', quantity, price, 'Buy',
@@ -1397,11 +1392,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.optionsOrderBuilderService.createProtectivePutOrder(holding);
         } else {
           if (!this.cartService.isStrangle(holding)) {
-            const callPutInd = holding.primaryLegs[0].putCallInd.toLowerCase();
-            if (callPutInd === 'c') {
+            if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
               const pair = this.tradingPairs.find(tradeArr => tradeArr[0].holding.symbol === holding.name);
-              if (pair && pair.length === 2 && !this.currentHoldings.find(curr => curr.name === pair[1].holding.name && curr.primaryLegs[0].putCallInd.toLowerCase() === 'p' && !this.cartService.isStrangle(curr))) {
-                this.cartService.addToCart(pair[1]);
+              if (pair && pair.length === 2) {
+                console.log(`Trading pair for ${holding.name} call is ${pair[1].holding.name} put`);
+                if (!this.currentHoldings.find(curr => curr.name === pair[1].holding.name)) {
+                  this.cartService.addToCart(pair[1]);
+                }
               }
             }
           }
