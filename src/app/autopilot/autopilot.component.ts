@@ -92,7 +92,8 @@ export enum Strategy {
   TradingPairs = 'TradingPairs',
   BuyCalls = 'BuyCalls',
   BuyPuts = 'BuyPuts',
-  BuySnP = 'BuySnP',
+  BuySnP = 'Buy S&P500',
+  InverseDispersion = 'Inverse dispersion trade',
   None = 'None'
 }
 
@@ -129,13 +130,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   destroy$ = new Subject();
   currentHoldings: PortfolioInfoHolding[] = [];
   strategyCounter = null;
-  maxTradeCount = 11;
+  maxTradeCount = 10;
   maxHoldings = 15;
   developedStrategy = false;
   tradingPairsCounter = 0;
   strategyList = [
     Strategy.Default,
-    Strategy.BuySnP,
+    Strategy.InverseDispersion,
     Strategy.OptionsStrangle,
     Strategy.Swingtrade,
     // Strategy.SingleStockPick,
@@ -148,6 +149,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     Strategy.Short,
     // Strategy.DaytradeFullList,
     Strategy.BuyCalls,
+    Strategy.BuySnP,
     Strategy.None
   ];
 
@@ -618,6 +620,27 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         break;
       case Strategy.BuySnP:
         this.strategyBuilderService.buySnP();
+        break;
+      case Strategy.InverseDispersion:
+        this.tradingPairs.forEach(async (trade) => {
+          if (trade.length === 2) {
+            this.cartService.addToCart(trade[1]);
+          }
+        });
+        const totalCost = this.cartService.buyOrders.reduce((acc, curr) => {
+          return acc + (curr.price * curr.quantity);
+        }, 0);
+        const price = await this.portfolioService.getPrice('UPRO').toPromise();
+    
+        const quantity = this.strategyBuilderService.getQuantity(price, 1, totalCost);
+        const orderSizePct = 1;
+    
+        const order = this.cartService.buildOrderWithAllocation('UPRO', quantity, price, 'Buy',
+          orderSizePct, null, null,
+          null, 1);
+        console.log('Adding buy', order);
+    
+        this.cartService.addToCart(order);
         break;
       case Strategy.None:
         break;
