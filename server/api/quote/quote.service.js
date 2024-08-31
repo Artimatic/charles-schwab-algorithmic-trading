@@ -6,7 +6,6 @@ import * as algotrader from 'algotrader';
 import PortfolioService from '../portfolio/portfolio.service';
 
 import * as configurations from '../../config/environment';
-import portfolioService from '../portfolio/portfolio.service';
 
 const yahoo = {
   key: configurations.yahoo.key,
@@ -86,41 +85,27 @@ class QuoteService {
 
     const to = moment(toDate);
     const from = moment(fromDate);
+    const diff = Math.abs(to.diff(from, 'days'));
 
-    const query = `${appUrl}backtest?ticker=${symbol}&to=${to.format('YYYY-MM-DD')}&from=${from.format('YYYY-MM-DD')}`;
-    const options = {
-      method: 'POST',
-      uri: query
-    };
+    let range;
 
-    return RequestPromise(options)
-      .then((data) => {
-        const arr = JSON.parse(data);
-        return arr;
-      })
-      .catch(() => {
-        const diff = Math.abs(to.diff(from, 'days'));
+    if (diff <= 5) {
+      range = '5d';
+    } else if (diff <= 30) {
+      range = '1mo';
+    } else if (diff <= 90) {
+      range = '3mo';
+    } else if (diff <= 365) {
+      range = '1y';
+    } else if (diff <= 730) {
+      range = '2y';
+    } else if (diff <= 1825) {
+      range = '5y';
+    } else {
+      range = '10y';
+    }
 
-        let range;
-
-        if (diff <= 5) {
-          range = '5d';
-        } else if (diff <= 30) {
-          range = '1mo';
-        } else if (diff <= 90) {
-          range = '3mo';
-        } else if (diff <= 365) {
-          range = '1y';
-        } else if (diff <= 730) {
-          range = '2y';
-        } else if (diff <= 1825) {
-          range = '5y';
-        } else {
-          range = '10y';
-        }
-
-        return this.getData(symbol, '1d', range);
-      });
+    return this.getData(symbol, '1d', range);
   }
 
   getLastPrice(symbol, response) {

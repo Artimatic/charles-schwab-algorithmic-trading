@@ -251,9 +251,22 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     this.startButtonOptions = [
       {
-        label: 'Start orders',
+        label: 'Start orders without auto manage',
         command: async () => {
           this.manualStart = true;
+          this.destroy$ = new Subject();
+          if (this.backtestBuffer$) {
+            this.backtestBuffer$.unsubscribe();
+          }
+          this.backtestBuffer$ = new Subject();
+      
+          this.display = true;
+          this.startInterval();
+          this.interval = this.defaultInterval;
+          this.messageService.add({
+            severity: 'success',
+            summary: 'Trading started'
+          });
         }
       }
     ];
@@ -336,7 +349,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.interval = this.defaultInterval;
     this.messageService.add({
       severity: 'success',
-      summary: 'Autopilot started'
+      summary: 'Trading started'
     });
   }
 
@@ -397,11 +410,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       }
     } else if (trade.length === 2) {
       const shouldBuyCall = await this.optionsOrderBuilderService.shouldBuyOption(trade[0].holding.symbol);
-      // const shouldBuyPut = await this.optionsOrderBuilderService.shouldBuyOption(trade[1].holding.symbol);
-      //if (shouldBuyCall && shouldBuyPut) {
-      if (shouldBuyCall) {
-        this.cartService.addToCart(trade[0]);
-        // this.cartService.addToCart(trade[1]);
+      const shouldBuyPut = await this.optionsOrderBuilderService.shouldBuyOption(trade[1].holding.symbol);
+      if (shouldBuyCall && shouldBuyPut) {
+        const tradePairOrder = trade[0];
+        tradePairOrder.secondaryLegs = trade[1].primaryLegs;
+        this.cartService.addToCart(tradePairOrder);
       }
     }
     this.tradingPairsCounter++;
@@ -622,14 +635,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         this.strategyBuilderService.buySnP();
         break;
       case Strategy.InverseDispersion:
+        let totalCost = 0;
         this.tradingPairs.forEach(async (trade) => {
           if (trade.length === 2) {
             this.cartService.addToCart(trade[1]);
+            totalCost += (trade[1].price * trade[1].quantity)
           }
         });
-        const totalCost = this.cartService.buyOrders.reduce((acc, curr) => {
-          return acc + (curr.price * curr.quantity);
-        }, 0);
+
         const price = await this.portfolioService.getPrice('UPRO').toPromise();
     
         const quantity = this.strategyBuilderService.getQuantity(price, 1, totalCost);

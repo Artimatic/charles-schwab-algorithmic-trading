@@ -1926,7 +1926,7 @@ class BacktestService {
 
     return RequestPromise(options)
       .catch((error) => {
-        console.log('ErroractivateCustomModel: ', error);
+        console.log('Error activateCustomModel: ', error);
       });
   }
 }
