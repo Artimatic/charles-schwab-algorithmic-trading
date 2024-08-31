@@ -25,7 +25,7 @@
                       <div style="font-size:18px;float:right;margin:10px 10px 0 0">{{searchItem.label}}</div>
                     </ng-template>
                   </p-autoComplete>
-                  <p-button label="Add symbols" class="check-button" (click)="readStockList()"></p-button>
+                  <p-button label="Verify symbols" class="check-button" (click)="readStockList()"></p-button>
                 </div>
               </div>
               <div class="card-form">
@@ -44,7 +44,7 @@
                       &nbsp;x 100%
                     </div>
                     <div class="order-form-item">
-                      <button pButton type="button" label="Add symbol" (click)="addCustomList()"
+                      <button pButton type="button" label="Verify symbol" (click)="addCustomList()"
                         class="ui-button-success" type="submit" (keyup.enter)="addCustomList()"></button>
                       &nbsp;
                       <div *ngIf="errorMsg" class="error-message">{{errorMsg}}</div>

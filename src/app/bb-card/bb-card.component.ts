@@ -23,12 +23,9 @@ import { TradeService, AlgoQueueItem } from '../shared/services/trade.service';
 import { OrderingService } from '@shared/services/ordering.service';
 import { GlobalTaskQueueService } from '@shared/services/global-task-queue.service';
 import { ClientSmsService } from '@shared/services/client-sms.service';
-import { SchedulerService } from '@shared/service/scheduler.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
 import { MenuItem, MessageService, SelectItem } from 'primeng/api';
-import { ServiceStatus } from '@shared/models/service-status';
 import { DaytradeAlgorithms } from '@shared/enums/daytrade-algorithms.enum';
-import { BacktestTableComponent } from '../backtest-table/backtest-table.component';
 import { DialogService } from 'primeng/dynamicdialog';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
@@ -628,7 +625,12 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             const usage = (balance.liquidationValue - this.currentBalance) / balance.liquidationValue;
             if (usage < 1) {
               this.incrementBuy();
-              await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize || 1);
+              if (this.order.secondaryLegs) {
+                await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity || 1);
+                await this.orderHandlingService.buyOption(this.order.secondaryLegs[0].symbol, this.order.secondaryLegs[0].quantity || 1); 
+              } else {
+                await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize || 1);
+              }
             }
           });
         }
@@ -646,7 +648,12 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           const usage = (balance.liquidationValue - this.currentBalance) / balance.liquidationValue;
           if (usage < 1) {
             this.incrementBuy();
-            await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize || 1);
+            if (this.order.secondaryLegs) {
+              await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity || 1);
+              await this.orderHandlingService.buyOption(this.order.secondaryLegs[0].symbol, this.order.secondaryLegs[0].quantity || 1); 
+            } else {
+              await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize || 1);
+            }
           }
         });
       } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'buy') {
