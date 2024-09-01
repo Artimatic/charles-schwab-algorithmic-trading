@@ -8,6 +8,8 @@ import { Subject } from 'rxjs';
 import * as moment from 'moment-timezone';
 import { Options } from '@shared/models/options';
 import { ReportingService } from './reporting.service';
+import { MachineLearningService } from './machine-learning/machine-learning.service';
+import { GlobalSettingsService } from 'src/app/settings/global-settings.service';
 
 @Injectable()
 export class CartService {
@@ -20,9 +22,18 @@ export class CartService {
     private portfolioService: PortfolioService,
     private tradeService: TradeService,
     private reportingService: ReportingService,
+    private machineLearningService: MachineLearningService,
+    private globalSettingsService: GlobalSettingsService,
     private messageService: MessageService) { }
 
   addToCart(order: SmartOrder, replaceAnyExistingOrders = false) {
+    this.machineLearningService
+      .trainDaytrade(order.holding.symbol.toUpperCase(),
+        moment().add({ days: 1 }).format('YYYY-MM-DD'),
+        moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
+        1,
+        this.globalSettingsService.daytradeAlgo
+      ).subscribe();
     order.createdTime = moment().format();
     const indices = this.searchAllLists(order);
     let noDup = true;
@@ -308,7 +319,7 @@ export class CartService {
     if (foundExistingOrder) {
       foundExistingOrder.primaryLegs[0].quantity += quantity
       this.updateOrder(foundExistingOrder);
-    } if (this.sellOrders.find(order => order.primaryLegs && order.holding.symbol === symbol && order.primaryLegs[0].symbol === primaryLegs[0].symbol && !order.secondaryLegs)){
+    } if (this.sellOrders.find(order => order.primaryLegs && order.holding.symbol === symbol && order.primaryLegs[0].symbol === primaryLegs[0].symbol && !order.secondaryLegs)) {
       return null;
     } else {
       const order: SmartOrder = {
@@ -343,10 +354,10 @@ export class CartService {
     quantity: number,
     optionType,
     side = 'Buy') {
-      const order = await this.createOptionOrder(symbol, primaryLegs, price, quantity, optionType, side);
-      if (order) {
-        this.addToCart(order);
-      }
+    const order = await this.createOptionOrder(symbol, primaryLegs, price, quantity, optionType, side);
+    if (order) {
+      this.addToCart(order);
+    }
   }
 
   removeCompletedOrders() {

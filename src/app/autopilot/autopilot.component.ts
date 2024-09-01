@@ -18,7 +18,7 @@ import { PotentialTrade } from '../backtest-table/potential-trade.constant';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
 import { TrainingResults } from '../machine-learning/ask-model/ask-model.component';
-import { OptionsOrderBuilderService, TradingPair } from '../options-order-builder.service';
+import { OptionsOrderBuilderService } from '../options-order-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { PricingService } from '../pricing/pricing.service';
 import { CurrentStockList } from '../rh-table/stock-list.constant';
@@ -259,7 +259,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             this.backtestBuffer$.unsubscribe();
           }
           this.backtestBuffer$ = new Subject();
-      
+
           this.display = true;
           this.startInterval();
           this.interval = this.defaultInterval;
@@ -276,7 +276,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         label: 'Sell options',
         command: async () => {
           this.currentHoldings = await this.cartService.findCurrentPositions();
-          await this.analyseCurrentOptions();
+          await this.checkCurrentOptions();
         }
       },
       {
@@ -313,10 +313,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         label: 'Show strategies',
         command: async () => {
           this.revealPotentialStrategy = !this.revealPotentialStrategy;
-          await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs);
-          setTimeout(() => {
-            console.log(this.tradingPairs);
-          }, 120000);
+          console.log(this.tradingPairs);
         }
       },
       {
@@ -353,7 +350,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     });
   }
 
-  async analyseCurrentOptions() {
+  async checkCurrentOptions() {
     if (this.manualStart) {
       return;
     }
@@ -474,7 +471,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             }
             if (moment().isAfter(moment(startStopTime.startDateTime).add(90, 'minutes'))) {
               this.currentHoldings = await this.cartService.findCurrentPositions();
-              await this.analyseCurrentOptions();
+              await this.checkCurrentOptions();
             }
           }
         } else {
@@ -635,29 +632,16 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         this.strategyBuilderService.buySnP();
         break;
       case Strategy.InverseDispersion:
-        let totalCost = 0;
-        this.tradingPairs.forEach(async (trade) => {
-          if (trade.length === 2) {
-            this.cartService.addToCart(trade[1]);
-            totalCost += (trade[1].price * trade[1].quantity)
+        const findPuts = async (symbol: string, prediction: number, backtestData: any) => {
+          if (backtestData?.optionsVolume > 230) {
+            if (prediction < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
+              await this.optionsOrderBuilderService.balanceTrades(this.tradingPairs, this.currentHoldings, ['SPY'], [symbol]);
+            }
           }
-        });
-
-        const price = await this.portfolioService.getPrice('UPRO').toPromise();
-    
-        const quantity = this.strategyBuilderService.getQuantity(price, 1, totalCost);
-        const orderSizePct = 1;
-    
-        const order = this.cartService.buildOrderWithAllocation('UPRO', quantity, price, 'Buy',
-          orderSizePct, null, null,
-          null, 1);
-        console.log('Adding buy', order);
-    
-        this.cartService.addToCart(order);
+        };
+        await this.getNewTrades(findPuts);
         break;
-      case Strategy.None:
-        break;
-      default: {
+      case Strategy.Default: {
         await this.getNewTrades();
         break;
       }

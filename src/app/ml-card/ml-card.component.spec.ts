@@ -60,7 +60,6 @@ describe('MlCardComponent', () => {
         useStopLoss: true,
         lossThreshold: -0.002,
         profitTarget: 0.004,
-        spyMomentum: true,
         sellAtClose: true
       };
       component.firstFormGroup.value.amount = 800;
