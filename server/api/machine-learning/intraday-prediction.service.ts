@@ -1,7 +1,6 @@
 import * as moment from 'moment';
 import * as _ from 'lodash';
 
-import QuoteService from '../quote/quote.service';
 import BacktestService from '../backtest/backtest.service';
 import { BacktestResults } from '../backtest/backtest.service';
 import PortfolioService from '../portfolio/portfolio.service';
@@ -16,28 +15,19 @@ class IntradayPredicationService extends PredictionService {
   }
 
   train(symbol, startDate, endDate, trainingSize, featureUse) {
-    return this.getQuotes(symbol, moment(startDate).valueOf(), moment(endDate).valueOf())
-      .then((data) => {
-        if (!data) {
-          console.log('Get quotes failed');
-        }
-        return QuoteService.postIntradayData(data);
-      })
-      .catch((error) => {
-        console.error('Error posting intraday data: ', error.message);
-      })
-      .then(() => {
-        return BacktestService.runDaytradeBacktest(symbol, endDate, startDate,
-          {
-            lossThreshold: 0.003,
-            profitThreshold: 0.02,
-            minQuotes: 81
-          });
+    console.log('Getting data for', this.modelName);
+    return BacktestService.runDaytradeBacktest(symbol, endDate, startDate,
+      {
+        lossThreshold: 0.003,
+        profitThreshold: 0.02,
+        minQuotes: 81
       })
       .then((results: BacktestResults) => {
+        console.log('Processing backtest for', this.modelName);
+
         const finalDataSet = this.processBacktestResults(results, featureUse);
         const modelName = featureUse ? featureUse.join() : this.modelName;
-
+        console.log('Training for', this.modelName);
         // return BacktestService.trainTensorModel(symbol, modelName, finalDataSet, trainingSize, moment().format('YYYY-MM-DD'));
         return BacktestService.trainCustomModel(symbol, modelName, finalDataSet, trainingSize, moment().format('YYYY-MM-DD'));
       });
@@ -80,7 +70,7 @@ class IntradayPredicationService extends PredictionService {
     }
     const signal = indicatorData;
     const inputData = this.buildInputSet(signal, featureUse);
-    const modelName = featureUse ? featureUse.join() : this.modelName;
+    const modelName = this.modelName;
     return BacktestService.activateCustomModel(symbol, modelName, inputData.input, moment().format('YYYY-MM-DD'));
   }
 

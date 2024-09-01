@@ -3,7 +3,7 @@ import { round } from 'lodash';
 import { OptionsDataService } from '@shared/options-data.service';
 import { AiPicksService, BacktestService, CartService, PortfolioService } from '@shared/services';
 import { Stock } from '@shared/stock.interface';
-import { PotentialTrade, Strategy } from './potential-trade.constant';
+import { PotentialTrade } from './potential-trade.constant';
 import * as moment from 'moment-timezone';
 import { Strangle } from '@shared/models/options';
 import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
@@ -11,6 +11,12 @@ import { SwingtradeStrategiesService } from '../strategies/swingtrade-strategies
 import { Indicators } from '@shared/stock-backtest.interface';
 import { MessageService } from 'primeng/api';
 import { AlwaysBuy } from '../rh-table/backtest-stocks.constant';
+
+export interface ComplexStrategy {
+  state: 'assembling' | 'assembled' | 'disassembling' | 'disassembled';
+  trades: SmartOrder[];
+  date?: string;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -574,6 +580,28 @@ export class StrategyBuilderService {
     return AlwaysBuy;
   }
 
+  getComplexStrategy() {
+    const storage = this.getStorage('complex_strategy');
+    if (storage && storage.length) {
+      return storage;
+    }
+    return [];
+  }
+
+  addComplexStrategy(strategy: ComplexStrategy) {
+    const list: ComplexStrategy[] = this.getComplexStrategy();
+    if (list && list.length) {
+      list.push(strategy);
+      localStorage.setItem('complex_strategy', JSON.stringify(list));
+    } else {
+      localStorage.setItem('complex_strategy', JSON.stringify([strategy]));
+    }
+  }
+
+  setComplexStrategy(strategies: ComplexStrategy[]) {
+    localStorage.setItem('complex_strategy', JSON.stringify(strategies));
+  }
+
   addToBuyList(ticker: string) {
     const list = this.getBuyList();
     if (list && list.length) {
@@ -595,7 +623,7 @@ export class StrategyBuilderService {
   removeFromBuyList(ticker: string) {
     const list = this.getBuyList();
     if (list && list.length) {
-        localStorage.setItem('always_buy', JSON.stringify(list.filter(val => val.ticker !== ticker)));
+      localStorage.setItem('always_buy', JSON.stringify(list.filter(val => val.ticker !== ticker)));
     } else {
       localStorage.setItem('always_buy', JSON.stringify([]));
     }

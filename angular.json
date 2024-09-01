@@ -82,7 +82,6 @@
             "polyfills": "src/polyfills.ts",
             "tsConfig": "src/tsconfig.spec.json",
             "scripts": [
-              "node_modules/xlsx/dist/xlsx.min.js",
               "node_modules/moment/min/moment.min.js",
               "node_modules/moment-timezone/moment-timezone.js",
               "node_modules/moment-timezone/builds/moment-timezone-with-data-2012-2022.js"

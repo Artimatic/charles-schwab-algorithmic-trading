@@ -19,9 +19,9 @@ export default class BaseController {
   }
 
   static requestErrorHandler(reply, error) {
-    console.log('Base Error: ', error.message);
-    if (error && error.error && error.statusCode) {
-      reply.status(error.statusCode).send(error.error);
+    console.log('Base Error: ', error.statusCode, error.error, error.message);
+    if (error && error.error && (error.statusCode || error.code)) {
+      reply.status(error.statusCode || error.code ).send(error.error);
     } else {
       reply.status(Boom.badImplementation().output.statusCode).send(error);
     }
