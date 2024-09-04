@@ -164,7 +164,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   dayTradeRiskCounter = 0;
 
   riskToleranceList = [
-    RiskTolerance.Zero,
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.ExtremeFear,
@@ -220,7 +219,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private findPatternService: FindPatternService,
     private machineLearningService: MachineLearningService,
     private globalSettingsService: GlobalSettingsService,
-    private daytradeService: DaytradeService,
     public dialogService: DialogService,
     private findDaytradeService: FindDaytradeService,
     private pricingService: PricingService,
@@ -327,6 +325,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         command: async () => {
           this.currentHoldings = await this.cartService.findCurrentPositions();
           await this.modifyCurrentHoldings();
+          console.log(this.currentHoldings);
         }
       }
     ];
@@ -432,7 +431,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else if (moment().isAfter(moment(startStopTime.endDateTime).subtract(8, 'minutes')) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
           if (!this.boughtAtClose) {
-            // await this.buySellAtClose();
+            await this.buySellAtClose();
             setTimeout(async () => {
               const profitLog = `Profit ${this.scoreKeeperService.total}`;
               this.reportingService.addAuditLog(null, profitLog);
@@ -1034,9 +1033,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
   }
 
-  async checkStopLoss(holding: PortfolioInfoHolding) {
+  async checkStopLoss(holding: PortfolioInfoHolding, stopLoss = -0.045) {
     const percentLoss = divide(holding.pl, holding.netLiq);
-    if (percentLoss < -0.045) {
+    if (percentLoss < stopLoss) {
       this.portfolioSell(holding);
     } else if (percentLoss > 0.01) {
       await this.addBuy(holding);
@@ -1231,27 +1230,25 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (Number(balance.cashBalance) <= 0) {
       this.currentHoldings = await this.cartService.findCurrentPositions();
       this.currentHoldings.forEach(async (holding) => {
-        if (holding.name === 'VTI' || holding.name === 'TQQQ' || holding.name === 'UPRO') {
-          console.log('Selling to create cash position', balance.cashBalance);
-          this.portfolioSell(holding);
-        }
+        await this.checkStopLoss(holding, -0.01);
       });
-    } else {
-      const backtestData = await this.strategyBuilderService.getBacktestData('VTI');
+    } 
+    // else {
+    //   const backtestData = await this.strategyBuilderService.getBacktestData('VTI');
 
-      const price = await this.portfolioService.getPrice('UPRO').toPromise();
-      const balance = await this.portfolioService.getTdBalance().toPromise();
+    //   const price = await this.portfolioService.getPrice('UPRO').toPromise();
+    //   const balance = await this.portfolioService.getTdBalance().toPromise();
 
-      const quantity = this.strategyBuilderService.getQuantity(price, backtestData?.ml || 0.1, balance.cashBalance);
-      const orderSizePct = 1;
+    //   const quantity = this.strategyBuilderService.getQuantity(price, backtestData?.ml || 0.1, balance.cashBalance);
+    //   const orderSizePct = 1;
 
-      const order = this.cartService.buildOrderWithAllocation('UPRO', quantity, price, 'Buy',
-        orderSizePct, null, null,
-        null, 1);
-      console.log('Sending buy', order, 'ml result:', backtestData?.ml);
+    //   const order = this.cartService.buildOrderWithAllocation('UPRO', quantity, price, 'Buy',
+    //     orderSizePct, null, null,
+    //     null, 1);
+    //   console.log('Sending buy', order, 'ml result:', backtestData?.ml);
 
-      this.daytradeService.sendBuy(order, 'limit', () => { }, () => { });
-    }
+    //   this.daytradeService.sendBuy(order, 'limit', () => { }, () => { });
+    // }
   }
 
   updateStockList() {

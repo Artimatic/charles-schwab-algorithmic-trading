@@ -695,10 +695,10 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             const mlLog = `Ml next output: ${this.lastMlResult ? this.lastMlResult.nextOutput : ''}`;
             this.reportingService.addAuditLog(this.order.holding.symbol, mlLog);
             if ((this.lastMlResult && this.lastMlResult.nextOutput > 0.6) || !this.lastMlResult) {
-              if (!this.priceLowerBound || Number(quote) <= Number(this.priceLowerBound)) {
+              if (this.priceLowerBound && Number(quote) > Number(this.priceLowerBound)) {
                 this.daytradeBuy(quote, orderQuantity, timestamp, analysis);
               } else {
-                console.log('Price too high ', Number(quote), ' vs ', Number(this.priceLowerBound));
+                console.log('Price too low ', Number(quote), ' vs ', Number(this.priceLowerBound));
               }
             } else {
               this.priceLowerBound = quote;

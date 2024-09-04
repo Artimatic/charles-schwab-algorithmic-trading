@@ -3,6 +3,7 @@ import * as _ from 'lodash';
 import * as RequestPromise from 'request-promise';
 
 import QuoteService from '../quote/quote.service';
+import PortfolioService from '../portfolio/portfolio.service';
 import ReversionService from '../mean-reversion/reversion.service';
 import DecisionService from '../mean-reversion/reversion-decision.service';
 import BaseErrors from '../../components/errors/baseErrors';
@@ -702,7 +703,7 @@ class BacktestService {
   initDaytradeStrategy(symbol, startDate, currentDate, parameters): Promise<Indicators[]> {
     const minQuotes = parameters.minQuotes;
 
-    return QuoteService.queryForIntraday(symbol, startDate, currentDate)
+    return PortfolioService.getIntradayV3(symbol, moment(startDate).valueOf(), moment(currentDate).valueOf(), null)
       .then(quotes => {
         if (quotes.length === 0) {
           console.log(`No quotes returned for ${startDate} - ${currentDate}`);
