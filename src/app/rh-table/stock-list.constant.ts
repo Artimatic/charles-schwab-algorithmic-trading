@@ -142,7 +142,6 @@ const fullList = [
     'CRMT',
     'COST',
     'COKE',
-    'GOOGL',
     'CHTR',
     'NUE'];
 
