@@ -584,6 +584,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.modifyCurrentHoldings();
     await this.checkPersonalLists();
     await this.hedge();
+    const balance = await this.machineDaytradingService.getPortfolioBalance().toPromise();
+    if (balance.liquidationValue < 30000) {
+      await this.getNewTrades();
+      return;
+    }
     await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs, this.currentHoldings);
     await this.addStrangleToList();
     // await this.optionsOrderBuilderService.createTradingPair();

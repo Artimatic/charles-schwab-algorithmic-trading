@@ -267,9 +267,9 @@ export class CartService {
       lossThreshold: lossThreshold,
       profitTarget: profitTarget,
       trailingStop: trailingStop,
-      useStopLoss: true,
-      useTrailingStopLoss: true,
-      useTakeProfit: true,
+      useStopLoss: side.toLowerCase() === 'daytrade' ? true : false,
+      useTrailingStopLoss: side.toLowerCase() === 'daytrade' ? true : false,
+      useTakeProfit: side.toLowerCase() === 'daytrade' ? true : false,
       sellAtClose: (side.toLowerCase() === 'sell' || side.toLowerCase() === 'daytrade') ? true : false,
       // sellAtClose: false,
       allocation
