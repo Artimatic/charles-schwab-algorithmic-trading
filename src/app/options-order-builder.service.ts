@@ -91,7 +91,7 @@ export class OptionsOrderBuilderService {
                   let initialCallQuantity = (callPrice > putPrice) ? 1 : multiple;
                   let initialPutQuantity = (callPrice > putPrice) ? multiple : 1;
                   const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple);
-                  if (callQuantity + putQuantity < 7) {
+                  if (callQuantity + putQuantity < 20) {
                     bullishStrangle.call.quantity = callQuantity;
                     bearishStrangle.put.quantity = putQuantity;
                     const availableFunds = await this.cartService.getAvailableFunds(true);
@@ -130,8 +130,8 @@ export class OptionsOrderBuilderService {
   }
 
   getCallPutQuantities(callPrice, callQuantity, putPrice, putQuantity, multiple) {
-    while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > 500 &&
-      callQuantity + putQuantity < 15) {
+    while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > 200 &&
+      callQuantity + putQuantity < 20) {
       if (callPrice > putPrice) {
         callQuantity++;
         putQuantity *= multiple;
@@ -213,7 +213,7 @@ export class OptionsOrderBuilderService {
       backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
     }
     if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
-      if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.90)) {
+      if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.85)) {
         return true;
       }
     }
