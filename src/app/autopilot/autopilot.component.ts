@@ -130,7 +130,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   destroy$ = new Subject();
   currentHoldings: PortfolioInfoHolding[] = [];
   strategyCounter = null;
-  maxTradeCount = 10;
+  maxTradeCount = 11;
   maxHoldings = 15;
   developedStrategy = false;
   tradingPairsCounter = 0;
@@ -368,13 +368,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           const backtestData = await this.strategyBuilderService.getBacktestData(holding.name);
           if (callPutInd === 'c') {
             orderType = OrderTypes.call;
-            if (shouldSell || (backtestData && backtestData.ml < 0.4 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'))) {
+            if (shouldSell || (backtestData && backtestData.ml < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'))) {
               const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
               this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell');
             }
           } else if (callPutInd === 'p') {
             orderType = OrderTypes.put;
-            if (shouldSell || (backtestData && backtestData.ml > 0.6 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY'))) {
+            if (shouldSell || (backtestData && backtestData.ml > 0.5 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY'))) {
               const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
               this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell');
             }
@@ -390,28 +390,34 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       this.tradingPairsCounter = 0;
     }
     const trade = this.tradingPairs[this.tradingPairsCounter];
-    if (trade.length === 1) {
-      const price = await this.backtestService.getLastPriceTiingo({ symbol: trade[0].holding.symbol }).toPromise();
-      const lastPrice = price[trade[0].holding.symbol].quote.lastPrice;
-      const closePrice = price[trade[0].holding.symbol].quote.closePrice;
-      const backtestResults = await this.strategyBuilderService.getBacktestData(trade[0].holding.symbol);
+    if (trade) {
+      if (trade.length === 1) {
+        if (trade[0].type === OrderTypes.strangle) {
+          const price = await this.backtestService.getLastPriceTiingo({ symbol: trade[0].holding.symbol }).toPromise();
+          const lastPrice = price[trade[0].holding.symbol].quote.lastPrice;
+          const closePrice = price[trade[0].holding.symbol].quote.closePrice;
+          const backtestResults = await this.strategyBuilderService.getBacktestData(trade[0].holding.symbol);
 
-      if (!backtestResults.averageMove) {
-        backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
-      }
-      if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
-        if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.80)) {
-          this.cartService.addToCart(trade[0]);
+          if (!backtestResults.averageMove) {
+            backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
+          }
+          if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
+            if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.80)) {
+              this.cartService.addToCart(trade[0]);
+            }
+          }
+        }
+      } else if (trade.length === 2 && trade[0] && trade[1]) {
+        const shouldBuyCall = await this.optionsOrderBuilderService.shouldBuyOption(trade[0].holding.symbol);
+        const shouldBuyPut = await this.optionsOrderBuilderService.shouldBuyOption(trade[1].holding.symbol);
+        if (shouldBuyCall && shouldBuyPut) {
+          const tradePairOrder = trade[0];
+          tradePairOrder.secondaryLegs = trade[1].primaryLegs;
+          this.cartService.addToCart(tradePairOrder);
         }
       }
-    } else if (trade.length === 2) {
-      const shouldBuyCall = await this.optionsOrderBuilderService.shouldBuyOption(trade[0].holding.symbol);
-      const shouldBuyPut = await this.optionsOrderBuilderService.shouldBuyOption(trade[1].holding.symbol);
-      if (shouldBuyCall && shouldBuyPut) {
-        const tradePairOrder = trade[0];
-        tradePairOrder.secondaryLegs = trade[1].primaryLegs;
-        this.cartService.addToCart(tradePairOrder);
-      }
+    } else {
+      console.log('Issue with trade pair', this.tradingPairsCounter, this.tradingPairs);
     }
     this.tradingPairsCounter++;
   }
@@ -1237,7 +1243,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       this.currentHoldings.forEach(async (holding) => {
         await this.checkStopLoss(holding, -0.01);
       });
-    } 
+    }
     // else {
     //   const backtestData = await this.strategyBuilderService.getBacktestData('VTI');
 
@@ -1443,11 +1449,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
       }
       if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
-        if (isStrangle && Math.abs(lastPrice - closePrice) > (backtestResults.averageMove * 1.15)) {
+        if (isStrangle && Math.abs(lastPrice - closePrice) > (backtestResults.averageMove * 1.20)) {
           return true;
-        } else if (putCallInd === 'c' && lastPrice - closePrice < (backtestResults.averageMove * -1.15)) {
+        } else if (putCallInd === 'c' && lastPrice - closePrice < (backtestResults.averageMove * -1.20)) {
           return true;
-        } else if (putCallInd === 'p' && lastPrice - closePrice > (backtestResults.averageMove * 1.15)) {
+        } else if (putCallInd === 'p' && lastPrice - closePrice > (backtestResults.averageMove * 1.20)) {
           return true;
         }
       }
