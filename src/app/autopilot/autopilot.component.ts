@@ -3,7 +3,7 @@ import { DailyBacktestService } from '@shared/daily-backtest.service';
 import { SmartOrder } from '@shared/index';
 import { Options } from '@shared/models/options';
 import { Trade } from '@shared/models/trade';
-import { BacktestService, CartService, DaytradeService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
+import { BacktestService, CartService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
 import { AiPicksPredictionData } from '@shared/services/ai-picks.service';
 import { ScoringIndex } from '@shared/services/score-keeper.service';
 import { AlgoQueueItem } from '@shared/services/trade.service';
@@ -1035,6 +1035,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async checkStopLoss(holding: PortfolioInfoHolding, stopLoss = -0.045) {
     const percentLoss = divide(holding.pl, holding.netLiq);
+    const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
+    const price = await this.backtestService.getLastPriceTiingo({ symbol: holding.name }).toPromise();
+    const lastPrice = price[holding.name].quote.lastPrice;
+
+    if (backtestResults.averageMove) {
+      stopLoss = (backtestResults.averageMove/lastPrice) * -3;
+      console.log(`Using average move(${backtestResults.averageMove}) to set stop loss(${stopLoss})`);
+    }
     if (percentLoss < stopLoss) {
       this.portfolioSell(holding);
     } else if (percentLoss > 0.01) {
