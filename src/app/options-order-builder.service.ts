@@ -79,19 +79,19 @@ export class OptionsOrderBuilderService {
           underlying: buy
         };
         let currentPut = null;
-        if (callPrice > 300) {
+        if (callPrice > 300 && callPrice < 8000) {
           for (const sell of sellList) {
             if (!currentHoldings || !currentHoldings.find(holding => holding.name === sell)) {
               const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
               const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
-              if (putPrice > 300) {
+              if (putPrice > 300 && putPrice < 8000) {
                 const sellOptionsData = await this.optionsDataService.getImpliedMove(sell).toPromise();
                 if (sellOptionsData && sellOptionsData.move && sellOptionsData.move < 0.15) {
                   const multiple = (callPrice > putPrice) ? Math.round(callPrice / putPrice) : Math.round(putPrice / callPrice);
                   let initialCallQuantity = (callPrice > putPrice) ? 1 : multiple;
                   let initialPutQuantity = (callPrice > putPrice) ? multiple : 1;
                   const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple);
-                  if (callQuantity + putQuantity < 20) {
+                  if (callQuantity + putQuantity < 25) {
                     bullishStrangle.call.quantity = callQuantity;
                     bearishStrangle.put.quantity = putQuantity;
                     const availableFunds = await this.cartService.getAvailableFunds(true);
@@ -131,7 +131,7 @@ export class OptionsOrderBuilderService {
 
   getCallPutQuantities(callPrice, callQuantity, putPrice, putQuantity, multiple) {
     while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > 200 &&
-      callQuantity + putQuantity < 20) {
+      callQuantity + putQuantity < 25) {
       if (callPrice > putPrice) {
         callQuantity++;
         putQuantity *= multiple;

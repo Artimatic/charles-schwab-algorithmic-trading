@@ -86,8 +86,6 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   selectedAlgorithm: FormControl;
   algorithmList: any[];
 
-  currentBalance: number;
-
   settingsVisible = false;
   startingPrice = null;
 
@@ -620,19 +618,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     } else if (this.order.type === OrderTypes.call) {
       if (this.firstFormGroup.value.orderType.toLowerCase() === 'buy' && analysis.recommendation.toLowerCase() === 'buy') {
         if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
-          this.machineDaytradingService.getPortfolioBalance().subscribe(async (balance) => {
-            this.currentBalance = balance.cashBalance;
-            const usage = (balance.liquidationValue - this.currentBalance) / balance.liquidationValue;
-            if (usage < 1) {
-              this.incrementBuy();
-              if (this.order.secondaryLegs) {
-                await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity || 1);
-                await this.orderHandlingService.buyOption(this.order.secondaryLegs[0].symbol, this.order.secondaryLegs[0].quantity || 1); 
-              } else {
-                await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize || 1);
-              }
-            }
-          });
+          await this.buyOptions();
         }
       } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'sell') {
         console.log(`Sell call ${this.order.primaryLegs[0].symbol} ${this.startingPrice} ${quote} ${this.startingPrice}`);
@@ -643,19 +629,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       }
     } else if (this.order.type === OrderTypes.put) {
       if (this.firstFormGroup.value.orderType.toLowerCase() === 'buy' && analysis.recommendation.toLowerCase() === 'sell') {
-        this.machineDaytradingService.getPortfolioBalance().subscribe(async (balance) => {
-          this.currentBalance = balance.cashBalance;
-          const usage = (balance.liquidationValue - this.currentBalance) / balance.liquidationValue;
-          if (usage < 1) {
-            this.incrementBuy();
-            if (this.order.secondaryLegs) {
-              await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity || 1);
-              await this.orderHandlingService.buyOption(this.order.secondaryLegs[0].symbol, this.order.secondaryLegs[0].quantity || 1); 
-            } else {
-              await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize || 1);
-            }
-          }
-        });
+        await this.buyOptions();
       } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'buy') {
         if ((Math.abs(this.startingPrice - quote) / this.startingPrice) > 0.01) {
           await this.sellOptions();
@@ -664,8 +638,8 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     } else if (this.order.type === OrderTypes.protectivePut && analysis.recommendation.toLowerCase() === 'sell') {
       if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
         this.machineDaytradingService.getPortfolioBalance().subscribe(async (balance) => {
-          this.currentBalance = balance.cashBalance;
-          const usage = (balance.liquidationValue - this.currentBalance) / balance.liquidationValue;
+          const currentBalance = balance.cashBalance;
+          const usage = (balance.liquidationValue - currentBalance) / balance.liquidationValue;
           if (usage < 1) {
             this.incrementBuy();
             this.buyProtectivePut();
@@ -677,8 +651,8 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     } else if (analysis.recommendation.toLowerCase() === 'buy') {
       if (daytradeType === 'buy' || this.isDayTrading()) {
         this.machineDaytradingService.getPortfolioBalance().subscribe((balance) => {
-          this.currentBalance = this.isDayTrading() ? balance.availableFunds : balance.cashBalance;
-          const usage = (balance.liquidationValue - this.currentBalance) / balance.liquidationValue;
+          const currentBalance = this.isDayTrading() ? balance.availableFunds : balance.cashBalance;
+          const usage = (balance.liquidationValue - currentBalance) / balance.liquidationValue;
           if (usage < 1) {
             const log = `${moment().format()} Received buy recommendation`;
             this.reportingService.addAuditLog(this.order.holding.symbol, log);
@@ -688,26 +662,25 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
               this.order.buyCount,
               this.order.positionCount);
             const tradeCost = orderQuantity * quote;
-            if (tradeCost > this.currentBalance) {
-              orderQuantity = Math.floor((this.currentBalance * this.order.allocation) / quote) | 1;
-            }
-
-            const mlLog = `Ml next output: ${this.lastMlResult ? this.lastMlResult.nextOutput : ''}`;
-            this.reportingService.addAuditLog(this.order.holding.symbol, mlLog);
-            if ((this.lastMlResult && this.lastMlResult.nextOutput > 0.6) || !this.lastMlResult) {
-              if (this.priceLowerBound && Number(quote) > Number(this.priceLowerBound)) {
-                this.daytradeBuy(quote, orderQuantity, timestamp, analysis);
+            if (tradeCost > currentBalance) {
+              orderQuantity = Math.floor((currentBalance * this.order.allocation) / quote);
+              const mlLog = `Ml next output: ${this.lastMlResult ? this.lastMlResult.nextOutput : ''}`;
+              this.reportingService.addAuditLog(this.order.holding.symbol, mlLog);
+              if ((this.lastMlResult && this.lastMlResult.nextOutput > 0.6) || !this.lastMlResult) {
+                if (this.priceLowerBound && Number(quote) > Number(this.priceLowerBound)) {
+                  this.daytradeBuy(quote, orderQuantity, timestamp, analysis);
+                } else {
+                  console.log('Price too low ', Number(quote), ' vs ', Number(this.priceLowerBound));
+                }
               } else {
-                console.log('Price too low ', Number(quote), ' vs ', Number(this.priceLowerBound));
+                this.priceLowerBound = quote;
+                this.messageService.add({
+                  severity: 'success',
+                  summary: this.order.holding.symbol,
+                  detail: `Buy recommendation at ${moment().format('hh:mm')}`,
+                  life: 300000
+                });
               }
-            } else {
-              this.priceLowerBound = quote;
-              this.messageService.add({
-                severity: 'success',
-                summary: this.order.holding.symbol,
-                detail: `Buy recommendation at ${moment().format('hh:mm')}`,
-                life: 300000
-              });
             }
           }
         });
@@ -1009,10 +982,10 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     console.log(`Sell option ${symbol}`);
     this.incrementSell();
     this.daytradeService.estimateSellProfitLoss(symbol)
-    .subscribe(pl => {
-      this.scoreKeeperService.resetProfitLoss(symbol);
-      this.scoreKeeperService.addProfitLoss(symbol, pl);
-    });
+      .subscribe(pl => {
+        this.scoreKeeperService.resetProfitLoss(symbol);
+        this.scoreKeeperService.addProfitLoss(symbol, pl);
+      });
     const resolve = (response) => {
       const log = `Sell option sent ${this.order.orderSize} ${symbol}`;
       console.log(`${moment().format('hh:mm')} ${log}`);
@@ -1047,25 +1020,55 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   async buyStrangle() {
-    this.incrementBuy();
-    const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(this.order.holding.symbol);
-    // const price = bullishStrangle.call.bid + bullishStrangle.put.bid;
-    const price = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) +
-      this.strategyBuilderService.findOptionsPrice(bullishStrangle.put.bid, bullishStrangle.put.ask);
-
-    const orderQuantity = this.order.orderSize;
-    this.reportingService.addAuditLog(this.order.holding.symbol, `Buying ${bullishStrangle.call.symbol + ', ' + bullishStrangle.put.symbol}`);
-
-    this.portfolioService.sendTwoLegOrder(bullishStrangle.call.symbol,
-      bullishStrangle.put.symbol, orderQuantity, price, false).subscribe();
+    this.machineDaytradingService.getPortfolioBalance().subscribe(async (balance) => {
+      const currentBalance = balance.cashBalance;
+      const usage = (balance.liquidationValue - currentBalance) / balance.liquidationValue;
+      if (usage < 1) {
+        const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(this.order.holding.symbol);
+        // const price = bullishStrangle.call.bid + bullishStrangle.put.bid;
+        const price = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) +
+          this.strategyBuilderService.findOptionsPrice(bullishStrangle.put.bid, bullishStrangle.put.ask);
+    
+        const orderQuantity = this.order.orderSize;
+        if (price * orderQuantity < currentBalance) {
+          this.incrementBuy();
+          this.reportingService.addAuditLog(this.order.holding.symbol, `Buying ${bullishStrangle.call.symbol + ', ' + bullishStrangle.put.symbol}`);
+          this.portfolioService.sendTwoLegOrder(bullishStrangle.call.symbol,
+            bullishStrangle.put.symbol, orderQuantity, price, false).subscribe();
+        }
+      }
+    });
   }
 
   async buyProtectivePut() {
     await this.strategyBuilderService.buyProtectivePut(this.order.holding.symbol, this.order.orderSize)
   }
 
-  submitChanges() {
+  async buyOptions() {
+    this.machineDaytradingService.getPortfolioBalance().subscribe(async (balance) => {
+      const currentBalance = balance.cashBalance;
+      const usage = (balance.liquidationValue - currentBalance) / balance.liquidationValue;
+      if (usage < 1) {
+        const primaryLegPrice = await this.orderHandlingService.getEstimatedPrice(this.order.primaryLegs[0].symbol);
+        if (this.order.secondaryLegs) {
+          const secondaryLegPrice = await this.orderHandlingService.getEstimatedPrice(this.order.secondaryLegs[0].symbol);
+          if ((primaryLegPrice * this.order.primaryLegs[0].quantity) + (secondaryLegPrice * this.order.secondaryLegs[0].quantity) < currentBalance) {
+            this.incrementBuy();
+            this.reportingService.addAuditLog(this.order.holding.symbol, `Buying ${this.order.primaryLegs[0].quantity} ${this.order.primaryLegs[0].symbol}`);
+            this.reportingService.addAuditLog(this.order.holding.symbol, `Buying ${this.order.secondaryLegs[0].quantity} ${this.order.secondaryLegs[0].symbol}`);
 
+            await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity || 1, primaryLegPrice);
+            await this.orderHandlingService.buyOption(this.order.secondaryLegs[0].symbol, this.order.secondaryLegs[0].quantity || 1, secondaryLegPrice);
+          }
+        } else {
+          if ((primaryLegPrice * this.order.primaryLegs[0].quantity) < currentBalance) {
+            this.incrementBuy();
+            this.reportingService.addAuditLog(this.order.holding.symbol, `Buying ${this.order.orderSize} ${this.order.primaryLegs[0].symbol}`);
+            await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize || 1);
+          }
+        }
+      }
+    });
   }
 
   ngOnDestroy() {
