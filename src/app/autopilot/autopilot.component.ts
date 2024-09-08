@@ -271,19 +271,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     this.multibuttonOptions = [
       {
-        label: 'Sell options',
-        command: async () => {
-          this.currentHoldings = await this.cartService.findCurrentPositions();
-          await this.checkCurrentOptions();
-        }
-      },
-      {
-        label: 'Hedge',
-        command: () => {
-          this.hedge();
-        }
-      },
-      {
         label: 'Sell All',
         command: async () => {
           await this.sellAll();
@@ -433,7 +420,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const startStopTime = this.globalSettingsService.getStartStopTime();
         if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 25) {
           this.lastCredentialCheck = moment();
-          await this.findNewTrade(true, false);
+          await this.backtestOneStock(true, false);
         } else if (moment().isAfter(moment(startStopTime.endDateTime).subtract(8, 'minutes')) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
           if (!this.boughtAtClose) {
@@ -481,7 +468,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           }
         } else {
           if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 3) {
-            await this.findNewTrade(false, false);
+            await this.backtestOneStock(false, false);
             this.startFindingTrades();
           }
         }
@@ -602,12 +589,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     switch (this.strategyList[this.strategyCounter]) {
       case Strategy.OptionsStrangle:
         await this.findStrangleTrade();
+        await this.getNewTrades(null, null, 1);
         break;
       case Strategy.TradingPairs:
         await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs);
+        await this.getNewTrades(null, null, 1);
         break;
       case Strategy.Swingtrade:
-        await this.findNewTrade(true);
+        await this.backtestOneStock(true);
         break;
       case Strategy.TrimHoldings:
         this.trimHoldings();
@@ -736,7 +725,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
   }
 
-  async getNewTrades(cb = null, list = null) {
+  async getNewTrades(cb = null, list = null, maxTradeCount = this.maxTradeCount) {
     this.findPatternService.buildTargetPatterns();
     if (list) {
       this.machineDaytradingService.setCurrentStockList(list);
@@ -748,7 +737,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       return Boolean(this.currentHoldings.find((value) => value.name === name));
     };
     let counter = this.machineDaytradingService.getCurrentStockList().length;
-    while (counter > 0 && (this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.maxTradeCount) {
+    while (counter > 0 && (this.cartService.buyOrders.length + this.cartService.otherOrders.length) < maxTradeCount) {
       do {
         stock = this.machineDaytradingService.getNextStock();
       } while (found(stock))
@@ -806,7 +795,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     });
   }
 
-  async findNewTrade(overwrite = false, addTrade = true) {
+  async backtestOneStock(overwrite = false, addTrade = true) {
     try {
       let stock = this.machineDaytradingService.getNextStock();
       while (Boolean(this.currentHoldings.find((value) => value.name === stock))) {
@@ -1053,8 +1042,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
   }
 
-  checkIfTooManyHoldings(currentHoldings: any[]) {
-    if (currentHoldings.length > this.maxTradeCount) {
+  checkIfTooManyHoldings(currentHoldings: any[], maxHoldings = this.maxTradeCount) {
+    if (currentHoldings.length > maxHoldings) {
       currentHoldings.sort((a, b) => a.pl - b.pl);
       const toBeSold = currentHoldings.slice(0, 1);
       console.log('too many holdings. selling', toBeSold, 'from', currentHoldings);
@@ -1082,10 +1071,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async buildBuyOrder(holding: PortfolioInfoHolding,
     allocation: number,
     profitThreshold: number = null,
-    stopLossThreshold: number = null,
-    useCashBalance = true) {
+    stopLossThreshold: number = null) {
     const price = await this.portfolioService.getPrice(holding.name).toPromise();
-    const cash = await this.cartService.getAvailableFunds(useCashBalance);
+    const cash = await this.cartService.getAvailableFunds(false);
     const quantity = this.strategyBuilderService.getQuantity(price, allocation, cash);
     const orderSizePct = (this.riskToleranceList[this.riskCounter] > 0.5) ? 0.5 : 0.3;
     const order = this.cartService.buildOrderWithAllocation(holding.name, quantity, price, 'Buy',
@@ -1240,9 +1228,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     if (Number(balance.cashBalance) <= 0) {
       this.currentHoldings = await this.cartService.findCurrentPositions();
-      this.currentHoldings.forEach(async (holding) => {
-        await this.checkStopLoss(holding, -0.01);
-      });
+      // this.currentHoldings.forEach(async (holding) => {
+      //   await this.checkStopLoss(holding, -0.01);
+      // });
+
+      // this.trimHoldings();
+      this.checkIfTooManyHoldings(this.currentHoldings, 5);
     }
     // else {
     //   const backtestData = await this.strategyBuilderService.getBacktestData('VTI');

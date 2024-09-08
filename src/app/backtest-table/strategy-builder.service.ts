@@ -168,7 +168,7 @@ export class StrategyBuilderService {
     return !prevObj || (currTotalVolume > prevObj.totalVolume);
   }
 
-  async getCallStrangleTrade(symbol: string, minExpiration = 65): Promise<Strangle> {
+  async getCallStrangleTrade(symbol: string, minExpiration = 60): Promise<Strangle> {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     const optionsChain = optionsData.optionsChain;
     const impliedMovement = optionsData.move;
