@@ -23,7 +23,7 @@ export interface ComplexStrategy {
 })
 export class StrategyBuilderService {
   orderHistory = {};
-  correlationThreshold = 0.65;
+  correlationThreshold = 0.55;
   sumNet = 0;
   countNet = 0;
 
@@ -370,11 +370,11 @@ export class StrategyBuilderService {
       const pairs = tradingPairs[key];
       const bObj = backtests[key];
       if (bObj !== undefined && bObj !== null && bObj.ml !== null) {
-        if ((!bObj.optionsChainLength || bObj.optionsChainLength > 10) && (bObj.buySignals.length > bObj.sellSignals.length || bObj.recommendation.toLowerCase() === 'buy')) {
-          if (bObj.ml > 0.6) {
+        if ((!bObj.optionsChainLength || bObj.optionsChainLength > 10) && (bObj.buySignals.length > bObj.sellSignals.length || bObj.recommendation.toLowerCase() === 'strongbuy')) {
+          if (bObj.ml > 0.5) {
             for (const pairVal of pairs) {
               if (pairVal !== null && backtests[pairVal.symbol] && backtests[pairVal.symbol].ml !== null && (!backtests[pairVal.symbol].optionsChainLength || backtests[pairVal.symbol].optionsChainLength > 10)) {
-                if (backtests[pairVal.symbol].ml < 0.4 && (bObj.sellSignals.length > bObj.buySignals.length || bObj.recommendation.toLowerCase() === 'sell')) {
+                if (backtests[pairVal.symbol].ml < 0.5 && (bObj.sellSignals.length > bObj.buySignals.length || bObj.recommendation.toLowerCase() === 'strongsell')) {
                   const trade = {
                     name: `${bObj.stock} Pair trade`,
                     date: moment().format(),
@@ -429,7 +429,7 @@ export class StrategyBuilderService {
           storage.push(trade)
         }
 
-        storage = storage.filter(s => moment().diff(moment(s.date), 'days') < 7);
+        storage = storage.filter(s => moment().diff(moment(s.date), 'days') < 15);
         this.setTradingStrategies(storage);
       } else {
         const newStorageObj = [trade];

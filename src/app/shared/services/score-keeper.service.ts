@@ -48,7 +48,7 @@ export class ScoreKeeperService {
     if (isSell) {
       this.addSell(stock, sum);
     }
-    const log = `${this.profitLossHash[stock].toFixed(2)}`;
+    const log = `Sold pnl: ${this.profitLossHash[stock].toFixed(2)}`;
     this.reportingService.addAuditLog(stock, log);
   }
 

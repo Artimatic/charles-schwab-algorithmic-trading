@@ -26,7 +26,7 @@ export class CartService {
     private globalSettingsService: GlobalSettingsService,
     private messageService: MessageService) { }
 
-  addToCart(order: SmartOrder, replaceAnyExistingOrders = false) {
+  addToCart(order: SmartOrder, replaceAnyExistingOrders = false, reason = '') {
     this.machineLearningService
       .trainDaytrade(order.holding.symbol.toUpperCase(),
         moment().add({ days: 1 }).format('YYYY-MM-DD'),
@@ -52,7 +52,7 @@ export class CartService {
       } else if (indices[2] > -1) {
         this.deleteDaytrade(this.buildOrder(order.holding.symbol, null, null, 'daytrade'));
       }
-      this.addOrder(order);
+      this.addOrder(order, reason);
     }
 
     if (noDup && order.quantity > 0) {
@@ -143,7 +143,25 @@ export class CartService {
     this.cartObserver.next(true);
   }
 
-  addOrder(order: SmartOrder) {
+  addOrder(order: SmartOrder, reason: string) {
+    let log = `${order.side} ${order.quantity} ${order.holding.name}`;
+    if (order.primaryLeg) {
+      log += `${order.side} ${order.primaryLeg.quantity} ${order.primaryLeg.symbol}`;
+    }
+    if (order.secondaryLeg) {
+      log += `${order.side} ${order.secondaryLeg.quantity} ${order.secondaryLeg.symbol}`;
+    }
+    if (order.primaryLegs) {
+      order.primaryLegs.forEach(leg => {
+        log += `${order.side} ${leg.quantity} ${leg.symbol}`;
+      });
+    }
+    if (order.secondaryLegs) {
+      order.secondaryLegs.forEach(leg => {
+        log += `${order.side} ${leg.quantity} ${leg.symbol}`;
+      });
+    }
+    this.reportingService.addAuditLog(order.holding.symbol, log, reason);
     switch (order.side.toLowerCase()) {
       case 'sell':
         this.sellOrders.push(order);
@@ -349,37 +367,26 @@ export class CartService {
     }
   }
   async addOptionOrder(symbol: string,
-    primaryLegs: Options[],
-    price: number,
-    quantity: number,
-    optionType,
-    side = 'Buy') {
+    primaryLegs: Options[], price: number,
+    quantity: number, optionType,
+    side = 'Buy', reason: string) {
     const order = await this.createOptionOrder(symbol, primaryLegs, price, quantity, optionType, side);
     if (order) {
-      this.addToCart(order);
+      this.addToCart(order, true, reason);
     }
   }
 
   removeCompletedOrders() {
     this.buyOrders = this.buyOrders.filter(order => {
       const keep = !order.stopped && order.buyCount < order.quantity;
-      if (!keep) {
-        this.reportingService.addAuditLog(order.holding.symbol, `Removing finished buy order ${order.holding.symbol}`);
-      }
       return keep;
     });
     this.sellOrders = this.sellOrders.filter(order => {
       const keep = !order.stopped && order.sellCount < order.quantity;
-      if (!keep) {
-        this.reportingService.addAuditLog(order.holding.symbol, `Removing finished sell order ${order.holding.symbol}`);
-      }
       return keep;
     });
     this.otherOrders = this.otherOrders.filter(order => {
       const keep = !order.stopped && order.buyCount + order.sellCount < (order.quantity * 2);
-      if (!keep) {
-        this.reportingService.addAuditLog(order.holding.symbol, `Removing finished order ${order.holding.symbol}`);
-      }
       return keep;
     });
     this.cartObserver.next(true);
