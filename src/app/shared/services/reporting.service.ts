@@ -10,9 +10,9 @@ export class ReportingService {
 
   constructor(private excelService: ExcelService) { }
 
-  addAuditLog(symbol, message) {
+  addAuditLog(symbol, message, reason = '') {
     const currentTime = moment().format('DD.MM.YYYY hh:mm');
-    const log = { time: currentTime, symbol: symbol, message: message };
+    const log = { time: currentTime, symbol: symbol, message: message, reason: reason };
     this.logs.push(log);
     return log;
   }

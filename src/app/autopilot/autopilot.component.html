@@ -36,6 +36,7 @@
         <p-button label="Stop" icon="pi pi-times" *ngIf="display" styleClass="p-button-danger" (click)="stop()"></p-button>
         <p-splitButton label="Change strategy" (onClick)="changeStrategy()" [model]="multibuttonOptions" styleClass="ui-button-success"></p-splitButton>
         <p-button label="Update stock list" styleClass="p-button-warn" (click)="updateStockList()"></p-button>
+        <p-button label="Show strategies" styleClass="p-button-warn" (click)="showStrategies()"></p-button>
         <app-default-order-lists class="default-orders-button"></app-default-order-lists>
     </div>
 </p-toolbar>

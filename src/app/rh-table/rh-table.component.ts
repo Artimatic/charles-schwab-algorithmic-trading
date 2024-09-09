@@ -926,7 +926,7 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
           return algo.toLowerCase().includes(searchTextLowerCase);
         });
 
-        return foundBuy || foundSell || stock.stock.includes(searchTextLowerCase);
+        return foundBuy || foundSell || stock.stock.toLowerCase().includes(searchTextLowerCase);
       });
     }
   }

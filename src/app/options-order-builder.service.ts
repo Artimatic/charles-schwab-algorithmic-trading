@@ -53,7 +53,9 @@ export class OptionsOrderBuilderService {
           console.log('Protective put price is too low', estimatedPrice);
           return;
         }
-        this.cartService.addOptionOrder(holding.name, [putOption.put], estimatedPrice, putsNeeded, OrderTypes.protectivePut);
+        this.cartService.addOptionOrder(holding.name, [putOption.put], 
+          estimatedPrice, putsNeeded, OrderTypes.protectivePut, 'Buy', 
+          'Adding protective put');
       }
     }
   }
