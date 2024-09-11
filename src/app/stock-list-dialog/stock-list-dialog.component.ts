@@ -26,7 +26,7 @@ export class StockListDialogComponent implements OnInit {
   ngOnInit(): void {
     this.listType = [
       { label: 'Full list', value: 'full' },
-      { label: 'Buy list', value: 'buy' },
+      { label: 'Bullish', value: 'buy' },
       { label: 'Bearish', value: 'sell' }
     ];
     this.activeList = this.listType[0];

@@ -29,6 +29,7 @@ import { FindPatternService } from '../strategies/find-pattern.service';
 import { AddOptionsTradeComponent } from './add-options-trade/add-options-trade.component';
 import { FindDaytradeService } from './find-daytrade.service';
 import { OrderTypes } from '@shared/models/smart-order';
+import { PersonalBearishPicks } from '../rh-table/backtest-stocks.constant';
 
 export interface PositionHoldings {
   name: string;
@@ -1345,8 +1346,18 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         };
         if (backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.5) {
           await this.addBuy(stock);
-        } else {
-          await this.addBuy(stock, RiskTolerance.Zero);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    });
+
+    PersonalBearishPicks.forEach(async (stock) => {
+      const name = stock.ticker;
+      try {
+        const backtestResults = await this.strategyBuilderService.getBacktestData(name);
+        if (backtestResults && backtestResults.ml !== null && backtestResults.ml < 0.5 && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL')) {
+          this.optionsOrderBuilderService.balanceTrades(this.tradingPairs, this.currentHoldings, ['SPY'], [name]);
         }
       } catch (error) {
         console.log(error);

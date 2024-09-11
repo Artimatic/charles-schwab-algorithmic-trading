@@ -146,19 +146,19 @@ export class CartService {
   addOrder(order: SmartOrder, reason: string) {
     let log = `${order.side} ${order.quantity} ${order.holding.name}`;
     if (order.primaryLeg) {
-      log += `${order.side} ${order.primaryLeg.quantity} ${order.primaryLeg.symbol}`;
+      log += `Primary leg: ${order.side} ${order.primaryLeg.quantity} ${order.primaryLeg.symbol} `;
     }
     if (order.secondaryLeg) {
-      log += `${order.side} ${order.secondaryLeg.quantity} ${order.secondaryLeg.symbol}`;
+      log += `Secondary leg: ${order.side} ${order.secondaryLeg.quantity} ${order.secondaryLeg.symbol} `;
     }
     if (order.primaryLegs) {
       order.primaryLegs.forEach(leg => {
-        log += `${order.side} ${leg.quantity} ${leg.symbol}`;
+        log += `Primary legs ${order.side} ${leg.quantity} ${leg.symbol} `;
       });
     }
     if (order.secondaryLegs) {
       order.secondaryLegs.forEach(leg => {
-        log += `${order.side} ${leg.quantity} ${leg.symbol}`;
+        log += `Secondary legs ${order.side} ${leg.quantity} ${leg.symbol} `;
       });
     }
     this.reportingService.addAuditLog(order.holding.symbol, log, reason);
