@@ -14,6 +14,7 @@ const fullList = [
     'CVX',
     'PFE',
     'BAC',
+    'PANW',
     'KO',
     'VZ',
     'ORCL',

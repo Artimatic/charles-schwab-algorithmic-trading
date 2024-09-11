@@ -3,7 +3,7 @@ import { DailyBacktestService } from '@shared/daily-backtest.service';
 import { SmartOrder } from '@shared/index';
 import { Options } from '@shared/models/options';
 import { Trade } from '@shared/models/trade';
-import { BacktestService, CartService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
+import { BacktestService, CartService, DaytradeService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
 import { AiPicksPredictionData } from '@shared/services/ai-picks.service';
 import { ScoringIndex } from '@shared/services/score-keeper.service';
 import { AlgoQueueItem } from '@shared/services/trade.service';
@@ -225,7 +225,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private pricingService: PricingService,
     private daytradeStrategiesService: DaytradeStrategiesService,
     private orderHandlingService: OrderHandlingService,
-    private optionsOrderBuilderService: OptionsOrderBuilderService
+    private optionsOrderBuilderService: OptionsOrderBuilderService,
+    private daytradeService: DaytradeService
   ) { }
 
   ngOnInit(): void {
@@ -353,7 +354,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             if (shouldSell || (backtestData && backtestData.ml < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'))) {
               const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
               const reason = shouldSell ? 'Should sell options' : 'Backtest recommends selling';
-              const foundTradingPair = this.tradingPairs.find(pair => pair.find(trade => trade.primaryLegs[0].symbol === holding.primaryLegs[0].symbol && trade.primaryLegs[0].quantity === holding.primaryLegs[0].quantity));
+              const foundTradingPair = this.tradingPairs.find(pair => pair.find(trade => trade.primaryLegs && trade.primaryLegs[0].symbol === holding.primaryLegs[0].symbol && trade.primaryLegs[0].quantity === holding.primaryLegs[0].quantity));
               if (foundTradingPair && foundTradingPair.every(p => this.currentHoldings.find((holding) => holding.primaryLegs[0].symbol === p.primaryLegs[0].symbol && holding.primaryLegs[0].quantity === p.primaryLegs[0].quantity))) {
                 foundTradingPair.forEach(pair => {
                   this.cartService.addOptionOrder(holding.name, [pair.primaryLegs[0]], estPrice, pair.primaryLegs[0].quantity, orderType, 'Sell', reason);
@@ -367,7 +368,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             if (shouldSell || (backtestData && backtestData.ml > 0.5 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY'))) {
               const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
               const reason = shouldSell ? 'Should sell options' : 'Backtest recommends selling';
-              const foundTradingPair = this.tradingPairs.find(pair => pair.find(trade => trade.primaryLegs[0].symbol === holding.primaryLegs[0].symbol && trade.primaryLegs[0].quantity === holding.primaryLegs[0].quantity));
+              const foundTradingPair = this.tradingPairs.find(pair => pair.find(trade => trade.primaryLegs && trade.primaryLegs[0].symbol === holding.primaryLegs[0].symbol && trade.primaryLegs[0].quantity === holding.primaryLegs[0].quantity));
               if (foundTradingPair && foundTradingPair.every(p => this.currentHoldings.find((holding) => holding.primaryLegs[0].symbol === p.primaryLegs[0].symbol && holding.primaryLegs[0].quantity === p.primaryLegs[0].quantity))) {
                 foundTradingPair.forEach(pair => {
                   this.cartService.addOptionOrder(holding.name, [pair.primaryLegs[0]], estPrice, pair.primaryLegs[0].quantity, orderType, 'Sell', reason);
@@ -910,7 +911,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   isExpiring(holding: PortfolioInfoHolding) {
     return (holding.primaryLegs ? holding.primaryLegs : []).concat(holding.secondaryLegs ? holding.secondaryLegs : []).find((option: Options) => {
       const expiry = option.description.match(/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/)[0];
-      return moment(expiry).diff(moment(), 'days') < 30;
+      return moment(expiry).diff(moment(), 'days') < 20;
     });
   }
 
@@ -1192,23 +1193,22 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
       // this.trimHoldings();
       this.checkIfTooManyHoldings(this.currentHoldings, 5);
+    } else if (Number(balance.cashBalance) / Number(balance.availableFunds) > 0.5) {
+      const backtestData = await this.strategyBuilderService.getBacktestData('VTI');
+
+      const price = await this.portfolioService.getPrice('UPRO').toPromise();
+      const balance = await this.portfolioService.getTdBalance().toPromise();
+
+      const quantity = this.strategyBuilderService.getQuantity(price, backtestData?.ml || 0.1, balance.cashBalance);
+      const orderSizePct = 1;
+
+      const order = this.cartService.buildOrderWithAllocation('UPRO', quantity, price, 'Buy',
+        orderSizePct, null, null,
+        null, 1);
+      console.log('Sending buy', order, 'ml result:', backtestData?.ml);
+
+      this.daytradeService.sendBuy(order, 'limit', () => { }, () => { });
     }
-    // else {
-    //   const backtestData = await this.strategyBuilderService.getBacktestData('VTI');
-
-    //   const price = await this.portfolioService.getPrice('UPRO').toPromise();
-    //   const balance = await this.portfolioService.getTdBalance().toPromise();
-
-    //   const quantity = this.strategyBuilderService.getQuantity(price, backtestData?.ml || 0.1, balance.cashBalance);
-    //   const orderSizePct = 1;
-
-    //   const order = this.cartService.buildOrderWithAllocation('UPRO', quantity, price, 'Buy',
-    //     orderSizePct, null, null,
-    //     null, 1);
-    //   console.log('Sending buy', order, 'ml result:', backtestData?.ml);
-
-    //   this.daytradeService.sendBuy(order, 'limit', () => { }, () => { });
-    // }
   }
 
   updateStockList() {
@@ -1406,9 +1406,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
         if (isStrangle && Math.abs(lastPrice - closePrice) > (backtestResults.averageMove * 1.25)) {
           return true;
-        } else if (putCallInd === 'c' && lastPrice - closePrice > (backtestResults.averageMove * 1.23)) {
+        } else if (putCallInd.toLowerCase() === 'c' && lastPrice - closePrice > (backtestResults.averageMove * 1.23)) {
           return true;
-        } else if (putCallInd === 'p' && lastPrice - closePrice < (backtestResults.averageMove * -1.23)) {
+        } else if (putCallInd.toLowerCase() === 'p' && lastPrice - closePrice < (backtestResults.averageMove * -1.23)) {
           return true;
         }
       }
@@ -1473,11 +1473,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     switch (this.strategyList[this.strategyCounter]) {
       case Strategy.OptionsStrangle:
         await this.findStrangleTrade();
-        await this.getNewTrades(null, null, 3);
+        await this.getNewTrades(null, null, 5);
         break;
       case Strategy.TradingPairs:
         await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs);
-        await this.getNewTrades(null, null, 3);
+        await this.getNewTrades(null, null, 5);
         break;
       case Strategy.Swingtrade:
         await this.backtestOneStock(true);
@@ -1510,9 +1510,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             this.cartService.addToCart(trade[0], false, 'Buy calls strategy');
           }
         });
+        await this.getNewTrades(null, null, 5);
         break;
       case Strategy.BuySnP:
         this.strategyBuilderService.buySnP();
+        await this.getNewTrades(null, null, 5);
         break;
       case Strategy.InverseDispersion:
         const findPuts = async (symbol: string, prediction: number, backtestData: any) => {
@@ -1523,6 +1525,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           }
         };
         await this.getNewTrades(findPuts);
+        await this.getNewTrades(null, null, 5);
         break;
       case Strategy.Default: {
         await this.getNewTrades();
