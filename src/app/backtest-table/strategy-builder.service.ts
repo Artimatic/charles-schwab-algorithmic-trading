@@ -26,6 +26,7 @@ export class StrategyBuilderService {
   correlationThreshold = 0.55;
   sumNet = 0;
   countNet = 0;
+  defaultMinExpiration = 45;
 
   constructor(private backtestService: BacktestService,
     private aiPicksService: AiPicksService,
@@ -168,7 +169,7 @@ export class StrategyBuilderService {
     return !prevObj || (currTotalVolume > prevObj.totalVolume);
   }
 
-  async getCallStrangleTrade(symbol: string, minExpiration = 60): Promise<Strangle> {
+  async getCallStrangleTrade(symbol: string, minExpiration = this.defaultMinExpiration): Promise<Strangle> {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     const optionsChain = optionsData.optionsChain;
     const impliedMovement = optionsData.move;
@@ -196,7 +197,7 @@ export class StrategyBuilderService {
     }, { call: null, put: null });
   }
 
-  async getPutStrangleTrade(symbol: string, minExpiration = 65) {
+  async getPutStrangleTrade(symbol: string, minExpiration = this.defaultMinExpiration) {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     const optionsChain = optionsData.optionsChain;
     const impliedMovement = optionsData.move;
