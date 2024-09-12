@@ -36,8 +36,11 @@ export class StrategyBuilderService {
     private swingtradeStrategiesService: SwingtradeStrategiesService,
     private cartService: CartService) { }
 
-  getRecentBacktest(symbol: string) {
+  getRecentBacktest(symbol: string = null) {
     const backtestStorage = this.getStorage('backtest');
+    if (!symbol) {
+      return backtestStorage;
+    }
     const backtestData = backtestStorage[symbol];
     if (backtestData && backtestData.backtestDate && moment().diff(moment(backtestData.backtestDate), 'days') < 1) {
       return backtestData;

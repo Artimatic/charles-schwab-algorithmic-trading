@@ -658,10 +658,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async findSwingStockCallback(symbol: string, prediction: number, backtestData: any) {
-    if (symbol === 'TQQQ' || (prediction => 0.3 && prediction <= 0.7)) {
-      return;
-    }
-    if (prediction > 0.7 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
+    if ((prediction > 0.7 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
       const stock: PortfolioInfoHolding = {
         name: symbol,
         pl: 0,
@@ -691,7 +688,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       return Boolean(this.currentHoldings.find((value) => value.name === name));
     };
     let counter = this.machineDaytradingService.getCurrentStockList().length;
-    while (counter > 0 && (this.cartService.buyOrders.length + this.cartService.otherOrders.length) < maxTradeCount) {
+    while (counter > 0 &&
+      (this.cartService.buyOrders.length + this.cartService.otherOrders.length) < maxTradeCount) {
       do {
         stock = this.machineDaytradingService.getNextStock();
       } while (found(stock))
@@ -756,7 +754,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         stock = this.machineDaytradingService.getNextStock();
       }
       const backtestResults = await this.strategyBuilderService.getBacktestData(stock, overwrite);
-      if (addTrade && backtestResults && backtestResults.ml !== null && (this.cartService.sellOrders.length + this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.maxTradeCount) {
+      if (addTrade && backtestResults && (this.cartService.sellOrders.length + this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.maxTradeCount) {
         this.findSwingStockCallback(stock, backtestResults.ml, backtestResults);
       }
     } catch (error) {
@@ -987,19 +985,26 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
   }
 
-  async checkStopLoss(holding: PortfolioInfoHolding, stopLoss = -0.045) {
+  async checkStopLoss(holding: PortfolioInfoHolding, stopLoss = -0.045, addStop = 0.01) {
     const pnl = divide(holding.pl, holding.netLiq);
     const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
     const price = await this.backtestService.getLastPriceTiingo({ symbol: holding.name }).toPromise();
     const lastPrice = price[holding.name].quote.lastPrice;
 
     if (backtestResults.averageMove) {
-      stopLoss = (backtestResults.averageMove / lastPrice) * -3;
-      this.reportingService.addAuditLog(holding.name, `Setting stop loss to ${stopLoss}`);
+      if (holding.primaryLegs) {
+        stopLoss = (backtestResults.averageMove / lastPrice) * -12;
+        this.reportingService.addAuditLog(holding.name, `Setting options stop loss to ${stopLoss}`);
+        addStop = (backtestResults.averageMove / lastPrice) * 10;
+      } else {
+        stopLoss = (backtestResults.averageMove / lastPrice) * -3;
+        this.reportingService.addAuditLog(holding.name, `Setting stock stop loss to ${stopLoss}`);
+        addStop = (backtestResults.averageMove / lastPrice) / 3;
+      }
     }
     if (pnl < stopLoss) {
       this.portfolioSell(holding);
-    } else if (pnl > 0.01) {
+    } else if (pnl > addStop) {
       await this.addBuy(holding);
     }
   }
@@ -1147,32 +1152,29 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else if (Number(this.calculatePl(lastProfitLoss.profitRecord)) < 0) {
           this.decreaseDayTradeRiskTolerance();
           this.decreaseRiskTolerance();
+        } else {
+          this.adjustRiskTolerance();
         }
       } else {
-        try {
-          this.machineLearningService
-            .trainDaytrade('AAPL',
-              moment().add({ days: 1 }).format('YYYY-MM-DD'),
-              moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
-              1,
-              this.globalSettingsService.daytradeAlgo
-            ).subscribe((mlResults: TrainingResults[]) => {
-              if (mlResults && mlResults[0] !== null) {
-                console.log('Next output', mlResults[0]?.nextOutput);
-                if (mlResults[0]?.nextOutput > 0.5) {
-                  this.increaseRiskTolerance();
-                  this.increaseDayTradeRiskTolerance();
-                } else if (mlResults[0]?.nextOutput < 0.5) {
-                  this.decreaseRiskTolerance();
-                  this.decreaseDayTradeRiskTolerance();
-                }
-              }
-            });
-
-        } catch (error) {
-          console.log(error);
-        }
+        this.adjustRiskTolerance();
       }
+    }
+  }
+
+  async adjustRiskTolerance() {
+    const averageMLResult = this.strategyBuilderService.getRecentBacktest().reduce((acc, currentBacktest, idx) => {
+      if (currentBacktest && currentBacktest.ml) {
+        acc.sum += currentBacktest.ml;
+        acc.counter++;
+      }
+      return acc;
+    }, { sum: 0, counter: 0 });
+    if ((averageMLResult.sum / averageMLResult.counter) > 0.5) {
+      this.increaseDayTradeRiskTolerance();
+      this.increaseRiskTolerance();
+    } else {
+      this.decreaseRiskTolerance();
+      this.decreaseDayTradeRiskTolerance();
     }
   }
 
@@ -1193,16 +1195,27 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
       // this.trimHoldings();
       this.checkIfTooManyHoldings(this.currentHoldings, 5);
-    } else if (Number(balance.cashBalance) / Number(balance.availableFunds) > 0.5) {
+    } else {
       const backtestData = await this.strategyBuilderService.getBacktestData('VTI');
 
-      const price = await this.portfolioService.getPrice('UPRO').toPromise();
+      const price = await this.portfolioService.getPrice('VTI').toPromise();
       const balance = await this.portfolioService.getTdBalance().toPromise();
 
       const quantity = this.strategyBuilderService.getQuantity(price, backtestData?.ml || 0.1, balance.cashBalance);
       const orderSizePct = 1;
 
-      const order = this.cartService.buildOrderWithAllocation('UPRO', quantity, price, 'Buy',
+      let buySymbol = 'SPY';
+      if (backtestData && backtestData?.ml > 0.15) {
+        buySymbol = 'UPRO';
+      } else {
+        this.currentHoldings.forEach(async (holding) => {
+          if (holding.name === 'TQQQ' || holding.name === 'UPRO') {
+            this.portfolioSell(holding);
+          }
+        });
+      }
+
+      const order = this.cartService.buildOrderWithAllocation(buySymbol, quantity, price, 'Buy',
         orderSizePct, null, null,
         null, 1);
       console.log('Sending buy', order, 'ml result:', backtestData?.ml);
@@ -1473,14 +1486,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     switch (this.strategyList[this.strategyCounter]) {
       case Strategy.OptionsStrangle:
         await this.findStrangleTrade();
-        await this.getNewTrades(null, null, 5);
+        await this.getNewTrades(null, null, 3);
         break;
       case Strategy.TradingPairs:
         await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs);
-        await this.getNewTrades(null, null, 5);
+        await this.getNewTrades(null, null, 3);
         break;
       case Strategy.Swingtrade:
-        await this.backtestOneStock(true);
+        await this.getNewTrades(null, null, 8);
         break;
       case Strategy.TrimHoldings:
         this.trimHoldings();
@@ -1525,7 +1538,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           }
         };
         await this.getNewTrades(findPuts);
-        await this.getNewTrades(null, null, 5);
+        await this.getNewTrades(null, null, 3);
         break;
       case Strategy.Default: {
         await this.getNewTrades();

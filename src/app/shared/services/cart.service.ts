@@ -44,6 +44,25 @@ export class CartService {
       }
     }
 
+    let log = `${order.side} ${order.quantity} ${order.holding.name}`;
+    if (order.primaryLeg) {
+      log += `Primary leg: ${order.side} ${order.primaryLeg.quantity} ${order.primaryLeg.symbol} `;
+    }
+    if (order.secondaryLeg) {
+      log += `Secondary leg: ${order.side} ${order.secondaryLeg.quantity} ${order.secondaryLeg.symbol} `;
+    }
+    if (order.primaryLegs) {
+      order.primaryLegs.forEach(leg => {
+        log += `Primary legs ${order.side} ${leg.quantity} ${leg.symbol} `;
+      });
+    }
+    if (order.secondaryLegs) {
+      order.secondaryLegs.forEach(leg => {
+        log += `Secondary legs ${order.side} ${leg.quantity} ${leg.symbol} `;
+      });
+    }
+    this.reportingService.addAuditLog(order.holding.symbol, log, reason);
+    
     if (!noDup && replaceAnyExistingOrders) {
       if (indices[0] > -1) {
         this.deleteBuy(this.buildOrder(order.holding.symbol, null, null, 'buy'));
@@ -52,7 +71,7 @@ export class CartService {
       } else if (indices[2] > -1) {
         this.deleteDaytrade(this.buildOrder(order.holding.symbol, null, null, 'daytrade'));
       }
-      this.addOrder(order, reason);
+      this.addOrder(order);
     }
 
     if (noDup && order.quantity > 0) {
@@ -143,25 +162,7 @@ export class CartService {
     this.cartObserver.next(true);
   }
 
-  addOrder(order: SmartOrder, reason: string) {
-    let log = `${order.side} ${order.quantity} ${order.holding.name}`;
-    if (order.primaryLeg) {
-      log += `Primary leg: ${order.side} ${order.primaryLeg.quantity} ${order.primaryLeg.symbol} `;
-    }
-    if (order.secondaryLeg) {
-      log += `Secondary leg: ${order.side} ${order.secondaryLeg.quantity} ${order.secondaryLeg.symbol} `;
-    }
-    if (order.primaryLegs) {
-      order.primaryLegs.forEach(leg => {
-        log += `Primary legs ${order.side} ${leg.quantity} ${leg.symbol} `;
-      });
-    }
-    if (order.secondaryLegs) {
-      order.secondaryLegs.forEach(leg => {
-        log += `Secondary legs ${order.side} ${leg.quantity} ${leg.symbol} `;
-      });
-    }
-    this.reportingService.addAuditLog(order.holding.symbol, log, reason);
+  addOrder(order: SmartOrder) {
     switch (order.side.toLowerCase()) {
       case 'sell':
         this.sellOrders.push(order);
