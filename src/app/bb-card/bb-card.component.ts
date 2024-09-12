@@ -891,6 +891,9 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   async runStrategy(lastPrice: number, analysis: Recommendation = null) {
+    if (!this.order) {
+      this.ngOnDestroy();
+    }
     if (!this.startingPrice) {
       const price = await this.backtestService.getLastPriceTiingo({ symbol: this.order.holding.symbol }).toPromise();
       const closePrice = price[this.order.holding.symbol].quote.closePrice;
