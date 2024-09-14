@@ -596,14 +596,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       return;
     }
     await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs, this.currentHoldings);
-    await this.addStrangleToList();
+    await this.addStranglesToList();
     // await this.optionsOrderBuilderService.createTradingPair();
     await this.handleStrategy();
   }
 
-  async addStrangleToList() {
+  async addStranglesToList() {
     const buyStrangleCb = async (symbol: string, prediction: number, backtestData: any) => {
-      if (backtestData?.optionsVolume > 230) {
+      if (backtestData?.optionsVolume > 220) {
         const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
         const lastPrice = price[symbol].quote.lastPrice;
         const closePrice = price[symbol].quote.closePrice;
