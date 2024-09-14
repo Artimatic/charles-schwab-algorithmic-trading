@@ -617,23 +617,16 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       this.stop();
     } else if (this.order.type === OrderTypes.call) {
       if (this.firstFormGroup.value.orderType.toLowerCase() === 'buy' && analysis.recommendation.toLowerCase() === 'buy') {
-        if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
-          await this.buyOptions();
-        }
+        await this.buyOptions();
       } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'sell') {
         console.log(`Sell call ${this.order.primaryLegs[0].symbol} ${this.startingPrice} ${quote} ${this.startingPrice}`);
-
-        if ((Math.abs(this.startingPrice - quote) / this.startingPrice) > 0.01) {
-          await this.sellOptions();
-        }
+        await this.sellOptions();
       }
     } else if (this.order.type === OrderTypes.put) {
       if (this.firstFormGroup.value.orderType.toLowerCase() === 'buy' && analysis.recommendation.toLowerCase() === 'sell') {
         await this.buyOptions();
       } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && analysis.recommendation.toLowerCase() === 'buy') {
-        if ((Math.abs(this.startingPrice - quote) / this.startingPrice) > 0.01) {
-          await this.sellOptions();
-        }
+        await this.sellOptions();
       }
     } else if (this.order.type === OrderTypes.protectivePut && analysis.recommendation.toLowerCase() === 'sell') {
       if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
