@@ -1,17 +1,31 @@
 <p-dialog header="Strategy finder" [(visible)]="revealPotentialStrategy">
-    <p-listbox [options]="strategies">
+    <p-listbox [options]="tradingPairs">
         <ng-template let-strategy pTemplate="item">
             <div class="strategy-list">
-                <p-button pRipple class="p-button-danger" icon="pi pi-times" (click)="removeStrategy(strategy)"
-                    class="p-button-rounded p-button-outlined p-button-sm"></p-button>
                 <div class="buy-sell-container">
-                    <div *ngFor="let buy of strategy.strategy.buy">
-                        <p-tag styleClass="p-mr-2" severity="success" [value]="buy" [rounded]="true"></p-tag>
-                    </div>
-                    <div *ngFor="let sell of strategy.strategy.sell">
-                        <p-tag styleClass="p-mr-2" severity="danger" [value]="sell" [rounded]="true"></p-tag>
+                    <div *ngFor="let buy of item">
+                        <div *ngIf="buy.primaryLegs">
+                            <div *ngFor="let leg of buy.primaryLegs">
+                                <p-tag *ngIf="leg.putCallInd==='C'" styleClass="p-mr-2" severity="success"
+                                    [value]="leg.description" [rounded]="true"></p-tag>
+                                <p-tag *ngIf="leg.putCallInd==='P'" styleClass="p-mr-2" severity="danger"
+                                    [value]="leg.description" [rounded]="true"></p-tag>
+                            </div>
+                        </div>
+                        <div *ngIf="buy.secondaryLegs">
+                            <div *ngFor="let leg of buy.secondaryLegs">
+                                <p-tag *ngIf="leg.putCallInd==='C'" styleClass="p-mr-2" severity="success"
+                                    [value]="leg.description" [rounded]="true"></p-tag>
+                                <p-tag *ngIf="leg.putCallInd==='P'" styleClass="p-mr-2" severity="danger"
+                                    [value]="leg.description" [rounded]="true"></p-tag>
+                            </div>
+                        </div>
                     </div>
                 </div>
+                <div *ngFor="let sell of strategy.strategy.sell">
+                    <p-tag styleClass="p-mr-2" severity="danger" [value]="sell" [rounded]="true"></p-tag>
+                </div>
+            </div>
             </div>
         </ng-template>
     </p-listbox>
@@ -32,9 +46,12 @@
         <app-daytrade-active-search></app-daytrade-active-search>
     </div>
     <div class="p-toolbar-group-right">
-        <p-splitButton label="Auto Manage" icon="pi pi-play" *ngIf="!display" (onClick)="open()" [model]="startButtonOptions" styleClass="ui-button-success"></p-splitButton>
-        <p-button label="Stop" icon="pi pi-times" *ngIf="display" styleClass="p-button-danger" (click)="stop()"></p-button>
-        <p-splitButton label="Change strategy" (onClick)="changeStrategy()" [model]="multibuttonOptions" styleClass="ui-button-success"></p-splitButton>
+        <p-splitButton label="Auto Manage" icon="pi pi-play" *ngIf="!display" (onClick)="open()"
+            [model]="startButtonOptions" styleClass="ui-button-success"></p-splitButton>
+        <p-button label="Stop" icon="pi pi-times" *ngIf="display" styleClass="p-button-danger"
+            (click)="stop()"></p-button>
+        <p-splitButton label="Change strategy" (onClick)="changeStrategy()" [model]="multibuttonOptions"
+            styleClass="ui-button-success"></p-splitButton>
         <p-button label="Update stock list" styleClass="p-button-warn" (click)="updateStockList()"></p-button>
         <p-button label="Show strategies" styleClass="p-button-warn" (click)="showStrategies()"></p-button>
         <app-default-order-lists class="default-orders-button"></app-default-order-lists>
