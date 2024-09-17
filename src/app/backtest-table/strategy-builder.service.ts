@@ -26,7 +26,7 @@ export class StrategyBuilderService {
   correlationThreshold = 0.55;
   sumNet = 0;
   countNet = 0;
-  defaultMinExpiration = 45;
+  defaultMinExpiration = 60;
 
   constructor(private backtestService: BacktestService,
     private aiPicksService: AiPicksService,
@@ -169,7 +169,7 @@ export class StrategyBuilderService {
   }
 
   passesVolumeCheck(currTotalVolume, prevObj) {
-    return !prevObj || (currTotalVolume > prevObj.totalVolume);
+    return (!prevObj || (currTotalVolume > prevObj.totalVolume)) && currTotalVolume > 200;
   }
 
   async getCallStrangleTrade(symbol: string, minExpiration = this.defaultMinExpiration): Promise<Strangle> {
@@ -180,19 +180,19 @@ export class StrategyBuilderService {
     const goal = optionsChain?.underlyingPrice;
 
     return strategyList.optionStrategyList.reduce((prev, curr) => {
-      if (!prev.call || (Math.abs(Number(curr.strategyStrike) - goal) < Math.abs(Number(prev.call.strikePrice) - goal))) {
-        if (curr.secondaryLeg.putCallInd.toLowerCase() === 'c') {
+      if ((!prev.call || (Math.abs(Number(curr.strategyStrike) - goal) < Math.abs(Number(prev.call.strikePrice) - goal)))) {
+        if (curr.secondaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.call)) {
           prev.call = JSON.parse(JSON.stringify(curr.secondaryLeg));
-        } else if (curr.primaryLeg.putCallInd.toLowerCase() === 'c') {
+        } else if (curr.primaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.call)) {
           prev.call = JSON.parse(JSON.stringify(curr.primaryLeg));
         }
       }
 
       if ((!prev.put && curr.strategyStrike < goal) ||
-        (this.isPutHedge(goal, curr.strategyStrike, impliedMovement) && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.put))) {
-        if (curr.primaryLeg.putCallInd.toLowerCase() === 'p') {
+        (this.isPutHedge(goal, curr.strategyStrike, impliedMovement))) {
+        if (curr.primaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.put)) {
           prev.put = JSON.parse(JSON.stringify(curr.primaryLeg));
-        } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p') {
+        } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.put)) {
           prev.put = JSON.parse(JSON.stringify(curr.secondaryLeg));
         }
       }
@@ -210,17 +210,17 @@ export class StrategyBuilderService {
 
     return strategyList.optionStrategyList.reduce((prev, curr) => {
       if ((!prev.call && curr.strategyStrike > goal) ||
-        (this.isCallHedge(goal, curr.strategyStrike, impliedMovement) && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.call))) {
-        if (curr.secondaryLeg.putCallInd.toLowerCase() === 'c') {
+        (this.isCallHedge(goal, curr.strategyStrike, impliedMovement))) {
+        if (curr.secondaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.call)) {
           prev.call = JSON.parse(JSON.stringify(curr.secondaryLeg));
-        } else if (curr.primaryLeg.putCallInd.toLowerCase() === 'c') {
+        } else if (curr.primaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.call)) {
           prev.call = JSON.parse(JSON.stringify(curr.primaryLeg));
         }
       }
       if (!prev.put || (Math.abs(curr.strategyStrike - goal) < Math.abs(Number(prev.put.strikePrice) - goal))) {
-        if (curr.primaryLeg.putCallInd.toLowerCase() === 'p') {
+        if (curr.primaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.put)) {
           prev.put = JSON.parse(JSON.stringify(curr.primaryLeg));
-        } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p') {
+        } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.put)) {
           prev.put = JSON.parse(JSON.stringify(curr.secondaryLeg));
         }
       }
@@ -237,9 +237,9 @@ export class StrategyBuilderService {
     return strategyList.optionStrategyList.reduce((prev, curr) => {
       if ((!prev.put && curr.strategyStrike < goal) ||
         (this.isPutHedge(goal, curr.strategyStrike, impliedMovement) && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.put))) {
-        if (curr.primaryLeg.putCallInd.toLowerCase() === 'p') {
+        if (curr.primaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.primary.totalVolume, prev.put)) {
           prev.put = JSON.parse(JSON.stringify(curr.primaryLeg));
-        } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p') {
+        } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.put)) {
           prev.put = JSON.parse(JSON.stringify(curr.secondaryLeg));
         }
       }
