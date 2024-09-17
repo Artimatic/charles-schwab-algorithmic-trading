@@ -47,7 +47,7 @@ export class OptionsOrderBuilderService {
       putsNeeded -= this.protectivePutCount(holding);
       console.log('Protective puts needed', holding.name, putsNeeded);
       if (putsNeeded > 0) {
-        const putOption = await this.strategyBuilderService.getProtectivePut(holding.name);
+        const putOption = await this.strategyBuilderService.getCallStrangleTrade(holding.name);
         const estimatedPrice = this.strategyBuilderService.findOptionsPrice(putOption.put.bid, putOption.put.ask);
         if (estimatedPrice < 10) {
           console.log('Protective put price is too low', estimatedPrice);

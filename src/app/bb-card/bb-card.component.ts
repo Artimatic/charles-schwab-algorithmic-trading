@@ -655,7 +655,9 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
               this.order.buyCount,
               this.order.positionCount);
             const tradeCost = orderQuantity * quote;
-            if (tradeCost > currentBalance) {
+            const quantityLog = `Trade cost: ${tradeCost}, Current balance: ${currentBalance}`;
+            this.reportingService.addAuditLog(this.order.holding.symbol, quantityLog);
+            //if (tradeCost > currentBalance) {
               orderQuantity = Math.floor((currentBalance * this.order.allocation) / quote);
               const mlLog = `Ml next output: ${this.lastMlResult ? this.lastMlResult.nextOutput : ''}`;
               this.reportingService.addAuditLog(this.order.holding.symbol, mlLog);
@@ -663,7 +665,8 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
                 if (this.priceLowerBound && Number(quote) > Number(this.priceLowerBound)) {
                   this.daytradeBuy(quote, orderQuantity, timestamp, analysis);
                 } else {
-                  console.log('Price too low ', Number(quote), ' vs ', Number(this.priceLowerBound));
+                  const log = 'Price too low ' + Number(quote) + ' vs ' + Number(this.priceLowerBound);
+                  this.reportingService.addAuditLog(this.order.holding.symbol, log);
                 }
               } else {
                 this.priceLowerBound = quote;
@@ -674,7 +677,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
                   life: 300000
                 });
               }
-            }
+            //}
           }
         });
       }

@@ -176,75 +176,71 @@ export class StrategyBuilderService {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     const optionsChain = optionsData.optionsChain;
     const impliedMovement = optionsData.move;
-    const strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= minExpiration);
     const goal = optionsChain?.underlyingPrice;
+    let potentialStrangle;
+    let expiration = minExpiration;
 
-    return strategyList.optionStrategyList.reduce((prev, curr) => {
-      if ((!prev.call || (Math.abs(Number(curr.strategyStrike) - goal) < Math.abs(Number(prev.call.strikePrice) - goal)))) {
-        if (curr.secondaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.call)) {
-          prev.call = JSON.parse(JSON.stringify(curr.secondaryLeg));
-        } else if (curr.primaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.call)) {
-          prev.call = JSON.parse(JSON.stringify(curr.primaryLeg));
+    while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 2) {
+      expiration++;
+      let strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
+      potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
+        if ((!prev.call || (Math.abs(Number(curr.strategyStrike) - goal) < Math.abs(Number(prev.call.strikePrice) - goal)))) {
+          if (curr.secondaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.call)) {
+            prev.call = JSON.parse(JSON.stringify(curr.secondaryLeg));
+          } else if (curr.primaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.call)) {
+            prev.call = JSON.parse(JSON.stringify(curr.primaryLeg));
+          }
         }
-      }
 
-      if ((!prev.put && curr.strategyStrike < goal) ||
-        (this.isPutHedge(goal, curr.strategyStrike, impliedMovement))) {
-        if (curr.primaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.put)) {
-          prev.put = JSON.parse(JSON.stringify(curr.primaryLeg));
-        } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.put)) {
-          prev.put = JSON.parse(JSON.stringify(curr.secondaryLeg));
+        if ((!prev.put && curr.strategyStrike < goal) ||
+          (this.isPutHedge(goal, curr.strategyStrike, impliedMovement))) {
+          if (curr.primaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.put)) {
+            prev.put = JSON.parse(JSON.stringify(curr.primaryLeg));
+          } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.put)) {
+            prev.put = JSON.parse(JSON.stringify(curr.secondaryLeg));
+          }
         }
-      }
-      return prev;
-    }, { call: null, put: null });
+        return prev;
+      }, { call: null, put: null });
+    }
+
+    return potentialStrangle;
   }
 
   async getPutStrangleTrade(symbol: string, minExpiration = this.defaultMinExpiration) {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     const optionsChain = optionsData.optionsChain;
     const impliedMovement = optionsData.move;
-
-    const strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= minExpiration);
     const goal = optionsChain?.underlyingPrice;
 
-    return strategyList.optionStrategyList.reduce((prev, curr) => {
-      if ((!prev.call && curr.strategyStrike > goal) ||
-        (this.isCallHedge(goal, curr.strategyStrike, impliedMovement))) {
-        if (curr.secondaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.call)) {
-          prev.call = JSON.parse(JSON.stringify(curr.secondaryLeg));
-        } else if (curr.primaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.call)) {
-          prev.call = JSON.parse(JSON.stringify(curr.primaryLeg));
-        }
-      }
-      if (!prev.put || (Math.abs(curr.strategyStrike - goal) < Math.abs(Number(prev.put.strikePrice) - goal))) {
-        if (curr.primaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.put)) {
-          prev.put = JSON.parse(JSON.stringify(curr.primaryLeg));
-        } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.put)) {
-          prev.put = JSON.parse(JSON.stringify(curr.secondaryLeg));
-        }
-      }
-      return prev;
-    }, { call: null, put: null });
-  }
+    let potentialStrangle;
+    let expiration = minExpiration;
 
-  async getProtectivePut(symbol: string, minExpiration = 65) {
-    const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
-    const optionsChain = optionsData.optionsChain;
-    const impliedMovement = optionsData.move;
-    const strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= minExpiration);
-    const goal = optionsChain?.underlyingPrice;
-    return strategyList.optionStrategyList.reduce((prev, curr) => {
-      if ((!prev.put && curr.strategyStrike < goal) ||
-        (this.isPutHedge(goal, curr.strategyStrike, impliedMovement) && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.put))) {
-        if (curr.primaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.primary.totalVolume, prev.put)) {
-          prev.put = JSON.parse(JSON.stringify(curr.primaryLeg));
-        } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.put)) {
-          prev.put = JSON.parse(JSON.stringify(curr.secondaryLeg));
+    while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 2) {
+      expiration++;
+
+      const strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
+
+      potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
+        if ((!prev.call && curr.strategyStrike > goal) ||
+          (this.isCallHedge(goal, curr.strategyStrike, impliedMovement))) {
+          if (curr.secondaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.call)) {
+            prev.call = JSON.parse(JSON.stringify(curr.secondaryLeg));
+          } else if (curr.primaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.call)) {
+            prev.call = JSON.parse(JSON.stringify(curr.primaryLeg));
+          }
         }
-      }
-      return prev;
-    }, { put: null });
+        if (!prev.put || (Math.abs(curr.strategyStrike - goal) < Math.abs(Number(prev.put.strikePrice) - goal))) {
+          if (curr.primaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.put)) {
+            prev.put = JSON.parse(JSON.stringify(curr.primaryLeg));
+          } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.put)) {
+            prev.put = JSON.parse(JSON.stringify(curr.secondaryLeg));
+          }
+        }
+        return prev;
+      }, { call: null, put: null });
+    }
+    return potentialStrangle;
   }
 
   findOptionsPrice(bid: number, ask: number): number {
@@ -569,7 +565,7 @@ export class StrategyBuilderService {
   }
 
   async buyProtectivePut(symbol, quantity) {
-    const putOption = await this.getProtectivePut(symbol);
+    const putOption = await this.getCallStrangleTrade(symbol, 65);
     const price = this.findOptionsPrice(putOption.put.bid, putOption.put.ask);
     const orderQuantity = quantity;
 
