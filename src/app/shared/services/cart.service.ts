@@ -53,12 +53,12 @@ export class CartService {
     }
     if (order.primaryLegs) {
       order.primaryLegs.forEach(leg => {
-        log += `Primary legs ${order.side} ${leg.quantity} ${leg.symbol} `;
+        log += ` Primary legs ${order.side} ${leg.quantity} ${leg.symbol} `;
       });
     }
     if (order.secondaryLegs) {
       order.secondaryLegs.forEach(leg => {
-        log += `Secondary legs ${order.side} ${leg.quantity} ${leg.symbol} `;
+        log += ` Secondary legs ${order.side} ${leg.quantity} ${leg.symbol} `;
       });
     }
     this.reportingService.addAuditLog(order.holding.symbol, log, reason);
