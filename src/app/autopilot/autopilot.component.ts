@@ -17,7 +17,6 @@ import { delay, take, takeUntil } from 'rxjs/operators';
 import { PotentialTrade } from '../backtest-table/potential-trade.constant';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
-import { TrainingResults } from '../machine-learning/ask-model/ask-model.component';
 import { OptionsOrderBuilderService } from '../options-order-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { PricingService } from '../pricing/pricing.service';
@@ -354,28 +353,30 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             if (shouldSell || (backtestData && backtestData.ml < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'))) {
               const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
               const reason = shouldSell ? 'Should sell options' : 'Backtest recommends selling';
-              const foundTradingPair = this.tradingPairs.find(pair => pair.find(trade => trade.primaryLegs && trade.primaryLegs[0].symbol === holding.primaryLegs[0].symbol && trade.primaryLegs[0].quantity === holding.primaryLegs[0].quantity));
-              if (foundTradingPair && foundTradingPair.every(p => this.currentHoldings.find((holding) => holding.primaryLegs[0].symbol === p.primaryLegs[0].symbol && holding.primaryLegs[0].quantity === p.primaryLegs[0].quantity))) {
-                foundTradingPair.forEach(pair => {
-                  this.cartService.addOptionOrder(holding.name, [pair.primaryLegs[0]], estPrice, pair.primaryLegs[0].quantity, orderType, 'Sell', reason);
-                });
-              } else {
-                this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);
-              }
+              // const foundTradingPair = this.tradingPairs.find(pair => pair.find(trade => trade.primaryLegs && trade.primaryLegs[0].symbol === holding.primaryLegs[0].symbol && trade.primaryLegs[0].quantity === holding.primaryLegs[0].quantity));
+              // if (foundTradingPair && foundTradingPair.every(p => this.currentHoldings.find((holding) => holding.primaryLegs[0].symbol === p.primaryLegs[0].symbol && holding.primaryLegs[0].quantity === p.primaryLegs[0].quantity))) {
+              //   foundTradingPair.forEach(pair => {
+              //     this.cartService.addOptionOrder(holding.name, [pair.primaryLegs[0]], estPrice, pair.primaryLegs[0].quantity, orderType, 'Sell', reason);
+              //   });
+              // } else {
+              //   this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);
+              // }
+              this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);
             }
           } else if (callPutInd === 'p') {
             orderType = OrderTypes.put;
             if (shouldSell || (backtestData && backtestData.ml > 0.5 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY'))) {
               const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
               const reason = shouldSell ? 'Should sell options' : 'Backtest recommends selling';
-              const foundTradingPair = this.tradingPairs.find(pair => pair.find(trade => trade.primaryLegs && trade.primaryLegs[0].symbol === holding.primaryLegs[0].symbol && trade.primaryLegs[0].quantity === holding.primaryLegs[0].quantity));
-              if (foundTradingPair && foundTradingPair.every(p => this.currentHoldings.find((holding) => holding.primaryLegs[0].symbol === p.primaryLegs[0].symbol && holding.primaryLegs[0].quantity === p.primaryLegs[0].quantity))) {
-                foundTradingPair.forEach(pair => {
-                  this.cartService.addOptionOrder(holding.name, [pair.primaryLegs[0]], estPrice, pair.primaryLegs[0].quantity, orderType, 'Sell', reason);
-                });
-              } else {
-                this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);
-              }
+              // const foundTradingPair = this.tradingPairs.find(pair => pair.find(trade => trade.primaryLegs && trade.primaryLegs[0].symbol === holding.primaryLegs[0].symbol && trade.primaryLegs[0].quantity === holding.primaryLegs[0].quantity));
+              // if (foundTradingPair && foundTradingPair.every(p => this.currentHoldings.find((holding) => holding.primaryLegs[0].symbol === p.primaryLegs[0].symbol && holding.primaryLegs[0].quantity === p.primaryLegs[0].quantity))) {
+              //   foundTradingPair.forEach(pair => {
+              //     this.cartService.addOptionOrder(holding.name, [pair.primaryLegs[0]], estPrice, pair.primaryLegs[0].quantity, orderType, 'Sell', reason);
+              //   });
+              // } else {
+              //   this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);
+              // }
+              this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);
             }
           }
         }
@@ -1419,9 +1420,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
         if (isStrangle && Math.abs(lastPrice - closePrice) > (backtestResults.averageMove * 1.25)) {
           return true;
-        } else if (putCallInd.toLowerCase() === 'c' && lastPrice - closePrice > (backtestResults.averageMove * 1.23)) {
+        } else if (putCallInd.toLowerCase() === 'c' && lastPrice - closePrice > (backtestResults.averageMove * 1.33)) {
           return true;
-        } else if (putCallInd.toLowerCase() === 'p' && lastPrice - closePrice < (backtestResults.averageMove * -1.23)) {
+        } else if (putCallInd.toLowerCase() === 'p' && lastPrice - closePrice < (backtestResults.averageMove * -1.333)) {
           return true;
         }
       }
