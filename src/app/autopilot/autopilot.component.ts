@@ -780,6 +780,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           allocation,
           thresholds.profitTakingThreshold,
           thresholds.stopLoss);
+        await this.orderHandlingService.intradayStep(holding.name);
       } catch (error) {
         console.log('Error getting backtest data for ', holding.name, error);
       }
@@ -1199,12 +1200,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     } else {
       const backtestData = await this.strategyBuilderService.getBacktestData('VTI');
 
-      const price = await this.portfolioService.getPrice('VTI').toPromise();
-      const balance = await this.portfolioService.getTdBalance().toPromise();
-
-      const quantity = this.strategyBuilderService.getQuantity(price, backtestData?.ml || 0.1, balance.cashBalance);
-      const orderSizePct = 1;
-
       let buySymbol = 'SPY';
       if (backtestData && backtestData?.ml > 0.15) {
         buySymbol = 'UPRO';
@@ -1215,6 +1210,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           }
         });
       }
+
+      const price = await this.portfolioService.getPrice(buySymbol).toPromise();
+      const balance = await this.portfolioService.getTdBalance().toPromise();
+
+      const quantity = this.strategyBuilderService.getQuantity(price, backtestData?.ml || 0.1, balance.cashBalance);
+      const orderSizePct = 1;
 
       const order = this.cartService.buildOrderWithAllocation(buySymbol, quantity, price, 'Buy',
         orderSizePct, null, null,

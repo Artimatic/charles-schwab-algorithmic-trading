@@ -106,36 +106,45 @@ export class OrderHandlingService {
           async (analysis) => {
             if (this.daytradeStrategiesService.isPotentialBuy(analysis) || this.daytradeStrategiesService.isPotentialSell(analysis)) {
               try {
-                await this.machineLearningService.activate(symbol,
-                  this.globalSettingsService.daytradeAlgo).subscribe(mlResult => {
-                    const queueItem: AlgoQueueItem = {
-                      symbol: symbol,
-                      reset: false,
-                      analysis: analysis,
-                      ml: mlResult
-                    };
-                    this.tradeService.algoQueue.next(queueItem);
+                this.machineLearningService.activate(symbol,
+                  this.globalSettingsService.daytradeAlgo).subscribe(async (mlResult) => {
+                    if (!mlResult || !mlResult.nextOutput) {
+                      await this.trainIntradayModel(symbol);
+                    } else {
+                      const queueItem: AlgoQueueItem = {
+                        symbol: symbol,
+                        reset: false,
+                        analysis: analysis,
+                        ml: mlResult
+                      };
+                      this.tradeService.algoQueue.next(queueItem);
+                    }
                   });
               } catch {
-                this.machineLearningService
-                  .trainDaytrade(symbol.toUpperCase(),
-                    moment().add({ days: 1 }).format('YYYY-MM-DD'),
-                    moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
-                    1,
-                    this.globalSettingsService.daytradeAlgo
-                  ).toPromise()[0];
-                const queueItem: AlgoQueueItem = {
-                  symbol: symbol,
-                  reset: false,
-                  analysis: analysis,
-                  ml: { guesses: null, correct: null, score: null, nextOutput: 0}
-                };
-                this.tradeService.algoQueue.next(queueItem);
+                await this.trainIntradayModel(symbol);
               }
             }
           }
         );
     }
+  }
+
+  async trainIntradayModel(symbol: string) {
+    const analysis = await this.machineLearningService
+      .trainDaytrade(symbol.toUpperCase(),
+        moment().add({ days: 1 }).format('YYYY-MM-DD'),
+        moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
+        1,
+        this.globalSettingsService.daytradeAlgo
+      ).toPromise()[0];
+
+    const queueItem: AlgoQueueItem = {
+      symbol: symbol,
+      reset: false,
+      analysis: analysis,
+      ml: { guesses: null, correct: null, score: null, nextOutput: 0 }
+    };
+    this.tradeService.algoQueue.next(queueItem);
   }
 
   async getEstimatedPrice(symbol: string) {
