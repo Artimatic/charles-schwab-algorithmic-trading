@@ -120,7 +120,8 @@ export class OrderHandlingService {
                       this.tradeService.algoQueue.next(queueItem);
                     }
                   });
-              } catch {
+              } catch(error) {
+                console.log(error);
                 await this.trainIntradayModel(symbol);
               }
             }
