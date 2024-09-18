@@ -599,6 +599,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
     await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs, this.currentHoldings);
     await this.addStranglesToList();
+    this.inverseDispersion();
     // await this.optionsOrderBuilderService.createTradingPair();
     await this.handleStrategy();
   }
@@ -1533,21 +1534,23 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.getNewTrades(null, null, 5);
         break;
       case Strategy.InverseDispersion:
-        const findPuts = async (symbol: string, prediction: number, backtestData: any) => {
-          if (backtestData?.optionsVolume > 230) {
-            if (prediction < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
-              await this.optionsOrderBuilderService.balanceTrades(this.tradingPairs, this.currentHoldings, ['SPY'], [symbol]);
-            }
-          }
-        };
-        await this.getNewTrades(findPuts);
-        await this.getNewTrades(null, null, 3);
         break;
       case Strategy.Default: {
         await this.getNewTrades();
         break;
       }
     }
+  }
+
+  inverseDispersion() {
+    const findPuts = async (symbol: string, prediction: number, backtestData: any) => {
+      if (backtestData?.optionsVolume > 230) {
+        if (prediction < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
+          await this.optionsOrderBuilderService.balanceTrades(this.tradingPairs, this.currentHoldings, ['SPY'], [symbol]);
+        }
+      }
+    };
+    this.getNewTrades(findPuts);
   }
 
   showStrategies() {

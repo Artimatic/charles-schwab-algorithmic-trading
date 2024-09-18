@@ -26,7 +26,7 @@ class IntradayPredicationService extends PredictionService {
         console.log('Processing backtest for', this.modelName);
 
         const finalDataSet = this.processBacktestResults(results, featureUse);
-        const modelName = featureUse ? featureUse.join() : this.modelName;
+        const modelName = this.modelName;
         console.log('Training for', this.modelName);
         // return BacktestService.trainTensorModel(symbol, modelName, finalDataSet, trainingSize, moment().format('YYYY-MM-DD'));
         return BacktestService.trainCustomModel(symbol, modelName, finalDataSet, trainingSize, moment().format('YYYY-MM-DD'));
@@ -71,6 +71,7 @@ class IntradayPredicationService extends PredictionService {
     const signal = indicatorData;
     const inputData = this.buildInputSet(signal, featureUse);
     const modelName = this.modelName;
+    console.log('Activate model for', this.modelName);
     return BacktestService.activateCustomModel(symbol, modelName, inputData.input, moment().format('YYYY-MM-DD'));
   }
 
