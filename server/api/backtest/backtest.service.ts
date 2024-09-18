@@ -1911,7 +1911,7 @@ class BacktestService {
 
   activateCustomModel(symbol, modelName: string, input, to) {
     const URI = `${mlServiceUrl}api/activate-custom`;
-
+    console.log('Activating model:', modelName);
     const options = {
       method: 'POST',
       uri: URI,
@@ -1925,10 +1925,7 @@ class BacktestService {
       json: true
     };
 
-    return RequestPromise(options)
-      .catch((error) => {
-        console.log('Error activateCustomModel: ', options, error);
-      });
+    return RequestPromise(options);
   }
 }
 
