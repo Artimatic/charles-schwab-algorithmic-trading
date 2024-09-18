@@ -303,11 +303,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       },
       {
-        label: 'Process current holdings',
+        label: 'Test',
         command: async () => {
           this.currentHoldings = await this.cartService.findCurrentPositions();
           await this.modifyCurrentHoldings();
           console.log(this.currentHoldings);
+          await this.orderHandlingService.intradayStep('SPY');
         }
       }
     ];
@@ -1198,7 +1199,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       // this.trimHoldings();
       this.checkIfTooManyHoldings(this.currentHoldings, 5);
     } else {
-      const backtestData = await this.strategyBuilderService.getBacktestData('VTI');
+      const backtestData = await this.strategyBuilderService.getBacktestData('UPRO');
 
       let buySymbol = 'SPY';
       if (backtestData && backtestData?.ml > 0.15) {
