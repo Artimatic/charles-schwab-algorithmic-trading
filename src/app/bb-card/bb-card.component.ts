@@ -593,6 +593,10 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   async processAnalysis(daytradeType, analysis: Recommendation, quote, timestamp) {
+    if (!this.priceLowerBound) {
+      this.priceLowerBound = quote;
+    }
+
     if (analysis.recommendation.toLowerCase() === 'none') {
       return;
     }
@@ -662,7 +666,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
               const mlLog = `Ml next output: ${this.lastMlResult ? this.lastMlResult.nextOutput : ''}`;
               this.reportingService.addAuditLog(this.order.holding.symbol, mlLog);
               if ((this.lastMlResult && this.lastMlResult.nextOutput > 0.6) || !this.lastMlResult) {
-                if (this.priceLowerBound && Number(quote) > Number(this.priceLowerBound)) {
+                if (!this.priceLowerBound || (this.priceLowerBound && Number(quote) > Number(this.priceLowerBound))) {
                   this.daytradeBuy(quote, orderQuantity, timestamp, analysis);
                 } else {
                   const log = 'Price too low ' + Number(quote) + ' vs ' + Number(this.priceLowerBound);
