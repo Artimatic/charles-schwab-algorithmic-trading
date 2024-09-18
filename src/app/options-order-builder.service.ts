@@ -73,7 +73,7 @@ export class OptionsOrderBuilderService {
       const buyOptionsData = await this.optionsDataService.getImpliedMove(buy).toPromise();
       if (buyOptionsData && buyOptionsData.move && buyOptionsData.move < 0.15) {
         const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(buy);
-        if (!bullishStrangle) {
+        if (!bullishStrangle || !bullishStrangle.call) {
           console.log('Unable to find call for', buy);
         } else {
           const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
@@ -88,7 +88,7 @@ export class OptionsOrderBuilderService {
             for (const sell of sellList) {
               if (!currentHoldings || !currentHoldings.find(holding => holding.name === sell)) {
                 const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
-                if (!bearishStrangle) {
+                if (!bearishStrangle || !bearishStrangle.put) {
                   console.log('Unable to find push for', sell);
                 } else {
                   const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
