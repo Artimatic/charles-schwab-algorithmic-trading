@@ -53,8 +53,8 @@ export class OptionsOrderBuilderService {
           console.log('Protective put price is too low', estimatedPrice);
           return;
         }
-        this.cartService.addOptionOrder(holding.name, [putOption.put], 
-          estimatedPrice, putsNeeded, OrderTypes.protectivePut, 'Buy', 
+        this.cartService.addOptionOrder(holding.name, [putOption.put],
+          estimatedPrice, putsNeeded, OrderTypes.protectivePut, 'Buy',
           'Adding protective put');
       }
     }
@@ -73,46 +73,54 @@ export class OptionsOrderBuilderService {
       const buyOptionsData = await this.optionsDataService.getImpliedMove(buy).toPromise();
       if (buyOptionsData && buyOptionsData.move && buyOptionsData.move < 0.15) {
         const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(buy);
-        const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
-        let currentCall = {
-          call: bullishStrangle.call,
-          price: callPrice,
-          quantity: 0,
-          underlying: buy
-        };
-        let currentPut = null;
-        if (callPrice > 300 && callPrice < 8000) {
-          for (const sell of sellList) {
-            if (!currentHoldings || !currentHoldings.find(holding => holding.name === sell)) {
-              const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
-              const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
-              if (putPrice > 300 && putPrice < 8000) {
-                const sellOptionsData = await this.optionsDataService.getImpliedMove(sell).toPromise();
-                if (sellOptionsData && sellOptionsData.move && sellOptionsData.move < 0.15) {
-                  const multiple = (callPrice > putPrice) ? Math.round(callPrice / putPrice) : Math.round(putPrice / callPrice);
-                  let initialCallQuantity = (callPrice > putPrice) ? 1 : multiple;
-                  let initialPutQuantity = (callPrice > putPrice) ? multiple : 1;
-                  const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple);
-                  if (callQuantity + putQuantity < 25) {
-                    bullishStrangle.call.quantity = callQuantity;
-                    bearishStrangle.put.quantity = putQuantity;
-                    const availableFunds = await this.cartService.getAvailableFunds(true);
-                    if (availableFunds >= (callPrice * callQuantity + putPrice * putQuantity)) {
-                      if (!currentPut || (currentCall.quantity * currentCall.price +
-                        currentPut.quantity * currentPut.price) > (currentCall.quantity * currentCall.price + putQuantity * putPrice)) {
-                        currentCall.quantity = callQuantity;
-                        if (currentPut) {
-                          currentPut.put = bearishStrangle.put;
-                          currentPut.quantity = putQuantity;
-                          currentPut.price = putPrice;
-                          currentPut.underlying = sell;
-                        } else {
-                          currentPut = {
-                            put: bearishStrangle.put,
-                            price: putPrice,
-                            quantity: putQuantity,
-                            underlying: sell
-                          };
+        if (!bullishStrangle) {
+          console.log('Unable to find call for', buy);
+        } else {
+          const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
+          let currentCall = {
+            call: bullishStrangle.call,
+            price: callPrice,
+            quantity: 0,
+            underlying: buy
+          };
+          let currentPut = null;
+          if (callPrice > 300 && callPrice < 8000) {
+            for (const sell of sellList) {
+              if (!currentHoldings || !currentHoldings.find(holding => holding.name === sell)) {
+                const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
+                if (!bearishStrangle) {
+                  console.log('Unable to find push for', sell);
+                } else {
+                  const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
+                  if (putPrice > 300 && putPrice < 8000) {
+                    const sellOptionsData = await this.optionsDataService.getImpliedMove(sell).toPromise();
+                    if (sellOptionsData && sellOptionsData.move && sellOptionsData.move < 0.15) {
+                      const multiple = (callPrice > putPrice) ? Math.round(callPrice / putPrice) : Math.round(putPrice / callPrice);
+                      let initialCallQuantity = (callPrice > putPrice) ? 1 : multiple;
+                      let initialPutQuantity = (callPrice > putPrice) ? multiple : 1;
+                      const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple);
+                      if (callQuantity + putQuantity < 25) {
+                        bullishStrangle.call.quantity = callQuantity;
+                        bearishStrangle.put.quantity = putQuantity;
+                        const availableFunds = await this.cartService.getAvailableFunds(true);
+                        if (availableFunds >= (callPrice * callQuantity + putPrice * putQuantity)) {
+                          if (!currentPut || (currentCall.quantity * currentCall.price +
+                            currentPut.quantity * currentPut.price) > (currentCall.quantity * currentCall.price + putQuantity * putPrice)) {
+                            currentCall.quantity = callQuantity;
+                            if (currentPut) {
+                              currentPut.put = bearishStrangle.put;
+                              currentPut.quantity = putQuantity;
+                              currentPut.price = putPrice;
+                              currentPut.underlying = sell;
+                            } else {
+                              currentPut = {
+                                put: bearishStrangle.put,
+                                price: putPrice,
+                                quantity: putQuantity,
+                                underlying: sell
+                              };
+                            }
+                          }
                         }
                       }
                     }
@@ -120,11 +128,11 @@ export class OptionsOrderBuilderService {
                 }
               }
             }
-          }
-          if (currentPut && currentCall) {
-            const option1 = await this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy', currentCall.quantity);
-            const option2 = await this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put], currentPut.price, currentPut.quantity, OrderTypes.put, 'Buy', currentCall.quantity);
-            tradingPairs.push([option1, option2]);
+            if (currentPut && currentCall) {
+              const option1 = await this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy', currentCall.quantity);
+              const option2 = await this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put], currentPut.price, currentPut.quantity, OrderTypes.put, 'Buy', currentCall.quantity);
+              tradingPairs.push([option1, option2]);
+            }
           }
         }
       }
