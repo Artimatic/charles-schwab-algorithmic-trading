@@ -180,7 +180,7 @@ export class StrategyBuilderService {
     let potentialStrangle;
     let expiration = minExpiration;
 
-    while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 2) {
+    while (!potentialStrangle || (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 2)) {
       expiration++;
       let strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
       potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
@@ -216,7 +216,7 @@ export class StrategyBuilderService {
     let potentialStrangle;
     let expiration = minExpiration;
 
-    while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 2) {
+    while (!potentialStrangle || (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 2)) {
       expiration++;
 
       const strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
