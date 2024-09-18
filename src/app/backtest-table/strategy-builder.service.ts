@@ -177,7 +177,7 @@ export class StrategyBuilderService {
     const optionsChain = optionsData.optionsChain;
     const impliedMovement = optionsData.move;
     const goal = optionsChain?.underlyingPrice;
-    let potentialStrangle;
+    let potentialStrangle = { call: null, put: null };
     let expiration = minExpiration;
 
     while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 2) {
@@ -213,7 +213,7 @@ export class StrategyBuilderService {
     const impliedMovement = optionsData.move;
     const goal = optionsChain?.underlyingPrice;
 
-    let potentialStrangle;
+    let potentialStrangle = { call: null, put: null };
     let expiration = minExpiration;
 
     while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 2) {
