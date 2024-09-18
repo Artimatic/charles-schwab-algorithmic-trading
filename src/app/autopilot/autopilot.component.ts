@@ -626,10 +626,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             } else {
               if (prediction > 0.6 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
                 const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade(symbol);
-                const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
-                const order = await this.strategyBuilderService.addStrangleOrder(symbol, price, optionStrategy);
-                console.log('Adding Bullish strangle', symbol, price, optionStrategy);
-                this.tradingPairs.push([order]);
+                if (!optionStrategy.call || !optionStrategy.put) {
+                  const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
+                  const order = await this.strategyBuilderService.addStrangleOrder(symbol, price, optionStrategy);
+                  console.log('Adding Bullish strangle', symbol, price, optionStrategy);
+                  this.tradingPairs.push([order]);
+                }
               }
             }
           }
