@@ -105,7 +105,6 @@ export class OrderHandlingService {
         .subscribe(
           async (analysis) => {
             if (this.daytradeStrategiesService.isPotentialBuy(analysis) || this.daytradeStrategiesService.isPotentialSell(analysis)) {
-              try {
                 this.machineLearningService.activate(symbol,
                   this.globalSettingsService.daytradeAlgo).subscribe(async (mlResult) => {
                     if (!mlResult || !mlResult.nextOutput) {
@@ -119,11 +118,10 @@ export class OrderHandlingService {
                       };
                       this.tradeService.algoQueue.next(queueItem);
                     }
+                  }, () => {
+                    this.trainIntradayModel(symbol);
                   });
-              } catch(error) {
-                console.log(error);
-                await this.trainIntradayModel(symbol);
-              }
+
             }
           }
         );
