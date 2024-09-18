@@ -177,10 +177,10 @@ export class StrategyBuilderService {
     const optionsChain = optionsData.optionsChain;
     const impliedMovement = optionsData.move;
     const goal = optionsChain?.underlyingPrice;
-    let potentialStrangle;
+    let potentialStrangle = { call: null, put: null };
     let expiration = minExpiration;
 
-    while (!potentialStrangle || (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 2)) {
+    while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 2) {
       expiration++;
       let strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
       potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
@@ -213,10 +213,10 @@ export class StrategyBuilderService {
     const impliedMovement = optionsData.move;
     const goal = optionsChain?.underlyingPrice;
 
-    let potentialStrangle;
+    let potentialStrangle = { call: null, put: null };
     let expiration = minExpiration;
 
-    while (!potentialStrangle || (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 2)) {
+    while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 2) {
       expiration++;
 
       const strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
