@@ -340,7 +340,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       if (holding.primaryLegs) {
         const callPutInd = holding.primaryLegs[0].putCallInd.toLowerCase();
         const isStrangle = this.cartService.isStrangle(holding);
-        const shouldSell = this.shouldSellOptions(holding, isStrangle, callPutInd);
+        const shouldSell = await this.shouldSellOptions(holding, isStrangle, callPutInd);
 
         if (isStrangle) {
           if (shouldSell) {
@@ -619,10 +619,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.90)) {
             if (prediction < 0.3 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
               const optionStrategy = await this.strategyBuilderService.getPutStrangleTrade(symbol);
-              const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
-              const order = await this.strategyBuilderService.addStrangleOrder(symbol, price, optionStrategy);
-              console.log('Adding Bearish strangle', symbol, price, optionStrategy);
-              this.tradingPairs.push([order]);
+              if (optionStrategy && optionStrategy.call) {
+                const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
+                const order = await this.strategyBuilderService.addStrangleOrder(symbol, price, optionStrategy);
+                console.log('Adding Bearish strangle', symbol, price, optionStrategy);
+                this.tradingPairs.push([order]);
+              }
             } else {
               if (prediction > 0.6 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
                 const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade(symbol);
@@ -1413,9 +1415,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async shouldSellOptions(holding: PortfolioInfoHolding, isStrangle: boolean, putCallInd: string) {
     if (this.isExpiring(holding)) {
-      console.log(`${holding.name} options are expiring soon`);
+      const log = `${holding.name} options are expiring soon`;
+      this.reportingService.addAuditLog(holding.name, log);
       return true;
-    } else {
+    } else if (!this.tradingPairs.find(tradeArr => tradeArr.find(t => t.holding.symbol === holding.name))) {
       const price = await this.backtestService.getLastPriceTiingo({ symbol: holding.name }).toPromise();
       const lastPrice = price[holding.name].quote.lastPrice;
       const closePrice = price[holding.name].quote.closePrice;
@@ -1425,11 +1428,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
       }
       if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
-        if (isStrangle && Math.abs(lastPrice - closePrice) > (backtestResults.averageMove * 1.25)) {
+        if (isStrangle && Math.abs(lastPrice - closePrice) > (backtestResults.averageMove * 1.40)) {
+          this.reportingService.addAuditLog(holding.name, `Selling strangle due to large move ${Math.abs(lastPrice - closePrice)}, Average: ${backtestResults.averageMove}`);
           return true;
-        } else if (putCallInd.toLowerCase() === 'c' && lastPrice - closePrice > (backtestResults.averageMove * 1.33)) {
+        } else if (putCallInd.toLowerCase() === 'c' && lastPrice - closePrice > (backtestResults.averageMove * 1.40)) {
+          this.reportingService.addAuditLog(holding.name, `Selling call due to large move ${lastPrice - closePrice}, Average: ${backtestResults.averageMove}`);
           return true;
-        } else if (putCallInd.toLowerCase() === 'p' && lastPrice - closePrice < (backtestResults.averageMove * -1.333)) {
+        } else if (putCallInd.toLowerCase() === 'p' && lastPrice - closePrice < (backtestResults.averageMove * -1.40)) {
+          this.reportingService.addAuditLog(holding.name, `Selling put due to large move ${lastPrice - closePrice}, Average: ${backtestResults.averageMove}`);
           return true;
         }
       }
@@ -1517,9 +1523,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           if (backtestData?.optionsVolume > 230 && backtestData.sellSignals.length > 1) {
             if (prediction < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
               const optionStrategy = await this.strategyBuilderService.getPutStrangleTrade(symbol);
-              const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
-              this.strategyBuilderService.addStrangle(symbol, price, optionStrategy);
-              console.log('Adding Bearish strangle', symbol, price, optionStrategy);
+              if (optionStrategy && optionStrategy.call && optionStrategy.put) {
+                const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
+                this.strategyBuilderService.addStrangle(symbol, price, optionStrategy);
+                console.log('Adding Bearish strangle', symbol, price, optionStrategy);
+              }
             }
           }
         };
