@@ -89,7 +89,7 @@ export class OptionsOrderBuilderService {
               if (!currentHoldings || !currentHoldings.find(holding => holding.name === sell)) {
                 const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
                 if (!bearishStrangle || !bearishStrangle.put) {
-                  console.log('Unable to find push for', sell);
+                  console.log('Unable to find put for', sell);
                 } else {
                   const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
                   if (putPrice > 300 && putPrice < 8000) {
