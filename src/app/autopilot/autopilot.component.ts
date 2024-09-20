@@ -1546,6 +1546,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.getNewTrades(null, null, 5);
         break;
       case Strategy.InverseDispersion:
+        await this.getNewTrades(null, null, 1);
         break;
       case Strategy.Default: {
         await this.getNewTrades();
