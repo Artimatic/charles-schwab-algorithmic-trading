@@ -3,7 +3,7 @@
         <ng-template let-strategy pTemplate="item">
             <div class="strategy-list">
                 <div class="buy-sell-container">
-                    <div *ngFor="let buy of item">
+                    <div *ngFor="let buy of strategy">
                         <div *ngIf="buy.primaryLegs">
                             <div *ngFor="let leg of buy.primaryLegs">
                                 <p-tag *ngIf="leg.putCallInd==='C'" styleClass="p-mr-2" severity="success"
@@ -21,9 +21,6 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                <div *ngFor="let sell of strategy.strategy.sell">
-                    <p-tag styleClass="p-mr-2" severity="danger" [value]="sell" [rounded]="true"></p-tag>
                 </div>
             </div>
         </ng-template>
