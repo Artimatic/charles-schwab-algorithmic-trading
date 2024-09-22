@@ -593,20 +593,24 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.checkPersonalLists();
     await this.hedge();
     const balance = await this.machineDaytradingService.getPortfolioBalance().toPromise();
-    if (balance.liquidationValue < 30000) {
+    if (balance.liquidationValue < 28000) {
       await this.getNewTrades();
       return;
     }
-    await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs, this.currentHoldings);
+    const cash = await this.cartService.getAvailableFunds(false);
+    const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
+    const minCash = round(this.riskToleranceList[1] * cash, 2);
+    await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs, this.currentHoldings, minCash, maxCash);
     await this.addStranglesToList();
     this.inverseDispersion();
+    // await this.findStrangleTrade();
     // await this.optionsOrderBuilderService.createTradingPair();
     await this.handleStrategy();
   }
 
   async addStranglesToList() {
     const buyStrangleCb = async (symbol: string, prediction: number, backtestData: any) => {
-      if (backtestData?.optionsVolume > 220) {
+      if (backtestData?.optionsVolume > 180) {
         const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
         const lastPrice = price[symbol].quote.lastPrice;
         const closePrice = price[symbol].quote.closePrice;
@@ -919,7 +923,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   isExpiring(holding: PortfolioInfoHolding) {
     return (holding.primaryLegs ? holding.primaryLegs : []).concat(holding.secondaryLegs ? holding.secondaryLegs : []).find((option: Options) => {
       const expiry = option.description.match(/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/)[0];
-      return moment(expiry).diff(moment(), 'days') < 20;
+      return moment(expiry).diff(moment(), 'days') < 30;
     });
   }
 
@@ -1206,7 +1210,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       // this.trimHoldings();
       this.checkIfTooManyHoldings(this.currentHoldings, 5);
     } else {
-      const backtestData = await this.strategyBuilderService.getBacktestData('UPRO');
+      const backtestData = await this.strategyBuilderService.getBacktestData('SPY');
 
       let buySymbol = 'SPY';
       if (backtestData && backtestData?.ml > 0.15) {
@@ -1380,7 +1384,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       try {
         const backtestResults = await this.strategyBuilderService.getBacktestData(name);
         if (backtestResults && backtestResults.ml !== null && backtestResults.ml < 0.5 && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL')) {
-          this.optionsOrderBuilderService.balanceTrades(this.tradingPairs, this.currentHoldings, ['SPY'], [name]);
+          const cash = await this.cartService.getAvailableFunds(false);
+          const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
+          const minCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
+          this.optionsOrderBuilderService.balanceTrades(this.tradingPairs, this.currentHoldings, ['SPY'], [name], minCash, maxCash);
         }
       } catch (error) {
         console.log(error);
@@ -1499,11 +1506,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async handleStrategy() {
     switch (this.strategyList[this.strategyCounter]) {
       case Strategy.OptionsStrangle:
-        await this.findStrangleTrade();
         await this.getNewTrades(null, null, 3);
         break;
       case Strategy.TradingPairs:
-        await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs);
         await this.getNewTrades(null, null, 3);
         break;
       case Strategy.Swingtrade:
@@ -1546,6 +1551,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.getNewTrades(null, null, 5);
         break;
       case Strategy.InverseDispersion:
+        await this.getNewTrades(null, null, 1);
         break;
       case Strategy.Default: {
         await this.getNewTrades();
@@ -1558,7 +1564,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const findPuts = async (symbol: string, prediction: number, backtestData: any) => {
       if (backtestData?.optionsVolume > 230) {
         if (prediction < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
-          await this.optionsOrderBuilderService.balanceTrades(this.tradingPairs, this.currentHoldings, ['SPY'], [symbol]);
+          const cash = await this.cartService.getAvailableFunds(false);
+          const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
+          const minCash = round(this.riskToleranceList[1] * cash, 2);
+          await this.optionsOrderBuilderService.balanceTrades(this.tradingPairs, this.currentHoldings, ['SPY'], [symbol], minCash, maxCash);
         }
       }
     };

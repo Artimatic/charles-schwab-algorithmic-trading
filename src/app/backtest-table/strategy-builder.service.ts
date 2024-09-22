@@ -26,7 +26,7 @@ export class StrategyBuilderService {
   correlationThreshold = 0.55;
   sumNet = 0;
   countNet = 0;
-  defaultMinExpiration = 60;
+  defaultMinExpiration = 59;
 
   constructor(private backtestService: BacktestService,
     private aiPicksService: AiPicksService,
@@ -169,7 +169,7 @@ export class StrategyBuilderService {
   }
 
   passesVolumeCheck(currTotalVolume, prevObj) {
-    return (!prevObj || (currTotalVolume > prevObj.totalVolume)) && currTotalVolume > 200;
+    return (!prevObj || (currTotalVolume > prevObj.totalVolume)) && currTotalVolume > 190;
   }
 
   async getCallStrangleTrade(symbol: string, minExpiration = this.defaultMinExpiration): Promise<Strangle> {
@@ -180,7 +180,7 @@ export class StrategyBuilderService {
     let potentialStrangle = { call: null, put: null };
     let expiration = minExpiration;
 
-    while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 2) {
+    while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 5) {
       expiration++;
       let strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
       potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
@@ -219,7 +219,7 @@ export class StrategyBuilderService {
     let potentialStrangle = { call: null, put: null };
     let expiration = minExpiration;
 
-    while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 2) {
+    while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 5) {
       expiration++;
 
       const strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);

@@ -60,15 +60,15 @@ export class OptionsOrderBuilderService {
     }
   }
 
-  async createTradingPair(tradingPairs: any[], currentHoldings = null) {
+  async createTradingPair(tradingPairs: any[], currentHoldings = null, minCashAllocation: number, maxCashAllocation: number) {
     this.strategyBuilderService.getTradingStrategies().forEach(async (strat) => {
       const buys: string[] = strat.strategy.buy;
       const sells: string[] = strat.strategy.sell;
-      this.balanceTrades(tradingPairs, currentHoldings, buys, sells);
+      this.balanceTrades(tradingPairs, currentHoldings, buys, sells, minCashAllocation, maxCashAllocation);
     });
   }
 
-  async balanceTrades(tradingPairs: any[], currentHoldings = null, buyList: string[], sellList: string[]) {
+  async balanceTrades(tradingPairs: any[], currentHoldings = null, buyList: string[], sellList: string[], minCashAllocation: number, maxCashAllocation: number) {
     for (const buy of buyList) {
       const buyOptionsData = await this.optionsDataService.getImpliedMove(buy).toPromise();
       if (buyOptionsData && buyOptionsData.move && buyOptionsData.move < 0.15) {
@@ -84,7 +84,7 @@ export class OptionsOrderBuilderService {
             underlying: buy
           };
           let currentPut = null;
-          if (callPrice > 300 && callPrice < 8000) {
+          if (callPrice > 100 && callPrice < 8000) {
             for (const sell of sellList) {
               if (!currentHoldings || !currentHoldings.find(holding => holding.name === sell)) {
                 const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
@@ -92,13 +92,13 @@ export class OptionsOrderBuilderService {
                   console.log('Unable to find put for', sell);
                 } else {
                   const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
-                  if (putPrice > 300 && putPrice < 8000) {
+                  if (putPrice > 100 && putPrice < 8000) {
                     const sellOptionsData = await this.optionsDataService.getImpliedMove(sell).toPromise();
                     if (sellOptionsData && sellOptionsData.move && sellOptionsData.move < 0.15) {
                       const multiple = (callPrice > putPrice) ? Math.round(callPrice / putPrice) : Math.round(putPrice / callPrice);
                       let initialCallQuantity = (callPrice > putPrice) ? 1 : multiple;
                       let initialPutQuantity = (callPrice > putPrice) ? multiple : 1;
-                      const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple);
+                      const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple, minCashAllocation, maxCashAllocation);
                       if (callQuantity + putQuantity < 25) {
                         bullishStrangle.call.quantity = callQuantity;
                         bearishStrangle.put.quantity = putQuantity;
@@ -139,9 +139,10 @@ export class OptionsOrderBuilderService {
     }
   }
 
-  getCallPutQuantities(callPrice, callQuantity, putPrice, putQuantity, multiple) {
-    while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > 200 &&
-      callQuantity + putQuantity < 25) {
+  getCallPutQuantities(callPrice, callQuantity, putPrice, putQuantity, multiple, minCashAllocation: number, maxCashAllocation: number) {
+    while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > 100 &&
+      callQuantity + putQuantity < 15 && ((callPrice * callQuantity) + (putPrice * putQuantity)) <= maxCashAllocation
+      && ((callPrice * callQuantity) + (putPrice * putQuantity)) >= minCashAllocation) {
       if (callPrice > putPrice) {
         callQuantity++;
         putQuantity *= multiple;
