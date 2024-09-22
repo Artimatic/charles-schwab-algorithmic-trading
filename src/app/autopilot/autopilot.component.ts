@@ -1210,7 +1210,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       // this.trimHoldings();
       this.checkIfTooManyHoldings(this.currentHoldings, 5);
     } else {
-      const backtestData = await this.strategyBuilderService.getBacktestData('UPRO');
+      const backtestData = await this.strategyBuilderService.getBacktestData('SPY');
 
       let buySymbol = 'SPY';
       if (backtestData && backtestData?.ml > 0.15) {
