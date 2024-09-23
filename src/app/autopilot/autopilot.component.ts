@@ -600,12 +600,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const cash = await this.cartService.getAvailableFunds(false);
     const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
     const minCash = round(this.riskToleranceList[1] * cash, 2);
-    await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs, this.currentHoldings, minCash, maxCash);
-    await this.addStranglesToList();
+    this.optionsOrderBuilderService.createTradingPair(this.tradingPairs, this.currentHoldings, minCash, maxCash);
+    this.handleStrategy();
+    this.addStranglesToList();
     this.inverseDispersion();
     // await this.findStrangleTrade();
     // await this.optionsOrderBuilderService.createTradingPair();
-    await this.handleStrategy();
   }
 
   async addStranglesToList() {
@@ -623,7 +623,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.90)) {
             if (prediction < 0.3 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
               const optionStrategy = await this.strategyBuilderService.getPutStrangleTrade(symbol);
-              if (optionStrategy && optionStrategy.call) {
+              if (optionStrategy && optionStrategy.call && optionStrategy.put) {
                 const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
                 const order = await this.strategyBuilderService.addStrangleOrder(symbol, price, optionStrategy);
                 console.log('Adding Bearish strangle', symbol, price, optionStrategy);
@@ -632,7 +632,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             } else {
               if (prediction > 0.6 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
                 const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade(symbol);
-                if (optionStrategy.call && optionStrategy.put) {
+                if (optionStrategy && optionStrategy.call && optionStrategy.put) {
                   const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
                   const order = await this.strategyBuilderService.addStrangleOrder(symbol, price, optionStrategy);
                   console.log('Adding Bullish strangle', symbol, price, optionStrategy);
