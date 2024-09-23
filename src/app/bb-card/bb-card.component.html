@@ -4,15 +4,16 @@
 </div>
 <div *ngIf="!order.primaryLeg && !order.primaryLegs">
   <p-button [label]="order.holding.symbol" (click)="toggleSettingsVisible()" [badge]="firstFormGroup.value.quantity"
-  class="p-button-outlined p-button-help"></p-button>
+    class="p-button-outlined p-button-help"></p-button>
 </div>
 <div *ngIf="order.primaryLegs && !order.secondaryLegs">
-  <p-button [label]="order.primaryLegs[0].description" (click)="toggleSettingsVisible()" [badge]="firstFormGroup.value.quantity"
-  class="p-button-outlined"></p-button>
+  <p-button [label]="order.primaryLegs[0].description" (click)="toggleSettingsVisible()"
+    [badge]="firstFormGroup.value.quantity" class="p-button-outlined"></p-button>
 </div>
-<div *ngIf="order.primaryLegs && order.secondaryLegs"></div>
-  <p-button [label]="order.primaryLegs[0].description + order.secondaryLegs[0].description" (click)="toggleSettingsVisible()" [badge]="firstFormGroup.value.quantity"
-  class="p-button-outlined p-button-secondary"></p-button>
+<div *ngIf="order.primaryLegs && order.secondaryLegs">
+  <p-button [label]="order.primaryLegs[0].description + order.secondaryLegs[0].description"
+    (click)="toggleSettingsVisible()" [badge]="firstFormGroup.value.quantity"
+    class="p-button-outlined p-button-secondary"></p-button>
 </div>
 <p-dialog [header]="order.holding.symbol" [(visible)]="settingsVisible">
   <div class="banner" *ngIf="error">
