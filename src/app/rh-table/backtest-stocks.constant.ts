@@ -3996,6 +3996,7 @@ export const AlwaysBuy = [].map(b => createParam(b));
 export const PersonalBearishPicks = ['TWLO',
   'MDB',
   'CVNA',
+  'SPOT',
   'WING'].map(b => createParam(b));
 
 

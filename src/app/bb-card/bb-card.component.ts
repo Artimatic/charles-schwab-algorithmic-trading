@@ -264,6 +264,11 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   async step(queueItem: AlgoQueueItem) {
+    if (!this.order) {
+      console.log('Order not found', this);
+      this.ngOnDestroy();
+      return;
+    }
     if (this.alive) {
       this.setLive();
 

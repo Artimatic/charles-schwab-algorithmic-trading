@@ -83,7 +83,11 @@ export class AiPicksService {
       }
     } catch (error) {
       console.log(error);
-      return { label: symbol, value: (trainingResult as any).nextOutput };
+      if (trainingResult && (trainingResult as any).nextOutput) {
+        return { label: symbol, value: (trainingResult as any).nextOutput };
+      } else {
+        console.log('Training results missing next output'), trainingResult;
+      }
     }
     return null;
   }
