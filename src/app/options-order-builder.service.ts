@@ -140,7 +140,7 @@ export class OptionsOrderBuilderService {
   }
 
   getCallPutQuantities(callPrice, callQuantity, putPrice, putQuantity, multiple, minCashAllocation: number, maxCashAllocation: number) {
-    while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > 100 &&
+    while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > 150 &&
       callQuantity + putQuantity < 15 && ((callPrice * callQuantity) + (putPrice * putQuantity)) <= maxCashAllocation
       && ((callPrice * callQuantity) + (putPrice * putQuantity)) >= minCashAllocation) {
       if (callPrice > putPrice) {
