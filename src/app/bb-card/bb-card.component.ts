@@ -378,7 +378,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
   incrementBuy(order = null) {
     if (order) {
-      console.log('Sent buy order', order.holding.symbol, order);
+      console.log('Sent buy order', order.holding.symbol, order, this.order);
 
       this.orders.push(order);
       this.order.buyCount += order.quantity;
@@ -405,7 +405,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
   async sendBuy(buyOrder: SmartOrder) {
     if (buyOrder) {
-      const log = `ORDER SENT ${buyOrder.side} ${buyOrder.quantity} ${buyOrder.holding.symbol}@${buyOrder.price}`;
+      const log = `ORDER SENT ${buyOrder.side} ${buyOrder.quantity} ${buyOrder.holding.symbol}@${buyOrder.price}, Total quantity purchased: ${this.order.buyCount}, Position Count: ${this.order.positionCount}`;
 
       if (this.live && this.smsOption.value !== 'only_sms') {
         const resolvedOrder = {
@@ -415,9 +415,9 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           side: 'Buy',
           timeSubmitted: moment().valueOf()
         };
-        const resolve = (response) => {
-          this.incrementBuy(resolvedOrder);
+        this.incrementBuy(resolvedOrder);
 
+        const resolve = (response) => {
           console.log(`${moment().format('hh:mm')} ${log}`);
           this.reportingService.addAuditLog(this.order.holding.symbol, log);
         };

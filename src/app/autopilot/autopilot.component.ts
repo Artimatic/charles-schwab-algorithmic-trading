@@ -130,7 +130,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   destroy$ = new Subject();
   currentHoldings: PortfolioInfoHolding[] = [];
   strategyCounter = null;
-  maxTradeCount = 11;
+  maxTradeCount = 15;
   maxHoldings = 15;
   developedStrategy = false;
   tradingPairsCounter = 0;
@@ -164,7 +164,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   dayTradeRiskCounter = 0;
 
   riskToleranceList = [
-    RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.ExtremeFear,
     RiskTolerance.Fear,
@@ -406,6 +405,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.80)) {
               const reason = 'Low volatility';
               this.cartService.addToCart(trade[0], true, reason);
+              this.tradingPairs = this.tradingPairs.filter((pair: SmartOrder[]) => pair[0].holding.symbol !== trade[0].holding.symbol);
             }
           }
         }
@@ -417,6 +417,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           tradePairOrder.secondaryLegs = trade[1].primaryLegs;
           const reason = 'Low volatility';
           this.cartService.addToCart(tradePairOrder, true, reason);
+          this.tradingPairs = this.tradingPairs.filter((pair: SmartOrder[]) => pair[0].holding.symbol !== trade[0].holding.symbol && pair[1].holding.symbol !== trade[1].holding.symbol);
         }
       }
     } else {
@@ -1506,10 +1507,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async handleStrategy() {
     switch (this.strategyList[this.strategyCounter]) {
       case Strategy.OptionsStrangle:
-        await this.getNewTrades(null, null, 3);
+        await this.getNewTrades(null, null, 8);
         break;
       case Strategy.TradingPairs:
-        await this.getNewTrades(null, null, 3);
+        await this.getNewTrades(null, null, 8);
         break;
       case Strategy.Swingtrade:
         await this.getNewTrades(null, null, 8);
