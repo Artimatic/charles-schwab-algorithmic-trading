@@ -4,21 +4,11 @@
             <div class="strategy-list">
                 <div class="buy-sell-container">
                     <div *ngFor="let buy of strategy">
-                        <div *ngIf="buy.primaryLegs">
-                            <div *ngFor="let leg of buy.primaryLegs">
-                                <p-tag *ngIf="leg.putCallInd==='C'" styleClass="p-mr-2" severity="success"
-                                    [value]="leg.description" [rounded]="true"></p-tag>
-                                <p-tag *ngIf="leg.putCallInd==='P'" styleClass="p-mr-2" severity="danger"
-                                    [value]="leg.description" [rounded]="true"></p-tag>
-                            </div>
-                        </div>
-                        <div *ngIf="buy.secondaryLegs">
-                            <div *ngFor="let leg of buy.secondaryLegs">
-                                <p-tag *ngIf="leg.putCallInd==='C'" styleClass="p-mr-2" severity="success"
-                                    [value]="leg.description" [rounded]="true"></p-tag>
-                                <p-tag *ngIf="leg.putCallInd==='P'" styleClass="p-mr-2" severity="danger"
-                                    [value]="leg.description" [rounded]="true"></p-tag>
-                            </div>
+                        <div *ngFor="let leg of buy.primaryLegs">
+                            <p-tag *ngIf="leg.putCallInd==='C'" styleClass="p-mr-2" severity="success"
+                                [value]="leg.description" [rounded]="true"></p-tag>
+                            <p-tag *ngIf="leg.putCallInd==='P'" styleClass="p-mr-2" severity="danger"
+                                [value]="leg.description" [rounded]="true"></p-tag>
                         </div>
                     </div>
                 </div>
