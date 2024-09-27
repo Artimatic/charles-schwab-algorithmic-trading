@@ -1414,6 +1414,24 @@ export class AutopilotComponent implements OnInit, OnDestroy {
                   this.cartService.addToCart(pair[1], true, 'Hedging call with correlated stock');
                 }
               }
+            } else if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
+              const pair = this.tradingPairs.find(tradeArr => tradeArr.length === 2 && tradeArr[1].holding.symbol === holding.name);
+              if (pair) {
+                console.log(`Trading pair for ${holding.name} put is ${pair[1].holding.name} call`);
+                if (!this.currentHoldings.find(curr => curr.name === pair[1].holding.name)) {
+                  const spyStrangle = await this.strategyBuilderService.getCallStrangleTrade('SPY');
+                  if (spyStrangle) {
+                    const callPrice = this.strategyBuilderService.findOptionsPrice(spyStrangle.call.bid, spyStrangle.call.ask) * 100;
+                    const putPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
+                    const cash = await this.cartService.getAvailableFunds(false);
+                    const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
+                    const minCash = round(this.riskToleranceList[1] * cash, 2);
+                    const callQuantity = this.optionsOrderBuilderService.getCallPutQuantities(callPrice, 1, putPrice, holding.primaryLegs[0].quantity, 1, minCash, maxCash).callQuantity;
+                    const option = await this.cartService.createOptionOrder('SPY', [spyStrangle.call], callPrice, callQuantity, OrderTypes.call, 'Buy', callQuantity);
+                    this.cartService.addToCart(option, true, 'Hedging put with SPY');
+                  }
+                }
+              }
             }
           }
         }
@@ -1576,7 +1594,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   showStrategies() {
+    const copy = this.tradingPairs;
+    this.tradingPairs = [];
     this.revealPotentialStrategy = !this.revealPotentialStrategy;
+    this.tradingPairs = this.tradingPairs.concat(copy);
     console.log(this.tradingPairs);
   }
 

@@ -144,6 +144,7 @@ const fullList = [
     'COST',
     'COKE',
     'CHTR',
+    'DASH',
     'NUE'];
 
 export const CurrentStockList = fullList.map(s => {

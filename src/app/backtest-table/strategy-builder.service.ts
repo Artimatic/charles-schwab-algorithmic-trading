@@ -168,8 +168,8 @@ export class StrategyBuilderService {
     return false;
   }
 
-  passesVolumeCheck(currTotalVolume, prevObj) {
-    return (!prevObj || (currTotalVolume > prevObj.totalVolume)) && currTotalVolume > 190;
+  passesVolumeCheck(openInterest, currTotalVolume, prevObj) {
+    return (!prevObj || (currTotalVolume > prevObj.totalVolume)) && (currTotalVolume > 190 || openInterest > 1000);
   }
 
   async getCallStrangleTrade(symbol: string, minExpiration = this.defaultMinExpiration): Promise<Strangle> {
@@ -185,18 +185,18 @@ export class StrategyBuilderService {
       let strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
       potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
         if ((!prev.call || (Math.abs(Number(curr.strategyStrike) - goal) < Math.abs(Number(prev.call.strikePrice) - goal)))) {
-          if (curr.secondaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.call)) {
+          if (curr.secondaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.secondaryLeg.openInterest, curr.secondaryLeg.totalVolume, prev.call)) {
             prev.call = JSON.parse(JSON.stringify(curr.secondaryLeg));
-          } else if (curr.primaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.call)) {
+          } else if (curr.primaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.primaryLeg.openInterest, curr.primaryLeg.totalVolume, prev.call)) {
             prev.call = JSON.parse(JSON.stringify(curr.primaryLeg));
           }
         }
 
         if ((!prev.put && curr.strategyStrike < goal) ||
           (this.isPutHedge(goal, curr.strategyStrike, impliedMovement))) {
-          if (curr.primaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.put)) {
+          if (curr.primaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.primaryLeg.openInterest, curr.primaryLeg.totalVolume, prev.put)) {
             prev.put = JSON.parse(JSON.stringify(curr.primaryLeg));
-          } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.put)) {
+          } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.secondaryLeg.openInterest, curr.secondaryLeg.totalVolume, prev.put)) {
             prev.put = JSON.parse(JSON.stringify(curr.secondaryLeg));
           }
         }
@@ -227,16 +227,16 @@ export class StrategyBuilderService {
       potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
         if ((!prev.call && curr.strategyStrike > goal) ||
           (this.isCallHedge(goal, curr.strategyStrike, impliedMovement))) {
-          if (curr.secondaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.call)) {
+          if (curr.secondaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.secondaryLeg.openInterest, curr.secondaryLeg.totalVolume, prev.call)) {
             prev.call = JSON.parse(JSON.stringify(curr.secondaryLeg));
-          } else if (curr.primaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.call)) {
+          } else if (curr.primaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.primaryLeg.openInterest, curr.primaryLeg.totalVolume, prev.call)) {
             prev.call = JSON.parse(JSON.stringify(curr.primaryLeg));
           }
         }
         if (!prev.put || (Math.abs(curr.strategyStrike - goal) < Math.abs(Number(prev.put.strikePrice) - goal))) {
-          if (curr.primaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.primaryLeg.totalVolume, prev.put)) {
+          if (curr.primaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.primaryLeg.openInterest, curr.primaryLeg.totalVolume, prev.put)) {
             prev.put = JSON.parse(JSON.stringify(curr.primaryLeg));
-          } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.secondaryLeg.totalVolume, prev.put)) {
+          } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.secondaryLeg.openInterest, curr.secondaryLeg.totalVolume, prev.put)) {
             prev.put = JSON.parse(JSON.stringify(curr.secondaryLeg));
           }
         }
