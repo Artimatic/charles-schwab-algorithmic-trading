@@ -603,8 +603,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const minCash = round(this.riskToleranceList[1] * cash, 2);
     this.optionsOrderBuilderService.createTradingPair(this.tradingPairs, this.currentHoldings, minCash, maxCash);
     this.handleStrategy();
-    this.addStranglesToList();
-    this.inverseDispersion();
     // await this.findStrangleTrade();
     // await this.optionsOrderBuilderService.createTradingPair();
   }
@@ -1525,13 +1523,17 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async handleStrategy() {
     switch (this.strategyList[this.strategyCounter]) {
       case Strategy.OptionsStrangle:
-        await this.getNewTrades(null, null, 8);
+        this.addStranglesToList();
+        this.inverseDispersion();
+        await this.getNewTrades(null, null, 5);
         break;
       case Strategy.TradingPairs:
-        await this.getNewTrades(null, null, 8);
+        this.addStranglesToList();
+        this.inverseDispersion();
+        await this.getNewTrades(null, null, 5);
         break;
       case Strategy.Swingtrade:
-        await this.getNewTrades(null, null, 8);
+        await this.getNewTrades(null, null, 5);
         break;
       case Strategy.TrimHoldings:
         this.trimHoldings();
@@ -1570,6 +1572,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.getNewTrades(null, null, 5);
         break;
       case Strategy.InverseDispersion:
+        await this.inverseDispersion();
+        await this.addStranglesToList();
         await this.getNewTrades(null, null, 5);
         break;
       case Strategy.Default: {

@@ -72,6 +72,7 @@ const fullList = [
     'LULU',
     'HLT',
     'HAL',
+    'CAVA',
     'CARR',
     'TSN',
     'LEN',
