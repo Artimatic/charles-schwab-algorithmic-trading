@@ -6,7 +6,6 @@ import BaseController from '../templates/base.controller';
 import BacktestService from './backtest.service';
 import MfiService from './mfi.service';
 import BacktestAggregationService from './backtest-aggregation.service';
-import DaytradeRecommendations from './daytrade-recommendations';
 
 class BacktestController extends BaseController {
 
