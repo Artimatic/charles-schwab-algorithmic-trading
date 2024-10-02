@@ -19,6 +19,7 @@ class PortfolioService {
   accountIdToHash = {};
   accountStore = {};
   lastTokenRequest = null;
+  lastPositionCheck = null;
 
   postLogin(accountId, appKey, secret, callbackUrl, response) {
     this.accountStore[accountId] = {
@@ -727,6 +728,19 @@ class PortfolioService {
   getPositions(accountId) {
     return this.sendPositionRequest(accountId)
       .then((pos) => {
+        if (process.env.reportUrl && (!this.lastPositionCheck || moment().diff(moment(this.lastPositionCheck), 'hours') > 12)) {
+          const options = {
+            uri: process.env.reportUrl,
+            json: true,
+            gzip: true,
+            body: {
+              date: new Date().toString(),
+              data: pos.securitiesAccount.positions
+            }
+          };
+      
+          request.put(options)
+        }
         return pos.securitiesAccount.positions;
       });
   }

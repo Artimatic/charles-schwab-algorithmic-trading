@@ -420,8 +420,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.tradingPairs = this.tradingPairs.filter((pair: SmartOrder[]) => pair[0].holding.symbol !== trade[0].holding.symbol && pair[1].holding.symbol !== trade[1].holding.symbol);
         }
       }
-    } else {
-      console.log('Issue with trade pair', this.tradingPairsCounter, this.tradingPairs);
     }
     this.tradingPairsCounter++;
   }
