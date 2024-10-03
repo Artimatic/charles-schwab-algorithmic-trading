@@ -130,7 +130,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   destroy$ = new Subject();
   currentHoldings: PortfolioInfoHolding[] = [];
   strategyCounter = null;
-  maxTradeCount = 15;
+  maxTradeCount = 9;
   maxHoldings = 15;
   developedStrategy = false;
   tradingPairsCounter = 0;
@@ -302,7 +302,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       },
       {
-        label: 'Test',
+        label: 'Test pilot',
         command: async () => {
           this.currentHoldings = await this.cartService.findCurrentPositions();
           await this.modifyCurrentHoldings();
@@ -1523,12 +1523,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       case Strategy.OptionsStrangle:
         this.addStranglesToList();
         this.inverseDispersion();
-        await this.getNewTrades(null, null, 5);
+        await this.getNewTrades(null, null, 2);
         break;
       case Strategy.TradingPairs:
         this.addStranglesToList();
         this.inverseDispersion();
-        await this.getNewTrades(null, null, 5);
+        await this.getNewTrades(null, null, 2);
         break;
       case Strategy.Swingtrade:
         await this.getNewTrades(null, null, 5);
@@ -1563,16 +1563,16 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             this.cartService.addToCart(trade[0], false, 'Buy calls strategy');
           }
         });
-        await this.getNewTrades(null, null, 5);
+        await this.getNewTrades(null, null, 2);
         break;
       case Strategy.BuySnP:
         this.strategyBuilderService.buySnP();
-        await this.getNewTrades(null, null, 5);
+        await this.getNewTrades(null, null, 2);
         break;
       case Strategy.InverseDispersion:
         await this.inverseDispersion();
         await this.addStranglesToList();
-        await this.getNewTrades(null, null, 5);
+        await this.getNewTrades(null, null, 3);
         break;
       case Strategy.Default: {
         await this.getNewTrades();

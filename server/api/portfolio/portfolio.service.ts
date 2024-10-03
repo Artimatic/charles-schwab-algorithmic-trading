@@ -4,6 +4,7 @@ import * as _ from 'lodash';
 import * as moment from 'moment';
 
 import QuoteService from '../quote/quote.service';
+import PortfolioDbService from '../mongodb/portfolio-db.service';
 
 const charlesSchwabTraderUrl = 'https://api.schwabapi.com/trader/v1/';
 const charlesSchwabMarketDataUrl = 'https://api.schwabapi.com/marketdata/v1/';
@@ -725,10 +726,12 @@ class PortfolioService {
     return request.post(options);
   }
 
-  getPositions(accountId) {
+  async getPositions(accountId) {
     return this.sendPositionRequest(accountId)
       .then((pos) => {
         if (process.env.reportUrl && (!this.lastPositionCheck || moment().diff(moment(this.lastPositionCheck), 'hours') > 12)) {
+          this.lastPositionCheck = moment();
+          PortfolioDbService.write(pos.securitiesAccount.positions);
           const options = {
             uri: process.env.reportUrl,
             json: true,

@@ -282,7 +282,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             this.machineLearningService
               .trainDaytrade(this.order.holding.symbol.toUpperCase(),
                 moment().add({ days: 1 }).format('YYYY-MM-DD'),
-                moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
+                moment().format('YYYY-MM-DD'),
                 1,
                 this.globalSettingsService.daytradeAlgo
               ).subscribe((mlResult: TrainingResults[]) => {
