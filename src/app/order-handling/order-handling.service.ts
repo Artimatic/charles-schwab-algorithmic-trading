@@ -108,7 +108,7 @@ export class OrderHandlingService {
                 this.machineLearningService.activate(symbol,
                   this.globalSettingsService.daytradeAlgo).subscribe(async (mlResult) => {
                     if (!mlResult || !mlResult.nextOutput) {
-                      await this.trainIntradayModel(symbol);
+                      await this.trainIntradayModel(analysis, symbol);
                     } else {
                       const queueItem: AlgoQueueItem = {
                         symbol: symbol,
@@ -119,7 +119,7 @@ export class OrderHandlingService {
                       this.tradeService.algoQueue.next(queueItem);
                     }
                   }, () => {
-                    this.trainIntradayModel(symbol);
+                    this.trainIntradayModel(analysis, symbol);
                   });
 
             }
@@ -128,8 +128,8 @@ export class OrderHandlingService {
     }
   }
 
-  async trainIntradayModel(symbol: string) {
-    const analysis = await this.machineLearningService
+  async trainIntradayModel(analysis, symbol: string) {
+    const ml = await this.machineLearningService
       .trainDaytrade(symbol.toUpperCase(),
         moment().add({ days: 1 }).format('YYYY-MM-DD'),
         moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
@@ -141,7 +141,7 @@ export class OrderHandlingService {
       symbol: symbol,
       reset: false,
       analysis: analysis,
-      ml: { guesses: null, correct: null, score: null, nextOutput: 0 }
+      ml: ml
     };
     this.tradeService.algoQueue.next(queueItem);
   }

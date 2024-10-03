@@ -49,5 +49,9 @@ module.exports = {
     key: _.get(credentials, 'default.twilio.key', _.get(credentials, 'twilio.key', null)),
     id: _.get(credentials, 'default.twilio.id', _.get(credentials, 'twilio.id', null)),
     num: _.get(credentials, 'default.twilio.num', _.get(credentials, 'twilio.num', null)),
+  },
+  mongodb: {
+    username: _.get(credentials, 'default.mongodb.username', _.get(credentials, 'mongodb.username', process.env.mongodbUsername)),
+    password: _.get(credentials, 'default.mongodb.password', _.get(credentials, 'mongodb.password', process.env.mongodbPassword))
   }
 };
