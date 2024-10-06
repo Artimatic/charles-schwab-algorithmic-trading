@@ -47,7 +47,6 @@ import { OptionsViewComponent } from './options-view/options-view.component';
 import { ScoreBoardComponent } from './score-board/score-board.component';
 import { IntradayBacktestViewComponent } from './intraday-backtest-view/intraday-backtest-view.component';
 import { TerminalViewComponent } from './terminal-view/terminal-view.component';
-import { SimpleCardComponent } from './simple-card/simple-card.component';
 import { OverviewModule } from './overview/overview.module';
 import { SettingsModule } from './settings/settings.module';
 import { MachineLearningModule } from './machine-learning/machine-learning.module';
@@ -76,7 +75,6 @@ import { TimepickerModule } from 'ngx-bootstrap/timepicker';
 import { PieAlloctComponent } from './pie-alloct/pie-alloct.component';
 import { AiPicksComponent } from './ai-picks/ai-picks.component';
 import { AutoBacktestSwitchComponent } from './auto-backtest-switch/auto-backtest-switch.component';
-import { WatchListComponent } from './watch-list/watch-list.component';
 import { SchedulerService } from '@shared/service/scheduler.service';
 import { DialogService, DynamicDialogModule } from 'primeng/dynamicdialog';
 import { PasswordModule } from 'primeng/password';
@@ -88,7 +86,6 @@ import { DataViewModule } from 'primeng/dataview';
 import { AutopilotComponent } from './autopilot/autopilot.component';
 import { RippleModule } from 'primeng/ripple';
 import { BacktestTableComponent } from './backtest-table/backtest-table.component';
-import { StrategyFinderComponent } from './backtest-table/strategy-finder/strategy-finder.component';
 import { AddOptionsTradeComponent } from './autopilot/add-options-trade/add-options-trade.component';
 import { DaytradeActiveSearchComponent } from './autopilot/daytrade-active-search/daytrade-active-search.component';
 import { StockListDialogComponent } from './stock-list-dialog/stock-list-dialog.component';
@@ -115,7 +112,6 @@ import { SimulationChartComponent } from './simulation/simulation-chart/simulati
     ScoreBoardComponent,
     IntradayBacktestViewComponent,
     TerminalViewComponent,
-    SimpleCardComponent,
     MlCardComponent,
     TestResultsTableComponent,
     ChartDialogComponent,
@@ -137,10 +133,8 @@ import { SimulationChartComponent } from './simulation/simulation-chart/simulati
     PieAlloctComponent,
     AiPicksComponent,
     AutoBacktestSwitchComponent,
-    WatchListComponent,
     AutopilotComponent,
     BacktestTableComponent,
-    StrategyFinderComponent,
     AddOptionsTradeComponent,
     DaytradeActiveSearchComponent,
     StockListDialogComponent,

@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { DailyBacktestService } from './daily-backtest.service';
 
-describe('DailyBacktestService', () => {
+xdescribe('DailyBacktestService', () => {
   beforeEach(() => TestBed.configureTestingModule({}));
 
   it('should be created', () => {

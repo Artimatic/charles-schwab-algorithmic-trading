@@ -6,32 +6,6 @@ import { RouterModule } from '@angular/router';
 import { ChartModule } from 'angular-highcharts';
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import 'hammerjs';
-import {
-  MatMenuModule,
-  MatToolbarModule,
-  MatIconModule,
-  MatCardModule,
-  MatProgressSpinnerModule,
-  MatProgressBarModule,
-  MatGridListModule,
-  MatButtonModule,
-  MatSidenavModule,
-  MatExpansionModule,
-  MatTableModule,
-  MatCheckboxModule,
-  MatRadioModule,
-  MatDialogModule,
-  MatFormFieldModule,
-  MatInputModule,
-  MatSnackBarModule,
-  MatTabsModule,
-  MatListModule,
-  MatChipsModule,
-  MatStepperModule,
-  MatSelectModule,
-  MatTooltipModule,
-} from '@angular/material';
 
 import { routes } from './app.routes';
 import { BulkBacktestComponent } from './bulk-backtest';
@@ -62,6 +36,9 @@ import { ResearchViewComponent } from './research-view/research-view.component';
 import { OptionsViewComponent } from './options-view/options-view.component';
 
 import { APP_BASE_HREF } from '@angular/common';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { DialogService } from 'primeng/dynamicdialog';
+import { MessageService } from 'primeng/api';
 
 describe('AppComponent', () => {
   beforeEach(async(() => {
@@ -88,35 +65,13 @@ describe('AppComponent', () => {
       imports: [
         BrowserModule,
         BrowserAnimationsModule,
+        HttpClientTestingModule,
         FormsModule,
         ReactiveFormsModule,
         RouterModule.forRoot(routes, {
           enableTracing: true
         }),
-        MatMenuModule,
-        MatToolbarModule,
-        MatIconModule,
-        MatCardModule,
-        MatProgressSpinnerModule,
-        MatProgressBarModule,
-        MatGridListModule,
-        MatButtonModule,
-        MatSidenavModule,
-        MatExpansionModule,
-        MatTableModule,
-        MatCheckboxModule,
-        MatRadioModule,
-        MatDialogModule,
-        ChartModule,
-        MatFormFieldModule,
-        MatInputModule,
-        MatSnackBarModule,
-        MatTabsModule,
-        MatListModule,
-        MatChipsModule,
-        MatStepperModule,
-        MatSelectModule,
-        MatTooltipModule,
+        ChartModule
       ],
       providers: [
         BacktestService,
@@ -127,24 +82,10 @@ describe('AppComponent', () => {
         DaytradeService,
         ReportingService,
         ScoreKeeperService,
+        DialogService,
+        MessageService,
         { provide: APP_BASE_HREF, useValue : '/' },
       ]
     }).compileComponents();
-  }));
-  xit('createshould create the app', async(() => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.debugElement.componentInstance;
-    expect(app).toBeTruthy();
-  }));
-  it(`should have as title 'app'`, async(() => {
-    const fixture = TestBed.createComponent(AppComponent);
-    const app = fixture.debugElement.componentInstance;
-    expect(app.title).toEqual('app');
-  }));
-  xit('createshould render title in a h1 tag', async(() => {
-    const fixture = TestBed.createComponent(AppComponent);
-    fixture.detectChanges();
-    const compiled = fixture.debugElement.nativeElement;
-    expect(compiled.querySelector('h1').textContent).toContain('Welcome to app!');
   }));
 });

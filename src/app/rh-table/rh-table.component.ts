@@ -18,7 +18,6 @@ import { Subscription, Observable, Subject } from 'rxjs';
 import { DailyBacktestService } from '@shared/daily-backtest.service';
 import { AiPicksService } from '@shared/services/ai-picks.service';
 import { ReportingService } from '@shared/services/reporting.service';
-import { WatchListService } from '../watch-list/watch-list.service';
 import { ClientSmsService } from '@shared/services/client-sms.service';
 import { SchedulerService } from '@shared/service/scheduler.service';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
@@ -119,10 +118,8 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
     private reportingService: ReportingService,
     private clientSmsService: ClientSmsService,
     private schedulerService: SchedulerService,
-    private watchListService: WatchListService,
     private machineLearningService: MachineLearningService,
-    private portfolioService: PortfolioService,
-    private strategyBuilderService: StrategyBuilderService) { }
+    private portfolioService: PortfolioService) { }
 
   ngOnInit() {
     this.unsubscribe$ = new Subject();
@@ -367,25 +364,6 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
 
                     setTimeout(() => {
                       this.schedulerService.schedule(() => {
-                        if (bullishSignals && bearishSignals) {
-                          if (bearishSignals.length > bullishSignals.length) {
-                            const foundInWatchList = this.watchListService.watchList.find(item => {
-                              return item.stock === symbol;
-                            });
-                            if (foundInWatchList) {
-                              this.clientSmsService.sendSellSms(foundInWatchList.stock, foundInWatchList.phoneNumber, 0, 0)
-                                .subscribe();
-                            }
-                          } else if (bearishSignals.length < bullishSignals.length) {
-                            const foundInWatchList = this.watchListService.watchList.find(item => {
-                              return item.stock === symbol;
-                            });
-                            if (foundInWatchList) {
-                              this.clientSmsService.sendBuySms(foundInWatchList.stock, foundInWatchList.phoneNumber, 0, 0)
-                                .subscribe();
-                            }
-                          }
-                        }
                         this.getImpliedMovement(testResults);
                       }, 'rhtable_process' + symbol);
                     }, 1000 - this.backtestBuffer.length * 10000);
@@ -756,25 +734,6 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
       }
     } catch (error) {
       console.log(error);
-    }
-    if (element.sellSignals && element.buySignals) {
-      if (element.sellSignals.length > element.buySignals.length) {
-        const foundInWatchList = this.watchListService.watchList.find(item => {
-          return item.stock === element.stock;
-        });
-        if (foundInWatchList) {
-          this.clientSmsService.sendSellSms(foundInWatchList.stock, foundInWatchList.phoneNumber, 0, 0)
-            .subscribe();
-        }
-      } else if (element.sellSignals.length < element.buySignals.length) {
-        const foundInWatchList = this.watchListService.watchList.find(item => {
-          return item.stock === element.stock;
-        });
-        if (foundInWatchList) {
-          this.clientSmsService.sendBuySms(foundInWatchList.stock, foundInWatchList.phoneNumber, 0, 0)
-            .subscribe();
-        }
-      }
     }
   }
 

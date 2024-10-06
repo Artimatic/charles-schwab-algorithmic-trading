@@ -353,14 +353,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             if (shouldSell || (backtestData && backtestData.ml < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'))) {
               const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
               const reason = shouldSell ? 'Should sell options' : 'Backtest recommends selling';
-              // const foundTradingPair = this.tradingPairs.find(pair => pair.find(trade => trade.primaryLegs && trade.primaryLegs[0].symbol === holding.primaryLegs[0].symbol && trade.primaryLegs[0].quantity === holding.primaryLegs[0].quantity));
-              // if (foundTradingPair && foundTradingPair.every(p => this.currentHoldings.find((holding) => holding.primaryLegs[0].symbol === p.primaryLegs[0].symbol && holding.primaryLegs[0].quantity === p.primaryLegs[0].quantity))) {
-              //   foundTradingPair.forEach(pair => {
-              //     this.cartService.addOptionOrder(holding.name, [pair.primaryLegs[0]], estPrice, pair.primaryLegs[0].quantity, orderType, 'Sell', reason);
-              //   });
-              // } else {
-              //   this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);
-              // }
               this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);
             }
           } else if (callPutInd === 'p') {
@@ -368,14 +360,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             if (shouldSell || (backtestData && backtestData.ml > 0.5 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY'))) {
               const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
               const reason = shouldSell ? 'Should sell options' : 'Backtest recommends selling';
-              // const foundTradingPair = this.tradingPairs.find(pair => pair.find(trade => trade.primaryLegs && trade.primaryLegs[0].symbol === holding.primaryLegs[0].symbol && trade.primaryLegs[0].quantity === holding.primaryLegs[0].quantity));
-              // if (foundTradingPair && foundTradingPair.every(p => this.currentHoldings.find((holding) => holding.primaryLegs[0].symbol === p.primaryLegs[0].symbol && holding.primaryLegs[0].quantity === p.primaryLegs[0].quantity))) {
-              //   foundTradingPair.forEach(pair => {
-              //     this.cartService.addOptionOrder(holding.name, [pair.primaryLegs[0]], estPrice, pair.primaryLegs[0].quantity, orderType, 'Sell', reason);
-              //   });
-              // } else {
-              //   this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);
-              // }
               this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);
             }
           }
@@ -529,7 +513,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   resetCart() {
     this.lastOrderListIndex = 0;
-    //this.cartService.removeCompletedOrders();
     this.cartService.removeCompletedOrders();
     this.developedStrategy = false;
   }

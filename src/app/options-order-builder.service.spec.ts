@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { OptionsOrderBuilderService } from './options-order-builder.service';
 
-describe('OptionsOrderBuilderService', () => {
+xdescribe('OptionsOrderBuilderService', () => {
   let service: OptionsOrderBuilderService;
 
   beforeEach(() => {

@@ -1,6 +1,7 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AiPicksComponent } from './ai-picks.component';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 describe('AiPicksComponent', () => {
   let component: AiPicksComponent;
@@ -8,7 +9,8 @@ describe('AiPicksComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ AiPicksComponent ]
+      declarations: [ AiPicksComponent ],
+      imports: [ HttpClientTestingModule ]
     })
     .compileComponents();
   }));

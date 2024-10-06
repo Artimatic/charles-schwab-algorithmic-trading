@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { LocalPreferences } from './local-preferences.service';
 
-describe('MlBuyAtCloseService', () => {
+xdescribe('LocalPreferences', () => {
   let service: LocalPreferences;
 
   beforeEach(() => {

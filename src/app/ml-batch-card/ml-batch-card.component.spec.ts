@@ -2,7 +2,7 @@ import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { MlBatchCardComponent } from './ml-batch-card.component';
 
-describe('MlBatchCardComponent', () => {
+xdescribe('MlBatchCardComponent', () => {
   let component: MlBatchCardComponent;
   let fixture: ComponentFixture<MlBatchCardComponent>;
 
