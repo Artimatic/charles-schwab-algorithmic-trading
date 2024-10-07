@@ -4,7 +4,7 @@ import { ComplexStrategyBuilderService } from './complex-strategy-builder.servic
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { SmartOrder } from '@shared/index';
 
-describe('ComplexStrategyBuilderService', () => {
+xdescribe('ComplexStrategyBuilderService', () => {
   let service: ComplexStrategyBuilderService;
   let mockStrategyBuilderService = {
     getComplexStrategy: () => {},

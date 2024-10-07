@@ -14,7 +14,8 @@ import { DynamicDialogConfig } from 'primeng/dynamicdialog';
 export class BacktestTableComponent implements OnInit {
   chart: Chart;
   volumeChart: Chart;
-  constructor(private backtestService: BacktestService, public config: DynamicDialogConfig) { }
+  constructor(private backtestService: BacktestService, 
+    public config: DynamicDialogConfig) { }
 
   ngOnInit(): void {
     Highcharts.setOptions({

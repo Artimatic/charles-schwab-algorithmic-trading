@@ -1,6 +1,7 @@
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AutoBacktestSwitchComponent } from './auto-backtest-switch.component';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 describe('AutoBacktestSwitchComponent', () => {
   let component: AutoBacktestSwitchComponent;
@@ -8,7 +9,8 @@ describe('AutoBacktestSwitchComponent', () => {
 
   beforeEach(async(() => {
     TestBed.configureTestingModule({
-      declarations: [ AutoBacktestSwitchComponent ]
+      declarations: [ AutoBacktestSwitchComponent ],
+      imports: [ HttpClientTestingModule ]
     })
     .compileComponents();
   }));

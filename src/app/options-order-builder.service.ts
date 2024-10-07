@@ -41,7 +41,7 @@ export class OptionsOrderBuilderService {
   }
 
   async createProtectivePutOrder(holding: PortfolioInfoHolding) {
-    if (holding.shares && holding.assetType === 'equity') {
+    if (holding.shares && !holding.primaryLegs) {
       let putsNeeded = Math.floor(holding.shares / 100);
 
       putsNeeded -= this.protectivePutCount(holding);
@@ -49,7 +49,7 @@ export class OptionsOrderBuilderService {
       if (putsNeeded > 0) {
         const putOption = await this.strategyBuilderService.getCallStrangleTrade(holding.name);
         const estimatedPrice = this.strategyBuilderService.findOptionsPrice(putOption.put.bid, putOption.put.ask);
-        if (estimatedPrice < 10) {
+        if (estimatedPrice < 3) {
           console.log('Protective put price is too low', estimatedPrice);
           return;
         }
@@ -64,14 +64,14 @@ export class OptionsOrderBuilderService {
     this.strategyBuilderService.getTradingStrategies().forEach(async (strat) => {
       const buys: string[] = strat.strategy.buy;
       const sells: string[] = strat.strategy.sell;
-      this.balanceTrades(tradingPairs, currentHoldings, buys, sells, minCashAllocation, maxCashAllocation);
+      await this.balanceTrades(tradingPairs, currentHoldings, buys, sells, minCashAllocation, maxCashAllocation);
     });
   }
 
   async balanceTrades(tradingPairs: any[], currentHoldings = null, buyList: string[], sellList: string[], minCashAllocation: number, maxCashAllocation: number) {
     for (const buy of buyList) {
       const buyOptionsData = await this.optionsDataService.getImpliedMove(buy).toPromise();
-      if (buyOptionsData && buyOptionsData.move && buyOptionsData.move < 0.15) {
+      if (buyOptionsData && buyOptionsData.move && buyOptionsData.move < 0.16) {
         const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(buy);
         if (!bullishStrangle || !bullishStrangle.call) {
           console.log('Unable to find call for', buy);
@@ -133,6 +133,8 @@ export class OptionsOrderBuilderService {
               const option2 = await this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put], currentPut.price, currentPut.quantity, OrderTypes.put, 'Buy', currentCall.quantity);
               tradingPairs.push([option1, option2]);
             }
+          } else {
+            console.log('Call price too low or high', bullishStrangle.call, callPrice);
           }
         }
       }

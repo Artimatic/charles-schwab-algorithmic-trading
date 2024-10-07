@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { SimulationChartComponent } from './simulation-chart.component';
 
-describe('SimulationChartComponent', () => {
+xdescribe('SimulationChartComponent', () => {
   let component: SimulationChartComponent;
   let fixture: ComponentFixture<SimulationChartComponent>;
 

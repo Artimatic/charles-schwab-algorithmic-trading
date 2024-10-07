@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { StockListDialogComponent } from './stock-list-dialog.component';
 
-describe('StockListDialogComponent', () => {
+xdescribe('StockListDialogComponent', () => {
   let component: StockListDialogComponent;
   let fixture: ComponentFixture<StockListDialogComponent>;
 

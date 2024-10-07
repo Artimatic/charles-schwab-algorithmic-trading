@@ -14,7 +14,7 @@ export class ComplexStrategyBuilderService {
 
   markStategyForDissassembly(symbol: string) {
     let strategies: ComplexStrategy[] = this.strategyBuilderService.getComplexStrategy();
-    strategies = strategies.filter(strat => !strat.trades.find(trade => trade.primaryLegs.find(leg => leg.symbol === symbol)));
+    strategies = strategies.filter(strat => !strat.trades.find(trade => trade.primaryLegs && trade.primaryLegs.find(leg => leg.symbol === symbol)));
     this.strategyBuilderService.setComplexStrategy(strategies);
   }
 }

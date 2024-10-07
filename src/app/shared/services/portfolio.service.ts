@@ -7,7 +7,6 @@ import { AuthenticationService } from './authentication.service';
 import { Holding } from '../models';
 import * as _ from 'lodash';
 import { GlobalSettingsService } from '../../settings/global-settings.service';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Subject, of } from 'rxjs';
 import { Options } from '@shared/models/options';
 
@@ -66,9 +65,7 @@ export class PortfolioService {
 
   constructor(
     private http: HttpClient,
-    private authenticationService: AuthenticationService,
-    private globalSettingsService: GlobalSettingsService,
-    public snackBar: MatSnackBar) {
+    private authenticationService: AuthenticationService) {
   }
 
   getPortfolio(): Observable<any> {
@@ -332,9 +329,6 @@ export class PortfolioService {
 
   getAccountId() {
     if (!this.authenticationService.selectedTdaAccount) {
-      this.snackBar.open('Login Missing - Please log in with TD Ameritrade account', 'Dismiss', {
-        duration: 5000,
-      });
       return null;
     } else {
       return this.authenticationService.selectedTdaAccount.accountId;

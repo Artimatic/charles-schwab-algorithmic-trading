@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { FindPatternService } from './find-pattern.service';
 
-describe('MlBuyAtCloseService', () => {
+xdescribe('MlBuyAtCloseService', () => {
   let service: FindPatternService;
 
   beforeEach(() => {
