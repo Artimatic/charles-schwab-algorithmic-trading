@@ -29,6 +29,7 @@ import { AddOptionsTradeComponent } from './add-options-trade/add-options-trade.
 import { FindDaytradeService } from './find-daytrade.service';
 import { OrderTypes } from '@shared/models/smart-order';
 import { PersonalBearishPicks } from '../rh-table/backtest-stocks.constant';
+import { PortfolioMgmtService } from '../portfolio-mgmt/portfolio-mgmt.service';
 
 export interface PositionHoldings {
   name: string;
@@ -224,7 +225,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private daytradeStrategiesService: DaytradeStrategiesService,
     private orderHandlingService: OrderHandlingService,
     private optionsOrderBuilderService: OptionsOrderBuilderService,
-    private daytradeService: DaytradeService
+    private daytradeService: DaytradeService,
+    private portfolioMgmtService: PortfolioMgmtService
   ) { }
 
   ngOnInit(): void {
@@ -562,7 +564,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (this.manualStart) {
       return;
     }
-    this.tradingPairs = [];
     this.developedStrategy = true;
 
     this.boughtAtClose = false;
@@ -582,7 +583,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const cash = await this.cartService.getAvailableFunds(false);
     const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
     const minCash = round(this.riskToleranceList[1] * cash, 2);
-    this.optionsOrderBuilderService.createTradingPair(this.tradingPairs, this.currentHoldings, minCash, maxCash);
+    this.tradingPairs = [];
+    await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs, this.currentHoldings, minCash, maxCash);
     this.handleStrategy();
     // await this.findStrangleTrade();
     // await this.optionsOrderBuilderService.createTradingPair();
@@ -1376,46 +1378,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async hedge() {
-    this.currentHoldings = await this.cartService.findCurrentPositions();
-    this.machineDaytradingService.getPortfolioBalance().subscribe(async (balance) => {
-      this.currentHoldings.forEach(async (holding) => {
-        if (!holding.primaryLegs) {
-          if (holding.netLiq && (holding.netLiq / balance.liquidationValue) > 0.15)
-            console.log('Adding protective put for', holding.name);
-          await this.optionsOrderBuilderService.createProtectivePutOrder(holding);
-        } else {
-          if (!this.cartService.isStrangle(holding)) {
-            if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
-              const pair = this.tradingPairs.find(tradeArr => tradeArr[0].holding.symbol === holding.name);
-              if (pair && pair.length === 2) {
-                console.log(`Trading pair for ${holding.name} call is ${pair[1].holding.name} put`);
-                if (!this.currentHoldings.find(curr => curr.name === pair[1].holding.name)) {
-                  this.cartService.addToCart(pair[1], true, 'Hedging call with correlated stock');
-                }
-              }
-            } else if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
-              const pair = this.tradingPairs.find(tradeArr => tradeArr.length === 2 && tradeArr[1].holding.symbol === holding.name);
-              if (pair) {
-                console.log(`Trading pair for ${holding.name} put is ${pair[1].holding.name} call`);
-                if (!this.currentHoldings.find(curr => curr.name === pair[1].holding.name)) {
-                  const spyStrangle = await this.strategyBuilderService.getCallStrangleTrade('SPY');
-                  if (spyStrangle) {
-                    const callPrice = this.strategyBuilderService.findOptionsPrice(spyStrangle.call.bid, spyStrangle.call.ask) * 100;
-                    const putPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
-                    const cash = await this.cartService.getAvailableFunds(false);
-                    const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
-                    const minCash = round(this.riskToleranceList[1] * cash, 2);
-                    const callQuantity = this.optionsOrderBuilderService.getCallPutQuantities(callPrice, 1, putPrice, holding.primaryLegs[0].quantity, 1, minCash, maxCash).callQuantity;
-                    const option = await this.cartService.createOptionOrder('SPY', [spyStrangle.call], callPrice, callQuantity, OrderTypes.call, 'Buy', callQuantity);
-                    this.cartService.addToCart(option, true, 'Hedging put with SPY');
-                  }
-                }
-              }
-            }
-          }
-        }
-      });
-    });
+    this.portfolioMgmtService.hedge(this.currentHoldings, this.tradingPairs, this.riskToleranceList[1], this.riskToleranceList[this.riskCounter]);
   }
 
   async shouldSellOptions(holding: PortfolioInfoHolding, isStrangle: boolean, putCallInd: string) {

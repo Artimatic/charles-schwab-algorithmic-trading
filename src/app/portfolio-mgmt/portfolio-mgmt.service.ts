@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { round } from 'lodash';
-import { CartService } from '@shared/services';
+import { CartService, PortfolioInfoHolding } from '@shared/services';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
 import { OptionsOrderBuilderService } from '../options-order-builder.service';
 import { SmartOrder } from '@shared/index';
@@ -61,24 +61,22 @@ export class PortfolioMgmtService {
     }
   }
 
-  async hedge(tradingPairs: SmartOrder[][], minRiskPct = 0.01, maxRiskPct = 0.05) {
-    const currentHoldings = await this.cartService.findCurrentPositions();
-    this.machineDaytradingService.getPortfolioBalance().subscribe(async (balance) => {
-      currentHoldings.forEach(async (holding) => {
-        if (!holding.primaryLegs) {
-          if (holding.netLiq && (holding.netLiq / balance.liquidationValue) > 0.15)
-            console.log('Adding protective put for', holding.name);
-          await this.optionsOrderBuilderService.createProtectivePutOrder(holding);
-        } else {
-          if (!this.cartService.isStrangle(holding)) {
-            if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
-              this.hedgeCall(holding, currentHoldings, tradingPairs);
-            } else if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
-              await this.hedgePut(holding, currentHoldings, tradingPairs, minRiskPct, maxRiskPct);
-            }
+  async hedge(currentHoldings: PortfolioInfoHolding[], tradingPairs: SmartOrder[][], minRiskPct = 0.01, maxRiskPct = 0.05) {
+    const balance = await this.machineDaytradingService.getPortfolioBalance().toPromise();
+    currentHoldings.forEach(async (holding) => {
+      if (!holding.primaryLegs) {
+        if (holding.netLiq && (holding.netLiq / balance.liquidationValue) > 0.15)
+          console.log('Adding protective put for', holding.name);
+        await this.optionsOrderBuilderService.createProtectivePutOrder(holding);
+      } else {
+        if (!this.cartService.isStrangle(holding)) {
+          if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
+            this.hedgeCall(holding, currentHoldings, tradingPairs);
+          } else if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
+            await this.hedgePut(holding, currentHoldings, tradingPairs, minRiskPct, maxRiskPct);
           }
         }
-      });
+      }
     });
 
     return currentHoldings;
