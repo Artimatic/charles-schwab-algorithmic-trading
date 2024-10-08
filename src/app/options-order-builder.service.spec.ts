@@ -5,11 +5,12 @@ import { StrategyBuilderService } from './backtest-table/strategy-builder.servic
 import { BacktestService, CartService } from '@shared/services';
 import { OptionsDataService } from '@shared/options-data.service';
 import { OrderTypes } from '@shared/models/smart-order';
+import { of } from 'rxjs';
 
 describe('OptionsOrderBuilderService', () => {
   let service: OptionsOrderBuilderService;
-  const strategyBuilderServiceSpy = jasmine.createSpyObj('StrategyBuilderService', ['getCallStrangleTrade', 'findOptionsPrice', 'getTradingStrategies']);
-  const cartServiceSpy = jasmine.createSpyObj('CartService', ['addOptionOrder']);
+  const strategyBuilderServiceSpy = jasmine.createSpyObj('StrategyBuilderService', ['getCallStrangleTrade', 'findOptionsPrice', 'getTradingStrategies', 'getPutStrangleTrade']);
+  const cartServiceSpy = jasmine.createSpyObj('CartService', ['addOptionOrder', 'getAvailableFunds', 'createOptionOrder']);
   const optionsDataServiceSpy = jasmine.createSpyObj('OptionsDataService', ['getImpliedMove']);
 
   beforeEach(() => {
@@ -27,6 +28,7 @@ describe('OptionsOrderBuilderService', () => {
 
   afterEach(() => {
     cartServiceSpy.addOptionOrder.calls.reset();
+    cartServiceSpy.createOptionOrder.calls.reset();
   });
 
   it('should be created', () => {
@@ -185,25 +187,73 @@ describe('OptionsOrderBuilderService', () => {
 
     optionsDataServiceSpy.getImpliedMove.and.callFake((symbol: string) => {
       if (symbol === 'BAC') {
-        return {
+        return of({
           move: 0.01
-        }
+        });
       }
-      return {
+      return of({
         move: 0.05
-      }
+      });
     });
 
     strategyBuilderServiceSpy.getCallStrangleTrade.and.returnValue({
       call: {
         symbol: 'test BAC call',
-        bid: 1.45,
-        ask: 1.60
+        underlying: 'BAC',
+        bid: 2.80,
+        ask: 2.90
       }
     });
+
+    strategyBuilderServiceSpy.getPutStrangleTrade.and.callFake((symbol: string) => {
+      if (symbol === 'MO') {
+        return {
+          put: {
+            symbol: 'MO put 1',
+            underlying: 'MO',
+            bid: 5.50,
+            ask: 5.70
+          }
+        }
+      }
+      return {
+        put: {
+          symbol: 'test put 1',
+          underlying: 'TEST',
+          bid: 0.80,
+          ask: 0.90
+        }
+      };
+    });
+
+    strategyBuilderServiceSpy.findOptionsPrice.and.returnValue(5.60);
+    cartServiceSpy.getAvailableFunds.and.returnValue(50000);
+
+    cartServiceSpy.createOptionOrder.and.callFake((symbol: string) => {
+      if (symbol === 'BAC') {
+        return {
+          symbol: 'BAC123'
+        };
+      }
+      return {
+        symbol: 'MO123'
+      };
+    });
+
     const testPairsArr = [];
-    await service.createTradingPair(testPairsArr, null, 1000, 5000);
+    //service.createTradingPair(testPairsArr, null, 1000, 5000);
+    await service.balanceTrades(testPairsArr, null, ['BAC'], ['MO'], 1000, 5000)
+    expect(cartServiceSpy.createOptionOrder).toHaveBeenCalledTimes(2);
+
+    expect(cartServiceSpy.createOptionOrder).toHaveBeenCalledWith(
+      'BAC', [{ symbol: 'test BAC call', underlying: 'BAC', bid: 2.8, ask: 2.9, quantity: 1 }], 560, 1, 5, 'Buy', 1
+    );
+
+    expect(cartServiceSpy.createOptionOrder).toHaveBeenCalledWith(
+      'MO', [{ symbol: 'MO put 1', underlying: 'MO', bid: 5.5, ask: 5.7, quantity: 1 }], 560, 1, 4, 'Buy', 1
+    );
     expect(testPairsArr.length).toEqual(1);
+    expect(testPairsArr[0]).toEqual([{ symbol: 'BAC123' }, { symbol: 'MO123' }]);
   });
 
   it('should not add balanced trades if call price too high', async () => {
@@ -224,13 +274,13 @@ describe('OptionsOrderBuilderService', () => {
 
     optionsDataServiceSpy.getImpliedMove.and.callFake((symbol: string) => {
       if (symbol === 'BAC') {
-        return {
-          move: 0.01
-        }
+        return of({
+          move: 0.05
+        });
       }
-      return {
+      return of({
         move: 0.05
-      }
+      });
     });
 
     strategyBuilderServiceSpy.getCallStrangleTrade.and.returnValue({
@@ -241,11 +291,12 @@ describe('OptionsOrderBuilderService', () => {
       }
     });
 
-    strategyBuilderServiceSpy.findOptionsPrice.and.returnValue(8050);
+    strategyBuilderServiceSpy.findOptionsPrice.and.returnValue(80.50);
 
     const testPairsArr = [];
     await service.createTradingPair(testPairsArr, null, 1000, 5000);
     expect(testPairsArr.length).toEqual(0);
+    expect(cartServiceSpy.createOptionOrder).not.toHaveBeenCalled();
   });
 
   it('should not add balanced trades if calls are too cheap', async () => {
@@ -266,13 +317,13 @@ describe('OptionsOrderBuilderService', () => {
 
     optionsDataServiceSpy.getImpliedMove.and.callFake((symbol: string) => {
       if (symbol === 'BAC') {
-        return {
-          move: 0.01
-        }
+        return of({
+          move: 0.05
+        });
       }
-      return {
+      return of({
         move: 0.05
-      }
+      });
     });
 
     strategyBuilderServiceSpy.getCallStrangleTrade.and.returnValue({
@@ -306,13 +357,13 @@ describe('OptionsOrderBuilderService', () => {
 
     optionsDataServiceSpy.getImpliedMove.and.callFake((symbol: string) => {
       if (symbol === 'BAC') {
-        return {
-          move: 0.20
-        }
+        return of({
+          move: 0.2
+        });
       }
-      return {
+      return of({
         move: 0.05
-      }
+      });
     });
 
     const testPairsArr = [];
