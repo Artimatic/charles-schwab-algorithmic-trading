@@ -274,21 +274,23 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
       this.backtestService.getLastPriceTiingo({ symbol: this.order.holding.symbol })
         .subscribe(tiingoQuote => {
-          const lastPrice = tiingoQuote[this.order.holding.symbol].quote.lastPrice;
-          if (queueItem.ml || queueItem.analysis) {
-            this.lastMlResult = queueItem.ml;
-            this.runStrategy(1 * lastPrice, queueItem.analysis);
-          } else {
-            this.machineLearningService
-              .trainDaytrade(this.order.holding.symbol.toUpperCase(),
-                moment().add({ days: 1 }).format('YYYY-MM-DD'),
-                moment().format('YYYY-MM-DD'),
-                1,
-                this.globalSettingsService.daytradeAlgo
-              ).subscribe((mlResult: TrainingResults[]) => {
-                this.lastMlResult = mlResult && mlResult[0] ? mlResult[0] : null;
-                this.runStrategy(1 * lastPrice, queueItem.analysis);
-              });
+          if (this.order) {
+            const lastPrice = tiingoQuote[this.order.holding.symbol].quote.lastPrice;
+            if (queueItem.ml || queueItem.analysis) {
+              this.lastMlResult = queueItem.ml;
+              this.runStrategy(1 * lastPrice, queueItem.analysis);
+            } else {
+              this.machineLearningService
+                .trainDaytrade(this.order.holding.symbol.toUpperCase(),
+                  moment().add({ days: 1 }).format('YYYY-MM-DD'),
+                  moment().format('YYYY-MM-DD'),
+                  1,
+                  this.globalSettingsService.daytradeAlgo
+                ).subscribe((mlResult: TrainingResults[]) => {
+                  this.lastMlResult = mlResult && mlResult[0] ? mlResult[0] : null;
+                  this.runStrategy(1 * lastPrice, queueItem.analysis);
+                });
+            }
           }
         });
 
@@ -667,25 +669,25 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             const quantityLog = `Trade cost: ${tradeCost}, Current balance: ${currentBalance}`;
             this.reportingService.addAuditLog(this.order.holding.symbol, quantityLog);
             //if (tradeCost > currentBalance) {
-              orderQuantity = Math.floor((currentBalance * this.order.allocation) / quote);
-              const mlLog = `Ml next output: ${this.lastMlResult ? this.lastMlResult.nextOutput : ''}`;
-              this.reportingService.addAuditLog(this.order.holding.symbol, mlLog);
-              if ((this.lastMlResult && this.lastMlResult.nextOutput > 0.6) || !this.lastMlResult) {
-                if (!this.priceLowerBound || (this.priceLowerBound && Number(quote) > Number(this.priceLowerBound))) {
-                  this.daytradeBuy(quote, orderQuantity, timestamp, analysis);
-                } else {
-                  const log = 'Price too low ' + Number(quote) + ' vs ' + Number(this.priceLowerBound);
-                  this.reportingService.addAuditLog(this.order.holding.symbol, log);
-                }
+            orderQuantity = Math.floor((currentBalance * this.order.allocation) / quote);
+            const mlLog = `Ml next output: ${this.lastMlResult ? this.lastMlResult.nextOutput : ''}`;
+            this.reportingService.addAuditLog(this.order.holding.symbol, mlLog);
+            if ((this.lastMlResult && this.lastMlResult.nextOutput > 0.6) || !this.lastMlResult) {
+              if (!this.priceLowerBound || (this.priceLowerBound && Number(quote) > Number(this.priceLowerBound))) {
+                this.daytradeBuy(quote, orderQuantity, timestamp, analysis);
               } else {
-                this.priceLowerBound = quote;
-                this.messageService.add({
-                  severity: 'success',
-                  summary: this.order.holding.symbol,
-                  detail: `Buy recommendation at ${moment().format('hh:mm')}`,
-                  life: 300000
-                });
+                const log = 'Price too low ' + Number(quote) + ' vs ' + Number(this.priceLowerBound);
+                this.reportingService.addAuditLog(this.order.holding.symbol, log);
               }
+            } else {
+              this.priceLowerBound = quote;
+              this.messageService.add({
+                severity: 'success',
+                summary: this.order.holding.symbol,
+                detail: `Buy recommendation at ${moment().format('hh:mm')}`,
+                life: 300000
+              });
+            }
             //}
           }
         });
@@ -1036,7 +1038,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
         // const price = bullishStrangle.call.bid + bullishStrangle.put.bid;
         const price = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) +
           this.strategyBuilderService.findOptionsPrice(bullishStrangle.put.bid, bullishStrangle.put.ask);
-    
+
         const orderQuantity = this.order.orderSize;
         if (price * orderQuantity < currentBalance) {
           this.incrementBuy();

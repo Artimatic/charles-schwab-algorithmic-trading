@@ -84,7 +84,7 @@ export class OptionsOrderBuilderService {
             underlying: buy
           };
           let currentPut = null;
-          if (callPrice > 100 && callPrice < 8000) {
+          if (callPrice > 200 && callPrice < 8000) {
             for (const sell of sellList) {
               if (!currentHoldings || !currentHoldings.find(holding => holding.name === sell)) {
                 const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
@@ -92,7 +92,7 @@ export class OptionsOrderBuilderService {
                   console.log('Unable to find put for', sell);
                 } else {
                   const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
-                  if (putPrice > 100 && putPrice < 8000) {
+                  if (putPrice > 200 && putPrice < 8000) {
                     const sellOptionsData = await this.optionsDataService.getImpliedMove(sell).toPromise();
                     if (sellOptionsData && sellOptionsData.move && sellOptionsData.move < 0.15) {
                       const multiple = (callPrice > putPrice) ? Math.round(callPrice / putPrice) : Math.round(putPrice / callPrice);
@@ -128,10 +128,13 @@ export class OptionsOrderBuilderService {
                 }
               }
             }
+
             if (currentPut && currentCall) {
-              const option1 = await this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy', currentCall.quantity);
-              const option2 = await this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put], currentPut.price, currentPut.quantity, OrderTypes.put, 'Buy', currentCall.quantity);
+              const option1 = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy', currentCall.quantity);
+              const option2 = this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put], currentPut.price, currentPut.quantity, OrderTypes.put, 'Buy', currentCall.quantity);
+
               tradingPairs.push([option1, option2]);
+              return tradingPairs;
             }
           } else {
             console.log('Call price too low or high', bullishStrangle.call, callPrice);
@@ -139,6 +142,8 @@ export class OptionsOrderBuilderService {
         }
       }
     }
+
+    return null;
   }
 
   getCallPutQuantities(callPrice, callQuantity, putPrice, putQuantity, multiple = 1, minCashAllocation: number, maxCashAllocation: number) {

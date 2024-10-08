@@ -327,7 +327,7 @@ export class CartService {
     this.addToCart(order);
   }
 
-  async createOptionOrder(symbol: string,
+  createOptionOrder(symbol: string,
     primaryLegs: Options[],
     price: number,
     quantity: number,
@@ -367,11 +367,12 @@ export class CartService {
       return order;
     }
   }
+
   async addOptionOrder(symbol: string,
     primaryLegs: Options[], price: number,
     quantity: number, optionType,
     side = 'Buy', reason: string) {
-    const order = await this.createOptionOrder(symbol, primaryLegs, price, quantity, optionType, side);
+    const order = this.createOptionOrder(symbol, primaryLegs, price, quantity, optionType, side);
     if (order) {
       this.addToCart(order, true, reason);
     }
