@@ -4,7 +4,7 @@ import { OptionsOrderBuilderService } from './options-order-builder.service';
 import { StrategyBuilderService } from './backtest-table/strategy-builder.service';
 import { BacktestService, CartService } from '@shared/services';
 import { OptionsDataService } from '@shared/options-data.service';
-import { OrderTypes } from '@shared/models/smart-order';
+import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
 import { of } from 'rxjs';
 
 describe('OptionsOrderBuilderService', () => {
@@ -232,17 +232,19 @@ describe('OptionsOrderBuilderService', () => {
     cartServiceSpy.createOptionOrder.and.callFake((symbol: string) => {
       if (symbol === 'BAC') {
         return {
-          symbol: 'BAC123'
+          holding: {
+            symbol: 'BAC123'
+          }
         };
       }
       return {
-        symbol: 'MO123'
+        holding: {
+          symbol: 'MO123'
+        }
       };
     });
 
-    const testPairsArr = [];
-    //service.createTradingPair(testPairsArr, null, 1000, 5000);
-    await service.balanceTrades(testPairsArr, null, ['BAC'], ['MO'], 1000, 5000)
+    await service.balanceTrades(null, ['BAC'], ['MO'], 1000, 5000);
     expect(cartServiceSpy.createOptionOrder).toHaveBeenCalledTimes(2);
 
     expect(cartServiceSpy.createOptionOrder).toHaveBeenCalledWith(
@@ -252,8 +254,16 @@ describe('OptionsOrderBuilderService', () => {
     expect(cartServiceSpy.createOptionOrder).toHaveBeenCalledWith(
       'MO', [{ symbol: 'MO put 1', underlying: 'MO', bid: 5.5, ask: 5.7, quantity: 1 }], 560, 1, 4, 'Buy', 1
     );
-    expect(testPairsArr.length).toEqual(1);
-    expect(testPairsArr[0]).toEqual([{ symbol: 'BAC123' }, { symbol: 'MO123' }]);
+    expect(service.getTradingPairs().length).toEqual(1);
+    expect(service.getTradingPairs()[0]).toEqual([{
+      holding: {
+        symbol: 'BAC123'
+      }
+    } as any, {
+      holding: {
+        symbol: 'MO123'
+      }
+    } as any]);
   });
 
   it('should not add balanced trades if call price too high', async () => {
@@ -293,9 +303,8 @@ describe('OptionsOrderBuilderService', () => {
 
     strategyBuilderServiceSpy.findOptionsPrice.and.returnValue(80.50);
 
-    const testPairsArr = [];
-    await service.createTradingPair(testPairsArr, null, 1000, 5000);
-    expect(testPairsArr.length).toEqual(0);
+    await service.createTradingPair(null, 1000, 5000);
+    expect(service.getTradingPairs().length).toEqual(0);
     expect(cartServiceSpy.createOptionOrder).not.toHaveBeenCalled();
   });
 
@@ -335,9 +344,8 @@ describe('OptionsOrderBuilderService', () => {
     });
     strategyBuilderServiceSpy.findOptionsPrice.and.returnValue(0.5);
 
-    const testPairsArr = [];
-    await service.createTradingPair(testPairsArr, null, 1000, 5000);
-    expect(testPairsArr.length).toEqual(0);
+    await service.createTradingPair(null, 1000, 5000);
+    expect(service.getTradingPairs().length).toEqual(0);
   });
   it('should not add trades if stocks too volatile', async () => {
     strategyBuilderServiceSpy.getTradingStrategies.and.returnValue([{
@@ -366,8 +374,221 @@ describe('OptionsOrderBuilderService', () => {
       });
     });
 
-    const testPairsArr = [];
-    await service.createTradingPair(testPairsArr, null, 1000, 5000);
-    expect(testPairsArr.length).toEqual(0);
+    await service.createTradingPair(null, 1000, 5000);
+    expect(service.getTradingPairs().length).toEqual(0);
+  });
+
+  it('should get hash value', async () => {
+    strategyBuilderServiceSpy.getTradingStrategies.and.returnValue([{
+      strategy: {
+        "buy": [
+          "BAC"
+        ],
+        "sell": [
+          "AXP",
+          "KMB",
+          "TTD",
+          "KMI",
+          "MO"
+        ]
+      }
+    }]);
+
+    optionsDataServiceSpy.getImpliedMove.and.callFake((symbol: string) => {
+      if (symbol === 'BAC') {
+        return of({
+          move: 0.01
+        });
+      }
+      return of({
+        move: 0.05
+      });
+    });
+
+    strategyBuilderServiceSpy.getCallStrangleTrade.and.returnValue({
+      call: {
+        symbol: 'test BAC call',
+        underlying: 'BAC',
+        bid: 2.80,
+        ask: 2.90
+      }
+    });
+
+    strategyBuilderServiceSpy.getPutStrangleTrade.and.callFake((symbol: string) => {
+      if (symbol === 'MO') {
+        return {
+          put: {
+            symbol: 'MO put 1',
+            underlying: 'MO',
+            bid: 5.50,
+            ask: 5.70
+          }
+        }
+      }
+      return {
+        put: {
+          symbol: 'test put 1',
+          underlying: 'TEST',
+          bid: 0.80,
+          ask: 0.90
+        }
+      };
+    });
+
+    strategyBuilderServiceSpy.findOptionsPrice.and.returnValue(5.60);
+    cartServiceSpy.getAvailableFunds.and.returnValue(50000);
+
+    cartServiceSpy.createOptionOrder.and.callFake((symbol: string) => {
+      if (symbol === 'BAC') {
+        return {
+          holding: {
+            symbol: 'BAC123'
+          }
+        };
+      }
+      return {
+        holding: {
+          symbol: 'MO123'
+        }
+      };
+    });
+
+    await service.balanceTrades(null, ['BAC'], ['MO'], 1000, 5000);
+    expect(service.getTradeHashValue(service.getTradingPairs()[0])).toBe('93acbe56');
+    expect(service.getTradeHashValue([{
+      holding: {
+        symbol: 'MRNA 241220P00060000'
+      }
+    } as any, {
+      holding: {
+        symbol: 'JPM 241220P00210000	'
+      }
+    } as any])).toBe('1c5adddb');
+
+    expect(service.getTradeHashValue([{
+      holding: {
+        symbol: 'GOOG 241220C00170000'
+      }
+    } as any, {
+      holding: {
+        symbol: 'MSFT 241220P00420000'
+      }
+    } as any])).toBe('db6ee64b');
+  });
+
+  it('should filter out old trading pairs', async () => {
+    strategyBuilderServiceSpy.getTradingStrategies.and.returnValue([{
+      strategy: {
+        "buy": [
+          "BAC"
+        ],
+        "sell": [
+          "AXP",
+          "KMB",
+          "TTD",
+          "KMI",
+          "MO"
+        ]
+      }
+    }]);
+
+    optionsDataServiceSpy.getImpliedMove.and.callFake((symbol: string) => {
+      if (symbol === 'BAC') {
+        return of({
+          move: 0.01
+        });
+      }
+      return of({
+        move: 0.05
+      });
+    });
+
+    strategyBuilderServiceSpy.getCallStrangleTrade.and.returnValue({
+      call: {
+        symbol: 'test BAC call',
+        underlying: 'BAC',
+        bid: 2.80,
+        ask: 2.90
+      }
+    });
+
+    strategyBuilderServiceSpy.getPutStrangleTrade.and.callFake((symbol: string) => {
+      if (symbol === 'MO') {
+        return {
+          put: {
+            symbol: 'MO put 1',
+            underlying: 'MO',
+            bid: 5.50,
+            ask: 5.70
+          }
+        }
+      }
+      return {
+        put: {
+          symbol: 'test put 1',
+          underlying: 'TEST',
+          bid: 0.80,
+          ask: 0.90
+        }
+      };
+    });
+
+    strategyBuilderServiceSpy.findOptionsPrice.and.returnValue(5.60);
+    cartServiceSpy.getAvailableFunds.and.returnValue(50000);
+
+    cartServiceSpy.createOptionOrder.and.callFake((symbol: string) => {
+      if (symbol === 'BAC') {
+        return {
+          holding: {
+            symbol: 'BAC123'
+          }
+        };
+      }
+      return {
+        holding: {
+          symbol: 'MO123'
+        }
+      };
+    });
+
+    service.tradingPairs = [[{
+      holding: {
+        symbol: 'GOOG 241220C00170000'
+      }
+    } as any, {
+      holding: {
+        symbol: 'MSFT 241220P00420000'
+      }
+    } as any],
+    [{
+      holding: {
+        symbol: 'MRNA 241220P00060000'
+      }
+    } as any, {
+      holding: {
+        symbol: 'JPM 241220P00210000	'
+      }
+    } as any]];
+    service.tradingPairDate = { '1c5adddb': 123, 'db6ee64b': new Date().valueOf() - 402000000 };
+    await service.balanceTrades(null, ['BAC'], ['MO'], 1000, 5000);
+    expect(service.getTradingPairs().length).toBe(2);
+    expect(service.getTradingPairs()[0]).toEqual([{
+      holding: {
+        symbol: 'GOOG 241220C00170000'
+      }
+    } as any, {
+      holding: {
+        symbol: 'MSFT 241220P00420000'
+      }
+    } as any]);
+    expect(service.getTradingPairs()[1]).toEqual([{
+      holding: {
+        symbol: 'BAC123'
+      }
+    } as any, {
+      holding: {
+        symbol: 'MO123'
+      }
+    } as any]);
   });
 });

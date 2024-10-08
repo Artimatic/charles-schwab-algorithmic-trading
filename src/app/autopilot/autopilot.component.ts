@@ -372,10 +372,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (!this.hasTradeCapacity()) {
       return;
     }
-    if (this.tradingPairsCounter >= this.tradingPairs.length) {
+    if (this.tradingPairsCounter >= this.optionsOrderBuilderService.getTradingPairs().length) {
       this.tradingPairsCounter = 0;
     }
-    const trade = this.tradingPairs[this.tradingPairsCounter];
+    const trade = this.optionsOrderBuilderService.getTradingPairs()[this.tradingPairsCounter];
     if (trade) {
       if (trade.length === 1) {
         if (trade[0].type === OrderTypes.strangle) {
@@ -391,7 +391,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.80)) {
               const reason = 'Low volatility';
               this.cartService.addToCart(trade[0], true, reason);
-              this.tradingPairs = this.tradingPairs.filter((pair: SmartOrder[]) => pair[0].holding.symbol !== trade[0].holding.symbol);
+              this.optionsOrderBuilderService.removeTradingPair(trade[0].holding.symbol);
             }
           }
         }
@@ -403,7 +403,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           tradePairOrder.secondaryLegs = trade[1].primaryLegs;
           const reason = 'Low volatility';
           this.cartService.addToCart(tradePairOrder, true, reason);
-          this.tradingPairs = this.tradingPairs.filter((pair: SmartOrder[]) => pair[0].holding.symbol !== trade[0].holding.symbol && pair[1].holding.symbol !== trade[1].holding.symbol);
+          this.optionsOrderBuilderService.removeTradingPair(trade[0].holding.symbol, trade[1].holding.symbol);
         }
       }
     }
@@ -583,8 +583,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const cash = await this.cartService.getAvailableFunds(false);
     const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
     const minCash = round(this.riskToleranceList[1] * cash, 2);
-    this.tradingPairs = [];
-    await this.optionsOrderBuilderService.createTradingPair(this.tradingPairs, this.currentHoldings, minCash, maxCash);
+    await this.optionsOrderBuilderService.createTradingPair(this.currentHoldings, minCash, maxCash);
     this.handleStrategy();
     // await this.findStrangleTrade();
     // await this.optionsOrderBuilderService.createTradingPair();
@@ -609,7 +608,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
                 const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
                 const order = await this.strategyBuilderService.addStrangleOrder(symbol, price, optionStrategy);
                 console.log('Adding Bearish strangle', symbol, price, optionStrategy);
-                this.tradingPairs.push([order]);
+                this.optionsOrderBuilderService.addTradingPairs([order]);
               }
             } else {
               if (prediction > 0.6 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
@@ -618,7 +617,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
                   const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
                   const order = await this.strategyBuilderService.addStrangleOrder(symbol, price, optionStrategy);
                   console.log('Adding Bullish strangle', symbol, price, optionStrategy);
-                  this.tradingPairs.push([order]);
+                  this.optionsOrderBuilderService.addTradingPairs([order]);
                 } else {
                   console.log('Unable to build strangle for ', symbol);
                 }
@@ -1369,7 +1368,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           const cash = await this.cartService.getAvailableFunds(false);
           const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
           const minCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
-          this.optionsOrderBuilderService.balanceTrades(this.tradingPairs, this.currentHoldings, ['SPY'], [name], minCash, maxCash);
+          this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [name], minCash, maxCash);
         }
       } catch (error) {
         console.log(error);
@@ -1378,7 +1377,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async hedge() {
-    this.portfolioMgmtService.hedge(this.currentHoldings, this.tradingPairs, this.riskToleranceList[1], this.riskToleranceList[this.riskCounter]);
+    this.portfolioMgmtService.hedge(this.currentHoldings, this.optionsOrderBuilderService.getTradingPairs(), this.riskToleranceList[1], this.riskToleranceList[this.riskCounter]);
   }
 
   async shouldSellOptions(holding: PortfolioInfoHolding, isStrangle: boolean, putCallInd: string) {
@@ -1386,7 +1385,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       const log = `${holding.name} options are expiring soon`;
       this.reportingService.addAuditLog(holding.name, log);
       return true;
-    } else if (!this.tradingPairs.find(tradeArr => tradeArr.find(t => t.holding.symbol === holding.name))) {
+    } else if (!this.optionsOrderBuilderService.getTradingPairs().find(tradeArr => tradeArr.find(t => t.holding.symbol === holding.name))) {
       const price = await this.backtestService.getLastPriceTiingo({ symbol: holding.name }).toPromise();
       const lastPrice = price[holding.name].quote.lastPrice;
       const closePrice = price[holding.name].quote.closePrice;
@@ -1484,7 +1483,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         this.hedge();
         break;
       case Strategy.Short:
-        this.tradingPairs.forEach(async (trade) => {
+        this.optionsOrderBuilderService.getTradingPairs().forEach(async (trade) => {
           if (trade.length === 2) {
             this.cartService.addToCart(trade[1], true, 'Short strategy');
           }
@@ -1504,7 +1503,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.getNewTrades(buyBearishStrangle);
         break;
       case Strategy.BuyCalls:
-        this.tradingPairs.forEach(async (trade) => {
+        this.optionsOrderBuilderService.getTradingPairs().forEach(async (trade) => {
           if (trade.length === 2) {
             this.cartService.addToCart(trade[0], false, 'Buy calls strategy');
           }
@@ -1534,7 +1533,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           const cash = await this.cartService.getAvailableFunds(false);
           const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
           const minCash = round(this.riskToleranceList[1] * cash, 2);
-          await this.optionsOrderBuilderService.balanceTrades(this.tradingPairs, this.currentHoldings, ['SPY'], [symbol], minCash, maxCash);
+          await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [symbol], minCash, maxCash);
         }
       }
     };
@@ -1542,10 +1541,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   showStrategies() {
-    const copy = this.tradingPairs;
     this.tradingPairs = [];
     this.revealPotentialStrategy = !this.revealPotentialStrategy;
-    this.tradingPairs = this.tradingPairs.concat(copy);
+    this.tradingPairs = this.optionsOrderBuilderService.getTradingPairs();
     console.log(this.tradingPairs);
   }
 
