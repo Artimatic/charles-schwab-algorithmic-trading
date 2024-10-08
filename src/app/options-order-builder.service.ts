@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
+import crc from 'crc';
 import { BacktestService, CartService, PortfolioInfoHolding } from '@shared/services';
 import { StrategyBuilderService } from './backtest-table/strategy-builder.service';
-import { OrderTypes } from '@shared/models/smart-order';
+import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
 import { OptionsDataService } from '@shared/options-data.service';
 import { Options } from '@shared/models/options';
 
@@ -17,7 +18,9 @@ export interface TradingPair {
   providedIn: 'root'
 })
 export class OptionsOrderBuilderService {
-
+  tradingPairs: SmartOrder[][] = [];
+  tradingPairDate = {};
+  tradingPairMaxLife = 432000000;
   constructor(private strategyBuilderService: StrategyBuilderService,
     private cartService: CartService,
     private optionsDataService: OptionsDataService,
@@ -40,17 +43,53 @@ export class OptionsOrderBuilderService {
     return 0;
   }
 
+  private getHashValue(value: string) {
+    return crc.crc32(value).toString(16);
+  }
+
+  getTradeHashValue(arr: SmartOrder[]) {
+    const str = arr.reduce((acc: string, val: SmartOrder) => {
+      return acc + val.holding.symbol;
+    }, '');
+    return this.getHashValue(str);
+  }
+
+  getTradingPairs() {
+    this.tradingPairs = this.tradingPairs.filter(val => {
+      return !this.tradingPairDate[this.getTradeHashValue(val)]
+        || Math.abs(new Date().valueOf() - this.tradingPairDate[this.getTradeHashValue(val)]) < this.tradingPairMaxLife;
+    });
+    return this.tradingPairs;
+  }
+
+  addTradingPairs(orders: SmartOrder[]) {
+    const hashValue = this.getTradeHashValue(orders);
+    this.tradingPairDate[hashValue] = new Date().valueOf();
+    this.tradingPairs.push(orders);
+  }
+
+  removeTradingPair(symbol1: string, symbol2: string = null) {
+    this.tradingPairs = this.tradingPairs.filter((pair: SmartOrder[]) => pair[0].holding.symbol !== symbol1);
+    this.tradingPairs = this.tradingPairs.filter((pair: SmartOrder[]) => {
+      if (!symbol2) {
+        return pair[0].holding.symbol !== symbol1;
+      }
+      return pair[0].holding.symbol !== symbol1 && pair[1].holding.symbol !== symbol2
+    });
+
+  }
+
   async createProtectivePutOrder(holding: PortfolioInfoHolding) {
     if (holding.shares && !holding.primaryLegs) {
       let putsNeeded = Math.floor(holding.shares / 100);
 
       putsNeeded -= this.protectivePutCount(holding);
-      console.log('Protective puts needed', holding.name, putsNeeded);
+      console.log(putsNeeded, 'Protective puts needed for', holding.name);
       if (putsNeeded > 0) {
         const putOption = await this.strategyBuilderService.getCallStrangleTrade(holding.name);
         const estimatedPrice = this.strategyBuilderService.findOptionsPrice(putOption.put.bid, putOption.put.ask);
         if (estimatedPrice < 3) {
-          console.log('Protective put price is too low', estimatedPrice);
+          console.log(`Protective put price for ${holding.name} is too low`, estimatedPrice);
           return;
         }
         this.cartService.addOptionOrder(holding.name, [putOption.put],
@@ -60,15 +99,15 @@ export class OptionsOrderBuilderService {
     }
   }
 
-  async createTradingPair(tradingPairs: any[], currentHoldings = null, minCashAllocation: number, maxCashAllocation: number) {
+  async createTradingPair(currentHoldings = null, minCashAllocation: number, maxCashAllocation: number) {
     this.strategyBuilderService.getTradingStrategies().forEach(async (strat) => {
       const buys: string[] = strat.strategy.buy;
       const sells: string[] = strat.strategy.sell;
-      await this.balanceTrades(tradingPairs, currentHoldings, buys, sells, minCashAllocation, maxCashAllocation);
+      await this.balanceTrades(currentHoldings, buys, sells, minCashAllocation, maxCashAllocation);
     });
   }
 
-  async balanceTrades(tradingPairs: any[], currentHoldings = null, buyList: string[], sellList: string[], minCashAllocation: number, maxCashAllocation: number) {
+  async balanceTrades(currentHoldings = null, buyList: string[], sellList: string[], minCashAllocation: number, maxCashAllocation: number) {
     for (const buy of buyList) {
       const buyOptionsData = await this.optionsDataService.getImpliedMove(buy).toPromise();
       if (buyOptionsData && buyOptionsData.move && buyOptionsData.move < 0.16) {
@@ -133,8 +172,7 @@ export class OptionsOrderBuilderService {
               const option1 = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy', currentCall.quantity);
               const option2 = this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put], currentPut.price, currentPut.quantity, OrderTypes.put, 'Buy', currentCall.quantity);
 
-              tradingPairs.push([option1, option2]);
-              return tradingPairs;
+              this.addTradingPairs([option1, option2]);
             }
           } else {
             console.log('Call price too low or high', bullishStrangle.call, callPrice);
@@ -142,8 +180,6 @@ export class OptionsOrderBuilderService {
         }
       }
     }
-
-    return null;
   }
 
   getCallPutQuantities(callPrice, callQuantity, putPrice, putQuantity, multiple = 1, minCashAllocation: number, maxCashAllocation: number) {
