@@ -10,6 +10,7 @@ import { Options } from '@shared/models/options';
 import { ReportingService } from './reporting.service';
 import { MachineLearningService } from './machine-learning/machine-learning.service';
 import { GlobalSettingsService } from 'src/app/settings/global-settings.service';
+import { StrategyBuilderService } from 'src/app/backtest-table/strategy-builder.service';
 
 @Injectable()
 export class CartService {
@@ -24,6 +25,7 @@ export class CartService {
     private reportingService: ReportingService,
     private machineLearningService: MachineLearningService,
     private globalSettingsService: GlobalSettingsService,
+    private strategyBuilderService: StrategyBuilderService,
     private messageService: MessageService) { }
 
   addToCart(order: SmartOrder, replaceAnyExistingOrders = false, reason = '') {
@@ -508,5 +510,71 @@ export class CartService {
     return (holding.primaryLegs && holding.secondaryLegs) &&
       (holding.primaryLegs.length === holding.secondaryLegs.length) &&
       (holding.primaryLegs[0].putCallInd !== holding.secondaryLegs[0].putCallInd);
+  }
+
+  initializeOrder(order: SmartOrder) {
+    order.stopped = false;
+    const queueItem: AlgoQueueItem = {
+      symbol: order.holding.symbol,
+      reset: true
+    };
+
+    this.tradeService.algoQueue.next(queueItem);
+  }
+
+  async buildBuyOrder(holding: PortfolioInfoHolding,
+    allocation: number,
+    profitThreshold: number = null,
+    stopLossThreshold: number = null) {
+    const price = await this.portfolioService.getPrice(holding.name).toPromise();
+    const cash = await this.getAvailableFunds(false);
+    const quantity = this.strategyBuilderService.getQuantity(price, allocation, cash);
+    const orderSizePct = 0.1;
+    const order = this.buildOrderWithAllocation(holding.name, quantity, price, 'Buy',
+      orderSizePct, stopLossThreshold, profitThreshold,
+      stopLossThreshold, allocation);
+    return order;
+  }
+
+  async portfolioSell(holding: PortfolioInfoHolding) {
+    const price = await this.portfolioService.getPrice(holding.name).toPromise();
+    const orderSizePct = 0.5;
+    const order = this.buildOrderWithAllocation(holding.name, holding.shares, price, 'Sell',
+      orderSizePct, null, null, null);
+    this.addToCart(order, true, 'Portfolio sell');
+    this.initializeOrder(order);
+  }
+
+  async portfolioBuy(holding: PortfolioInfoHolding,
+    allocation: number,
+    profitThreshold: number = null,
+    stopLossThreshold: number = null) {
+    const order = await this.buildBuyOrder(holding, allocation, profitThreshold, stopLossThreshold);
+    if (order.quantity) {
+      this.addToCart(order, false, 'Portfolio buy');
+      this.initializeOrder(order);
+    }
+  }
+
+  
+  async portfolioDaytrade(symbol: string,
+    allocation: number,
+    profitThreshold: number = null,
+    stopLossThreshold: number = null) {
+    const price = await this.portfolioService.getPrice(symbol).toPromise();
+    const balance = await this.portfolioService.getTdBalance().toPromise();
+    const quantity = this.strategyBuilderService.getQuantity(price, allocation, balance.buyingPower);
+    const orderSizePct = 0.5;
+    const order = this.buildOrderWithAllocation(symbol,
+      quantity,
+      price,
+      'DayTrade',
+      orderSizePct,
+      stopLossThreshold,
+      profitThreshold,
+      stopLossThreshold,
+      allocation);
+    this.addToCart(order, false, 'Day trading');
+    this.initializeOrder(order);
   }
 }
