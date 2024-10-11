@@ -2,11 +2,11 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { DailyBacktestService } from '@shared/daily-backtest.service';
 import { SmartOrder } from '@shared/index';
 import { Options } from '@shared/models/options';
+import { OrderTypes } from '@shared/models/smart-order';
 import { Trade } from '@shared/models/trade';
 import { BacktestService, CartService, DaytradeService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
 import { AiPicksPredictionData } from '@shared/services/ai-picks.service';
 import { ScoringIndex } from '@shared/services/score-keeper.service';
-import { AlgoQueueItem } from '@shared/services/trade.service';
 import { divide, round } from 'lodash';
 import * as moment from 'moment-timezone';
 import { MenuItem, MessageService } from 'primeng/api';
@@ -19,7 +19,9 @@ import { StrategyBuilderService } from '../backtest-table/strategy-builder.servi
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
 import { OptionsOrderBuilderService } from '../options-order-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
+import { PortfolioMgmtService } from '../portfolio-mgmt/portfolio-mgmt.service';
 import { PricingService } from '../pricing/pricing.service';
+import { PersonalBearishPicks } from '../rh-table/backtest-stocks.constant';
 import { CurrentStockList } from '../rh-table/stock-list.constant';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { StockListDialogComponent } from '../stock-list-dialog/stock-list-dialog.component';
@@ -27,9 +29,6 @@ import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.ser
 import { FindPatternService } from '../strategies/find-pattern.service';
 import { AddOptionsTradeComponent } from './add-options-trade/add-options-trade.component';
 import { FindDaytradeService } from './find-daytrade.service';
-import { OrderTypes } from '@shared/models/smart-order';
-import { PersonalBearishPicks } from '../rh-table/backtest-stocks.constant';
-import { PortfolioMgmtService } from '../portfolio-mgmt/portfolio-mgmt.service';
 
 export interface PositionHoldings {
   name: string;
@@ -214,7 +213,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private messageService: MessageService,
     private scoreKeeperService: ScoreKeeperService,
     private reportingService: ReportingService,
-    private tradeService: TradeService,
     private machineDaytradingService: MachineDaytradingService,
     private findPatternService: FindPatternService,
     private machineLearningService: MachineLearningService,
@@ -306,6 +304,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test pilot',
         command: async () => {
+          this.cartService.removeCompletedOrders();
           this.currentHoldings = await this.cartService.findCurrentPositions();
           await this.modifyCurrentHoldings();
           console.log(this.currentHoldings);
@@ -807,24 +806,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
   }
 
-  initializeOrder(order: SmartOrder) {
-    order.stopped = false;
-    const queueItem: AlgoQueueItem = {
-      symbol: order.holding.symbol,
-      reset: true
-    };
-
-    this.tradeService.algoQueue.next(queueItem);
-  }
-
-  initializeOrders() {
-    const concat = this.cartService.sellOrders.concat(this.cartService.buyOrders);
-    const orders = concat.concat(this.cartService.otherOrders);
-    orders.forEach((order: SmartOrder) => {
-      this.initializeOrder(order);
-    });
-  }
-
   executeOrderList() {
     if (this.orderListTimer) {
       this.orderListTimer.unsubscribe();
@@ -970,6 +951,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     };
 
     this.backtestList(callback, this.currentHoldings);
+
+    this.checkIfTooManyHoldings(this.currentHoldings, 5);
   }
 
   async analyseRecommendations(holding: PortfolioInfoHolding) {
@@ -1022,58 +1005,27 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async portfolioSell(holding: PortfolioInfoHolding) {
-    const price = await this.portfolioService.getPrice(holding.name).toPromise();
-    const orderSizePct = 0.5;
-    const order = this.cartService.buildOrderWithAllocation(holding.name, holding.shares, price, 'Sell',
-      orderSizePct, null, null, null);
-    this.cartService.addToCart(order, true, 'Portfolio sell');
-    this.initializeOrder(order);
-  }
-
-  async buildBuyOrder(holding: PortfolioInfoHolding,
-    allocation: number,
-    profitThreshold: number = null,
-    stopLossThreshold: number = null) {
-    const price = await this.portfolioService.getPrice(holding.name).toPromise();
-    const cash = await this.cartService.getAvailableFunds(false);
-    const quantity = this.strategyBuilderService.getQuantity(price, allocation, cash);
-    const orderSizePct = (this.riskToleranceList[this.riskCounter] > 0.5) ? 0.5 : 0.3;
-    const order = this.cartService.buildOrderWithAllocation(holding.name, quantity, price, 'Buy',
-      orderSizePct, stopLossThreshold, profitThreshold,
-      stopLossThreshold, allocation);
-    return order;
+    await this.cartService.portfolioSell(holding);
   }
 
   async portfolioBuy(holding: PortfolioInfoHolding,
     allocation: number,
     profitThreshold: number = null,
     stopLossThreshold: number = null) {
-    const order = await this.buildBuyOrder(holding, allocation, profitThreshold, stopLossThreshold);
-    if (order.quantity) {
-      this.cartService.addToCart(order, false, 'Portfolio buy');
-      this.initializeOrder(order);
-    }
+    await this.cartService.portfolioBuy(holding,
+      allocation,
+      profitThreshold,
+      stopLossThreshold);
   }
 
   async portfolioDaytrade(symbol: string,
     allocation: number,
     profitThreshold: number = null,
     stopLossThreshold: number = null) {
-    const price = await this.portfolioService.getPrice(symbol).toPromise();
-    const balance = await this.portfolioService.getTdBalance().toPromise();
-    const quantity = this.strategyBuilderService.getQuantity(price, allocation, balance.buyingPower);
-    const orderSizePct = 0.5;
-    const order = this.cartService.buildOrderWithAllocation(symbol,
-      quantity,
-      price,
-      'DayTrade',
-      orderSizePct,
-      stopLossThreshold,
+    await this.cartService.portfolioDaytrade(symbol,
+      allocation,
       profitThreshold,
-      stopLossThreshold,
-      allocation);
-    this.cartService.addToCart(order, false, 'Day trading');
-    this.initializeOrder(order);
+      stopLossThreshold);
   }
 
   getRecommendationReason(recommendation) {
@@ -1395,13 +1347,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
       }
       if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
-        if (isStrangle && Math.abs(lastPrice - closePrice) > (backtestResults.averageMove * 1.40)) {
+        if (isStrangle && Math.abs(lastPrice - closePrice) > (backtestResults.averageMove * 1.30)) {
           this.reportingService.addAuditLog(holding.name, `Selling strangle due to large move ${Math.abs(lastPrice - closePrice)}, Average: ${backtestResults.averageMove}`);
           return true;
-        } else if (putCallInd.toLowerCase() === 'c' && lastPrice - closePrice > (backtestResults.averageMove * 1.40)) {
+        } else if (putCallInd.toLowerCase() === 'c' && lastPrice - closePrice > (backtestResults.averageMove * 1.30)) {
           this.reportingService.addAuditLog(holding.name, `Selling call due to large move ${lastPrice - closePrice}, Average: ${backtestResults.averageMove}`);
           return true;
-        } else if (putCallInd.toLowerCase() === 'p' && lastPrice - closePrice < (backtestResults.averageMove * -1.40)) {
+        } else if (putCallInd.toLowerCase() === 'p' && lastPrice - closePrice < (backtestResults.averageMove * -1.30)) {
           this.reportingService.addAuditLog(holding.name, `Selling put due to large move ${lastPrice - closePrice}, Average: ${backtestResults.averageMove}`);
           return true;
         }
