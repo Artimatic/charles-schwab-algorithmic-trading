@@ -2,16 +2,19 @@ import { TestBed } from '@angular/core/testing';
 
 import { OptionsOrderBuilderService } from './options-order-builder.service';
 import { StrategyBuilderService } from './backtest-table/strategy-builder.service';
-import { BacktestService, CartService } from '@shared/services';
+import { BacktestService, CartService, ReportingService } from '@shared/services';
 import { OptionsDataService } from '@shared/options-data.service';
 import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
 import { of } from 'rxjs';
+import { OrderHandlingService } from './order-handling/order-handling.service';
 
 describe('OptionsOrderBuilderService', () => {
   let service: OptionsOrderBuilderService;
   const strategyBuilderServiceSpy = jasmine.createSpyObj('StrategyBuilderService', ['getCallStrangleTrade', 'findOptionsPrice', 'getTradingStrategies', 'getPutStrangleTrade']);
   const cartServiceSpy = jasmine.createSpyObj('CartService', ['addOptionOrder', 'getAvailableFunds', 'createOptionOrder']);
   const optionsDataServiceSpy = jasmine.createSpyObj('OptionsDataService', ['getImpliedMove']);
+  const reportingServiceSpy = jasmine.createSpyObj('ReportingService', ['addAuditLog']);
+  const orderHandlingServiceSpy = jasmine.createSpyObj('OrderHandlingService', ['getEstimatedPrice']);
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -20,7 +23,9 @@ describe('OptionsOrderBuilderService', () => {
         { provide: StrategyBuilderService, useValue: strategyBuilderServiceSpy },
         { provide: BacktestService, useValue: {} },
         { provide: CartService, useValue: cartServiceSpy },
-        { provide: OptionsDataService, useValue: optionsDataServiceSpy }
+        { provide: OptionsDataService, useValue: optionsDataServiceSpy },
+        { provide: ReportingService, useValue: reportingServiceSpy },
+        { provide: OrderHandlingService, useValue: orderHandlingServiceSpy }
       ]
     });
     service = TestBed.inject(OptionsOrderBuilderService);

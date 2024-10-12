@@ -37,11 +37,12 @@ class PortfolioService {
       reply.status(200).send((response as any).json());
     })
       .catch((e) => {
-        console.log('e', e);
+        console.log('auth e:', e);
         if (e.request && e.request._redirectable && e.request._redirectable._options && e.request._redirectable._options.href) {
           reply.redirect(e.request._redirectable._options.href);
         } else {
-          reply.status(500).send(e);
+          console.log('authorize error:', e.response.status, e.response.statusText);
+          reply.status(e.response.status).send({ message: e.response.statusText});
         }
       });
   }
