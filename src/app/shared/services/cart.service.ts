@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { PortfolioInfoHolding, PortfolioService } from './portfolio.service';
 import { OrderTypes, SmartOrder } from '../models/smart-order';
 import { TradeService, AlgoQueueItem } from './trade.service';
-import * as _ from 'lodash';
+import { round } from 'lodash';
 import { MessageService } from 'primeng/api';
 import { Subject } from 'rxjs';
 import * as moment from 'moment-timezone';
@@ -10,7 +10,6 @@ import { Options } from '@shared/models/options';
 import { ReportingService } from './reporting.service';
 import { MachineLearningService } from './machine-learning/machine-learning.service';
 import { GlobalSettingsService } from 'src/app/settings/global-settings.service';
-import { StrategyBuilderService } from 'src/app/backtest-table/strategy-builder.service';
 
 @Injectable()
 export class CartService {
@@ -25,7 +24,6 @@ export class CartService {
     private reportingService: ReportingService,
     private machineLearningService: MachineLearningService,
     private globalSettingsService: GlobalSettingsService,
-    private strategyBuilderService: StrategyBuilderService,
     private messageService: MessageService) { }
 
   addToCart(order: SmartOrder, replaceAnyExistingOrders = false, reason = '') {
@@ -522,13 +520,21 @@ export class CartService {
     this.tradeService.algoQueue.next(queueItem);
   }
 
+  getQuantity(stockPrice: number, allocationPct: number, total: number) {
+    const totalCost = round(total * allocationPct, 2);
+    if (!totalCost) {
+      return 0;
+    }
+    return Math.floor(totalCost / stockPrice);
+  }
+
   async buildBuyOrder(holding: PortfolioInfoHolding,
     allocation: number,
     profitThreshold: number = null,
     stopLossThreshold: number = null) {
     const price = await this.portfolioService.getPrice(holding.name).toPromise();
     const cash = await this.getAvailableFunds(false);
-    const quantity = this.strategyBuilderService.getQuantity(price, allocation, cash);
+    const quantity = this.getQuantity(price, allocation, cash);
     const orderSizePct = 0.1;
     const order = this.buildOrderWithAllocation(holding.name, quantity, price, 'Buy',
       orderSizePct, stopLossThreshold, profitThreshold,
@@ -563,7 +569,7 @@ export class CartService {
     stopLossThreshold: number = null) {
     const price = await this.portfolioService.getPrice(symbol).toPromise();
     const balance = await this.portfolioService.getTdBalance().toPromise();
-    const quantity = this.strategyBuilderService.getQuantity(price, allocation, balance.buyingPower);
+    const quantity = this.getQuantity(price, allocation, balance.buyingPower);
     const orderSizePct = 0.5;
     const order = this.buildOrderWithAllocation(symbol,
       quantity,
