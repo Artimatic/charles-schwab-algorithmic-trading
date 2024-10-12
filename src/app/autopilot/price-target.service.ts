@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BacktestService, CartService, PortfolioInfoHolding, PortfolioService } from '@shared/services';
+import { BacktestService, CartService, PortfolioService } from '@shared/services';
 
 @Injectable({
   providedIn: 'root'
