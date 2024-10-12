@@ -33,8 +33,8 @@ export class PriceTargetService {
 
   async checkProfitTarget() {
     const targetMet = await this.hasMetPriceTarget();
-    if () {
-
+    if (targetMet) {
+      await this.cartService.findCurrentPositions();
     }
   }
 }
