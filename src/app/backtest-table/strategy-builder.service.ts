@@ -643,20 +643,15 @@ export class StrategyBuilderService {
     return Math.floor(totalCost / stockPrice);
   }
 
-  async buySnP() {
-    const backtestData = await this.getBacktestData('VTI');
-
-    const price = await this.portfolioService.getPrice('UPRO').toPromise();
-    const balance = await this.portfolioService.getTdBalance().toPromise();
-
-    const quantity = this.getQuantity(price, backtestData?.ml || 0.1, balance.cashBalance);
-    const orderSizePct = 1;
-
-    const order = this.cartService.buildOrderWithAllocation('UPRO', quantity, price, 'Buy',
-      orderSizePct, null, null,
-      null, 1);
-    console.log('Adding buy', order, 'ml result:', backtestData?.ml);
-
-    this.cartService.addToCart(order);
+  async buySnP(balance: number) {
+    const bullishStrangle = await this.getCallStrangleTrade('SPY');
+    const callPrice = this.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
+    let currentCall = {
+      call: bullishStrangle.call,
+      price: callPrice,
+      quantity: Math.floor(balance / callPrice),
+      underlying: 'SPY'
+    };
+    this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy', currentCall.quantity);
   }
 }

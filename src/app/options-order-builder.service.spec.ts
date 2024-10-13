@@ -4,7 +4,7 @@ import { OptionsOrderBuilderService } from './options-order-builder.service';
 import { StrategyBuilderService } from './backtest-table/strategy-builder.service';
 import { BacktestService, CartService, ReportingService } from '@shared/services';
 import { OptionsDataService } from '@shared/options-data.service';
-import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
+import { OrderTypes } from '@shared/models/smart-order';
 import { of } from 'rxjs';
 import { OrderHandlingService } from './order-handling/order-handling.service';
 
