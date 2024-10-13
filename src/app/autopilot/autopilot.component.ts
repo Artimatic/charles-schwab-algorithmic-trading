@@ -150,7 +150,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     // Strategy.DaytradeFullList,
     Strategy.BuyCalls,
     Strategy.BuySnP,
-    Strategy.None
+    //Strategy.None
   ];
 
   bearishStrategy = [
@@ -367,29 +367,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.boughtAtClose = true;
         } else if (moment().isAfter(moment(startStopTime.startDateTime)) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
-          const isOpened = await this.isMarketOpened();
-          if (isOpened) {
-            this.executeOrderList();
-            if (this.strategyList[this.strategyCounter] === Strategy.Daytrade &&
-              (this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
-              this.findDaytradeService.getRefreshObserver().next(true);
-            } else {
-              this.cartService.removeCompletedOrders();
-              this.cartService.otherOrders.forEach(order => {
-                if (order.side.toLowerCase() === 'daytrade' &&
-                  moment(order.createdTime).diff(moment(), 'minutes') > 60 &&
-                  order.positionCount === 0) {
-                  this.cartService.deleteDaytrade(order);
-                }
-              });
-            }
-            if (moment().isAfter(moment(startStopTime.startDateTime).add(90, 'minutes'))) {
-              this.currentHoldings = await this.cartService.findCurrentPositions();
-              if (!this.manualStart) {
-                await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
-              }
-            }
-          }
+          await this.handleIntraday(startStopTime);
         } else {
           if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 3) {
             await this.backtestOneStock(false, false);
@@ -1077,7 +1055,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
       const price = await this.portfolioService.getPrice(buySymbol).toPromise();
       const balance = await this.portfolioService.getTdBalance().toPromise();
-
       const quantity = this.strategyBuilderService.getQuantity(price, backtestData?.ml || 0.1, balance.cashBalance);
       const orderSizePct = 1;
 
@@ -1275,12 +1252,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     switch (this.strategyList[this.strategyCounter]) {
       case Strategy.OptionsStrangle:
         this.addStranglesToList();
-        this.inverseDispersion();
         await this.getNewTrades(null, null, 2);
         break;
       case Strategy.TradingPairs:
         this.addStranglesToList();
-        this.inverseDispersion();
         await this.getNewTrades(null, null, 2);
         break;
       case Strategy.Swingtrade:
@@ -1319,12 +1294,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.getNewTrades(null, null, 2);
         break;
       case Strategy.BuySnP:
-        this.strategyBuilderService.buySnP();
+        const balance = await this.portfolioService.getTdBalance().toPromise();
+        const maxCash = round(this.riskToleranceList[0] * balance.cashBalance);
+        this.strategyBuilderService.buySnP(maxCash);
         await this.getNewTrades(null, null, 2);
         break;
       case Strategy.InverseDispersion:
         await this.inverseDispersion();
-        await this.addStranglesToList();
         await this.getNewTrades(null, null, 3);
         break;
       case Strategy.Default: {
@@ -1336,13 +1312,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   inverseDispersion() {
     const findPuts = async (symbol: string, prediction: number, backtestData: any) => {
-      if (backtestData?.optionsVolume > 230) {
-        if (prediction < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
-          const cash = await this.cartService.getAvailableFunds(false);
-          const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
-          const minCash = round(this.riskToleranceList[1] * cash, 2);
-          await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [symbol], minCash, maxCash);
-        }
+      if (prediction < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
+        const cash = await this.cartService.getAvailableFunds(false);
+        const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
+        const minCash = round(this.riskToleranceList[1] * cash, 2);
+        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [symbol], minCash, maxCash);
       }
     };
     this.getNewTrades(findPuts);
@@ -1357,6 +1331,32 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   hasTradeCapacity() {
     return this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length < this.maxTradeCount;
+  }
+
+  async handleIntraday(startStopTime) {
+    const isOpened = await this.isMarketOpened();
+    if (isOpened) {
+      this.executeOrderList();
+      if (this.strategyList[this.strategyCounter] === Strategy.Daytrade &&
+        (this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
+        this.findDaytradeService.getRefreshObserver().next(true);
+      } else {
+        this.cartService.removeCompletedOrders();
+        this.cartService.otherOrders.forEach(order => {
+          if (order.side.toLowerCase() === 'daytrade' &&
+            moment(order.createdTime).diff(moment(), 'minutes') > 60 &&
+            order.positionCount === 0) {
+            this.cartService.deleteDaytrade(order);
+          }
+        });
+      }
+      if (moment().isAfter(moment(startStopTime.startDateTime).add(90, 'minutes'))) {
+        this.currentHoldings = await this.cartService.findCurrentPositions();
+        if (!this.manualStart) {
+          await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
+        }
+      }
+    }
   }
 
   unsubscribeStockFinder() {

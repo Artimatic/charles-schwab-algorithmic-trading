@@ -301,7 +301,7 @@ export class OptionsOrderBuilderService {
   isExpiring(holding: PortfolioInfoHolding) {
     return (holding.primaryLegs ? holding.primaryLegs : []).concat(holding.secondaryLegs ? holding.secondaryLegs : []).find((option: Options) => {
       const expiry = option.description.match(/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/)[0];
-      return moment(expiry).diff(moment(), 'days') < 30;
+      return moment(expiry).diff(moment(), 'days') < 35;
     });
   }
   
@@ -378,7 +378,7 @@ export class OptionsOrderBuilderService {
 
         if (isStrangle) {
           if (shouldSell) {
-            this.sellStrangle(holding);
+            await this.sellStrangle(holding);
           }
         } else {
           let orderType = null;
