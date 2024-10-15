@@ -374,6 +374,7 @@ export class CartService {
     side = 'Buy', reason: string) {
     const order = this.createOptionOrder(symbol, primaryLegs, price, quantity, optionType, side);
     if (order) {
+      console.log('Adding option order for', symbol);
       this.addToCart(order, true, reason);
     }
   }
