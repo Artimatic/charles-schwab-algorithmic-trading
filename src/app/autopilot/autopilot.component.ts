@@ -29,6 +29,7 @@ import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.ser
 import { FindPatternService } from '../strategies/find-pattern.service';
 import { AddOptionsTradeComponent } from './add-options-trade/add-options-trade.component';
 import { FindDaytradeService } from './find-daytrade.service';
+import { PriceTargetService } from './price-target.service';
 
 export interface PositionHoldings {
   name: string;
@@ -187,6 +188,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   lastInterval = null;
 
   lastMarketHourCheck = null;
+  lastOptionsCheckCheck = null;
   lastCredentialCheck = moment();
 
   unsubscribe$ = new Subject();
@@ -224,7 +226,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private orderHandlingService: OrderHandlingService,
     private optionsOrderBuilderService: OptionsOrderBuilderService,
     private daytradeService: DaytradeService,
-    private portfolioMgmtService: PortfolioMgmtService
+    private portfolioMgmtService: PortfolioMgmtService,
+    private priceTargetService: PriceTargetService
   ) { }
 
   ngOnInit(): void {
@@ -784,6 +787,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         console.log('Backtest error', error);
       }
     });
+    this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
   }
 
   getTechnicalIndicators(stock: string, startDate: string, currentDate: string) {
@@ -866,8 +870,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const price = await this.backtestService.getLastPriceTiingo({ symbol: holding.name }).toPromise();
     const lastPrice = price[holding.name].quote.lastPrice;
 
+    const isOptionOnly = !this.cartService.isStrangle(holding) && holding.primaryLegs && holding.shares === 0;
     if (backtestResults.averageMove) {
-      if (holding.primaryLegs) {
+      if (isOptionOnly) {
         stopLoss = (backtestResults.averageMove / lastPrice) * -12;
         this.reportingService.addAuditLog(holding.name, `Setting options stop loss to ${stopLoss}`);
         addStop = (backtestResults.averageMove / lastPrice) * 10;
@@ -878,9 +883,22 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       }
     }
     if (pnl < stopLoss) {
-      this.portfolioSell(holding);
+      if (isOptionOnly) {
+        let orderType = null;
+        if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
+          orderType = OrderTypes.call;
+        } else if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
+          orderType = OrderTypes.put;
+        }
+        const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
+        this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', 'Stop loss reached');
+      } else {
+        this.portfolioSell(holding);
+      }
     } else if (pnl > addStop) {
-      await this.addBuy(holding);
+      if (!isOptionOnly) {
+        await this.addBuy(holding);
+      }
     }
   }
 
@@ -1296,7 +1314,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       case Strategy.BuySnP:
         const balance = await this.portfolioService.getTdBalance().toPromise();
         const maxCash = round(this.riskToleranceList[0] * balance.cashBalance);
-        this.strategyBuilderService.buySnP(maxCash);
+        this.strategyBuilderService.buySnP(maxCash, balance.cashBalance);
         await this.getNewTrades(null, null, 2);
         break;
       case Strategy.InverseDispersion:
@@ -1352,8 +1370,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       }
       if (moment().isAfter(moment(startStopTime.startDateTime).add(90, 'minutes'))) {
         this.currentHoldings = await this.cartService.findCurrentPositions();
-        if (!this.manualStart) {
+        if (!this.manualStart && (this.lastOptionsCheckCheck && this.lastOptionsCheckCheck.diff(moment(), 'minutes') < 15)) {
+          this.lastOptionsCheckCheck = moment();
           await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
+          await this.priceTargetService.checkProfitTarget(this.currentHoldings);
         }
       }
     }

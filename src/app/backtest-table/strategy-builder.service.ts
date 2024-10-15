@@ -643,15 +643,18 @@ export class StrategyBuilderService {
     return Math.floor(totalCost / stockPrice);
   }
 
-  async buySnP(balance: number) {
+  async buySnP(balance: number, totalBalance: number) {
     const bullishStrangle = await this.getCallStrangleTrade('SPY');
     const callPrice = this.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
-    let currentCall = {
-      call: bullishStrangle.call,
-      price: callPrice,
-      quantity: Math.floor(balance / callPrice),
-      underlying: 'SPY'
-    };
-    this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy', currentCall.quantity);
+    const quantity = Math.floor(balance / callPrice) > 0 ? Math.floor(balance / callPrice) : (Math.floor(totalBalance / callPrice) >= 1 ? 1 : 0);
+    if (quantity) {
+      let currentCall = {
+        call: bullishStrangle.call,
+        price: callPrice,
+        quantity: quantity,
+        underlying: 'SPY'
+      };
+      this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy', currentCall.quantity);
+    }
   }
 }
