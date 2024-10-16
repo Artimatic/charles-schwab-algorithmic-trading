@@ -262,6 +262,13 @@ export class OptionsOrderBuilderService {
     }
   }
 
+  isExpiring(holding: PortfolioInfoHolding) {
+    return (holding.primaryLegs ? holding.primaryLegs : []).concat(holding.secondaryLegs ? holding.secondaryLegs : []).find((option: Options) => {
+      const expiry = option.description.match(/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/)[0];
+      return moment(expiry).diff(moment(), 'days') < 30;
+    });
+  }
+
   async shouldBuyStrangle(symbol: string) {
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
     const lastPrice = price[symbol].quote.lastPrice;
@@ -290,19 +297,12 @@ export class OptionsOrderBuilderService {
       backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
     }
     if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
-      if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.7)) {
+      if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.8)) {
         return true;
       }
     }
 
     return false;
-  }
-
-  isExpiring(holding: PortfolioInfoHolding) {
-    return (holding.primaryLegs ? holding.primaryLegs : []).concat(holding.secondaryLegs ? holding.secondaryLegs : []).find((option: Options) => {
-      const expiry = option.description.match(/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/)[0];
-      return moment(expiry).diff(moment(), 'days') < 35;
-    });
   }
 
   async shouldSellOptions(holding: PortfolioInfoHolding, isStrangle: boolean, putCallInd: string) {

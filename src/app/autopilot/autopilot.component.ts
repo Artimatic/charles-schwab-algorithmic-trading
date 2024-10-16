@@ -595,7 +595,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         sellConfidence: 0,
         prediction: null
       };
-      await this.addBuy(stock);
+      await this.addBuy(stock, null, 'Swing trade buy');
     }
   }
 
@@ -689,7 +689,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.backtestBuffer$.next();
   }
 
-  async addBuy(holding: PortfolioInfoHolding, allocation = round(this.riskToleranceList[this.riskCounter], 2)) {
+  async addBuy(holding: PortfolioInfoHolding, allocation = round(this.riskToleranceList[this.riskCounter], 2), reason) {
     if ((this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.maxTradeCount) {
 
       const currentDate = moment().format('YYYY-MM-DD');
@@ -698,10 +698,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const allIndicators = await this.getTechnicalIndicators(holding.name, startDate, currentDate).toPromise();
         const indicators = allIndicators.signals[allIndicators.signals.length - 1];
         const thresholds = this.getStopLoss(indicators.low, indicators.high);
-        await this.portfolioBuy(holding,
+        await this.cartService.portfolioBuy(holding,
           allocation,
           thresholds.profitTakingThreshold,
-          thresholds.stopLoss);
+          thresholds.stopLoss, reason);
         await this.orderHandlingService.intradayStep(holding.name);
       } catch (error) {
         console.log('Error getting backtest data for ', holding.name, error);
@@ -801,10 +801,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           }
         } else if ((backtestResults && (backtestResults.net < 0 || backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL' || holding.name === 'TQQQ'))) {
           console.log('Backtest indicates sell', backtestResults);
-          this.portfolioSell(holding);
+          await this.cartService.portfolioSell(holding, 'Backtest indicates sell');
         } else if (backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.7 && (backtestResults.recommendation === 'STRONGBUY' || backtestResults.recommendation === 'BUY')) {
           console.log('Backtest indicates buying', backtestResults);
-          await this.addBuy(this.createHoldingObj(holding.name), RiskTolerance.Zero);
+          await this.addBuy(this.createHoldingObj(holding.name), RiskTolerance.Zero, 'Backtest indicates buying');
         }
       } catch (error) {
         console.log('Backtest error', error);
@@ -849,7 +849,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     });
   }
 
-  trimHoldings() {
+  async trimHoldings() {
     const callback = async (symbol: string, prediction: number) => {
       const stock: PortfolioInfoHolding = {
         name: symbol,
@@ -869,21 +869,21 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           return holdingInfo.name === stock.name;
         });
         if (sellHolding && !sellHolding.primaryLegs.length) {
-          this.portfolioSell(sellHolding);
+          await this.cartService.portfolioSell(sellHolding, 'Trim holdings');
         }
       }
     };
 
     this.backtestList(callback, this.currentHoldings);
 
-    this.checkIfTooManyHoldings(this.currentHoldings, 5);
+    await this.checkIfTooManyHoldings(this.currentHoldings, 5);
   }
 
   async analyseRecommendations(holding: PortfolioInfoHolding) {
     if (holding.recommendation.toLowerCase() === 'buy') {
-      await this.addBuy(holding);
+      await this.addBuy(holding, null, 'Recommendated buy');
     } else if (holding.recommendation.toLowerCase() === 'sell') {
-      this.portfolioSell(holding);
+      await this.cartService.portfolioSell(holding, 'Recommended sell');
     }
   }
 
@@ -916,23 +916,22 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
         this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', 'Stop loss reached');
       } else {
-        this.portfolioSell(holding);
+        await this.cartService.portfolioSell(holding, 'Stop loss');
       }
     } else if (pnl > addStop) {
       if (!isOptionOnly) {
-        await this.addBuy(holding);
+        await this.addBuy(holding, null, 'Profit loss is positive');
       }
     }
   }
 
-  checkIfTooManyHoldings(currentHoldings: any[], maxHoldings = this.maxTradeCount) {
+  async checkIfTooManyHoldings(currentHoldings: any[], maxHoldings = this.maxTradeCount) {
     if (currentHoldings.length > maxHoldings) {
       currentHoldings.sort((a, b) => a.pl - b.pl);
       const toBeSold = currentHoldings.slice(0, 1);
       console.log('too many holdings. selling', toBeSold, 'from', currentHoldings);
-      toBeSold.forEach(holdingInfo => {
-        console.log('selling ', holdingInfo);
-        this.portfolioSell(holdingInfo);
+      toBeSold.forEach(async (holdingInfo) => {
+        await this.cartService.portfolioSell(holdingInfo, 'Too many holdings');
       });
     }
   }
@@ -940,20 +939,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   getAllocationPct(totalAllocationPct: number = 0.1, numberOfOrders: number) {
     return round(divide(totalAllocationPct, numberOfOrders), 2);
-  }
-
-  async portfolioSell(holding: PortfolioInfoHolding) {
-    await this.cartService.portfolioSell(holding);
-  }
-
-  async portfolioBuy(holding: PortfolioInfoHolding,
-    allocation: number,
-    profitThreshold: number = null,
-    stopLossThreshold: number = null) {
-    await this.cartService.portfolioBuy(holding,
-      allocation,
-      profitThreshold,
-      stopLossThreshold);
   }
 
   async portfolioDaytrade(symbol: string,
@@ -1027,7 +1012,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (backtestResults && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL')) {
       this.decreaseDayTradeRiskTolerance();
       this.decreaseRiskTolerance();
-      this.trimHoldings();
+      await this.trimHoldings();
     } else {
       const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
       if (lastProfitLoss && lastProfitLoss.profit) {
@@ -1079,28 +1064,19 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       // });
 
       // this.trimHoldings();
-      this.checkIfTooManyHoldings(this.currentHoldings, 5);
+      await this.checkIfTooManyHoldings(this.currentHoldings, 5);
     } else {
       const backtestData = await this.strategyBuilderService.getBacktestData('SPY');
 
-      let buySymbol = 'SPY';
-      if (backtestData && backtestData?.ml > 0.15) {
-        buySymbol = 'UPRO';
-      } else {
-        this.currentHoldings.forEach(async (holding) => {
-          if (holding.name === 'TQQQ' || holding.name === 'UPRO') {
-            this.portfolioSell(holding);
-          }
-        });
-      }
+      const buySymbol = 'UPRO';
 
       const price = await this.portfolioService.getPrice(buySymbol).toPromise();
       const balance = await this.portfolioService.getTdBalance().toPromise();
-      const quantity = this.strategyBuilderService.getQuantity(price, backtestData?.ml || 0.1, balance.cashBalance);
-      const orderSizePct = 1;
-
+      const allocation = backtestData?.ml || this.riskToleranceList[0];
+      const cash = (balance.cashBalance < balance.availableFunds * 0.01) ? balance.cashBalance : balance.cashBalance * allocation;  
+      const quantity = this.strategyBuilderService.getQuantity(price, 1, cash);
       const order = this.cartService.buildOrderWithAllocation(buySymbol, quantity, price, 'Buy',
-        orderSizePct, null, null,
+        1, null, null,
         null, 1);
       console.log('Sending buy', order, 'ml result:', backtestData?.ml);
 
@@ -1209,7 +1185,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           prediction: null
         };
         if (backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.5) {
-          await this.addBuy(stock);
+          await this.addBuy(stock, null, 'Personal list buy');
         }
       } catch (error) {
         console.log(error);
@@ -1241,7 +1217,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.currentHoldings.forEach(async (holding) => {
       if (!this.cartService.isStrangle(holding)) {
         if (!holding?.primaryLegs?.length) {
-          this.portfolioSell(holding);
+          await this.cartService.portfolioSell(holding, 'Sell all command');
         }
       }
     });
@@ -1303,7 +1279,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.getNewTrades(null, null, 5);
         break;
       case Strategy.TrimHoldings:
-        this.trimHoldings();
+        await this.trimHoldings();
         this.hedge();
         break;
       case Strategy.Short:

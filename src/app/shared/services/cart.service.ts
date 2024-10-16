@@ -543,22 +543,22 @@ export class CartService {
     return order;
   }
 
-  async portfolioSell(holding: PortfolioInfoHolding) {
+  async portfolioSell(holding: PortfolioInfoHolding, reason) {
     const price = await this.portfolioService.getPrice(holding.name).toPromise();
     const orderSizePct = 0.5;
     const order = this.buildOrderWithAllocation(holding.name, holding.shares, price, 'Sell',
       orderSizePct, null, null, null);
-    this.addToCart(order, true, 'Portfolio sell');
+    this.addToCart(order, true, reason);
     this.initializeOrder(order);
   }
 
   async portfolioBuy(holding: PortfolioInfoHolding,
     allocation: number,
     profitThreshold: number = null,
-    stopLossThreshold: number = null) {
+    stopLossThreshold: number = null, reason: string) {
     const order = await this.buildBuyOrder(holding, allocation, profitThreshold, stopLossThreshold);
     if (order.quantity) {
-      this.addToCart(order, false, 'Portfolio buy');
+      this.addToCart(order, false, reason);
       this.initializeOrder(order);
     }
   }

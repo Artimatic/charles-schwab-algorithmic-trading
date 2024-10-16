@@ -114,6 +114,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   ngOnInit() {
     this.init();
     this.subscriptions = [];
+
     const algoQueueSub = this.tradeService.algoQueue.subscribe(async (item: AlgoQueueItem) => {
       setTimeout(async () => {
         if (!this.order) {
@@ -349,6 +350,11 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     if (this.sub) {
       this.sub.unsubscribe();
     }
+    this.subscriptions.forEach(sub => {
+      if (sub) {
+        sub.unsubscribe();
+      }
+    });
   }
 
   setup() {
@@ -1083,10 +1089,6 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnDestroy() {
     this.order = null;
-    this.subscriptions.forEach(sub => {
-      if (sub) {
-        sub.unsubscribe();
-      }
-    });
+    this.stop();
   }
 }

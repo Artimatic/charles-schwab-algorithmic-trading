@@ -244,7 +244,7 @@ export class StrategyBuilderService {
       }, { call: null, put: null });
     }
     if (!potentialStrangle.put) {
-      console.log('Unable to find put for ', symbol);
+      console.log('Unable to find put ', symbol);
     }
     return potentialStrangle;
   }
@@ -654,7 +654,8 @@ export class StrategyBuilderService {
         quantity: quantity,
         underlying: 'SPY'
       };
-      this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy', currentCall.quantity);
+      const order = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy', currentCall.quantity);
+      this.cartService.addToCart(order, true, 'Buy SPY');
     }
   }
 }
