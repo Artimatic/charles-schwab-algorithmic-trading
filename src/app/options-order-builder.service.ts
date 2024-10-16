@@ -304,7 +304,7 @@ export class OptionsOrderBuilderService {
       return moment(expiry).diff(moment(), 'days') < 35;
     });
   }
-  
+
   async shouldSellOptions(holding: PortfolioInfoHolding, isStrangle: boolean, putCallInd: string) {
     if (this.isExpiring(holding)) {
       const log = `${holding.name} options are expiring soon`;
@@ -335,7 +335,7 @@ export class OptionsOrderBuilderService {
     return false;
   }
 
-  
+
   async sellStrangle(holding: PortfolioInfoHolding) {
     if (this.cartService.isStrangle(holding)) {
       const seenPuts = {};
@@ -367,6 +367,13 @@ export class OptionsOrderBuilderService {
         }
       }
     }
+  }
+
+  addTradingPair(trade, reason: string) {
+    const tradePairOrder = trade[0];
+    tradePairOrder.secondaryLegs = trade[1].primaryLegs;
+    this.cartService.addToCart(tradePairOrder, true, reason);
+    this.removeTradingPair(trade[0].holding.symbol, trade[1].holding.symbol);
   }
 
   async checkCurrentOptions(currentHoldings: PortfolioInfoHolding[]) {
@@ -429,11 +436,7 @@ export class OptionsOrderBuilderService {
         const shouldBuyCall = await this.shouldBuyOption(trade[0].holding.symbol);
         const shouldBuyPut = await this.shouldBuyOption(trade[1].holding.symbol);
         if (shouldBuyCall && shouldBuyPut) {
-          const tradePairOrder = trade[0];
-          tradePairOrder.secondaryLegs = trade[1].primaryLegs;
-          const reason = 'Low volatility';
-          this.cartService.addToCart(tradePairOrder, true, reason);
-          this.removeTradingPair(trade[0].holding.symbol, trade[1].holding.symbol);
+          this.addTradingPair(trade, 'Low volatility');
         }
       }
     }
