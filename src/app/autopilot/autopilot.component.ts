@@ -305,6 +305,31 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       },
       {
+        label: 'Add inverse dispersion trade',
+        command: async () => {
+          await this.inverseDispersion();
+          this.optionsOrderBuilderService.getTradingPairs().forEach(async (trade) => {
+            if (trade.length === 2 && trade[0] && trade[1]) {
+              this.optionsOrderBuilderService.addTradingPair(trade, 'Add pair for test');
+            }
+          });
+        }
+      },
+      {
+        label: 'Add trading pair trade',
+        command: async () => {
+          const cash = await this.cartService.getAvailableFunds(false);
+          const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
+          const minCash = round(this.riskToleranceList[1] * cash, 2);
+          await this.optionsOrderBuilderService.createTradingPair(this.currentHoldings, minCash, maxCash);
+          this.optionsOrderBuilderService.getTradingPairs().forEach(async (trade) => {
+            if (trade.length === 2 && trade[0] && trade[1]) {
+              this.optionsOrderBuilderService.addTradingPair(trade, 'Add pair for test');
+            }
+          });
+        }
+      },
+      {
         label: 'Test pilot',
         command: async () => {
           this.cartService.removeCompletedOrders();
@@ -491,8 +516,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const minCash = round(this.riskToleranceList[1] * cash, 2);
     await this.optionsOrderBuilderService.createTradingPair(this.currentHoldings, minCash, maxCash);
     this.handleStrategy();
-    // await this.findStrangleTrade();
-    // await this.optionsOrderBuilderService.createTradingPair();
   }
 
   async addStranglesToList() {
