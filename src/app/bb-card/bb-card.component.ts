@@ -118,7 +118,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     const algoQueueSub = this.tradeService.algoQueue.subscribe(async (item: AlgoQueueItem) => {
       setTimeout(async () => {
         if (!this.order) {
-          console.log('Order not found', this);
+          console.log('Order deleted');
           this.ngOnDestroy();
         } else if (this.order.holding.symbol === item.symbol || (this.order.id !== undefined && this.order.id === item.id)) {
           if (item.reset) {
@@ -344,7 +344,9 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     this.alive = false;
     this.live = false;
     this.stopped = true;
-    this.order.stopped = true;
+    if (this.order) {
+      this.order.stopped = true;
+    }
     this.cartService.updateOrder(this.order);
     this.cartService.removeCompletedOrders();
     if (this.sub) {

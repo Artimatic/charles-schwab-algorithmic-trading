@@ -1059,11 +1059,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     if (Number(balance.cashBalance) <= 0) {
       this.currentHoldings = await this.cartService.findCurrentPositions();
-      // this.currentHoldings.forEach(async (holding) => {
-      //   await this.checkStopLoss(holding, -0.01);
-      // });
 
-      // this.trimHoldings();
       await this.checkIfTooManyHoldings(this.currentHoldings, 5);
     } else {
       const backtestData = await this.strategyBuilderService.getBacktestData('SPY');
