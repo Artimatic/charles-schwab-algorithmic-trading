@@ -178,7 +178,7 @@ export class CartService {
   }
 
   getOrderIndex(orderList: SmartOrder[], targetOrder: SmartOrder) {
-    return orderList.findIndex((order) => order.holding.symbol === targetOrder.holding.symbol);
+    return orderList.findIndex((order) => order && targetOrder && order.holding.symbol === targetOrder.holding.symbol);
   }
 
   deleteBySymbol(symbol: string) {

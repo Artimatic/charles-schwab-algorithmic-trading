@@ -1010,6 +1010,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const backtestResults = await this.strategyBuilderService.getBacktestData('SPY');
 
     if (backtestResults && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL')) {
+      console.log('Decrease risk', backtestResults);
+
       this.decreaseDayTradeRiskTolerance();
       this.decreaseRiskTolerance();
       await this.trimHoldings();
@@ -1017,9 +1019,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
       if (lastProfitLoss && lastProfitLoss.profit) {
         if (Number(this.calculatePl(lastProfitLoss.profitRecord)) > 0) {
+          console.log('increase risk', lastProfitLoss);
           this.increaseDayTradeRiskTolerance();
           this.increaseRiskTolerance();
         } else if (Number(this.calculatePl(lastProfitLoss.profitRecord)) < 0) {
+          console.log('decrease risk', lastProfitLoss);
           this.decreaseDayTradeRiskTolerance();
           this.decreaseRiskTolerance();
         } else {
