@@ -1039,7 +1039,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       }
       return acc;
     }, { sum: 0, counter: 0 });
-    if ((averageMLResult.sum / averageMLResult.counter) > 0.5) {
+    const averageOutput = (averageMLResult.sum / averageMLResult.counter);
+    console.log('Average output', averageOutput);
+
+    if (averageOutput >= 0.5) {
       this.increaseDayTradeRiskTolerance();
       this.increaseRiskTolerance();
     } else {
