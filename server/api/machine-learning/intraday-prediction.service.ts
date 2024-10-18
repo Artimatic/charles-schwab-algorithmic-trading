@@ -52,6 +52,9 @@ class IntradayPredicationService extends PredictionService {
     let price = null;
     let indicator = null;
     const subQuotes = quotes.slice(quotes.length - 80, quotes.length);
+    if (!quotes.slice) {
+      throw new Error(`getIndicators failed to get quotes ${JSON.stringify(quotes)}`);
+    }
     price = quotes[quotes.length - 1].close;
     return BacktestService.initStrategy(subQuotes)
       .then((indicators) => {

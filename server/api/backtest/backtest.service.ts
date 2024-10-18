@@ -128,6 +128,9 @@ class BacktestService {
   processIndicators(intradayObj, period: number = 80) {
     const getIndicatorQuotes = [];
     const quotes = intradayObj.candles ? intradayObj.candles : intradayObj;
+    if (!quotes.slice) {
+      throw new Error(`processIndicators failed to get quotes ${JSON.stringify(quotes)}`);
+    }
     _.forEach(quotes, (value, key) => {
       const idx = Number(key);
       const minLength = idx - period > 0 ? idx - period : idx - 14;
