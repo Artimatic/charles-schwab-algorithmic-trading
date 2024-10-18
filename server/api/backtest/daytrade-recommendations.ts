@@ -54,6 +54,9 @@ class DaytradeRecommendations {
         return this.getIntradayQuotes(symbol, dataSource)
             .then(intradayObj => {
                 const quotes = (intradayObj as any).candles;
+                if (!quotes.slice) {
+                    throw new Error(`getIndicatorsForAll failed to get quotes ${JSON.stringify(quotes)}`);
+                }
                 let idx = 0;
                 while (idx < quotes.length) {
                     const minLength = idx - 14;

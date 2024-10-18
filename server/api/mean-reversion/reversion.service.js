@@ -113,7 +113,9 @@ class ReversionService {
     }
 
     const trend = DecisionService.getInitialTrend(quotes, endIdx);
-
+    if (!quotes.slice) {
+      throw new Error(`ReversionService failed to get quotes ${JSON.stringify(quotes)}`);
+    }
     const data = quotes.slice(startIdx, endIdx + 1),
       date = moment(data[data.length - 1].date).valueOf(),
       close = data[data.length - 1].close;

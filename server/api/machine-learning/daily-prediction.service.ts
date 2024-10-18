@@ -33,6 +33,9 @@ class DailyPredicationService extends PredictionService {
     let indicator = null;
     return TrainingService.buildDailyQuotes(symbol, moment().subtract({ days: 120 }).valueOf(), moment().valueOf())
       .then((quotes) => {
+        if (!quotes.slice) {
+          throw new Error(`TrainingService.buildDailyQuotes failed to get quotes ${JSON.stringify(quotes)}`);
+        }
         const subQuotes = quotes.slice(quotes.length - 80, quotes.length);
         price = quotes[quotes.length - 1].close;
         openingPrice = quotes[0].close;

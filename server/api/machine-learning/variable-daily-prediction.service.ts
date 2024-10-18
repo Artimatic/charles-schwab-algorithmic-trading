@@ -115,6 +115,9 @@ class VariableDailyPredicationService extends PredictionService {
     return TrainingService.buildDailyQuotes(symbol, moment().subtract({ days: 120 }).valueOf(), moment().valueOf())
       .then((quotes) => {
         const subQuotes = quotes.slice(quotes.length - 80, quotes.length);
+        if (!quotes.slice) {
+          throw new Error(`VariableDailyPredicationService failed to get quotes ${JSON.stringify(quotes)}`);
+        }
         price = quotes[quotes.length - 1].close;
         openingPrice = quotes[0].close;
         return BacktestService.initStrategy(subQuotes);
