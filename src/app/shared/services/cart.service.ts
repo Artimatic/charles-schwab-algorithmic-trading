@@ -414,7 +414,7 @@ export class CartService {
       for (const holding of data) {
         if (holding.instrument.assetType.toLowerCase() === 'option') {
           const symbol = holding.instrument.underlyingSymbol;
-          const pl = holding.marketValue - (holding.averagePrice * holding.longQuantity) * 100;
+          const pl = holding.longOpenProfitLoss;
           let found = false;
           currentHoldings = currentHoldings.map(holdingInfo => {
             if (holdingInfo.name === symbol) {
@@ -445,7 +445,7 @@ export class CartService {
               }
               holdingInfo.cost = holdingInfo.cost ? (holdingInfo.cost + (holding.averagePrice * holding.longQuantity) * 100) : (holding.averagePrice * holding.longQuantity) * 100;
               holdingInfo.netLiq = holdingInfo.netLiq ? (holdingInfo.netLiq + holding.marketValue) : holding.marketValue;
-              holdingInfo.pl = holdingInfo.pl + (holding.marketValue - (holding.averagePrice * holding.longQuantity) * 100);
+              holdingInfo.pl = holdingInfo.pl + holding.longOpenProfitLoss;
             }
 
             return holdingInfo;
@@ -472,19 +472,19 @@ export class CartService {
         } else if (holding.instrument.assetType.toLowerCase() === 'equity' || holding.instrument.assetType === 'COLLECTIVE_INVESTMENT') {
           const symbol = holding.instrument.symbol;
 
-          const pl = holding.marketValue - (holding.averagePrice * holding.longQuantity);
+          const pl = holding.longOpenProfitLoss;
           let found = false;
           currentHoldings = currentHoldings.map(holdingInfo => {
             if (holdingInfo.name === symbol) {
               found = true;
               holdingInfo.cost = holdingInfo.cost ? (holdingInfo.cost + (holding.averagePrice * holding.longQuantity) * 100) : (holding.averagePrice * holding.longQuantity) * 100;
-              holdingInfo.pl = holdingInfo.pl + (holding.marketValue - (holding.averagePrice * holding.longQuantity) * 100);
+              holdingInfo.pl = holdingInfo.pl + holding.longOpenProfitLoss;
               holdingInfo.netLiq = holdingInfo.netLiq ? (holdingInfo.netLiq + holding.marketValue) : holding.marketValue;
             }
 
             return holdingInfo;
           });
-          if (found) {
+          if (!found) {
             const tempHoldingObj = {
               name: symbol,
               pl,
