@@ -875,7 +875,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async checkStopLoss(holding: PortfolioInfoHolding, stopLoss = -0.045, addStop = 0.01) {
-    const pnl = divide(holding.pl, holding.netLiq);
+    const pnl = (holding.netLiq - holding.cost) / holding.cost;
     const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
     const price = await this.backtestService.getLastPriceTiingo({ symbol: holding.name }).toPromise();
     const lastPrice = price[holding.name].quote.lastPrice;
@@ -901,7 +901,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           orderType = OrderTypes.put;
         }
         const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
-        this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', 'Stop loss reached');
+        this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', 'Options stop loss reached');
       } else {
         await this.cartService.portfolioSell(holding, 'Stop loss');
       }
