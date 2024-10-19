@@ -62,7 +62,7 @@ export class CartService {
       });
     }
     this.reportingService.addAuditLog(order.holding.symbol, log, reason);
-    
+
     if (!noDup && replaceAnyExistingOrders) {
       if (indices[0] > -1) {
         this.deleteBuy(this.buildOrder(order.holding.symbol, null, null, 'buy'));
@@ -443,7 +443,8 @@ export class CartService {
                   holdingInfo.secondaryLegs.push(this.createOptionObj(holding));
                 }
               }
-
+              holdingInfo.cost = holdingInfo.cost ? (holdingInfo.cost + (holding.averagePrice * holding.longQuantity) * 100) : (holding.averagePrice * holding.longQuantity) * 100;
+              holdingInfo.netLiq = holdingInfo.netLiq ? (holdingInfo.netLiq + holding.marketValue) : holding.marketValue;
               holdingInfo.pl = holdingInfo.pl + (holding.marketValue - (holding.averagePrice * holding.longQuantity) * 100);
             }
 
@@ -453,7 +454,8 @@ export class CartService {
             const tempHoldingObj: PortfolioInfoHolding = {
               name: symbol,
               pl,
-              netLiq: 0,
+              cost: (holding.averagePrice * holding.longQuantity) * 100,
+              netLiq: holding.marketValue,
               shares: 0,
               alloc: 0,
               recommendation: null,
@@ -471,22 +473,35 @@ export class CartService {
           const symbol = holding.instrument.symbol;
 
           const pl = holding.marketValue - (holding.averagePrice * holding.longQuantity);
+          let found = false;
+          currentHoldings = currentHoldings.map(holdingInfo => {
+            if (holdingInfo.name === symbol) {
+              found = true;
+              holdingInfo.cost = holdingInfo.cost ? (holdingInfo.cost + (holding.averagePrice * holding.longQuantity) * 100) : (holding.averagePrice * holding.longQuantity) * 100;
+              holdingInfo.pl = holdingInfo.pl + (holding.marketValue - (holding.averagePrice * holding.longQuantity) * 100);
+              holdingInfo.netLiq = holdingInfo.netLiq ? (holdingInfo.netLiq + holding.marketValue) : holding.marketValue;
+            }
 
-          const tempHoldingObj = {
-            name: symbol,
-            pl,
-            netLiq: holding.marketValue,
-            shares: holding.longQuantity,
-            alloc: 0,
-            recommendation: null,
-            buyReasons: '',
-            sellReasons: '',
-            buyConfidence: 0,
-            sellConfidence: 0,
-            prediction: null
-          };
+            return holdingInfo;
+          });
+          if (found) {
+            const tempHoldingObj = {
+              name: symbol,
+              pl,
+              netLiq: holding.marketValue,
+              shares: holding.longQuantity,
+              cost: (holding.averagePrice * holding.longQuantity) * 100,
+              alloc: 0,
+              recommendation: null,
+              buyReasons: '',
+              sellReasons: '',
+              buyConfidence: 0,
+              sellConfidence: 0,
+              prediction: null
+            };
 
-          currentHoldings.push(tempHoldingObj);
+            currentHoldings.push(tempHoldingObj);
+          }
         }
       }
     }
@@ -563,7 +578,7 @@ export class CartService {
     }
   }
 
-  
+
   async portfolioDaytrade(symbol: string,
     allocation: number,
     profitThreshold: number = null,

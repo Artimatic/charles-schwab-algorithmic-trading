@@ -6,13 +6,13 @@ import { map } from 'rxjs/operators';
 import { AuthenticationService } from './authentication.service';
 import { Holding } from '../models';
 import * as _ from 'lodash';
-import { GlobalSettingsService } from '../../settings/global-settings.service';
 import { Subject, of } from 'rxjs';
 import { Options } from '@shared/models/options';
 
 export interface PortfolioInfoHolding {
   name: string;
   pl: number;
+  cost?: number;
   netLiq: number;
   shares: number;
   alloc: number;
