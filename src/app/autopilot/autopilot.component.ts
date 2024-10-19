@@ -307,26 +307,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Add inverse dispersion trade',
         command: async () => {
-          await this.inverseDispersion();
-          this.optionsOrderBuilderService.getTradingPairs().forEach(async (trade) => {
-            if (trade.length === 2 && trade[0] && trade[1]) {
-              this.optionsOrderBuilderService.addTradingPair(trade, 'Add pair for test');
-            }
-          });
+          await this.placeInverseDispersionOrders();
         }
       },
       {
         label: 'Add trading pair trade',
         command: async () => {
-          const cash = await this.cartService.getAvailableFunds(false);
-          const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
-          const minCash = round(this.riskToleranceList[1] * cash, 2);
-          await this.optionsOrderBuilderService.createTradingPair(this.currentHoldings, minCash, maxCash);
-          this.optionsOrderBuilderService.getTradingPairs().forEach(async (trade) => {
-            if (trade.length === 2 && trade[0] && trade[1]) {
-              this.optionsOrderBuilderService.addTradingPair(trade, 'Add pair for test');
-            }
-          });
+          await this.placePairOrders();
         }
       },
       {
@@ -1271,11 +1258,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async handleStrategy() {
     switch (this.strategyList[this.strategyCounter]) {
       case Strategy.OptionsStrangle:
-        this.addStranglesToList();
+        await this.addStranglesToList();
         await this.getNewTrades(null, null, 2);
         break;
       case Strategy.TradingPairs:
-        this.addStranglesToList();
+        await this.placePairOrders();
         await this.getNewTrades(null, null, 2);
         break;
       case Strategy.Swingtrade:
@@ -1324,6 +1311,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.getNewTrades(null, null, 3);
         break;
       case Strategy.Default: {
+        await this.inverseDispersion();
+        await this.addStranglesToList();
         await this.getNewTrades();
         break;
       }
@@ -1379,6 +1368,27 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       }
     }
+  }
+
+  async placeInverseDispersionOrders() {
+    await this.inverseDispersion();
+    this.addTradingPairOrders();
+  }
+
+  async placePairOrders() {
+    const cash = await this.cartService.getAvailableFunds(false);
+    const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
+    const minCash = round(this.riskToleranceList[1] * cash, 2);
+    await this.optionsOrderBuilderService.createTradingPair(this.currentHoldings, minCash, maxCash);
+    this.addTradingPairOrders();
+  }
+
+  private addTradingPairOrders() {
+    this.optionsOrderBuilderService.getTradingPairs().forEach(async (trade) => {
+      if (trade.length === 2 && trade[0] && trade[1]) {
+        this.optionsOrderBuilderService.addTradingPair(trade, 'Add pair for test');
+      }
+    });
   }
 
   unsubscribeStockFinder() {
