@@ -205,7 +205,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   startButtonOptions: MenuItem[];
   tradingPairs: SmartOrder[][] = [];
   manualStart = false;
-
+  messages = [];
   constructor(
     private portfolioService: PortfolioService,
     private backtestService: BacktestService,
@@ -1175,8 +1175,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           sellConfidence: 0,
           prediction: null
         };
-        if (backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.5) {
+        if (backtestResults && backtestResults.ml !== null && (backtestResults.ml > 0.5 || (backtestResults.recommendation === 'STRONGBUY' || backtestResults.recommendation === 'BUY'))) {
+          this.messages.push({severity:'success', summary:'Buy alert', detail:`Buy ${name}, date: ${moment().format()}`});
           await this.addBuy(stock, null, 'Personal list buy');
+          this.revealPotentialStrategy = true;
         }
       } catch (error) {
         console.log(error);
@@ -1187,11 +1189,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       const name = stock.ticker;
       try {
         const backtestResults = await this.strategyBuilderService.getBacktestData(name);
-        if (backtestResults && backtestResults.ml !== null && backtestResults.ml < 0.5 && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL')) {
+        if (backtestResults && backtestResults.ml !== null && (backtestResults.ml < 0.5 || backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL')) {
+          this.messages.push({severity:'error', summary:'Sell alert', detail:`Sell ${name}, date: ${moment().format()}`});
+
           const cash = await this.cartService.getAvailableFunds(false);
           const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
           const minCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
           this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [name], minCash, maxCash);
+          this.revealPotentialStrategy = true;
         }
       } catch (error) {
         console.log(error);
@@ -1334,7 +1339,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   showStrategies() {
     this.tradingPairs = [];
-    this.revealPotentialStrategy = !this.revealPotentialStrategy;
+    this.revealPotentialStrategy = true;
     this.tradingPairs = this.optionsOrderBuilderService.getTradingPairs();
     console.log(this.tradingPairs);
   }
