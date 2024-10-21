@@ -13,6 +13,7 @@ export interface PortfolioInfoHolding {
   name: string;
   pl: number;
   cost?: number;
+  pnlPercentage?: number;
   netLiq: number;
   shares: number;
   alloc: number;

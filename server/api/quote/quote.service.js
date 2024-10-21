@@ -1,20 +1,13 @@
 import * as moment from 'moment';
 import * as _ from 'lodash';
 import * as RequestPromise from 'request-promise';
-const YahooFinanceAPI = require('yahoo-finance-data');
 import * as algotrader from 'algotrader';
 import PortfolioService from '../portfolio/portfolio.service';
 
 import * as configurations from '../../config/environment';
 
-const yahoo = {
-  key: configurations.yahoo.key,
-  secret: configurations.yahoo.secret
-};
-
 const appUrl = configurations.apps.goliath;
 
-const api = new YahooFinanceAPI(yahoo);
 const AlphaVantage = algotrader.Data.AlphaVantage;
 const av = new AlphaVantage(configurations.alpha.key);
 
@@ -133,10 +126,6 @@ class QuoteService {
 
     // return RequestPromise(options);
     return PortfolioService.getQuote(symbol, null, response);
-  }
-
-  getIntradayData(symbol, interval) {
-    return api.getIntradayChartData(symbol, interval, true);
   }
 
   queryForIntraday(symbol, from, to) {

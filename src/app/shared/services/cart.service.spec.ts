@@ -84,10 +84,23 @@ describe('CartService', () => {
     const testHoldings1 = await service.findCurrentPositions();
     expect(testHoldings1.length).toBe(1);
     expect(testHoldings1[0].pl).toBe(-639.51);
+    expect(testHoldings1[0].cost).toBe(7896.01);
 
     portfolioServiceSpy.getTdPortfolio.and.returnValue(of([mockPortfolioArr[0]]));
     const testHoldings2 = await service.findCurrentPositions();
     expect(testHoldings2.length).toBe(1);
     expect(testHoldings2[0].pl).toBe(95.99);
+    expect(testHoldings2[0].cost).toBe(160.51);
+  }));
+  it('should calculate correct pnl', inject([CartService], async (service: CartService) => {
+    portfolioServiceSpy.getTdPortfolio.and.returnValue(of(mockPortfolioArr));
+    const testHoldings1 = await service.findCurrentPositions();
+    expect(testHoldings1.length).toBe(1);
+    expect(Number(testHoldings1[0].pnlPercentage.toFixed(2))).toBe(-0.08);
+
+    portfolioServiceSpy.getTdPortfolio.and.returnValue(of([mockPortfolioArr[0]]));
+    const testHoldings2 = await service.findCurrentPositions();
+    expect(testHoldings2.length).toBe(1);
+    expect(Number(testHoldings2[0].pnlPercentage.toFixed(2))).toBe(0.60);
   }));
 });

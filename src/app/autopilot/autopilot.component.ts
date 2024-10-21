@@ -165,7 +165,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   dayTradeRiskCounter = 0;
 
   riskToleranceList = [
-    RiskTolerance.Low,
     RiskTolerance.ExtremeFear,
     RiskTolerance.Fear,
     RiskTolerance.Neutral,
@@ -546,27 +545,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.getNewTrades(buyStrangleCb);
   }
 
-  async findStrangleTrade() {
-    const buyStrangleCb = async (symbol: string, prediction: number, backtestData: any) => {
-      if (backtestData?.optionsVolume > 230) {
-        if (prediction < 0.3 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
-          const optionStrategy = await this.strategyBuilderService.getPutStrangleTrade(symbol);
-          const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
-          this.strategyBuilderService.addStrangle(symbol, price, optionStrategy);
-          console.log('Adding Bearish strangle', symbol, price, optionStrategy);
-        } else {
-          if (prediction > 0.6 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
-            const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade(symbol);
-            const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
-            this.strategyBuilderService.addStrangle(symbol, price, optionStrategy);
-            console.log('Adding Bullish strangle', symbol, price, optionStrategy);
-          }
-        }
-      }
-    };
-    await this.getNewTrades(buyStrangleCb);
-  }
-
   async findSwingStockCallback(symbol: string, prediction: number, backtestData: any) {
     if ((prediction > 0.7 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
       const stock: PortfolioInfoHolding = {
@@ -876,7 +854,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async checkStopLoss(holding: PortfolioInfoHolding, stopLoss = -0.045, addStop = 0.01) {
-    const pnl = holding.pl;
+    const pnl = holding.pnlPercentage;
     const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
     const price = await this.backtestService.getLastPriceTiingo({ symbol: holding.name }).toPromise();
     const lastPrice = price[holding.name].quote.lastPrice;
@@ -1332,6 +1310,56 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
         const minCash = round(this.riskToleranceList[1] * cash, 2);
         await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [symbol], minCash, maxCash);
+      }
+    };
+    this.getNewTrades(findPuts);
+  }
+
+  getAllNewTrades() {
+    const findPuts = async (symbol: string, prediction: number, backtestData: any) => {
+      if (prediction < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
+        const cash = await this.cartService.getAvailableFunds(false);
+        const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
+        const minCash = round(this.riskToleranceList[1] * cash, 2);
+        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [symbol], minCash, maxCash);
+      }
+    };
+
+    const buyStrangleCb = async (symbol: string, prediction: number, backtestData: any) => {
+      if (backtestData?.optionsVolume > 180) {
+        const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
+        const lastPrice = price[symbol].quote.lastPrice;
+        const closePrice = price[symbol].quote.closePrice;
+        const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
+
+        if (!backtestResults.averageMove) {
+          backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
+        }
+        if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
+          if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.90)) {
+            if (prediction < 0.3 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
+              const optionStrategy = await this.strategyBuilderService.getPutStrangleTrade(symbol);
+              if (optionStrategy && optionStrategy.call && optionStrategy.put) {
+                const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
+                const order = await this.strategyBuilderService.addStrangleOrder(symbol, price, optionStrategy);
+                console.log('Adding Bearish strangle', symbol, price, optionStrategy);
+                this.optionsOrderBuilderService.addTradingPairs([order]);
+              }
+            } else {
+              if (prediction > 0.6 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
+                const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade(symbol);
+                if (optionStrategy && optionStrategy.call && optionStrategy.put) {
+                  const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
+                  const order = await this.strategyBuilderService.addStrangleOrder(symbol, price, optionStrategy);
+                  console.log('Adding Bullish strangle', symbol, price, optionStrategy);
+                  this.optionsOrderBuilderService.addTradingPairs([order]);
+                } else {
+                  console.log('Unable to build strangle for ', symbol);
+                }
+              }
+            }
+          }
+        }
       }
     };
     this.getNewTrades(findPuts);
