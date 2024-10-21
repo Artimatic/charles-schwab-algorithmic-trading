@@ -14,10 +14,6 @@ exports.rawQuote = function (req, res, next) {
   QuoteController.getRawData(req, res);
 };
 
-exports.intraday = function (req, res, next) {
-  QuoteController.getIntraday(req, res);
-};
-
 exports.intradayv2 = function (req, res, next) {
   QuoteController.getIntradayV2(req, res);
 };

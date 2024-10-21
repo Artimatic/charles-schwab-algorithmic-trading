@@ -20,7 +20,6 @@ import { AiPicksService } from '@shared/services/ai-picks.service';
 import { ReportingService } from '@shared/services/reporting.service';
 import { ClientSmsService } from '@shared/services/client-sms.service';
 import { SchedulerService } from '@shared/service/scheduler.service';
-import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 
 export interface Algo {
   value: string;
@@ -66,7 +65,7 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
   currentList: Stock[] = [];
   algoReport = this.initAlgoReport();
 
-  additionalOptions = false;
+  additionalOptions = true;
   endDate: string;
   progressPct = 0;
   progress = 0;

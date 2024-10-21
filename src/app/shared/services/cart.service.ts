@@ -446,16 +446,19 @@ export class CartService {
               holdingInfo.cost = holdingInfo.cost ? (holdingInfo.cost + (holding.averagePrice * holding.longQuantity) * 100) : (holding.averagePrice * holding.longQuantity) * 100;
               holdingInfo.netLiq = holdingInfo.netLiq ? (holdingInfo.netLiq + holding.marketValue) : holding.marketValue;
               holdingInfo.pl = holdingInfo.pl + holding.longOpenProfitLoss;
+              holdingInfo.pnlPercentage = ((holdingInfo.cost + holdingInfo.pl) - holdingInfo.cost) / holdingInfo.cost;
             }
 
             return holdingInfo;
           });
           if (!found) {
+            const cost = (holding.averagePrice * holding.longQuantity) * 100;
             const tempHoldingObj: PortfolioInfoHolding = {
               name: symbol,
               pl,
-              cost: (holding.averagePrice * holding.longQuantity) * 100,
+              cost: cost,
               netLiq: holding.marketValue,
+              pnlPercentage: ((cost + pl) - cost) / cost,
               shares: 0,
               alloc: 0,
               recommendation: null,
@@ -477,20 +480,23 @@ export class CartService {
           currentHoldings = currentHoldings.map(holdingInfo => {
             if (holdingInfo.name === symbol) {
               found = true;
-              holdingInfo.cost = holdingInfo.cost ? (holdingInfo.cost + (holding.averagePrice * holding.longQuantity) * 100) : (holding.averagePrice * holding.longQuantity) * 100;
+              holdingInfo.cost = holdingInfo.cost ? (holdingInfo.cost + (holding.averagePrice * holding.longQuantity)) : (holding.averagePrice * holding.longQuantity);
               holdingInfo.pl = holdingInfo.pl + holding.longOpenProfitLoss;
               holdingInfo.netLiq = holdingInfo.netLiq ? (holdingInfo.netLiq + holding.marketValue) : holding.marketValue;
+              holdingInfo.pnlPercentage = ((holdingInfo.cost + holdingInfo.pl) - holdingInfo.cost) / holdingInfo.cost;
             }
 
             return holdingInfo;
           });
           if (!found) {
+            const cost = (holding.averagePrice * holding.longQuantity);
             const tempHoldingObj = {
               name: symbol,
               pl,
               netLiq: holding.marketValue,
               shares: holding.longQuantity,
-              cost: (holding.averagePrice * holding.longQuantity) * 100,
+              cost: cost,
+              pnlPercentage: ((cost + pl) - cost) / cost,
               alloc: 0,
               recommendation: null,
               buyReasons: '',
