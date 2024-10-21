@@ -1254,7 +1254,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         break;
       case Strategy.TrimHoldings:
         await this.trimHoldings();
-        this.hedge();
         break;
       case Strategy.Short:
         this.optionsOrderBuilderService.getTradingPairs().forEach(async (trade) => {
@@ -1287,7 +1286,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       case Strategy.BuySnP:
         const balance = await this.portfolioService.getTdBalance().toPromise();
         const maxCash = round(this.riskToleranceList[0] * balance.cashBalance);
-        this.strategyBuilderService.buySnP(maxCash, balance.cashBalance);
+        await this.strategyBuilderService.buySnP(maxCash, balance.cashBalance);
         await this.getNewTrades(null, null, 2);
         break;
       case Strategy.InverseDispersion:
