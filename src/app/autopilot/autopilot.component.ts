@@ -494,14 +494,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.hedge();
     const balance = await this.machineDaytradingService.getPortfolioBalance().toPromise();
     if (balance.liquidationValue < 28000) {
-      await this.getNewTrades();
+      await this.defaultStrategy();
       return;
     }
-    const cash = await this.cartService.getAvailableFunds(false);
-    const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
-    const minCash = round(this.riskToleranceList[1] * cash, 2);
-    await this.optionsOrderBuilderService.createTradingPair(this.currentHoldings, minCash, maxCash);
-    this.handleStrategy();
+    await this.handleStrategy();
   }
 
   async addStranglesToList() {
@@ -1154,7 +1150,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           prediction: null
         };
         if (backtestResults && backtestResults.ml !== null && (backtestResults.ml > 0.5 || (backtestResults.recommendation === 'STRONGBUY' || backtestResults.recommendation === 'BUY'))) {
-          this.messages.push({severity:'success', summary:'Buy alert', detail:`Buy ${name}, date: ${moment().format()}`});
+          const msg = `Buy ${name}, date: ${moment().format()}`;
+          this.messages.push({severity:'success', summary:'Buy alert', detail: msg});
+          console.log(msg);
           await this.addBuy(stock, null, 'Personal list buy');
           this.revealPotentialStrategy = true;
         }
@@ -1168,8 +1166,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       try {
         const backtestResults = await this.strategyBuilderService.getBacktestData(name);
         if (backtestResults && backtestResults.ml !== null && (backtestResults.ml < 0.5 || backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL')) {
-          this.messages.push({severity:'error', summary:'Sell alert', detail:`Sell ${name}, date: ${moment().format()}`});
-
+          const msg = `Sell ${name}, date: ${moment().format()}`;
+          this.messages.push({severity:'error', summary:'Sell alert', detail: msg});
+          console.log(msg);
           const cash = await this.cartService.getAvailableFunds(false);
           const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
           const minCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
@@ -1290,75 +1289,44 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.getNewTrades(null, null, 2);
         break;
       case Strategy.InverseDispersion:
-        await this.inverseDispersion();
+        await this.defaultStrategy();
         await this.getNewTrades(null, null, 3);
         break;
-      case Strategy.Default: {
-        await this.inverseDispersion();
-        await this.addStranglesToList();
+      default: {
+        await this.defaultStrategy();
         await this.getNewTrades();
         break;
       }
     }
   }
 
-  inverseDispersion() {
+  async defaultStrategy() {
+    const cash = await this.cartService.getAvailableFunds(false);
+    const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
+    const minCash = round(this.riskToleranceList[1] * cash, 2);
+    await this.optionsOrderBuilderService.createTradingPair(this.currentHoldings, minCash, maxCash);
+
     const findPuts = async (symbol: string, prediction: number, backtestData: any) => {
       if (prediction < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
         const cash = await this.cartService.getAvailableFunds(false);
         const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
         const minCash = round(this.riskToleranceList[1] * cash, 2);
         await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [symbol], minCash, maxCash);
-      }
-    };
-    this.getNewTrades(findPuts);
-  }
-
-  getAllNewTrades() {
-    const findPuts = async (symbol: string, prediction: number, backtestData: any) => {
-      if (prediction < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
-        const cash = await this.cartService.getAvailableFunds(false);
-        const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
-        const minCash = round(this.riskToleranceList[1] * cash, 2);
-        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [symbol], minCash, maxCash);
-      }
-    };
-
-    const buyStrangleCb = async (symbol: string, prediction: number, backtestData: any) => {
-      if (backtestData?.optionsVolume > 180) {
-        const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
-        const lastPrice = price[symbol].quote.lastPrice;
-        const closePrice = price[symbol].quote.closePrice;
-        const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
-
-        if (!backtestResults.averageMove) {
-          backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
-        }
-        if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
-          if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.90)) {
-            if (prediction < 0.3 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
-              const optionStrategy = await this.strategyBuilderService.getPutStrangleTrade(symbol);
-              if (optionStrategy && optionStrategy.call && optionStrategy.put) {
-                const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
-                const order = await this.strategyBuilderService.addStrangleOrder(symbol, price, optionStrategy);
-                console.log('Adding Bearish strangle', symbol, price, optionStrategy);
-                this.optionsOrderBuilderService.addTradingPairs([order]);
-              }
-            } else {
-              if (prediction > 0.6 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
-                const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade(symbol);
-                if (optionStrategy && optionStrategy.call && optionStrategy.put) {
-                  const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
-                  const order = await this.strategyBuilderService.addStrangleOrder(symbol, price, optionStrategy);
-                  console.log('Adding Bullish strangle', symbol, price, optionStrategy);
-                  this.optionsOrderBuilderService.addTradingPairs([order]);
-                } else {
-                  console.log('Unable to build strangle for ', symbol);
-                }
-              }
-            }
-          }
-        }
+      } else if ((prediction > 0.7 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
+        const stock: PortfolioInfoHolding = {
+          name: symbol,
+          pl: 0,
+          netLiq: 0,
+          shares: 0,
+          alloc: 0,
+          recommendation: 'None',
+          buyReasons: '',
+          sellReasons: '',
+          buyConfidence: 0,
+          sellConfidence: 0,
+          prediction: null
+        };
+        await this.addBuy(stock, null, 'Swing trade buy');
       }
     };
     this.getNewTrades(findPuts);
@@ -1404,7 +1372,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async placeInverseDispersionOrders() {
-    await this.inverseDispersion();
+    await this.defaultStrategy();
     this.addTradingPairOrders();
   }
 
