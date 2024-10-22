@@ -22,6 +22,7 @@ const fullList = [
     'CSCO',
     'ANET',
     'HOOD',
+    'DE',
     'DIS',
     'MCD',
     'NKE',
@@ -72,6 +73,7 @@ const fullList = [
     'LULU',
     'HLT',
     'HAL',
+    'CAT',
     'CAVA',
     'CARR',
     'TSN',
@@ -134,7 +136,7 @@ const fullList = [
     'ISRG',
     'ELV',
     'VRTX',
-    'REGN',
+    'GE',
     'RGEN',
     'HD',
     'LOW',
@@ -146,8 +148,10 @@ const fullList = [
     'CRMT',
     'COST',
     'COKE',
+    'UNP',
     'CHTR',
     'DASH',
+    'HON',
     'NUE'];
 
 export const CurrentStockList = fullList.map(s => {

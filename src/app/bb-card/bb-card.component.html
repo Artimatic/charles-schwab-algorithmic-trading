@@ -11,7 +11,7 @@
     [badge]="firstFormGroup.value.quantity" class="p-button-outlined"></p-button>
 </div>
 <div *ngIf="order.primaryLegs && order.secondaryLegs">
-  <p-button [label]="order.primaryLegs[0].description + order.secondaryLegs[0].description"
+  <p-button [label]="order.primaryLegs[0].description + ' - ' +order.secondaryLegs[0].description"
     (click)="toggleSettingsVisible()" [badge]="firstFormGroup.value.quantity"
     class="p-button-outlined p-button-secondary"></p-button>
 </div>

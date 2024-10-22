@@ -204,7 +204,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   startButtonOptions: MenuItem[];
   tradingPairs: SmartOrder[][] = [];
   manualStart = false;
-  messages = [];
   constructor(
     private portfolioService: PortfolioService,
     private backtestService: BacktestService,
@@ -1149,12 +1148,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           sellConfidence: 0,
           prediction: null
         };
-        if (backtestResults && backtestResults.ml !== null && (backtestResults.ml > 0.5 || (backtestResults.recommendation === 'STRONGBUY' || backtestResults.recommendation === 'BUY'))) {
+        if (backtestResults && backtestResults.ml !== null && (backtestResults.ml > 0.5 && (backtestResults.recommendation === 'STRONGBUY' || backtestResults.recommendation === 'BUY'))) {
           const msg = `Buy ${name}, date: ${moment().format()}`;
-          this.messages.push({severity:'success', summary:'Buy alert', detail: msg});
+          this.messageService.add({severity:'success', summary: 'Buy alert', detail: msg, sticky: true});
           console.log(msg);
           await this.addBuy(stock, null, 'Personal list buy');
-          this.revealPotentialStrategy = true;
+          setTimeout(() => {
+            this.revealPotentialStrategy = true;
+          }, 1000);
         }
       } catch (error) {
         console.log(error);
@@ -1165,15 +1166,17 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       const name = stock.ticker;
       try {
         const backtestResults = await this.strategyBuilderService.getBacktestData(name);
-        if (backtestResults && backtestResults.ml !== null && (backtestResults.ml < 0.5 || backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL')) {
+        if (backtestResults && backtestResults.ml !== null && (backtestResults.ml < 0.5 && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL'))) {
           const msg = `Sell ${name}, date: ${moment().format()}`;
-          this.messages.push({severity:'error', summary:'Sell alert', detail: msg});
+          this.messageService.add({severity:'error', summary: 'Sell alert', detail: msg, sticky: true});
           console.log(msg);
           const cash = await this.cartService.getAvailableFunds(false);
           const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
           const minCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
           this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [name], minCash, maxCash);
-          this.revealPotentialStrategy = true;
+          setTimeout(() => {
+            this.revealPotentialStrategy = true;
+          }, 1000);
         }
       } catch (error) {
         console.log(error);
@@ -1290,27 +1293,26 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         break;
       case Strategy.InverseDispersion:
         await this.defaultStrategy();
-        await this.getNewTrades(null, null, 3);
         break;
       default: {
         await this.defaultStrategy();
-        await this.getNewTrades();
         break;
       }
     }
+    await this.padBuys();
   }
 
   async defaultStrategy() {
     const cash = await this.cartService.getAvailableFunds(false);
     const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
-    const minCash = round(this.riskToleranceList[1] * cash, 2);
+    const minCash = round(this.riskToleranceList[0] * cash, 2);
     await this.optionsOrderBuilderService.createTradingPair(this.currentHoldings, minCash, maxCash);
 
     const findPuts = async (symbol: string, prediction: number, backtestData: any) => {
       if (prediction < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
         const cash = await this.cartService.getAvailableFunds(false);
         const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
-        const minCash = round(this.riskToleranceList[1] * cash, 2);
+        const minCash = round(this.riskToleranceList[0] * cash, 2);
         await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [symbol], minCash, maxCash);
       } else if ((prediction > 0.7 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
         const stock: PortfolioInfoHolding = {
@@ -1329,7 +1331,31 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.addBuy(stock, null, 'Swing trade buy');
       }
     };
-    this.getNewTrades(findPuts);
+    await this.getNewTrades(findPuts);
+  }
+
+  async padBuys() {
+    if (this.cartService.sellOrders.length + this.cartService.buyOrders.length + this.cartService.otherOrders.length < 3) {
+      const buyStockCb = async (symbol: string, prediction: number, backtestData: any) => {
+        if ((prediction > 0.5 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
+          const stock: PortfolioInfoHolding = {
+            name: symbol,
+            pl: 0,
+            netLiq: 0,
+            shares: 0,
+            alloc: 0,
+            recommendation: 'None',
+            buyReasons: '',
+            sellReasons: '',
+            buyConfidence: 0,
+            sellConfidence: 0,
+            prediction: null
+          };
+          await this.addBuy(stock, null, 'Swing trade buy');
+        }
+      };
+      await this.getNewTrades(buyStockCb, null, 3);
+    }
   }
 
   showStrategies() {
