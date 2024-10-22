@@ -1,6 +1,4 @@
 <p-dialog header="Strategy finder" [(visible)]="revealPotentialStrategy">
-    <p-messages [(value)]="messages" [enableService]="false" [closable]="true">
-    </p-messages>
     <p-listbox [options]="tradingPairs">
         <ng-template let-strategy pTemplate="item">
             <div class="strategy-list">
