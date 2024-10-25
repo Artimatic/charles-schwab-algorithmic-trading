@@ -360,7 +360,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else if (moment().isAfter(moment(startStopTime.endDateTime).subtract(8, 'minutes')) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
           if (!this.boughtAtClose) {
-            // await this.buySellAtClose();
+            await this.buySellAtClose();
             setTimeout(async () => {
               const profitLog = `Profit ${this.scoreKeeperService.total}`;
               this.reportingService.addAuditLog(null, profitLog);

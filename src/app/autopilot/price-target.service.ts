@@ -8,23 +8,13 @@ import { OrderTypes } from '@shared/models/smart-order';
   providedIn: 'root'
 })
 export class PriceTargetService {
-  targetDiff = 1;
+  targetDiff = 0.6;
   constructor(private backtestService: BacktestService,
     private portfolioService: PortfolioService,
     private cartService: CartService,
     private optionsOrderBuilderService: OptionsOrderBuilderService,
     private orderHandlingService: OrderHandlingService
   ) { }
-
-  async hasMetPriceTarget() {
-      const symbol = 'SPY';
-      const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
-      const portfolioPl = await this.todaysPortfolioPl();
-      if (portfolioPl && (portfolioPl > (((price[symbol].lastPrice - price[symbol].closePrice) / price[symbol].closePrice) + this.targetDiff))) {
-        return true;
-      }
-      return false;
-  }
 
   async todaysPortfolioPl() {
     const portData = await this.portfolioService.getTdPortfolio().toPromise();
@@ -36,9 +26,20 @@ export class PriceTargetService {
     return ((todayPl.total + todayPl.profitLoss) - todayPl.total) / todayPl.total;
   }
 
+  async hasMetPriceTarget() {
+      const symbol = 'SPY';
+      const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
+      const portfolioPl = await this.todaysPortfolioPl();
+      if (portfolioPl && (portfolioPl > (((price[symbol].lastPrice - price[symbol].closePrice) / price[symbol].closePrice) + this.targetDiff))) {
+        return true;
+      }
+      return false;
+  }
+
   async checkProfitTarget(retrievedHoldings: PortfolioInfoHolding[] = null) {
     const targetMet = await this.hasMetPriceTarget();
     if (targetMet) {
+      console.log('Profit target met.');
       const holdings = retrievedHoldings? retrievedHoldings : await this.cartService.findCurrentPositions();
       holdings.forEach(async(portItem: PortfolioInfoHolding) => {
         if (this.cartService.isStrangle(portItem)) {
