@@ -493,6 +493,7 @@ export class CartService {
             const tempHoldingObj = {
               name: symbol,
               pl,
+              assetType: holding.instrument.assetType.toLowerCase(),
               netLiq: holding.marketValue,
               shares: holding.longQuantity,
               cost: cost,
