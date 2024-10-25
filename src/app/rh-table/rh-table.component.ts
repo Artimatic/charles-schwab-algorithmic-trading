@@ -751,7 +751,7 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
 
           try {
             const instruments = await this.portfolioService.getInstrument(symbol).toPromise();
-            foundStock.marketCap = instruments[symbol].fundamental.marketCap;
+            foundStock.marketCap = instruments[0].fundamental.marketCap;
           } catch(err) {
             console.log(err);
           }
