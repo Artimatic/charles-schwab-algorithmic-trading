@@ -19,7 +19,7 @@
                 Type ticker, short term moving average, and long term moving average
             </mat-panel-description>
         </mat-expansion-panel-header>
-        <app-rh-input (onQuery)="query($event)"></app-rh-input>
+        <app-rh-input (onQuery)="query($event)" (keyup.enter)="query($event)"></app-rh-input>
     </mat-expansion-panel>
 </mat-accordion>
   

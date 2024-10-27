@@ -31,8 +31,6 @@ describe('PriceTargetService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should determine if price target is met', () => {
-  });
   it('should calculate profit loss', async () => {
     const fakePortData = [
       {
@@ -141,7 +139,7 @@ describe('PriceTargetService', () => {
 
     expect(pl).toEqual(-0.007036289678282304);
   });
-  it('should return true if price target met loss', async () => {
+  it('should return true if profit target met', async () => {
     const fakePortData = [
       {
         "shortQuantity": 0,
