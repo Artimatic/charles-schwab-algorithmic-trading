@@ -413,6 +413,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
   }
 
   buildSignal(action: string, close: number, volume: number, recommendations: any) {
+    const radius = 3
     switch (action) {
       case 'SELL':
         return {
@@ -420,7 +421,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
           marker: {
             symbol: 'triangle-down',
             fillColor: 'pink',
-            radius: 3
+            radius: radius
           },
           name: '<br><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
         };
@@ -430,7 +431,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
           marker: {
             symbol: 'triangle-down',
             fillColor: 'red',
-            radius: 6
+            radius: radius * 2
           },
           name: '<br><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
         };
@@ -440,7 +441,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
           marker: {
             symbol: 'triangle',
             fillColor: 'green',
-            radius: 3
+            radius: radius
           },
           name: '<br><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
         };
@@ -450,13 +451,16 @@ export class ProductViewComponent implements OnInit, OnDestroy {
           marker: {
             symbol: 'triangle',
             fillColor: 'green',
-            radius: 6
+            radius: radius * 2
           },
           name: '<br><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
         };
       default:
         return {
           y: close,
+          marker: {
+            enabled: false
+          },
           name: '<br><b>Volume:</b> ' + volume
         };
     }
@@ -470,7 +474,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
 
     this.algo.getInfoV2Chart(stock, currentDate, startDate)
       .map(result => {
-        this.initBacktestResults(stock, {}, result);
+        this.initBacktestResults(stock, {}, result.signals);
       })
       .subscribe(
         response => {

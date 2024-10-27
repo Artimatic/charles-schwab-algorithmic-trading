@@ -320,13 +320,13 @@ export class OptionsOrderBuilderService {
         backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
       }
       if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
-        if (isStrangle && Math.abs(lastPrice - closePrice) > (backtestResults.averageMove * 1.30)) {
+        if (isStrangle && Math.abs(lastPrice - closePrice) > (backtestResults.averageMove * 1.28)) {
           this.reportingService.addAuditLog(holding.name, `Selling strangle due to large move ${Math.abs(lastPrice - closePrice)}, Average: ${backtestResults.averageMove}`);
           return true;
-        } else if (putCallInd.toLowerCase() === 'c' && lastPrice - closePrice > (backtestResults.averageMove * 1.30)) {
+        } else if (putCallInd.toLowerCase() === 'c' && lastPrice - closePrice > (backtestResults.averageMove * 1.28)) {
           this.reportingService.addAuditLog(holding.name, `Selling call due to large move ${lastPrice - closePrice}, Average: ${backtestResults.averageMove}`);
           return true;
-        } else if (putCallInd.toLowerCase() === 'p' && lastPrice - closePrice < (backtestResults.averageMove * -1.30)) {
+        } else if (putCallInd.toLowerCase() === 'p' && lastPrice - closePrice < (backtestResults.averageMove * -1.28)) {
           this.reportingService.addAuditLog(holding.name, `Selling put due to large move ${lastPrice - closePrice}, Average: ${backtestResults.averageMove}`);
           return true;
         }
