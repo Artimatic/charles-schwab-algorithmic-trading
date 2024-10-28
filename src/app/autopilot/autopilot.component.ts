@@ -1062,7 +1062,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const price = await this.portfolioService.getPrice(buySymbol).toPromise();
     const balance = await this.portfolioService.getTdBalance().toPromise();
     const allocation = backtestData?.ml || this.riskToleranceList[0];
-    const cash = (balance.cashBalance < balance.availableFunds * 0.01) ? balance.cashBalance : balance.cashBalance * allocation;
+    const cash = (balance.cashBalance < balance.availableFunds * 0.01) ? balance.cashBalance : ( balance.cashBalance > balance.availableFunds * 0.5 ?  balance.cashBalance * allocation * 2 : balance.cashBalance * allocation);
     const quantity = this.strategyBuilderService.getQuantity(price, 1, cash);
     const order = this.cartService.buildOrderWithAllocation(buySymbol, quantity, price, 'Buy',
       1, null, null,
@@ -1401,7 +1401,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const isOpened = await this.isMarketOpened();
     if (isOpened) {
       this.cleanUpOrders();
-      if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 10) {
+      if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 15) {
         this.lastOptionsCheckCheck = moment();
         this.currentHoldings = await this.cartService.findCurrentPositions();
         await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);

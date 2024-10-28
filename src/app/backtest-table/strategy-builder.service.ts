@@ -218,30 +218,31 @@ export class StrategyBuilderService {
 
     let potentialStrangle = { call: null, put: null };
     let expiration = minExpiration;
-
+    
     while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 5) {
       expiration++;
+      if (optionsChain.monthlyStrategyList) {
+        const strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
 
-      const strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
-
-      potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
-        if ((!prev.call && curr.strategyStrike > goal) ||
-          (this.isCallHedge(goal, curr.strategyStrike, impliedMovement))) {
-          if (curr.secondaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.secondaryLeg.openInterest, curr.secondaryLeg.totalVolume, prev.call)) {
-            prev.call = JSON.parse(JSON.stringify(curr.secondaryLeg));
-          } else if (curr.primaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.primaryLeg.openInterest, curr.primaryLeg.totalVolume, prev.call)) {
-            prev.call = JSON.parse(JSON.stringify(curr.primaryLeg));
+        potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
+          if ((!prev.call && curr.strategyStrike > goal) ||
+            (this.isCallHedge(goal, curr.strategyStrike, impliedMovement))) {
+            if (curr.secondaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.secondaryLeg.openInterest, curr.secondaryLeg.totalVolume, prev.call)) {
+              prev.call = JSON.parse(JSON.stringify(curr.secondaryLeg));
+            } else if (curr.primaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.primaryLeg.openInterest, curr.primaryLeg.totalVolume, prev.call)) {
+              prev.call = JSON.parse(JSON.stringify(curr.primaryLeg));
+            }
           }
-        }
-        if (!prev.put || (Math.abs(curr.strategyStrike - goal) < Math.abs(Number(prev.put.strikePrice) - goal))) {
-          if (curr.primaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.primaryLeg.openInterest, curr.primaryLeg.totalVolume, prev.put)) {
-            prev.put = JSON.parse(JSON.stringify(curr.primaryLeg));
-          } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.secondaryLeg.openInterest, curr.secondaryLeg.totalVolume, prev.put)) {
-            prev.put = JSON.parse(JSON.stringify(curr.secondaryLeg));
+          if (!prev.put || (Math.abs(curr.strategyStrike - goal) < Math.abs(Number(prev.put.strikePrice) - goal))) {
+            if (curr.primaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.primaryLeg.openInterest, curr.primaryLeg.totalVolume, prev.put)) {
+              prev.put = JSON.parse(JSON.stringify(curr.primaryLeg));
+            } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.secondaryLeg.openInterest, curr.secondaryLeg.totalVolume, prev.put)) {
+              prev.put = JSON.parse(JSON.stringify(curr.secondaryLeg));
+            }
           }
-        }
-        return prev;
-      }, { call: null, put: null });
+          return prev;
+        }, { call: null, put: null });
+      }
     }
     if (!potentialStrangle.put) {
       console.log('Unable to find put ', symbol);

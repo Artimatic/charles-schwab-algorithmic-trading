@@ -23,14 +23,20 @@ export class PriceTargetService {
       acc.total += curr.marketValue;
       return acc;
     }, { profitLoss: 0, total: 0});
-    return ((todayPl.total + todayPl.profitLoss) - todayPl.total) / todayPl.total;
+    return this.getDiff(todayPl.total, todayPl.total + todayPl.profitLoss);
+  }
+
+  getDiff(cost, currentValue) {
+    return  (currentValue - cost) / cost;
   }
 
   async hasMetPriceTarget() {
       const symbol = 'SPY';
       const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
       const portfolioPl = await this.todaysPortfolioPl();
-      if (portfolioPl && (portfolioPl > (((price[symbol].lastPrice - price[symbol].closePrice) / price[symbol].closePrice) + this.targetDiff))) {
+      console.log('Profit', portfolioPl, ', target:', (((price[symbol].lastPrice - price[symbol].closePrice) / price[symbol].closePrice) + this.targetDiff));
+
+      if (portfolioPl && this.getDiff(price[symbol].closePrice, price[symbol].lastPrice) + this.targetDiff) {
         return true;
       }
       return false;
