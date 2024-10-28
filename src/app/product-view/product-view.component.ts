@@ -419,17 +419,17 @@ export class ProductViewComponent implements OnInit, OnDestroy {
         return {
           y: close,
           marker: {
-            symbol: 'triangle-down',
+            symbol: 'diamond',
             fillColor: 'pink',
             radius: radius
           },
-          name: '<br><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
+          name: '<br><h6>AI sell</h6><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
         };
       case 'STRONGSELL':
         return {
           y: close,
           marker: {
-            symbol: 'triangle-down',
+            symbol: 'diamond',
             fillColor: 'red',
             radius: radius * 2
           },
@@ -439,11 +439,11 @@ export class ProductViewComponent implements OnInit, OnDestroy {
         return {
           y: close,
           marker: {
-            symbol: 'triangle',
+            symbol: 'diamond',
             fillColor: 'green',
             radius: radius
           },
-          name: '<br><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
+          name: '<br><h6>AI Buy</h6><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
         };
       case 'STRONGBUY':
         return {
