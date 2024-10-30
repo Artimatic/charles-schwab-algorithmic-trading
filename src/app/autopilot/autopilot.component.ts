@@ -1032,6 +1032,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (isOverBalance) {
       this.currentHoldings = await this.cartService.findCurrentPositions();
       await this.checkIfTooManyHoldings(this.currentHoldings, 5);
+    } else if (balance.cashBalance < balance.availableFunds * 0.7) {
+      const holding = this.currentHoldings.find(holding => holding.name.toUpperCase() === 'UPRO')
+      await this.cartService.portfolioSell(holding, 'Sell UPRO');
     }
     return isOverBalance;
   }
@@ -1048,8 +1051,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async buySellAtClose() {
-    await this.checkIfOverBalance();
-    if (this.boughtAtClose || this.manualStart) {
+    const overBalance = await this.checkIfOverBalance();
+    if (this.boughtAtClose || this.manualStart || overBalance) {
       return;
     }
 
