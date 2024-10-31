@@ -71,6 +71,7 @@ export class CartService {
       } else if (indices[2] > -1) {
         this.deleteDaytrade(this.buildOrder(order.holding.symbol, null, null, 'daytrade'));
       }
+      console.log('Add order', order);
       this.addOrder(order);
     }
 
@@ -374,7 +375,7 @@ export class CartService {
     side = 'Buy', reason: string) {
     const order = this.createOptionOrder(symbol, primaryLegs, price, quantity, optionType, side);
     if (order && order.primaryLegs) {
-      console.log('Adding option order for', symbol, reason);
+      console.log('Adding option order for', symbol, primaryLegs, price, quantity, optionType, side);
       this.addToCart(order, true, reason);
     } else {
       console.log('Invalid option order', symbol, primaryLegs, price, quantity, optionType, side);
