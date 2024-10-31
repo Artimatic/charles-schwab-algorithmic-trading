@@ -240,22 +240,191 @@ describe('PriceTargetService', () => {
         "longOpenProfitLoss": 8.98,
         "previousSessionLongQuantity": 2,
         "currentDayCost": 0
+      },
+      {
+        "shortQuantity": 0,
+        "averagePrice": 89.048384353742,
+        "currentDayProfitLoss": -38200.01,
+        "currentDayProfitLossPercentage": -43.2,
+        "longQuantity": 588,
+        "settledLongQuantity": 588,
+        "settledShortQuantity": 0,
+        "instrument": {
+            "assetType": "COLLECTIVE_INVESTMENT",
+            "cusip": "74347X864",
+            "symbol": "UPRO",
+            "description": "PROSHARES ULTRAPRO S&P 500 ETF",
+            "type": "EXCHANGE_TRADED_FUND"
+        },
+        "marketValue": 51891,
+        "maintenanceRequirement": 38918.25,
+        "averageLongPrice": 88.759525,
+        "taxLotAverageLongPrice": 89.048384353742,
+        "longOpenProfitLoss": -469.45,
+        "previousSessionLongQuantity": 588,
+        "currentDayCost": 39191.67
       }
     ];
     portfolioServiceSpy.getTdPortfolio.and.returnValue(of(fakePortData));
     backtestServiceSpy.getLastPriceTiingo.and.returnValue(of({
       'SPY': {
-        lastPrice: 579.58,
-        closePrice: 575.97
+        quote: {
+          lastPrice: 579.58,
+          closePrice: 575.97
+        }
       }
     }));
     service.targetDiff = 0;
     const pl = await service.todaysPortfolioPl();
 
-    expect(pl).toEqual(0.007993864218441227);
+    expect(pl).toEqual(0.016304100414841503);
     const priceTargetMet = await service.hasMetPriceTarget();
     expect(priceTargetMet).toEqual(true);
   });
+
+  it('should return false if profit target no met', async () => {
+    const fakePortData = [
+      {
+        "shortQuantity": 0,
+        "averagePrice": 73.1541361257,
+        "currentDayProfitLoss": 150.690000000001,
+        "currentDayProfitLossPercentage": null,
+        "longQuantity": 191,
+        "settledLongQuantity": 191,
+        "settledShortQuantity": 0,
+        "instrument": {
+          "assetType": "EQUITY",
+          "cusip": "679295105",
+          "symbol": "OKTA",
+          "netChange": 0.07
+        },
+        "marketValue": 14771.94,
+        "maintenanceRequirement": 4431.58,
+        "averageLongPrice": 73.154107853403,
+        "taxLotAverageLongPrice": 73.1541361257,
+        "longOpenProfitLoss": 799.499999991299,
+        "previousSessionLongQuantity": 191,
+        "currentDayCost": 0
+      },
+      {
+        "shortQuantity": 0,
+        "averagePrice": 13.5951,
+        "currentDayProfitLoss": -10.61,
+        "currentDayProfitLossPercentage": -0.58,
+        "longQuantity": 1,
+        "settledLongQuantity": 1,
+        "settledShortQuantity": 0,
+        "instrument": {
+          "assetType": "OPTION",
+          "cusip": "0MSFT.XK40420000",
+          "symbol": "MSFT  241220P00420000",
+          "description": "Microsoft Corp 12/20/2024 $420 Put",
+          "netChange": 0.5189,
+          "type": "VANILLA",
+          "putCall": "PUT",
+          "underlyingSymbol": "MSFT"
+        },
+        "marketValue": 1812.5,
+        "maintenanceRequirement": 0,
+        "averageLongPrice": 13.59,
+        "taxLotAverageLongPrice": 13.5951,
+        "longOpenProfitLoss": 452.99,
+        "previousSessionLongQuantity": 1,
+        "currentDayCost": 0
+      },
+      {
+        "shortQuantity": 0,
+        "averagePrice": 1.6051,
+        "currentDayProfitLoss": 0,
+        "currentDayProfitLossPercentage": 0,
+        "longQuantity": 1,
+        "settledLongQuantity": 1,
+        "settledShortQuantity": 0,
+        "instrument": {
+          "assetType": "OPTION",
+          "cusip": "0MO...XK40050000",
+          "symbol": "MO    241220P00050000",
+          "description": "ALTRIA GROUP INC 12/20/2024 $50 Put",
+          "netChange": 0.01,
+          "type": "VANILLA",
+          "putCall": "PUT",
+          "underlyingSymbol": "MO"
+        },
+        "marketValue": 149,
+        "maintenanceRequirement": 0,
+        "averageLongPrice": 1.6,
+        "taxLotAverageLongPrice": 1.6051,
+        "longOpenProfitLoss": -11.51,
+        "previousSessionLongQuantity": 1,
+        "currentDayCost": 0
+      },
+      {
+        "shortQuantity": 0,
+        "averagePrice": 3.9051,
+        "currentDayProfitLoss": 0,
+        "currentDayProfitLossPercentage": 0,
+        "longQuantity": 2,
+        "settledLongQuantity": 2,
+        "settledShortQuantity": 0,
+        "instrument": {
+          "assetType": "OPTION",
+          "cusip": "0MRNA.MH50050000",
+          "symbol": "MRNA  250117P00050000",
+          "description": "MODERNA INC 01/17/2025 $50 Put",
+          "netChange": -0.2,
+          "type": "VANILLA",
+          "putCall": "PUT",
+          "underlyingSymbol": "MRNA"
+        },
+        "marketValue": 790,
+        "maintenanceRequirement": 0,
+        "averageLongPrice": 3.9,
+        "taxLotAverageLongPrice": 3.9051,
+        "longOpenProfitLoss": 8.98,
+        "previousSessionLongQuantity": 2,
+        "currentDayCost": 0
+      },
+      {
+        "shortQuantity": 0,
+        "averagePrice": 89.048384353742,
+        "currentDayProfitLoss": -39462.149999999994,
+        "currentDayProfitLossPercentage": -43.2,
+        "longQuantity": 588,
+        "settledLongQuantity": 588,
+        "settledShortQuantity": 0,
+        "instrument": {
+            "assetType": "COLLECTIVE_INVESTMENT",
+            "cusip": "74347X864",
+            "symbol": "UPRO",
+            "description": "PROSHARES ULTRAPRO S&P 500 ETF",
+            "type": "EXCHANGE_TRADED_FUND"
+        },
+        "marketValue": 51891,
+        "maintenanceRequirement": 38918.25,
+        "averageLongPrice": 88.759525,
+        "taxLotAverageLongPrice": 89.048384353742,
+        "longOpenProfitLoss": -469.45,
+        "previousSessionLongQuantity": 588,
+        "currentDayCost": 39191.67
+      }
+    ];
+    portfolioServiceSpy.getTdPortfolio.and.returnValue(of(fakePortData));
+    backtestServiceSpy.getLastPriceTiingo.and.returnValue(of({
+      'SPY': {
+        quote: {
+          lastPrice: 579.58,
+          closePrice: 575.97
+        }
+      }
+    }));
+    service.targetDiff = 0;
+    const pl = await service.todaysPortfolioPl();
+
+    expect(pl).toEqual(-0.0018785716631869993);
+    const priceTargetMet = await service.hasMetPriceTarget();
+    expect(priceTargetMet).toEqual(false);
+  });
+
   it('should get correct profit loss', async () => {
     expect(Number(service.getDiff(579.04, 581.86).toFixed(4))).toBe(0.0049)
   });
@@ -477,20 +646,30 @@ describe('PriceTargetService', () => {
       }
     ];
     portfolioServiceSpy.getTdPortfolio.and.returnValue(of(fakePortData));
-    backtestServiceSpy.getLastPriceTiingo.and.returnValue(of({
+    
+    const testSpyPrice = {
       'SPY': {
-        lastPrice: 575.58,
-        closePrice: 575.97
+        quote: {
+          lastPrice: 568.58,
+          closePrice: 580
+        }
       }
-    }));
+    };
+
+    backtestServiceSpy.getLastPriceTiingo.and.returnValue(of(testSpyPrice));
+
     orderHandlingServiceSpy.getEstimatedPrice.and.callFake((symbol) => {
       return 5;
     });
 
     cartServiceSpy.isStrangle.and.returnValue(false);
+    
+    expect(service.getDiff(testSpyPrice['SPY'].quote.closePrice, testSpyPrice['SPY'].quote.lastPrice)).toEqual(-0.019689655172413723);
+
     const pl = await service.todaysPortfolioPl();
 
     expect(Number(pl.toFixed(4))).toEqual(0.0786);
+
     const priceTargetMet = await service.hasMetPriceTarget();
     expect(priceTargetMet).toEqual(true);
 

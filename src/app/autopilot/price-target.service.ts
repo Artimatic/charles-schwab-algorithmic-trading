@@ -8,7 +8,7 @@ import { OrderTypes } from '@shared/models/smart-order';
   providedIn: 'root'
 })
 export class PriceTargetService {
-  targetDiff = 0.5;
+  targetDiff = 0.008;
   constructor(private backtestService: BacktestService,
     private portfolioService: PortfolioService,
     private cartService: CartService,
@@ -19,7 +19,7 @@ export class PriceTargetService {
   async todaysPortfolioPl() {
     const portData = await this.portfolioService.getTdPortfolio().toPromise();
     const todayPl = portData.reduce((acc, curr) => {
-      acc.profitLoss += curr.currentDayProfitLoss;
+      acc.profitLoss += (curr.currentDayCost + curr.currentDayProfitLoss);
       acc.total += curr.marketValue;
       return acc;
     }, { profitLoss: 0, total: 0});
@@ -34,9 +34,10 @@ export class PriceTargetService {
       const symbol = 'SPY';
       const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
       const portfolioPl = await this.todaysPortfolioPl();
-      console.log('Profit', portfolioPl, ', target:', (((price[symbol].lastPrice - price[symbol].closePrice) / price[symbol].closePrice) + this.targetDiff));
+      const priceTarget = this.getDiff(price[symbol].quote.closePrice, price[symbol].quote.lastPrice) + this.targetDiff;
+      console.log('Profit', portfolioPl, ', target:', priceTarget);
 
-      if (portfolioPl && this.getDiff(price[symbol].closePrice, price[symbol].lastPrice) + this.targetDiff) {
+      if (portfolioPl && portfolioPl > priceTarget) {
         return true;
       }
       return false;

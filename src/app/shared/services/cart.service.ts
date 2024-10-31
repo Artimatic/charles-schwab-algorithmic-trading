@@ -373,9 +373,11 @@ export class CartService {
     quantity: number, optionType,
     side = 'Buy', reason: string) {
     const order = this.createOptionOrder(symbol, primaryLegs, price, quantity, optionType, side);
-    if (order) {
-      console.log('Adding option order for', symbol);
+    if (order && order.primaryLegs) {
+      console.log('Adding option order for', symbol, reason);
       this.addToCart(order, true, reason);
+    } else {
+      console.log('Invalid option order', symbol, primaryLegs, price, quantity, optionType, side);
     }
   }
 

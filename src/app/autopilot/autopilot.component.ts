@@ -315,13 +315,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       },
       {
-        label: 'Test pilot',
+        label: 'Test profit target',
         command: async () => {
-          this.cartService.removeCompletedOrders();
-          this.currentHoldings = await this.cartService.findCurrentPositions();
-          await this.modifyCurrentHoldings();
-          console.log(this.currentHoldings);
-          await this.orderHandlingService.intradayStep('SPY');
+          await this.priceTargetService.checkProfitTarget(this.currentHoldings);
         }
       }
     ];
@@ -1032,9 +1028,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (isOverBalance) {
       this.currentHoldings = await this.cartService.findCurrentPositions();
       await this.checkIfTooManyHoldings(this.currentHoldings, 5);
-    } else if (balance.cashBalance < balance.availableFunds * 0.7) {
-      const holding = this.currentHoldings.find(holding => holding.name.toUpperCase() === 'UPRO')
-      await this.cartService.portfolioSell(holding, 'Sell UPRO');
     }
     return isOverBalance;
   }
@@ -1455,6 +1448,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (this.backtestBuffer$) {
       this.backtestBuffer$.unsubscribe();
     }
+  }
+
+  async test() {
+    this.cartService.removeCompletedOrders();
+    this.currentHoldings = await this.cartService.findCurrentPositions();
+    await this.modifyCurrentHoldings();
+    console.log(this.currentHoldings);
+    await this.orderHandlingService.intradayStep('SPY');
   }
 
   ngOnDestroy() {
