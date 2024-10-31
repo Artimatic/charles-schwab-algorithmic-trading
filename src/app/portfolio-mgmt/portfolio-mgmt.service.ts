@@ -69,7 +69,7 @@ export class PortfolioMgmtService {
           console.log('Adding protective put for', holding.name);
         await this.optionsOrderBuilderService.createProtectivePutOrder(holding);
       } else {
-        if (!this.cartService.isStrangle(holding)) {
+        if (!this.cartService.isStrangle(holding) && holding.primaryLegs) {
           if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
             this.hedgeCall(holding, currentHoldings, tradingPairs);
           } else if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
