@@ -724,25 +724,25 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async modifyCurrentHoldings() {
-    const currentDate = moment().format('YYYY-MM-DD');
-    const startDate = moment().subtract(365, 'days').format('YYYY-MM-DD');
     this.currentHoldings.forEach(async (holding) => {
       await this.checkStopLoss(holding);
-      const indicatorsResponse = await this.getTechnicalIndicators(holding.name,
-        startDate,
-        currentDate)
-        .pipe(delay(new Date().getMilliseconds())).toPromise();
+      // const currentDate = moment().format('YYYY-MM-DD');
+      // const startDate = moment().subtract(365, 'days').format('YYYY-MM-DD');
+      // const indicatorsResponse = await this.getTechnicalIndicators(holding.name,
+      //   startDate,
+      //   currentDate)
+      //   .pipe(delay(new Date().getMilliseconds())).toPromise();
 
-      this.analyseIndicators(holding.name, indicatorsResponse.signals, this.currentHoldings);
-      const indicators = indicatorsResponse.signals[indicatorsResponse.signals.length - 1];
-      const foundIdx = this.currentHoldings.findIndex((value) => {
-        return value.name === holding.name;
-      });
+      // this.analyseIndicators(holding.name, indicatorsResponse.signals, this.currentHoldings);
+      // const indicators = indicatorsResponse.signals[indicatorsResponse.signals.length - 1];
+      // const foundIdx = this.currentHoldings.findIndex((value) => {
+      //   return value.name === holding.name;
+      // });
 
-      this.currentHoldings[foundIdx].recommendation = indicators.recommendation.recommendation;
-      const reasons = this.getRecommendationReason(indicators.recommendation);
-      this.currentHoldings[foundIdx].buyReasons = reasons.buyReasons;
-      this.currentHoldings[foundIdx].sellReasons = reasons.sellReasons;
+      // this.currentHoldings[foundIdx].recommendation = indicators.recommendation.recommendation;
+      // const reasons = this.getRecommendationReason(indicators.recommendation);
+      // this.currentHoldings[foundIdx].buyReasons = reasons.buyReasons;
+      // this.currentHoldings[foundIdx].sellReasons = reasons.sellReasons;
       try {
         const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
         if (holding.primaryLegs) {
