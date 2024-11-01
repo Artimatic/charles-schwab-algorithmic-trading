@@ -1057,8 +1057,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     const price = await this.portfolioService.getPrice(buySymbol).toPromise();
     const balance = await this.portfolioService.getTdBalance().toPromise();
-    const allocation = backtestData?.ml || this.riskToleranceList[0];
-    const cash = (balance.cashBalance < balance.availableFunds * 0.01) ? balance.cashBalance : ( balance.cashBalance > balance.availableFunds * 0.5 ?  balance.cashBalance * allocation * 2 : balance.cashBalance * allocation);
+    const allocation = backtestData?.ml || 0.01;
+    const cash = (balance.cashBalance < balance.availableFunds * 0.01) ? balance.cashBalance : balance.cashBalance * allocation;
     const quantity = this.strategyBuilderService.getQuantity(price, 1, cash);
     const order = this.cartService.buildOrderWithAllocation(buySymbol, quantity, price, 'Buy',
       1, null, null,
