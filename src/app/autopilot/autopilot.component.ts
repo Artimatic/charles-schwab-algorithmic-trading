@@ -13,7 +13,7 @@ import { MenuItem, MessageService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
 import { Subject, Subscription } from 'rxjs';
 import { TimerObservable } from 'rxjs-compat/observable/TimerObservable';
-import { delay, take, takeUntil } from 'rxjs/operators';
+import { take, takeUntil } from 'rxjs/operators';
 import { PotentialTrade } from '../backtest-table/potential-trade.constant';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
@@ -646,9 +646,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.backtestBuffer$.next();
   }
 
-  async addBuy(holding: PortfolioInfoHolding, allocation = round(this.riskToleranceList[this.riskCounter], 2), reason) {
+  async addBuy(holding: PortfolioInfoHolding, allocation = this.riskToleranceList[this.riskCounter], reason) {
     if ((this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.maxTradeCount) {
-
       const currentDate = moment().format('YYYY-MM-DD');
       const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
       try {
@@ -985,11 +984,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     } else {
       const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
       if (lastProfitLoss && lastProfitLoss.profit) {
-        if (Number(this.calculatePl(lastProfitLoss.profitRecord)) > 0) {
+        const profit = Number(this.calculatePl(lastProfitLoss.profitRecord));
+        console.log('Last profit', profit);
+        if (profit > 0) {
           console.log('increase risk', lastProfitLoss);
           this.increaseDayTradeRiskTolerance();
           this.increaseRiskTolerance();
-        } else if (Number(this.calculatePl(lastProfitLoss.profitRecord)) < 0) {
+        } else if (profit < 0) {
           console.log('decrease risk', lastProfitLoss);
           this.decreaseDayTradeRiskTolerance();
           this.decreaseRiskTolerance();
@@ -1348,6 +1349,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           sellConfidence: 0,
           prediction: null
         };
+        console.log('Found potential buy', stock);
         await this.addBuy(stock, null, 'Swing trade buy');
       }
     };
