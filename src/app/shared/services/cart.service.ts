@@ -578,7 +578,7 @@ export class CartService {
   }
 
   async portfolioBuy(holding: PortfolioInfoHolding,
-    allocation: number,
+    allocation: number = 0.05,
     profitThreshold: number = null,
     stopLossThreshold: number = null, reason: string) {
     const order = await this.buildBuyOrder(holding, allocation, profitThreshold, stopLossThreshold);
