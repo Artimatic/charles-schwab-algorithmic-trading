@@ -646,7 +646,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.backtestBuffer$.next();
   }
 
-  async addBuy(holding: PortfolioInfoHolding, allocation = this.riskToleranceList[this.riskCounter], reason) {
+  async addBuy(holding: PortfolioInfoHolding, allocation, reason) {
     if ((this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.maxTradeCount) {
       const currentDate = moment().format('YYYY-MM-DD');
       const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
@@ -655,7 +655,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const indicators = allIndicators.signals[allIndicators.signals.length - 1];
         const thresholds = this.getStopLoss(indicators.low, indicators.high);
         await this.cartService.portfolioBuy(holding,
-          allocation,
+          allocation || this.riskToleranceList[this.riskCounter],
           thresholds.profitTakingThreshold,
           thresholds.stopLoss, reason);
         await this.orderHandlingService.intradayStep(holding.name);
@@ -912,7 +912,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     profitThreshold: number = null,
     stopLossThreshold: number = null) {
     await this.cartService.portfolioDaytrade(symbol,
-      allocation,
+      allocation || this.riskToleranceList[this.riskCounter],
       profitThreshold,
       stopLossThreshold);
   }

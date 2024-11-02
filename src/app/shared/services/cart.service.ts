@@ -581,6 +581,7 @@ export class CartService {
     allocation: number = 0.05,
     profitThreshold: number = null,
     stopLossThreshold: number = null, reason: string) {
+    console.log('Portfolio buy', holding, allocation, profitThreshold, stopLossThreshold);
     const order = await this.buildBuyOrder(holding, allocation, profitThreshold, stopLossThreshold);
     if (order.quantity) {
       this.addToCart(order, false, reason);
