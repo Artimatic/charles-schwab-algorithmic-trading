@@ -250,11 +250,11 @@ describe('PriceTargetService', () => {
         "settledLongQuantity": 588,
         "settledShortQuantity": 0,
         "instrument": {
-            "assetType": "COLLECTIVE_INVESTMENT",
-            "cusip": "74347X864",
-            "symbol": "UPRO",
-            "description": "PROSHARES ULTRAPRO S&P 500 ETF",
-            "type": "EXCHANGE_TRADED_FUND"
+          "assetType": "COLLECTIVE_INVESTMENT",
+          "cusip": "74347X864",
+          "symbol": "UPRO",
+          "description": "PROSHARES ULTRAPRO S&P 500 ETF",
+          "type": "EXCHANGE_TRADED_FUND"
         },
         "marketValue": 51891,
         "maintenanceRequirement": 38918.25,
@@ -393,11 +393,11 @@ describe('PriceTargetService', () => {
         "settledLongQuantity": 588,
         "settledShortQuantity": 0,
         "instrument": {
-            "assetType": "COLLECTIVE_INVESTMENT",
-            "cusip": "74347X864",
-            "symbol": "UPRO",
-            "description": "PROSHARES ULTRAPRO S&P 500 ETF",
-            "type": "EXCHANGE_TRADED_FUND"
+          "assetType": "COLLECTIVE_INVESTMENT",
+          "cusip": "74347X864",
+          "symbol": "UPRO",
+          "description": "PROSHARES ULTRAPRO S&P 500 ETF",
+          "type": "EXCHANGE_TRADED_FUND"
         },
         "marketValue": 51891,
         "maintenanceRequirement": 38918.25,
@@ -646,7 +646,7 @@ describe('PriceTargetService', () => {
       }
     ];
     portfolioServiceSpy.getTdPortfolio.and.returnValue(of(fakePortData));
-    
+
     const testSpyPrice = {
       'SPY': {
         quote: {
@@ -663,7 +663,7 @@ describe('PriceTargetService', () => {
     });
 
     cartServiceSpy.isStrangle.and.returnValue(false);
-    
+
     expect(service.getDiff(testSpyPrice['SPY'].quote.closePrice, testSpyPrice['SPY'].quote.lastPrice)).toEqual(-0.019689655172413723);
 
     const pl = await service.todaysPortfolioPl();
@@ -676,5 +676,347 @@ describe('PriceTargetService', () => {
     await service.checkProfitTarget(testHoldings);
     expect(cartServiceSpy.addOptionOrder).toHaveBeenCalledTimes(2);
     expect(cartServiceSpy.portfolioSell).not.toHaveBeenCalled();
+  });
+
+  it('should get call put balance', async () => {
+    const testHoldings = [
+      {
+        "name": "FCX",
+        "pl": -6.59,
+        "cost": 2674.0899999998,
+        "netLiq": 2667.5,
+        "pnlPercentage": -0.0024643897550197034,
+        "shares": 0,
+        "alloc": 0,
+        "recommendation": null,
+        "buyReasons": "",
+        "sellReasons": "",
+        "buyConfidence": 0,
+        "sellConfidence": 0,
+        "prediction": null,
+        "primaryLegs": [
+          {
+            "symbol": "FCX   250117C00045000",
+            "putCall": "CALL",
+            "putCallInd": "C",
+            "quantity": 1,
+            "description": "FREEPORT-MCMORAN INC 01/17/2025 $45 Call",
+            "averagePrice": 430.51000000000005,
+            "underlyingSymbol": "FCX"
+          },
+          {
+            "symbol": "FCX   250117C00047000",
+            "putCall": "CALL",
+            "putCallInd": "C",
+            "quantity": 7,
+            "description": "FREEPORT-MCMORAN INC 01/17/2025 $47 Call",
+            "averagePrice": 320.5114285714,
+            "underlyingSymbol": "FCX"
+          }
+        ],
+        "assetType": "option"
+      },
+      {
+        "name": "JNJ",
+        "pl": 661.42,
+        "cost": 1683.5799999998003,
+        "netLiq": 2345,
+        "pnlPercentage": 0.39286520391076074,
+        "shares": 0,
+        "alloc": 0,
+        "recommendation": null,
+        "buyReasons": "",
+        "sellReasons": "",
+        "buyConfidence": 0,
+        "sellConfidence": 0,
+        "prediction": null,
+        "primaryLegs": [
+          {
+            "symbol": "JNJ   250117P00155000",
+            "putCall": "PUT",
+            "putCallInd": "P",
+            "quantity": 7,
+            "description": "JOHNSON & JOHNSON 01/17/2025 $155 Put",
+            "averagePrice": 240.51142857140002,
+            "underlyingSymbol": "JNJ"
+          }
+        ],
+        "assetType": "option"
+      },
+      {
+        "name": "AMD",
+        "pl": -41.02,
+        "cost": 661.02,
+        "netLiq": 620,
+        "pnlPercentage": -0.06205561102538498,
+        "shares": 0,
+        "alloc": 0,
+        "recommendation": null,
+        "buyReasons": "",
+        "sellReasons": "",
+        "buyConfidence": 0,
+        "sellConfidence": 0,
+        "prediction": null,
+        "primaryLegs": [
+          {
+            "symbol": "AMD   241213C00155000",
+            "putCall": "CALL",
+            "putCallInd": "C",
+            "quantity": 2,
+            "description": "Advanced Micro Device Inc 12/13/2024 $155 Call",
+            "averagePrice": 330.51,
+            "underlyingSymbol": "AMD"
+          }
+        ],
+        "assetType": "option"
+      },
+      {
+        "name": "C",
+        "pl": 57.96,
+        "cost": 1462.04,
+        "netLiq": 1520,
+        "pnlPercentage": 0.03964323821509674,
+        "shares": 0,
+        "alloc": 0,
+        "recommendation": null,
+        "buyReasons": "",
+        "sellReasons": "",
+        "buyConfidence": 0,
+        "sellConfidence": 0,
+        "prediction": null,
+        "primaryLegs": [
+          {
+            "symbol": "C     250117P00065000",
+            "putCall": "PUT",
+            "putCallInd": "P",
+            "quantity": 4,
+            "description": "Citigroup Inc 01/17/2025 $65 Put",
+            "averagePrice": 365.51,
+            "underlyingSymbol": "C"
+          }
+        ],
+        "assetType": "option"
+      },
+      {
+        "name": "CRM",
+        "pl": -73.01,
+        "cost": 1900.5099999999998,
+        "netLiq": 1827.5,
+        "pnlPercentage": -0.0384160041252085,
+        "shares": 0,
+        "alloc": 0,
+        "recommendation": null,
+        "buyReasons": "",
+        "sellReasons": "",
+        "buyConfidence": 0,
+        "sellConfidence": 0,
+        "prediction": null,
+        "primaryLegs": [
+          {
+            "symbol": "CRM   250117P00300000",
+            "putCall": "PUT",
+            "putCallInd": "P",
+            "quantity": 1,
+            "description": "Salesforce Inc 01/17/2025 $300 Put",
+            "averagePrice": 1900.5099999999998,
+            "underlyingSymbol": "CRM"
+          }
+        ],
+        "assetType": "option"
+      },
+      {
+        "name": "AMZN",
+        "pl": -193.02999999999997,
+        "cost": 1760.53,
+        "netLiq": 1567.5,
+        "pnlPercentage": -0.10964311883353307,
+        "shares": 0,
+        "alloc": 0,
+        "recommendation": null,
+        "buyReasons": "",
+        "sellReasons": "",
+        "buyConfidence": 0,
+        "sellConfidence": 0,
+        "prediction": null,
+        "primaryLegs": [
+          {
+            "symbol": "AMZN  241213C00200000",
+            "putCall": "CALL",
+            "putCallInd": "C",
+            "quantity": 1,
+            "description": "Amazon.com Inc 12/13/2024 $200 Call",
+            "averagePrice": 550.51,
+            "underlyingSymbol": "AMZN"
+          }
+        ],
+        "assetType": "option",
+        "secondaryLegs": [
+          {
+            "symbol": "AMZN  241213P00195000",
+            "putCall": "PUT",
+            "putCallInd": "P",
+            "quantity": 2,
+            "description": "Amazon.com Inc 12/13/2024 $195 Put",
+            "averagePrice": 605.01,
+            "underlyingSymbol": "AMZN"
+          }
+        ]
+      },
+      {
+        "name": "CL",
+        "pl": -96.02,
+        "cost": 501.02000000000004,
+        "netLiq": 405,
+        "pnlPercentage": -0.19164903596662802,
+        "shares": 0,
+        "alloc": 0,
+        "recommendation": null,
+        "buyReasons": "",
+        "sellReasons": "",
+        "buyConfidence": 0,
+        "sellConfidence": 0,
+        "prediction": null,
+        "primaryLegs": [
+          {
+            "symbol": "CL    250117P00092500",
+            "putCall": "PUT",
+            "putCallInd": "P",
+            "quantity": 2,
+            "description": "COLGATE PALMOLIVE CO 01/17/2025 $92.5 Put",
+            "averagePrice": 250.51000000000002,
+            "underlyingSymbol": "CL"
+          }
+        ],
+        "assetType": "option"
+      },
+      {
+        "name": "ORCL",
+        "pl": -70.51,
+        "cost": 520.51,
+        "netLiq": 450,
+        "pnlPercentage": -0.1354632956139171,
+        "shares": 0,
+        "alloc": 0,
+        "recommendation": null,
+        "buyReasons": "",
+        "sellReasons": "",
+        "buyConfidence": 0,
+        "sellConfidence": 0,
+        "prediction": null,
+        "primaryLegs": [
+          {
+            "symbol": "ORCL  241220P00160000",
+            "putCall": "PUT",
+            "putCallInd": "P",
+            "quantity": 1,
+            "description": "ORACLE CORP 12/20/2024 $160 Put",
+            "averagePrice": 520.51,
+            "underlyingSymbol": "ORCL"
+          }
+        ],
+        "assetType": "option"
+      },
+      {
+        "name": "NFLX",
+        "pl": -323.01,
+        "cost": 2390.51,
+        "netLiq": 2067.5,
+        "pnlPercentage": -0.13512179409414735,
+        "shares": 0,
+        "alloc": 0,
+        "recommendation": null,
+        "buyReasons": "",
+        "sellReasons": "",
+        "buyConfidence": 0,
+        "sellConfidence": 0,
+        "prediction": null,
+        "primaryLegs": [
+          {
+            "symbol": "NFLX  241220P00755000",
+            "putCall": "PUT",
+            "putCallInd": "P",
+            "quantity": 1,
+            "description": "NETFLIX INC 12/20/2024 $755 Put",
+            "averagePrice": 2390.51,
+            "underlyingSymbol": "NFLX"
+          }
+        ],
+        "assetType": "option"
+      },
+      {
+        "name": "UPRO",
+        "pl": -62.1236,
+        "assetType": "collective_investment",
+        "netLiq": 3774.79,
+        "shares": 44,
+        "cost": 3836.91,
+        "pnlPercentage": -0.016191049568532987,
+        "alloc": 0,
+        "recommendation": null,
+        "buyReasons": "",
+        "sellReasons": "",
+        "buyConfidence": 0,
+        "sellConfidence": 0,
+        "prediction": null
+      },
+      {
+        "name": "BSX",
+        "pl": -3.58,
+        "cost": 1543.5799999998,
+        "netLiq": 1540,
+        "pnlPercentage": -0.0023192837429873354,
+        "shares": 0,
+        "alloc": 0,
+        "recommendation": null,
+        "buyReasons": "",
+        "sellReasons": "",
+        "buyConfidence": 0,
+        "sellConfidence": 0,
+        "prediction": null,
+        "primaryLegs": [
+          {
+            "symbol": "BSX   250117P00082500",
+            "putCall": "PUT",
+            "putCallInd": "P",
+            "quantity": 7,
+            "description": "BOSTON SCIENTIFIC CORP 01/17/2025 $82.5 Put",
+            "averagePrice": 220.51142857140002,
+            "underlyingSymbol": "BSX"
+          }
+        ],
+        "assetType": "option"
+      },
+      {
+        "name": "WMT",
+        "pl": -138.02,
+        "cost": 473.02,
+        "netLiq": 335,
+        "pnlPercentage": -0.29178470254957506,
+        "shares": 0,
+        "alloc": 0,
+        "recommendation": null,
+        "buyReasons": "",
+        "sellReasons": "",
+        "buyConfidence": 0,
+        "sellConfidence": 0,
+        "prediction": null,
+        "primaryLegs": [
+          {
+            "symbol": "WMT   241220P00080000",
+            "putCall": "PUT",
+            "putCallInd": "P",
+            "quantity": 2,
+            "description": "WALMART INC 12/20/2024 $80 Put",
+            "averagePrice": 236.51,
+            "underlyingSymbol": "WMT"
+          }
+        ],
+        "assetType": "option"
+      }
+    ];
+
+    const result = service.getCallPutBalance(testHoldings);
+    expect(result.call).toEqual(3287.5);
+    expect(result.put).toEqual(10490);
   });
 });

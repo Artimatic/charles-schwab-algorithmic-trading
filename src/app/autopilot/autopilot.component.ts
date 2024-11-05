@@ -878,6 +878,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       } else {
         await this.cartService.portfolioSell(holding, `Stop loss ${pnl}`);
       }
+    } else if (pnl > addStop * 1.8) {
+      if (isOptionOnly) {
+        await this.sellOptionsHolding(holding, `Options price target reached ${pnl}`);
+      } else {
+        await this.cartService.portfolioSell(holding, `Price target met ${pnl}`);
+      }
     } else if (pnl > addStop) {
       if (!isOptionOnly) {
         await this.addBuy(holding, null, 'Profit loss is positive');
@@ -1031,6 +1037,26 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       await this.checkIfTooManyHoldings(this.currentHoldings, 5);
     }
     return isOverBalance;
+  }
+
+  async balanceCallPutRatio(holdings: PortfolioInfoHolding[]) {
+    const results = this.priceTargetService.getCallPutBalance(holdings);
+    if (results.put > results.call) {
+      const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade('SPY');
+      const callPrice = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) * 100;
+      const targetBalance = (results.put - results.call);
+      if (callPrice < targetBalance) {
+        let currentCall = {
+          call: optionStrategy.call,
+          price: callPrice,
+          quantity: Math.floor(targetBalance / callPrice) || 1,
+          underlying: 'SPY'
+        };
+        const option = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy', currentCall.quantity);
+        const reason = 'Balance call put ratio';
+        this.cartService.addOptionOrder('SPY', [option.primaryLegs[0]], callPrice, option.primaryLegs[0].quantity, OrderTypes.call, 'Buy', reason);
+      }
+    }
   }
 
   cleanUpOrders() {
@@ -1243,23 +1269,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       }
     });
-  }
-  async findExtremeIntradayMoves() {
-    const recentBacktests = this.strategyBuilderService.sanitizeData();
-    for (const symbol in recentBacktests) {
-      const backtestResults = recentBacktests[symbol];
-      if (backtestResults) {
-        if (backtestResults.averageMove) {
-          const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
-          if ((price[symbol].closePrice - price[symbol].lastPrice) > backtestResults.averageMove) {
-            const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade(symbol);
-            const price = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) + this.strategyBuilderService.findOptionsPrice(optionStrategy.put.bid, optionStrategy.put.ask);
-            this.strategyBuilderService.addStrangle(symbol, price, optionStrategy);
-            console.log('Adding Bullish strangle on big move', symbol, price, optionStrategy);
-          }
-        }
-      }
-    }
   }
 
   async handleStrategy() {
