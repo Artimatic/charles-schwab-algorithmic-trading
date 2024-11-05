@@ -55,7 +55,7 @@ export class PriceTargetService {
           let orderType = null;
           if (portItem.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
             orderType = OrderTypes.call;
-          } else if (portItem.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
+          } else if (portItem.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
             orderType = OrderTypes.put;
           }
           const estPrice = await this.orderHandlingService.getEstimatedPrice(portItem.primaryLegs[0].symbol);
@@ -65,5 +65,18 @@ export class PriceTargetService {
         }
       });
     }
+  }
+
+  getCallPutBalance(retrievedHoldings: PortfolioInfoHolding[]) {
+    return retrievedHoldings.reduce((previousValue, portItem: PortfolioInfoHolding) => {
+      if (portItem.primaryLegs && !portItem.secondaryLegs) {
+        if (portItem.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
+          previousValue.call += portItem.netLiq;
+        } else if (portItem.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
+          previousValue.put += portItem.netLiq;
+        }
+      }
+      return previousValue
+    }, { call: 0, put: 0});
   }
 }
