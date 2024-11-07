@@ -19,7 +19,11 @@ export class PriceTargetService {
   async todaysPortfolioPl() {
     const portData = await this.portfolioService.getTdPortfolio().toPromise();
     const todayPl = portData.reduce((acc, curr) => {
-      acc.profitLoss += (curr.currentDayCost + curr.currentDayProfitLoss);
+      if (curr.instrument.assetType === 'COLLECTIVE_INVESTMENT') {
+        acc.profitLoss += (curr.currentDayCost + curr.currentDayProfitLoss);
+      } else {
+        acc.profitLoss += curr.currentDayProfitLoss;
+      }
       acc.total += curr.marketValue;
       return acc;
     }, { profitLoss: 0, total: 0});

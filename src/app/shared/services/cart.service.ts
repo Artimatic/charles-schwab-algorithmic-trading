@@ -78,25 +78,15 @@ export class CartService {
     if (noDup && order.quantity > 0) {
       if (order.side.toLowerCase() === 'sell') {
         this.sellOrders.push(order);
-
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Sell order added to cart'
-        });
       } else if (order.side.toLowerCase() === 'buy') {
         this.buyOrders.push(order);
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Buy order added to cart'
-        });
       } else {
         this.otherOrders.push(order);
-
-        this.messageService.add({
-          severity: 'success',
-          summary: `Added ${order.side} ${order.holding.symbol}`
-        });
       }
+      this.messageService.add({
+        severity: 'success',
+        summary: `Added ${order.side} ${order.holding.symbol}`
+      });
     }
     this.cartObserver.next(true);
   }
@@ -337,9 +327,10 @@ export class CartService {
     orderSize = 1) {
     const foundExistingOrder = this.buyOrders.find(order => order.primaryLegs && order.holding.symbol === symbol && order.primaryLegs[0].symbol === primaryLegs[0].symbol && !order.secondaryLegs);
     if (foundExistingOrder) {
-      foundExistingOrder.primaryLegs[0].quantity += quantity
-      this.updateOrder(foundExistingOrder);
+      console.log('Found existing buy order', foundExistingOrder);
+      return null;
     } if (this.sellOrders.find(order => order.primaryLegs && order.holding.symbol === symbol && order.primaryLegs[0].symbol === primaryLegs[0].symbol && !order.secondaryLegs)) {
+      console.log('Found existing sell order');
       return null;
     } else {
       const order: SmartOrder = {
@@ -378,7 +369,7 @@ export class CartService {
       console.log('Adding option order for', symbol, primaryLegs, price, quantity, optionType, side);
       this.addToCart(order, true, reason);
     } else {
-      console.log('Invalid option order', symbol, primaryLegs, price, quantity, optionType, side);
+      console.log('Invalid option order', symbol, primaryLegs, price, quantity, optionType, side, order);
     }
   }
 

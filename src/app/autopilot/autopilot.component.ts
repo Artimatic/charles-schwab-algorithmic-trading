@@ -1041,6 +1041,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async balanceCallPutRatio(holdings: PortfolioInfoHolding[]) {
     const results = this.priceTargetService.getCallPutBalance(holdings);
+    console.log('Call put ratio', results.call, '/', results.put);
     if (results.put > results.call) {
       const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade('SPY');
       const callPrice = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) * 100;
@@ -1056,6 +1057,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const reason = 'Balance call put ratio';
         this.cartService.addOptionOrder('SPY', [option.primaryLegs[0]], callPrice, option.primaryLegs[0].quantity, OrderTypes.call, 'Buy', reason);
       }
+    } else {
+      await this.addBuy(this.createHoldingObj('UPRO'), RiskTolerance.Zero, 'Buying to balance call put ratio');
     }
   }
 
@@ -1414,6 +1417,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
         await this.priceTargetService.checkProfitTarget(this.currentHoldings);
         await this.checkIfOverBalance();
+        await this.balanceCallPutRatio(this.currentHoldings);
       } else {
         this.executeOrderList();
         if (this.strategyList[this.strategyCounter] === Strategy.Daytrade &&

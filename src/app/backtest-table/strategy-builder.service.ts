@@ -169,7 +169,7 @@ export class StrategyBuilderService {
   }
 
   passesVolumeCheck(openInterest, currTotalVolume, prevObj) {
-    return (!prevObj || (currTotalVolume > prevObj.totalVolume)) && (currTotalVolume > 190 || openInterest > 1000);
+    return (!prevObj || (currTotalVolume > prevObj.totalVolume)) && (currTotalVolume > 180 || openInterest > 500);
   }
 
   async getCallStrangleTrade(symbol: string, minExpiration = this.defaultMinExpiration): Promise<Strangle> {

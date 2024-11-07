@@ -19,6 +19,11 @@ export class OrdersListComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit() {
+    this.refresh();
+  }
+
+  refresh() {
+    this.ngOnDestroy();
     this.cartService.cartObserver
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
