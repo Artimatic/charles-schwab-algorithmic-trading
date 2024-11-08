@@ -1046,19 +1046,15 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade('SPY');
       const callPrice = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) * 100;
       const targetBalance = (results.put - results.call);
-      if (callPrice < targetBalance) {
-        let currentCall = {
-          call: optionStrategy.call,
-          price: callPrice,
-          quantity: Math.floor(targetBalance / callPrice) || 1,
-          underlying: 'SPY'
-        };
-        const option = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy', currentCall.quantity);
-        const reason = 'Balance call put ratio';
-        this.cartService.addOptionOrder('SPY', [option.primaryLegs[0]], callPrice, option.primaryLegs[0].quantity, OrderTypes.call, 'Buy', reason);
-      }
-    } else {
-      await this.addBuy(this.createHoldingObj('UPRO'), RiskTolerance.Zero, 'Buying to balance call put ratio');
+      let currentCall = {
+        call: optionStrategy.call,
+        price: callPrice,
+        quantity: Math.floor(targetBalance / callPrice) || 1,
+        underlying: 'SPY'
+      };
+      const option = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy', currentCall.quantity);
+      const reason = 'Balance call put ratio';
+      this.cartService.addOptionOrder('SPY', [option.primaryLegs[0]], callPrice, option.primaryLegs[0].quantity, OrderTypes.call, 'Buy', reason);
     }
   }
 
@@ -1204,7 +1200,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           console.log(msg);
           await this.addBuy(stock, null, 'Personal list buy');
           setTimeout(() => {
-            this.revealPotentialStrategy = true;
+            this.showStrategies();
           }, 1000);
         }
       } catch (error) {
@@ -1225,7 +1221,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           const minCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
           this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [name], minCash, maxCash);
           setTimeout(() => {
-            this.revealPotentialStrategy = true;
+            this.showStrategies();
           }, 1000);
         }
       } catch (error) {
