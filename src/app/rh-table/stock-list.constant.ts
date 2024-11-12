@@ -45,7 +45,7 @@ const fullList = [
     'FDX',
     'OXY',
     'BSX',
-    'FCX',
+    'CYBR',
     'NVO',
     'GM',
     'F',
