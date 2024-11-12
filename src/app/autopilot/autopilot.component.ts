@@ -94,6 +94,12 @@ export enum Strategy {
   BuyCalls = 'BuyCalls',
   BuyPuts = 'BuyPuts',
   BuySnP = 'Buy S&P500',
+  BuyWinners = 'Buy Winners',
+  BuyML = 'Buy by ML signal',
+  SellMfiTrade = 'Buy by mfi trade sell signal',
+  BuyMfiTrade = 'Buy by mfi trade buy signal',
+  SellMfiDiv = 'Buy by mfi divergence sell signal',
+  BuyMfiDiv = 'Buy by mfi divergence buy signal',
   InverseDispersion = 'Inverse dispersion trade',
   None = 'None'
 }
@@ -138,7 +144,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   strategyList = [
     Strategy.Default,
     Strategy.InverseDispersion,
-    Strategy.OptionsStrangle,
+    Strategy.BuyWinners,
     Strategy.Swingtrade,
     // Strategy.SingleStockPick,
     // Strategy.StateMachine,
@@ -151,6 +157,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     // Strategy.DaytradeFullList,
     Strategy.BuyCalls,
     Strategy.BuySnP,
+    Strategy.BuyML,
+    Strategy.SellMfiTrade,
+    Strategy.BuyMfiTrade,
+    Strategy.SellMfiDiv,
+    Strategy.BuyMfiDiv
+
     //Strategy.None
   ];
 
@@ -436,6 +448,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       this.riskCounter--;
     }
     this.changeStrategy();
+    console.log(`Decrease risk to ${this.riskCounter}`);
   }
 
   decreaseDayTradeRiskTolerance() {
@@ -1272,12 +1285,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async handleStrategy() {
     switch (this.strategyList[this.strategyCounter]) {
-      case Strategy.OptionsStrangle:
-        await this.addStranglesToList();
-        await this.getNewTrades(null, null, 2);
-        break;
       case Strategy.TradingPairs:
-        await this.placePairOrders();
+        this.createTradingPairs();
         await this.getNewTrades(null, null, 2);
         break;
       case Strategy.Swingtrade:
@@ -1323,6 +1332,26 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       case Strategy.InverseDispersion:
         await this.defaultStrategy();
         break;
+      case Strategy.BuyWinners:
+        await this.buyWinners();
+        break;
+      case Strategy.BuyML:
+        await this.buyByMLSignal();
+        break;
+      case Strategy.SellMfiTrade:
+        await this.buyByIndicator(SwingtradeAlgorithms.mfiTrade, 'sell');
+        break;
+      case Strategy.SellMfiDiv:
+        await this.buyByIndicator(SwingtradeAlgorithms.mfiDivergence, 'sell');
+        break;
+        break;
+      case Strategy.BuyMfiTrade:
+        await this.buyByIndicator(SwingtradeAlgorithms.mfiTrade, 'buy');
+        break;
+        break;
+      case Strategy.BuyMfiDiv:
+        await this.buyByIndicator(SwingtradeAlgorithms.mfiDivergence, 'buy');
+        break;
       default: {
         await this.defaultStrategy();
         break;
@@ -1331,12 +1360,89 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.padBuys();
   }
 
-  async defaultStrategy() {
+  async buyByMLSignal() {
+    const buyWinner = async (symbol: string, prediction: number, backtestData: any) => {
+      if (prediction > 0.8 && this.priceTargetService.getDiff(backtestData.invested, backtestData.invested + backtestData.net) > 0) {
+        const stock: PortfolioInfoHolding = {
+          name: symbol,
+          pl: 0,
+          netLiq: 0,
+          shares: 0,
+          alloc: 0,
+          recommendation: 'None',
+          buyReasons: '',
+          sellReasons: '',
+          buyConfidence: 0,
+          sellConfidence: 0,
+          prediction: null
+        };
+        await this.addBuy(stock, null, 'Swing trade buy');
+      }
+    };
+    await this.getNewTrades(buyWinner);
+  }
+
+  async buyByIndicator(indicator: SwingtradeAlgorithms, direction: 'buy' | 'sell') {
+    const buyWinner = async (symbol: string, prediction: number, backtestData: any) => {
+      let matchedIndicator = false;
+      if (direction === 'buy') {
+        matchedIndicator = backtestData.buySignals.find(sig => sig === indicator)
+      } else {
+        matchedIndicator = backtestData.sellSignals.find(sig => sig === indicator)
+      }
+      if (prediction > 0.3 && this.priceTargetService.getDiff(backtestData.invested, backtestData.invested + backtestData.net) > 0 && matchedIndicator) {
+        const stock: PortfolioInfoHolding = {
+          name: symbol,
+          pl: 0,
+          netLiq: 0,
+          shares: 0,
+          alloc: 0,
+          recommendation: 'None',
+          buyReasons: '',
+          sellReasons: '',
+          buyConfidence: 0,
+          sellConfidence: 0,
+          prediction: null
+        };
+        const reason = `${direction} ${indicator} - ${symbol}`;
+        console.log(reason);
+        await this.addBuy(stock, null, reason);
+      }
+    };
+    await this.getNewTrades(buyWinner);
+  }
+
+  async buyWinners() {
+    const buyWinner = async (symbol: string, prediction: number, backtestData: any) => {
+      if (prediction > 0.7 && this.priceTargetService.getDiff(backtestData.invested, backtestData.invested + backtestData.net) > 0.15) {
+        const stock: PortfolioInfoHolding = {
+          name: symbol,
+          pl: 0,
+          netLiq: 0,
+          shares: 0,
+          alloc: 0,
+          recommendation: 'None',
+          buyReasons: '',
+          sellReasons: '',
+          buyConfidence: 0,
+          sellConfidence: 0,
+          prediction: null
+        };
+        await this.addBuy(stock, null, 'Buy winners');
+      }
+    };
+    await this.getNewTrades(buyWinner);
+  }
+
+  async createTradingPairs() {
     const cash = await this.cartService.getAvailableFunds(false);
     const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
     const minCash = round(this.riskToleranceList[0] * cash, 2);
     await this.optionsOrderBuilderService.createTradingPair(this.currentHoldings, minCash, maxCash);
+  }
 
+  async defaultStrategy() {
+    await this.createTradingPairs();
     const findPuts = async (symbol: string, prediction: number, backtestData: any) => {
       if (prediction < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
         const cash = await this.cartService.getAvailableFunds(false);
