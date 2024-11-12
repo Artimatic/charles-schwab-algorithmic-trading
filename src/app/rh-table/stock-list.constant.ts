@@ -78,7 +78,7 @@ const fullList = [
     'CARR',
     'TSN',
     'LEN',
-    'HPE',
+    'SE',
     'PLTR',
     'EXPE',
     'BBY',

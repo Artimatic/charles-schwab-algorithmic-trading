@@ -8,7 +8,8 @@ import { OrderTypes } from '@shared/models/smart-order';
   providedIn: 'root'
 })
 export class PriceTargetService {
-  targetDiff = 0.01;
+  targetDiff = 0.011;
+  portfolioPl = null;
   constructor(private backtestService: BacktestService,
     private portfolioService: PortfolioService,
     private cartService: CartService,
@@ -39,8 +40,7 @@ export class PriceTargetService {
       const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
       const portfolioPl = await this.todaysPortfolioPl();
       const priceTarget = this.getDiff(price[symbol].quote.closePrice, price[symbol].quote.lastPrice) + this.targetDiff;
-      console.log('Profit', portfolioPl, ', target:', priceTarget);
-
+      this.portfolioPl = portfolioPl;
       if (portfolioPl && portfolioPl > priceTarget) {
         return true;
       }
@@ -65,7 +65,7 @@ export class PriceTargetService {
           const estPrice = await this.orderHandlingService.getEstimatedPrice(portItem.primaryLegs[0].symbol);
           this.cartService.addOptionOrder(portItem.name, [portItem.primaryLegs[0]], estPrice, portItem.primaryLegs[0].quantity, orderType, 'Sell', 'Profit target met');
         } else if (portItem.shares) {
-          await this.cartService.portfolioSell(portItem, 'Price target reached');
+          await this.cartService.portfolioSell(portItem, `Price target reached. Portfolio profit: ${this.portfolioPl}`);
         }
       });
     }

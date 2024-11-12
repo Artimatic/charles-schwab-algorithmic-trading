@@ -502,7 +502,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.hedge();
     const balance = await this.machineDaytradingService.getPortfolioBalance().toPromise();
     if (balance.liquidationValue < 28000) {
-      await this.defaultStrategy();
+      await this.getNewTrades(null, null, 3);
       return;
     }
     await this.handleStrategy();
@@ -1054,7 +1054,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async balanceCallPutRatio(holdings: PortfolioInfoHolding[]) {
     const results = this.priceTargetService.getCallPutBalance(holdings);
-    console.log('Call put ratio', results.call, '/', results.put);
     if (results.put > results.call) {
       const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade('SPY');
       const callPrice = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) * 100;
@@ -1244,7 +1243,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async hedge() {
-    this.portfolioMgmtService.hedge(this.currentHoldings, this.optionsOrderBuilderService.getTradingPairs(), this.riskToleranceList[1], this.riskToleranceList[this.riskCounter]);
+    await this.portfolioMgmtService.hedge(this.currentHoldings, this.optionsOrderBuilderService.getTradingPairs(), this.riskToleranceList[1], this.riskToleranceList[this.riskCounter]);
   }
 
   async sellAll() {
@@ -1286,8 +1285,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async handleStrategy() {
     switch (this.strategyList[this.strategyCounter]) {
       case Strategy.TradingPairs:
-        this.createTradingPairs();
-        await this.getNewTrades(null, null, 2);
+        await this.createTradingPairs();
         break;
       case Strategy.Swingtrade:
         await this.getNewTrades(null, null, 5);
@@ -1330,7 +1328,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.getNewTrades(null, null, 2);
         break;
       case Strategy.InverseDispersion:
-        await this.defaultStrategy();
+        await this.addInverseDispersionTrade();
         break;
       case Strategy.BuyWinners:
         await this.buyWinners();
@@ -1353,7 +1351,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.buyByIndicator(SwingtradeAlgorithms.mfiDivergence, 'buy');
         break;
       default: {
-        await this.defaultStrategy();
+        await this.createTradingPairs();
+        await this.addInverseDispersionTrade();
         break;
       }
     }
@@ -1441,8 +1440,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.optionsOrderBuilderService.createTradingPair(this.currentHoldings, minCash, maxCash);
   }
 
-  async defaultStrategy() {
-    await this.createTradingPairs();
+  async addInverseDispersionTrade() {
     const findPuts = async (symbol: string, prediction: number, backtestData: any) => {
       if (prediction < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
         const cash = await this.cartService.getAvailableFunds(false);
@@ -1472,25 +1470,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async padBuys() {
     if (this.cartService.sellOrders.length + this.cartService.buyOrders.length + this.cartService.otherOrders.length < 3) {
-      const buyStockCb = async (symbol: string, prediction: number, backtestData: any) => {
-        if ((prediction > 0.5 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
-          const stock: PortfolioInfoHolding = {
-            name: symbol,
-            pl: 0,
-            netLiq: 0,
-            shares: 0,
-            alloc: 0,
-            recommendation: 'None',
-            buyReasons: '',
-            sellReasons: '',
-            buyConfidence: 0,
-            sellConfidence: 0,
-            prediction: null
-          };
-          await this.addBuy(stock, null, 'Swing trade buy');
-        }
-      };
-      await this.getNewTrades(buyStockCb, null, 3);
+      this.createTradingPairs();
     }
   }
 
@@ -1531,7 +1511,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async placeInverseDispersionOrders() {
-    await this.defaultStrategy();
+    await this.addInverseDispersionTrade();
     this.addTradingPairOrders();
   }
 
