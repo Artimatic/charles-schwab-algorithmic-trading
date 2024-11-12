@@ -102,8 +102,8 @@ describe('OptionsOrderBuilderService', () => {
     ];
     strategyBuilderServiceSpy.getCallStrangleTrade.and.returnValue({
       put: {
-        bid: 1.45,
-        ask: 1.60
+        bid: 0.45,
+        ask: 0.60
       }
     });
 
