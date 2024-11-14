@@ -100,7 +100,7 @@ const fullList = [
     'U',
     'CCL',
     'CLF',
-    'AAL',
+    'APP',
     'BJ',
     'SPOT',
     'S',
