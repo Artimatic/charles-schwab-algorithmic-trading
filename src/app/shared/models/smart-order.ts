@@ -36,4 +36,5 @@ export interface SmartOrder extends Order {
     primaryLegs?: Options[];
     secondaryLegs?: Options[];
     createdTime?: string;
+    forImmediateExecution?: boolean;
 }

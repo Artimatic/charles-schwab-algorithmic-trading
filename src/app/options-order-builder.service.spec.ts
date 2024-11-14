@@ -107,7 +107,7 @@ describe('OptionsOrderBuilderService', () => {
       }
     });
 
-    strategyBuilderServiceSpy.findOptionsPrice.and.returnValue(1.5);
+    strategyBuilderServiceSpy.findOptionsPrice.and.returnValue(0.5);
 
     await service.createProtectivePutOrder(testHoldings[0]);
     expect(cartServiceSpy.addOptionOrder).not.toHaveBeenCalled();

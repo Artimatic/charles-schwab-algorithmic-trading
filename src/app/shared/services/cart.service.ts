@@ -262,7 +262,8 @@ export class CartService {
 
   buildOrderWithAllocation(symbol: string, quantity = 0, price = 0,
     side = 'DayTrade', orderSizePct = 0.5, lossThreshold = -0.004,
-    profitTarget = 0.008, trailingStop = -0.003, allocation = null): SmartOrder {
+    profitTarget = 0.008, trailingStop = -0.003, allocation = null,
+    executeImmediately = false): SmartOrder {
     return {
       holding: {
         instrument: null,
@@ -282,7 +283,8 @@ export class CartService {
       useTakeProfit: side.toLowerCase() === 'daytrade' ? true : false,
       sellAtClose: (side.toLowerCase() === 'sell' || side.toLowerCase() === 'daytrade') ? true : false,
       // sellAtClose: false,
-      allocation
+      allocation,
+      forImmediateExecution: executeImmediately
     };
   }
 
@@ -324,7 +326,8 @@ export class CartService {
     quantity: number,
     optionType,
     side = 'Buy',
-    orderSize = 1) {
+    orderSize = 1,
+    executeImmediately = false) {
     const foundExistingOrder = this.buyOrders.find(order => order.primaryLegs && order.holding.symbol === symbol && order.primaryLegs[0].symbol === primaryLegs[0].symbol && !order.secondaryLegs);
     if (foundExistingOrder) {
       console.log('Found existing buy order', foundExistingOrder);
@@ -353,7 +356,8 @@ export class CartService {
         sellAtClose: false,
         allocation: 0.05,
         primaryLegs,
-        type: optionType
+        type: optionType,
+        forImmediateExecution: executeImmediately
       };
 
       return order;
@@ -363,8 +367,11 @@ export class CartService {
   async addOptionOrder(symbol: string,
     primaryLegs: Options[], price: number,
     quantity: number, optionType,
-    side = 'Buy', reason: string) {
-    const order = this.createOptionOrder(symbol, primaryLegs, price, quantity, optionType, side);
+    side = 'Buy', reason: string = '', executeImmediately = false) {
+    const order = this.createOptionOrder(symbol, primaryLegs, 
+      price, quantity, 
+      optionType, side,
+      null, executeImmediately);
     if (order && order.primaryLegs) {
       console.log('Adding option order for', symbol, primaryLegs, price, quantity, optionType, side);
       this.addToCart(order, true, reason);
@@ -559,11 +566,11 @@ export class CartService {
     return order;
   }
 
-  async portfolioSell(holding: PortfolioInfoHolding, reason) {
+  async portfolioSell(holding: PortfolioInfoHolding, reason = '', executeImmediately = false) {
     const price = await this.portfolioService.getPrice(holding.name).toPromise();
     const orderSizePct = 0.5;
     const order = this.buildOrderWithAllocation(holding.name, holding.shares, price, 'Sell',
-      orderSizePct, null, null, null);
+      orderSizePct, null, null, null, executeImmediately);
     this.addToCart(order, true, reason);
     this.initializeOrder(order);
   }
