@@ -140,6 +140,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   strategyCounter = null;
   maxTradeCount = 5;
   maxHoldings = 10;
+  addedOrdersCount = 0;
   developedStrategy = false;
   tradingPairsCounter = 0;
   strategyList = [
@@ -439,6 +440,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   resetCart() {
+    this.addedOrdersCount = 0;
     this.lastOrderListIndex = 0;
     this.cartService.removeCompletedOrders();
     this.cartService.otherOrders = [];
@@ -590,7 +592,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     let counter = this.machineDaytradingService.getCurrentStockList().length;
     console.log('Current stock list length', counter);
     while (counter > 0 &&
-      (this.cartService.buyOrders.length + this.cartService.otherOrders.length) < maxTradeCount) {
+      (this.addedOrdersCount + this.cartService.buyOrders.length + this.cartService.otherOrders.length + this.cartService.sellOrders.length) < maxTradeCount) {
       do {
         stock = this.machineDaytradingService.getNextStock();
       } while (found(stock))
@@ -668,7 +670,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async addBuy(holding: PortfolioInfoHolding, allocation, reason) {
-    if ((this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.maxTradeCount) {
+    if ((this.addedOrdersCount + this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.maxTradeCount) {
+      this.addedOrdersCount++;
       const currentDate = moment().format('YYYY-MM-DD');
       const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
       try {
@@ -1076,6 +1079,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       const option = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy', currentCall.quantity);
       const reason = 'Balance call put ratio';
       this.cartService.addOptionOrder('SPY', [option.primaryLegs[0]], callPrice, option.primaryLegs[0].quantity, OrderTypes.call, 'Buy', reason);
+    } else if (results.call / results.put > 2) {
+      await this.trimHoldings();
     }
   }
 
@@ -1534,7 +1539,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async handleIntraday() {
     const isOpened = await this.isMarketOpened();
     if (isOpened) {
-      this.cleanUpOrders();
       if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 15) {
         this.lastOptionsCheckCheck = moment();
         this.currentHoldings = await this.cartService.findCurrentPositions();
