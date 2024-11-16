@@ -1,7 +1,24 @@
-.container {
+.order-container {
     display: flex;
     flex-direction: row;
     margin-left: unset;
+
+    .column {
+        flex: 1;
+        max-height: 100vh;
+        overflow-y: auto;
+        margin: 1rem;
+        border: 1px solid #ccc;
+        ul {
+            list-style-type: none;
+            padding-left: 0.5rem;
+        }
+        button {
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+    }
+
     p-button {
         margin-left: 1rem;
     }

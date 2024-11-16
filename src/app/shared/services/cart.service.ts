@@ -22,18 +22,9 @@ export class CartService {
     private portfolioService: PortfolioService,
     private tradeService: TradeService,
     private reportingService: ReportingService,
-    private machineLearningService: MachineLearningService,
-    private globalSettingsService: GlobalSettingsService,
     private messageService: MessageService) { }
 
   addToCart(order: SmartOrder, replaceAnyExistingOrders = false, reason = '') {
-    this.machineLearningService
-      .trainDaytrade(order.holding.symbol.toUpperCase(),
-        moment().add({ days: 1 }).format('YYYY-MM-DD'),
-        moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
-        1,
-        this.globalSettingsService.daytradeAlgo
-      ).subscribe();
     order.createdTime = moment().format();
     const indices = this.searchAllLists(order);
     let noDup = true;
@@ -161,7 +152,7 @@ export class CartService {
       case 'buy':
         this.buyOrders.push(order);
         break;
-      case 'daytrade':
+      default:
         this.otherOrders.push(order);
         break;
     }

@@ -31,10 +31,9 @@ export class DaytradeStrategiesService extends BaseStrategiesService {
   hasRecommendations(current: Recommendation): boolean {
     let recommendationsCount = 0;
     for (const indicator in current) {
-      if (current.recommendation.hasOwnProperty(indicator)) {
-        const indicatorName = String(indicator);
-        const recommendation = current.recommendation[indicatorName];
-        if (recommendation.toLowerCase() === DaytradeRecommendation.Bullish || recommendation.toLowerCase() === DaytradeRecommendation.Bearish) {
+      const recommendation = current[String(indicator)];
+      if (recommendation && recommendation.toLowerCase) {
+        if (recommendation.toLowerCase() === DaytradeRecommendation.Bullish.toLowerCase() || recommendation.toLowerCase() === DaytradeRecommendation.Bearish.toLowerCase()) {
           recommendationsCount++;
         }
       }
@@ -47,15 +46,11 @@ export class DaytradeStrategiesService extends BaseStrategiesService {
   }
 
   isPotentialBuy(analysis: Recommendation) {
-    return (this.hasRecommendations(analysis) || analysis.data.indicator.mfiLeft && analysis.data.indicator.mfiLeft < 30) ||
-      analysis.data.indicator.bbandBreakout || (analysis.data.indicator.bband80[0][0] &&
-        analysis.data.indicator.close < (1.1 * analysis.data.indicator.bband80[0][0]));
+    return this.hasRecommendations(analysis);
   }
 
   isPotentialSell(analysis: Recommendation) {
-    return (analysis.data.indicator.mfiLeft && analysis.data.indicator.mfiLeft > 65) ||
-      analysis.data.indicator.bbandBreakout || (analysis.data.indicator.bband80[0][0] &&
-        analysis.data.indicator.close > (0.9 * analysis.data.indicator.bband80[2][0]));
+    return this.hasRecommendations(analysis);
   }
 
   getName(analysis: Recommendation) {

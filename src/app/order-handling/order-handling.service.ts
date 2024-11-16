@@ -14,7 +14,7 @@ import { StrategyBuilderService } from '../backtest-table/strategy-builder.servi
   providedIn: 'root'
 })
 export class OrderHandlingService {
-
+  skipMl = false;
   constructor(
     private reportingService: ReportingService,
     private pricingService: PricingService,
@@ -104,24 +104,42 @@ export class OrderHandlingService {
       this.backtestService.getDaytradeRecommendation(symbol.toUpperCase(), null, null, { minQuotes: 81 })
         .subscribe(
           async (analysis) => {
-            if (this.daytradeStrategiesService.isPotentialBuy(analysis) || this.daytradeStrategiesService.isPotentialSell(analysis)) {
-                this.machineLearningService.activate(symbol,
-                  this.globalSettingsService.daytradeAlgo).subscribe(async (mlResult) => {
-                    if (!mlResult || !mlResult.nextOutput) {
-                      await this.trainIntradayModel(analysis, symbol);
-                    } else {
-                      const queueItem: AlgoQueueItem = {
-                        symbol: symbol,
-                        reset: false,
-                        analysis: analysis,
-                        ml: mlResult
-                      };
-                      this.tradeService.algoQueue.next(queueItem);
-                    }
-                  }, () => {
+            const hasBuyPotential = this.daytradeStrategiesService.isPotentialBuy(analysis);
+            const hasSellPotential = this.daytradeStrategiesService.isPotentialSell(analysis);
+            if (hasBuyPotential || hasSellPotential) {
+              const startTime = new Date().valueOf();
+              let mlResult = {
+                nextOutput: hasBuyPotential ? 0.9 : 0.1,
+                guesses: 0,
+                correct: 0,
+                score: 0
+              };
+              if (!this.skipMl) {
+                try {
+                  mlResult = await this.machineLearningService.activate(symbol,
+                    this.globalSettingsService.daytradeAlgo).toPromise();
+                  if (!mlResult || !mlResult.nextOutput) {
                     this.trainIntradayModel(analysis, symbol);
-                  });
+                  }
+                  const currentMil = new Date().valueOf();
+                  if (currentMil - startTime > 180000) {
+                    this.skipMl = true;
+                  } else {
+                    this.skipMl = false;
+                  }
+                } catch (error) {
+                  console.log(error);
+                  this.trainIntradayModel(analysis, symbol);
+                }
+              }
 
+              const queueItem: AlgoQueueItem = {
+                symbol: symbol,
+                reset: false,
+                analysis: analysis,
+                ml: mlResult
+              };
+              this.tradeService.algoQueue.next(queueItem);
             }
           }
         );

@@ -27,24 +27,8 @@ export class OrdersListComponent implements OnInit, OnDestroy {
     this.cartService.cartObserver
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
-        this.clearList();
-        setTimeout(() => {
-          this.buyOrders = Array.from(this.cartService.buyOrders);
-          this.sellOrders = Array.from(this.cartService.sellOrders);
-          this.otherOrders = Array.from(this.cartService.otherOrders);
-          console.log('Buy orders', this.buyOrders);
-          console.log('Sell orders', this.sellOrders);
-          console.log('Other orders', this.otherOrders);
-          this.ref.detectChanges();
-        });
+        this.ref.detectChanges();
       });
-  }
-
-  clearList() {
-    this.buyOrders = [];
-    this.sellOrders = [];
-    this.otherOrders = [];
-    this.ref.detectChanges();
   }
 
   ngOnDestroy() {
