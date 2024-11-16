@@ -109,7 +109,7 @@ export class OrderHandlingService {
             if (hasBuyPotential || hasSellPotential) {
               const startTime = new Date().valueOf();
               let mlResult = {
-                nextOutput: hasBuyPotential ? 0.9 : 0.1,
+                nextOutput: 0,
                 guesses: 0,
                 correct: 0,
                 score: 0
