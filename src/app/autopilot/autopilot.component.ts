@@ -1433,22 +1433,19 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.optionsOrderBuilderService.resetCurrentTradeIdeas();
     const buyIndicator = async (symbol: string, prediction: number, backtestData: any) => {
       let matchBuy = false;
-      let matchSell = false;
       if (direction === 'buy') {
         matchBuy = backtestData.buySignals.find(sig => sig === indicator)
-        matchSell = backtestData.sellSignals.find(sig => sig === indicator)
       } else {
         matchBuy = backtestData.sellSignals.find(sig => sig === indicator)
-        matchSell = backtestData.buySignals.find(sig => sig === indicator)
       }
-      if (matchBuy && prediction > 0.5 && this.priceTargetService.getDiff(backtestData.invested, backtestData.invested + backtestData.net) > 0) {
+      if (matchBuy && prediction > 0.6 && this.priceTargetService.getDiff(backtestData.invested, backtestData.invested + backtestData.net) > 0) {
         if (this.optionsOrderBuilderService.currentTradeIdeas.puts.length) {
           const cash = await this.getMinMaxCashForOptions();
           await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, [symbol], this.optionsOrderBuilderService.getSellList(), cash.minCash, cash.maxCash);
         } else {
           this.optionsOrderBuilderService.currentTradeIdeas.calls.push(symbol);
         }
-      } else if (matchSell && prediction < 0.5 && this.priceTargetService.getDiff(backtestData.invested, backtestData.invested + backtestData.net) > 0) {
+      } else if (matchBuy && prediction < 0.4 && this.priceTargetService.getDiff(backtestData.invested, backtestData.invested + backtestData.net) > 0) {
         if (this.optionsOrderBuilderService.currentTradeIdeas.calls.length) {
           const cash = await this.getMinMaxCashForOptions();
           await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, this.optionsOrderBuilderService.getBuyList(), [symbol], cash.minCash, cash.maxCash);
