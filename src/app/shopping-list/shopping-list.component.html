@@ -1,15 +1,11 @@
-<div class="p-grid">
-  <div class="p-col-6">
-    <p-card header="Logs" [style]="{'margin': '1rem'}">
-      <app-terminal-view></app-terminal-view>
-    </p-card>
-  </div>
-  <div class="p-col-6">
-    <p-card header="Profit Loss Table">
-      <app-daytrade-score-board [buyOrders]="cartService.buyOrders" [otherOrders]="cartService.otherOrders"
-        [totalScore]="scoreKeeperService.total"></app-daytrade-score-board>
-    </p-card>
-  </div>
+<div class="shopping-list">
+  <p-card header="Profit Loss Table">
+    <app-daytrade-score-board [buyOrders]="cartService.buyOrders" [otherOrders]="cartService.otherOrders"
+      [totalScore]="scoreKeeperService.total"></app-daytrade-score-board>
+  </p-card>
+  <p-card header="Logs" [style]="{'margin': '1rem'}">
+    <app-terminal-view></app-terminal-view>
+  </p-card>
 </div>
 <p-card header="Settings" [style]="{'margin': '1rem'}">
   <app-setting-controls></app-setting-controls>

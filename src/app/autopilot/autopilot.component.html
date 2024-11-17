@@ -28,20 +28,23 @@
         <div *ngIf="display">
             <p-tag value="Active"></p-tag>
         </div>
-        <!-- <app-ai-picks></app-ai-picks> -->
-        <app-daytrade-active-search></app-daytrade-active-search>
+        <span *ngIf="strategyList[strategyCounter] === 'Daytrade'">
+            <!-- <app-ai-picks></app-ai-picks> -->
+            <app-daytrade-active-search></app-daytrade-active-search>
+        </span>
     </div>
     <div class="p-toolbar-group-right">
         <p-splitButton label="Auto Manage" icon="pi pi-play" severity="success" *ngIf="!display" (onClick)="open()"
             [model]="startButtonOptions" styleClass="p-button-success"></p-splitButton>
         <p-button label="Stop" icon="pi pi-times" *ngIf="display" styleClass="p-button-danger"
             (click)="stop()"></p-button>
-        <p-button label="Change strategy"
-        (click)="changeStrategy()"></p-button>
+        <p-button label="Change strategy" (click)="changeStrategy(true)"></p-button>
         <p-splitButton label="Test Functionalities" severity="warning" (onClick)="test()" [model]="multibuttonOptions"
             styleClass="p-button-warning"></p-splitButton>
-        <p-button label="Update stock list" severity="secondary" styleClass="p-button-warn" (click)="updateStockList()"></p-button>
-        <p-button label="Show strategies" severity="info" styleClass="p-button-warn" (click)="showStrategies()"></p-button>
+        <p-button label="Update stock list" severity="secondary" styleClass="p-button-warn"
+            (click)="updateStockList()"></p-button>
+        <p-button label="Show strategies" severity="info" styleClass="p-button-warn"
+            (click)="showStrategies()"></p-button>
         <app-default-order-lists class="default-orders-button"></app-default-order-lists>
     </div>
 </p-toolbar>

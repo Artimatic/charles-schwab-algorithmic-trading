@@ -313,6 +313,7 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
                   const lastSignal = indicatorResults.signals[indicatorResults.signals.length - 1];
                   const bullishSignals = [];
                   const bearishSignals = [];
+                  
                   for (const indicator in lastSignal.recommendation) {
                     if (lastSignal.recommendation.hasOwnProperty(indicator)) {
                       const result = {
@@ -345,7 +346,7 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
                         totalTrades: indicatorResults.totalTrades,
                         lastVolume: indicatorResults.lastVolume || null,
                         totalReturns: indicatorResults.totalReturns || null,
-                        lastPrice: indicatorResults.lastPrice || null,
+                        lastPrice: indicatorResults.signals[indicatorResults.signals.length - 1].close,
                         ...result
                       };
                       if (hasRecommendations) {
@@ -368,6 +369,18 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
                         this.getImpliedMovement(testResults);
                       }, 'rhtable_process' + symbol);
                     }, 1000 - this.backtestBuffer.length * 10000);
+                  } else {
+                    this.addToList(
+                      {
+                        recommendation: indicatorResults.recommendation,
+                        stock: indicatorResults.stock,
+                        returns: indicatorResults.returns,
+                        profitableTrades: indicatorResults.profitableTrades,
+                        totalTrades: indicatorResults.totalTrades,
+                        lastVolume: indicatorResults.lastVolume || null,
+                        totalReturns: indicatorResults.totalReturns || null,
+                        lastPrice: indicatorResults.signals[indicatorResults.signals.length - 1].close                  }
+                    );
                   }
                 }
                 this.incrementProgress();
