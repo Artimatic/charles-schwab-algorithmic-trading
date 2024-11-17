@@ -205,7 +205,7 @@ export class StrategyBuilderService {
     }
 
     if (!potentialStrangle.call) {
-      console.log('Unable to find call for ', symbol);
+      console.log('Unable to find call for', symbol, optionsData);
     }
     return potentialStrangle;
   }
@@ -245,7 +245,7 @@ export class StrategyBuilderService {
       }
     }
     if (!potentialStrangle.put) {
-      console.log('Unable to find put ', symbol);
+      console.log('Unable to find put for', symbol, optionsData);
     }
     return potentialStrangle;
   }

@@ -2,13 +2,15 @@
     display: flex;
     flex-direction: row;
     margin-left: unset;
-
+    h4 {
+        margin-left: 0.5rem;
+    }
     .column {
         flex: 1;
         max-height: 100vh;
         overflow-y: auto;
         margin: 1rem;
-        border: 1px solid #ccc;
+        border: none;
         ul {
             list-style-type: none;
             padding-left: 0.5rem;

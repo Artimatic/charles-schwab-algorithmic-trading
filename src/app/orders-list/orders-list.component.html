@@ -1,11 +1,9 @@
-<p-button icon="pi pi-refresh" iconPos="right" (click)="refresh()"></p-button>
-
-<div *ngIf="!cartService.sellOrders.length && !cartService.buyOrders.length && !cartService.otherOrders.length">
-  <p>No orders found.</p>
-</div>
 <div class="order-container">
+  <h4>Daytrade</h4>
   <div class="column">
-    <h4>Daytrade</h4>
+    <div *ngIf="!cartService.otherOrders.length" class="empty-card">
+      <p>No orders found.</p>
+    </div>
     <ul>
       <li *ngFor="let other of cartService.otherOrders" class="order-card">
         <app-bb-card [order]="other" [tearDown]="other.stopped">
@@ -14,8 +12,11 @@
     </ul>
   </div>
 
+  <h4>Buy</h4>
   <div class="column">
-    <h4>Buy</h4>
+    <div *ngIf="!cartService.buyOrders.length" class="empty-card">
+      <p>No orders found.</p>
+    </div>
     <ul>
       <li *ngFor="let buy of cartService.buyOrders" class="order-card">
         <app-bb-card [order]="buy" [tearDown]="buy.stopped">
@@ -24,8 +25,11 @@
     </ul>
   </div>
 
+  <h4>Sell</h4>
   <div class="column">
-    <h4>Sell</h4>
+    <div *ngIf="!cartService.sellOrders.length" class="empty-card">
+      <p>No orders found.</p>
+    </div>
     <ul>
       <li *ngFor="let sell of cartService.sellOrders" class="order-card">
         <app-bb-card [order]="sell" [tearDown]="sell.stopped">
