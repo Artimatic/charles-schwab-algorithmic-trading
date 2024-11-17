@@ -364,18 +364,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const startStopTime = this.globalSettingsService.getStartStopTime();
         if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 25) {
           this.lastCredentialCheck = moment();
-          // await this.backtestOneStock(true, false);
-          if (moment().isAfter(moment(startStopTime.endDateTime).add(3, 'hours')) &&
-            moment().isBefore(moment(startStopTime.startDateTime))) {
-            if ((this.optionsOrderBuilderService.tradingPairs.length +
-              this.addedOrdersCount +
-              this.cartService.buyOrders.length +
-              this.cartService.otherOrders.length +
-              this.cartService.sellOrders.length) < this.maxTradeCount) {
-              this.changeStrategy();
-              this.developStrategy();
-            }
-          }
+          await this.backtestOneStock(true, false);
+          this.padOrders(startStopTime.startDateTime, startStopTime.endDateTime);
         } else if (moment().isAfter(moment(startStopTime.endDateTime).subtract(8, 'minutes')) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
           if (!this.boughtAtClose) {
@@ -404,6 +394,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 3) {
             await this.backtestOneStock(false, false);
             this.startFindingTrades();
+            this.padOrders(startStopTime.startDateTime, startStopTime.endDateTime);
           }
         }
       });
@@ -494,11 +485,15 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       this.strategyCounter = 0;
     }
     const strat = this.strategyList[this.strategyCounter];
+    const msg = `Strategy changed to ${strat}. Risk tolerance ${this.riskCounter}`;
     this.messageService.add({
       severity: 'info',
-      summary: `Strategy changed to ${strat}`
+      summary: msg
     });
-    console.log(`Strategy changed to ${strat}. Risk tolerance ${this.riskCounter}`);
+
+    console.log(msg);
+    this.reportingService.addAuditLog(null, msg);
+
     if (saveOption) {
       const profitObj: ProfitLossRecord = {
         'date': moment().format(),
@@ -1550,9 +1545,19 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.getNewTrades(findPuts);
   }
 
-  async padOrders() {
-    if (this.cartService.sellOrders.length + this.cartService.buyOrders.length + this.cartService.otherOrders.length < 3) {
-      this.createTradingPairs();
+  async padOrders(startTime, endTime) {
+    if (moment().isAfter(moment(endTime).add(6, 'hours')) ||
+      moment().isBefore(moment(startTime).subtract(1, 'hours'))) {
+      if ((this.optionsOrderBuilderService.getTradingPairs().length +
+        this.addedOrdersCount +
+        this.cartService.buyOrders.length +
+        this.cartService.otherOrders.length +
+        this.cartService.sellOrders.length) < this.maxTradeCount) {
+        this.changeStrategy();
+        this.developStrategy();
+      } else {
+        console.log('Enough ordrs added', this.addedOrdersCount, this.optionsOrderBuilderService.getTradingPairs().length);
+      }
     }
   }
 
