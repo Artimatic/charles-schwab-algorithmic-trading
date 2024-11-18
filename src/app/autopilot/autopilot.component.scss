@@ -15,22 +15,41 @@
     flex-direction: row;
 }
 
-.toolbar-header > h3, p-tag {
+.toolbar-header>h3,
+p-tag {
     margin-right: 1rem;
 }
 
-.p-toolbar-group-right > p-button, p-splitbutton {
+.p-toolbar-group-right>p-button,
+p-splitbutton {
     margin: 1rem 0.5rem;
 }
 
 .strategy-list {
     display: flex;
     flex-direction: row;
+    max-height: 75vh;
     .buy-sell-container {
         max-width: 25vw;
         margin-left: 1rem;
+
         div {
             margin-bottom: 0.5rem;
         }
-    }    
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 0.5rem;
+            text-align: left;
+        }
+
+        ul {
+            list-style-type: none;
+        }
+    }
 }

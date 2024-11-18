@@ -609,8 +609,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     };
     let counter = this.machineDaytradingService.getCurrentStockList().length;
     console.log('Current stock list length', counter);
-    while (counter > 0 &&
-      (this.optionsOrderBuilderService.tradingPairs.length + this.addedOrdersCount + this.cartService.buyOrders.length + this.cartService.otherOrders.length + this.cartService.sellOrders.length) < maxTradeCount) {
+    while (counter > 0 && this.hasReachedBuyLimit()) {
       do {
         stock = this.machineDaytradingService.getNextStock();
       } while (found(stock))
@@ -1482,7 +1481,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async getMinMaxCashForOptions() {
     const cash = await this.cartService.getAvailableFunds(false);
     const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
-    const minCash = maxCash - (cash * this.riskToleranceList[0]);
+    const minCash = maxCash - (cash * RiskTolerance.Zero);
     return {
       maxCash,
       minCash
@@ -1545,11 +1544,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async padOrders(startTime, endTime) {
     if (moment().isAfter(moment(endTime).add(6, 'hours')) ||
       moment().isBefore(moment(startTime).subtract(1, 'hours'))) {
-      if ((this.optionsOrderBuilderService.getTradingPairs().length +
-        this.addedOrdersCount +
-        this.cartService.buyOrders.length +
-        this.cartService.otherOrders.length +
-        this.cartService.sellOrders.length) < this.maxTradeCount) {
+      if (!this.hasReachedBuyLimit()) {
         this.changeStrategy();
         this.developStrategy();
       } else {
@@ -1612,6 +1607,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         this.optionsOrderBuilderService.addTradingPair(trade, 'Add pair for test');
       }
     });
+  }
+
+  hasReachedBuyLimit(maxTradeCount = this.maxTradeCount) {
+    return (this.optionsOrderBuilderService.getTradingPairs().length + this.addedOrdersCount + this.cartService.buyOrders.length + this.cartService.otherOrders.length) < maxTradeCount;
   }
 
   unsubscribeStockFinder() {
