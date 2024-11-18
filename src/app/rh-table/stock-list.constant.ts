@@ -152,7 +152,8 @@ const fullList = [
     'CHTR',
     'DASH',
     'HON',
-    'NUE'];
+    'NUE',
+    'DELL'];
 
 export const CurrentStockList = fullList.map(s => {
     return { ticker: s };
