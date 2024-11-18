@@ -54,9 +54,7 @@ export class PriceTargetService {
     if (targetMet) {
       const holdings = retrievedHoldings? retrievedHoldings : await this.cartService.findCurrentPositions();
       holdings.forEach(async(portItem: PortfolioInfoHolding) => {
-        if (this.cartService.isStrangle(portItem)) {
-          await this.optionsOrderBuilderService.sellStrangle(portItem);
-        } else if (portItem.primaryLegs) {
+        if (portItem.primaryLegs) {
           let orderType = null;
           if (portItem.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
             orderType = OrderTypes.call;
