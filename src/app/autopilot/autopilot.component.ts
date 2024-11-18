@@ -1239,7 +1239,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         };
         if (backtestResults && backtestResults.ml !== null && (backtestResults.ml > 0.5 && (backtestResults.recommendation === 'STRONGBUY' || backtestResults.recommendation === 'BUY'))) {
           const msg = `Buy ${name}, date: ${moment().format()}`;
-          this.messageService.add({ severity: 'success', summary: 'Buy alert', detail: msg, sticky: true });
+          this.messageService.add({ severity: 'success', summary: 'Buy alert', detail: msg, life: 21600000 });
           console.log(msg);
           await this.addBuy(stock, null, 'Personal list buy');
         }
@@ -1254,7 +1254,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const backtestResults = await this.strategyBuilderService.getBacktestData(name);
         if (backtestResults && backtestResults.ml !== null && (backtestResults.ml < 0.5 && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL'))) {
           const msg = `Sell ${name}, date: ${moment().format()}`;
-          this.messageService.add({ severity: 'error', summary: 'Sell alert', detail: msg, sticky: true });
+          this.messageService.add({ severity: 'error', summary: 'Sell alert', detail: msg, life: 21600000 });
           console.log(msg);
           const cash = await this.cartService.getAvailableFunds(false);
           const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BacktestService, CartService, PortfolioInfoHolding, PortfolioService } from '@shared/services';
+import { BacktestService, CartService, PortfolioInfoHolding, PortfolioService, ReportingService } from '@shared/services';
 import { OptionsOrderBuilderService } from '../options-order-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { OrderTypes } from '@shared/models/smart-order';
@@ -14,7 +14,8 @@ export class PriceTargetService {
     private portfolioService: PortfolioService,
     private cartService: CartService,
     private optionsOrderBuilderService: OptionsOrderBuilderService,
-    private orderHandlingService: OrderHandlingService
+    private orderHandlingService: OrderHandlingService,
+    private reportingService: ReportingService
   ) { }
 
   async todaysPortfolioPl() {
@@ -42,6 +43,7 @@ export class PriceTargetService {
       const priceTarget = this.getDiff(price[symbol].quote.closePrice, price[symbol].quote.lastPrice) + this.targetDiff;
       this.portfolioPl = portfolioPl;
       if (portfolioPl && portfolioPl > priceTarget) {
+        this.reportingService.addAuditLog(null, `Profit target met. Portfolio PnL: ${}. target: ${priceTarget}`);
         return true;
       }
       return false;
@@ -50,7 +52,6 @@ export class PriceTargetService {
   async checkProfitTarget(retrievedHoldings: PortfolioInfoHolding[] = null) {
     const targetMet = await this.hasMetPriceTarget();
     if (targetMet) {
-      console.log('Profit target met.');
       const holdings = retrievedHoldings? retrievedHoldings : await this.cartService.findCurrentPositions();
       holdings.forEach(async(portItem: PortfolioInfoHolding) => {
         if (this.cartService.isStrangle(portItem)) {
