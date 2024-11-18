@@ -3997,6 +3997,7 @@ export const PersonalBearishPicks = ['TWLO',
   'PLTR',
   'MDB',
   'CVNA',
+  'MSTR',
   'SPOT',
   'WING'].map(b => createParam(b));
 
