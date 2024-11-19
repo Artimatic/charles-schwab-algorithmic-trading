@@ -48,6 +48,7 @@ export interface Indicators {
     mfiLow?: number;
     high?: number;
     low?: number;
+    open?: number;
     mfiTrend?: boolean;
     macdPrevious?: any;
     bbandBreakout?: boolean;

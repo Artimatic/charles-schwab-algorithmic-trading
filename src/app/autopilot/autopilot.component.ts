@@ -1553,8 +1553,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       if (!this.hasReachedBuyLimit()) {
         this.changeStrategy();
         this.developStrategy();
-      } else {
-        console.log('Enough orders added', this.optionsOrderBuilderService.getTradingPairs().length, this.addedOrdersCount, this.cartService.buyOrders.length, this.cartService.otherOrders.length,  this.maxTradeCount);
       }
     }
   }

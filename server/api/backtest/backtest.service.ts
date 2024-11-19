@@ -598,14 +598,14 @@ class BacktestService {
             }
 
             // 2020-07-02T05:00:00.000+0000b
-            if (indicators[idx - 5].mfiLeft < indicators[idx - 1].mfiLeft &&
+            if (indicators[idx - 6].mfiLeft < indicators[idx - 5].mfiLeft && indicators[idx - 5].mfiLeft < indicators[idx - 1].mfiLeft &&
               indicators[idx - 5].mfiLeft < indicators[idx - 3].mfiLeft && 
-              (indicators[idx - 5].close > indicators[idx - 1].low && indicators[idx - 5].close < indicators[idx - 1].high)) {
+              (indicators[idx - 6].open > indicators[idx - 6].close && indicators[idx - 5].open < indicators[idx - 5].close && indicators[idx - 3].open < indicators[idx - 3].close && indicators[idx - 1].open < indicators[idx - 1].close)) {
               indicator.recommendation.mfiDivergence = DaytradeRecommendation.Bullish;
               indicator.recommendation.recommendation = OrderType.Buy;
-            } else if (indicators[idx - 5].mfiLeft > indicators[idx - 1].mfiLeft &&
+            } else if (indicators[idx - 6].mfiLeft > indicators[idx - 5].mfiLeft && indicators[idx - 5].mfiLeft > indicators[idx - 1].mfiLeft &&
               indicators[idx - 5].mfiLeft > indicators[idx - 3].mfiLeft && 
-              (indicators[idx - 5].close > indicators[idx - 1].low && indicators[idx - 5].close < indicators[idx - 1].high)) {
+              (indicators[idx - 6].open < indicators[idx - 6].close && indicators[idx - 5].open > indicators[idx - 5].close && indicators[idx - 3].open > indicators[idx - 3].close && indicators[idx - 1].open > indicators[idx - 1].close)) {
               indicator.recommendation.mfiDivergence = DaytradeRecommendation.Bearish;
               indicator.recommendation.recommendation = OrderType.Sell;
             }
