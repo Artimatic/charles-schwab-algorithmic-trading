@@ -615,7 +615,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     };
     let counter = this.machineDaytradingService.getCurrentStockList().length;
     console.log('Current stock list length', counter);
-    while (counter > 0 && this.hasReachedBuyLimit()) {
+    while (counter > 0 && !this.hasReachedBuyLimit()) {
       do {
         stock = this.machineDaytradingService.getNextStock();
       } while (found(stock))
@@ -1554,7 +1554,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         this.changeStrategy();
         this.developStrategy();
       } else {
-        console.log('Enough ordrs added', this.addedOrdersCount, this.optionsOrderBuilderService.getTradingPairs().length);
+        console.log('Enough orders added', this.optionsOrderBuilderService.getTradingPairs().length, this.addedOrdersCount, this.cartService.buyOrders.length, this.cartService.otherOrders.length,  this.maxTradeCount);
       }
     }
   }
@@ -1616,7 +1616,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   hasReachedBuyLimit(maxTradeCount = this.maxTradeCount) {
-    return (this.optionsOrderBuilderService.getTradingPairs().length + this.addedOrdersCount + this.cartService.buyOrders.length + this.cartService.otherOrders.length) < maxTradeCount;
+    return (this.optionsOrderBuilderService.getTradingPairs().length + this.addedOrdersCount + this.cartService.buyOrders.length + this.cartService.otherOrders.length) >= maxTradeCount;
   }
 
   unsubscribeStockFinder() {
