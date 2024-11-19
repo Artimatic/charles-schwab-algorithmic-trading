@@ -99,19 +99,20 @@ export enum Strategy {
 }
 
 export enum RiskTolerance {
-  Zero = 0.01,
+  Zero = 0.009,
+  One = 0.01,
+  Two = 0.025,
   Lower = 0.05,
   Low = 0.1,
   ExtremeFear = 0.15,
-  Fear = 0.25,
-  Neutral = 0.5,
-  Greed = 0.75,
-  ExtremeGreed = 1,
-  XLGreed = 1.05,
-  XXLGreed = 1.1,
-  XXXLGreed = 1.25,
-  XXXXLGreed = 1.5,
-  XXXXXLGreed = 1.75,
+  Fear = 0.2,
+  Neutral = 0.25,
+  Greed = 0.5,
+  ExtremeGreed = 0.6,
+  XLGreed = 0.7,
+  XXLGreed = 0.8,
+  XXXLGreed = 0.9,
+  XXXXLGreed = 1
 }
 
 @Component({
@@ -176,13 +177,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   dayTradeRiskCounter = 0;
 
   riskToleranceList = [
+    RiskTolerance.Zero,
+    RiskTolerance.One,
+    RiskTolerance.Two,
+    RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.Low,
-    RiskTolerance.Low,
     RiskTolerance.ExtremeFear,
-    RiskTolerance.ExtremeFear,
-    RiskTolerance.Fear,
     RiskTolerance.Fear,
     RiskTolerance.Neutral,
     RiskTolerance.Greed
