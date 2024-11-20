@@ -54,7 +54,7 @@ export class CartService {
     }
     this.reportingService.addAuditLog(order.holding.symbol, log, reason);
 
-    if (!noDup && replaceAnyExistingOrders) {
+    if (!noDup && replaceAnyExistingOrders && order.quantity) {
       if (indices[0] > -1) {
         this.deleteBuy(this.buildOrder(order.holding.symbol, null, null, 'buy'));
       } else if (indices[1] > -1) {
