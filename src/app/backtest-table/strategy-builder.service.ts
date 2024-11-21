@@ -532,45 +532,6 @@ export class StrategyBuilderService {
     this.cartService.addToCart(order);
   }
 
-  addOptionOrder(symbol: string,
-    primaryLegSymbol: string,
-    putCallInd: 'C' | 'P',
-    price: number,
-    quantity,
-    side: 'Buy' | 'Sell') {
-    if (symbol === 'TQQQ') {
-      return null;
-    }
-
-    const order: SmartOrder = {
-      holding: {
-        instrument: null,
-        symbol,
-      },
-      quantity: quantity,
-      price,
-      submitted: false,
-      pending: false,
-      orderSize: 1,
-      side,
-      lossThreshold: -0.05,
-      profitTarget: 0.1,
-      trailingStop: -0.05,
-      useStopLoss: true,
-      useTrailingStopLoss: true,
-      useTakeProfit: true,
-      sellAtClose: false,
-      allocation: 0.05,
-      primaryLeg: {
-        symbol: primaryLegSymbol,
-        putCallInd
-      },
-      type: OrderTypes.options
-    };
-
-    this.cartService.addToCart(order);
-  }
-
   async buyProtectivePut(symbol, quantity) {
     const putOption = await this.getCallStrangleTrade(symbol, 65);
     const price = this.findOptionsPrice(putOption.put.bid, putOption.put.ask);

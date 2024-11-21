@@ -132,7 +132,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   destroy$ = new Subject();
   currentHoldings: PortfolioInfoHolding[] = [];
   strategyCounter = null;
-  maxTradeCount = 5;
+  maxTradeCount = 6;
   maxHoldings = 10;
   addedOrdersCount = 0;
   developedStrategy = false;
@@ -1099,9 +1099,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         quantity: Math.floor(targetBalance / callPrice) || 1,
         underlying: 'SPY'
       };
-      const option = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy', currentCall.quantity);
       const reason = 'Balance call put ratio';
-      this.cartService.addOptionOrder('SPY', [option.primaryLegs[0]], callPrice, option.primaryLegs[0].quantity, OrderTypes.call, 'Buy', reason);
+      this.cartService.addOptionOrder(currentCall.underlying, [currentCall.call], callPrice, currentCall.quantity || 1, OrderTypes.call, 'Buy', reason);
     } else if (results.call / results.put > 2) {
       await this.trimHoldings();
     }

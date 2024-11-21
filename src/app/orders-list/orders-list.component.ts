@@ -1,4 +1,5 @@
-import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, AfterContentChecked, Component, OnDestroy, OnInit } from '@angular/core';
+
 import { CartService } from '@shared/services/cart.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -20,6 +21,10 @@ export class OrdersListComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.refresh();
+  }
+
+  ngAfterContentChecked() {
+    this.ref.detectChanges();
   }
 
   refresh() {
