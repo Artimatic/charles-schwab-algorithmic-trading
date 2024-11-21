@@ -365,7 +365,7 @@ export class CartService {
       null, executeImmediately);
     if (order && order.primaryLegs) {
       console.log('Adding option order for', symbol, primaryLegs, price, quantity, optionType, side, reason);
-      this.addToCart(order, true, reason);
+      this.addToCart(order, side.toLowerCase() === 'sell', reason);
     } else {
       console.log('Invalid option order', symbol, primaryLegs, price, quantity, optionType, side, order, reason);
     }

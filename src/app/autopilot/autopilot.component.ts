@@ -614,7 +614,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       return Boolean(this.currentHoldings.find((value) => value.name === name));
     };
     let counter = this.machineDaytradingService.getCurrentStockList().length;
-    console.log('Current stock list length', counter);
     while (counter > 0 && !this.hasReachedBuyLimit()) {
       do {
         stock = this.machineDaytradingService.getNextStock();
@@ -1031,7 +1030,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (backtestResults && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL')) {
       console.log('Backtest recommendation', backtestResults.recommendation);
 
-      this.increaseDayTradeRiskTolerance();
       this.increaseDayTradeRiskTolerance();
       await this.trimHoldings();
     } else {
@@ -1547,11 +1545,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async padOrders(startTime, endTime) {
-    if (moment().isAfter(moment(endTime).add(6, 'hours')) ||
+    if (moment().isAfter(moment(endTime).add(3, 'hours')) ||
       moment().isBefore(moment(startTime).subtract(1, 'hours'))) {
       if (!this.hasReachedBuyLimit()) {
         this.changeStrategy();
         this.developStrategy();
+      } else {
+        console.log('Reached order limit', this.optionsOrderBuilderService.getTradingPairs().length + this.addedOrdersCount + this.cartService.buyOrders.length + this.cartService.otherOrders.length, this.maxTradeCount);
       }
     }
   }
