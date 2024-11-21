@@ -364,10 +364,10 @@ export class CartService {
       optionType, side,
       null, executeImmediately);
     if (order && order.primaryLegs) {
-      console.log('Adding option order for', symbol, primaryLegs, price, quantity, optionType, side);
+      console.log('Adding option order for', symbol, primaryLegs, price, quantity, optionType, side, reason);
       this.addToCart(order, true, reason);
     } else {
-      console.log('Invalid option order', symbol, primaryLegs, price, quantity, optionType, side, order);
+      console.log('Invalid option order', symbol, primaryLegs, price, quantity, optionType, side, order, reason);
     }
   }
 

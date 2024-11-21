@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 
 import { PriceTargetService } from './price-target.service';
-import { BacktestService, CartService, PortfolioService } from '@shared/services';
+import { BacktestService, CartService, PortfolioService, ReportingService } from '@shared/services';
 import { OptionsOrderBuilderService } from '../options-order-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { of } from 'rxjs';
@@ -12,6 +12,7 @@ describe('PriceTargetService', () => {
   const orderHandlingServiceSpy = jasmine.createSpyObj('OrderHandlingService', ['getEstimatedPrice']);
   const portfolioServiceSpy = jasmine.createSpyObj('PortfolioService', ['getTdPortfolio']);
   const backtestServiceSpy = jasmine.createSpyObj('BacktestService', ['getLastPriceTiingo']);
+  const reportingServiceSpy = jasmine.createSpyObj('ReportingService', ['addAuditLog']);
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -21,7 +22,8 @@ describe('PriceTargetService', () => {
         { provide: CartService, useValue: cartServiceSpy },
         { provide: PortfolioService, useValue: portfolioServiceSpy },
         { provide: OptionsOrderBuilderService, useValue: {} },
-        { provide: OrderHandlingService, useValue: orderHandlingServiceSpy }
+        { provide: OrderHandlingService, useValue: orderHandlingServiceSpy },
+        { provide: ReportingService, useValue: reportingServiceSpy }
       ]
     });
     service = TestBed.inject(PriceTargetService);
