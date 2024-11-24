@@ -92,8 +92,8 @@ export class SchedulerService {
     }, timeout);
   }
 
-  addTask(taskName, cb, timeout = 0, executionTime = 0) {
-    this.scheduledTasks.push({ taskName, taskCb: cb, timeout, executionTime});
+  addTask(name: string, cb, timeout = 0, executionTime = 0) {
+    this.scheduledTasks.push({ taskName: name, taskCb: cb, timeout, executionTime});
   }
 
   executeTask() {
