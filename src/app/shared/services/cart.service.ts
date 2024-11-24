@@ -10,6 +10,7 @@ import { Options } from '@shared/models/options';
 import { ReportingService } from './reporting.service';
 import { MachineLearningService } from './machine-learning/machine-learning.service';
 import { GlobalSettingsService } from 'src/app/settings/global-settings.service';
+import { SchedulerService } from '@shared/service/scheduler.service';
 
 @Injectable()
 export class CartService {
@@ -22,7 +23,10 @@ export class CartService {
     private portfolioService: PortfolioService,
     private tradeService: TradeService,
     private reportingService: ReportingService,
-    private messageService: MessageService) { }
+    private messageService: MessageService,
+    private machineLearningService: MachineLearningService,
+    private globalSettingsService: GlobalSettingsService,
+    private schedulerService: SchedulerService) { }
 
   addToCart(order: SmartOrder, replaceAnyExistingOrders = false, reason = '') {
     order.createdTime = moment().format();
@@ -145,6 +149,16 @@ export class CartService {
   }
 
   addOrder(order: SmartOrder) {
+    const mlTask = () => {
+      this.machineLearningService
+        .trainDaytrade(order.holding.symbol.toUpperCase(),
+          moment().add({ days: 1 }).format('YYYY-MM-DD'),
+          moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
+          1,
+          this.globalSettingsService.daytradeAlgo
+        ).subscribe();
+    };
+    this.schedulerService.addTask('Order ml', mlTask);
     switch (order.side.toLowerCase()) {
       case 'sell':
         this.sellOrders.push(order);
@@ -359,8 +373,8 @@ export class CartService {
     primaryLegs: Options[], price: number,
     quantity: number, optionType,
     side = 'Buy', reason: string = '', executeImmediately = false) {
-    const order = this.createOptionOrder(symbol, primaryLegs, 
-      price, quantity, 
+    const order = this.createOptionOrder(symbol, primaryLegs,
+      price, quantity,
       optionType, side,
       null, executeImmediately);
     if (order && order.primaryLegs) {
