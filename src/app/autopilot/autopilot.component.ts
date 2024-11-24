@@ -30,6 +30,7 @@ import { FindPatternService } from '../strategies/find-pattern.service';
 import { AddOptionsTradeComponent } from './add-options-trade/add-options-trade.component';
 import { FindDaytradeService } from './find-daytrade.service';
 import { PriceTargetService } from './price-target.service';
+import { SchedulerService } from '@shared/service/scheduler.service';
 
 export interface PositionHoldings {
   name: string;
@@ -243,7 +244,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private optionsOrderBuilderService: OptionsOrderBuilderService,
     private daytradeService: DaytradeService,
     private portfolioMgmtService: PortfolioMgmtService,
-    private priceTargetService: PriceTargetService
+    private priceTargetService: PriceTargetService,
+    private schedulerService: SchedulerService
   ) { }
 
   ngOnInit(): void {
@@ -371,7 +373,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 25) {
           this.lastCredentialCheck = moment();
           await this.backtestOneStock(true, false);
-          this.padOrders(startStopTime.startDateTime, startStopTime.endDateTime);
+          if (!this.schedulerService.executeTask()) {
+            this.padOrders(startStopTime.startDateTime, startStopTime.endDateTime);
+          }
         } else if (moment().isAfter(moment(startStopTime.endDateTime).subtract(8, 'minutes')) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
           if (!this.boughtAtClose) {
@@ -1550,8 +1554,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       if (!this.hasReachedBuyLimit()) {
         this.changeStrategy();
         this.developStrategy();
-      } else {
-        console.log('Reached order limit', this.optionsOrderBuilderService.getTradingPairs().length + this.addedOrdersCount + this.cartService.buyOrders.length + this.cartService.otherOrders.length, this.maxTradeCount);
       }
     }
   }

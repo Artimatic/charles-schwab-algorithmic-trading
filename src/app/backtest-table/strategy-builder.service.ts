@@ -11,6 +11,7 @@ import { SwingtradeStrategiesService } from '../strategies/swingtrade-strategies
 import { Indicators } from '@shared/stock-backtest.interface';
 import { MessageService } from 'primeng/api';
 import { AlwaysBuy } from '../rh-table/backtest-stocks.constant';
+import { SchedulerService } from '@shared/service/scheduler.service';
 
 export interface ComplexStrategy {
   state: 'assembling' | 'assembled' | 'disassembling' | 'disassembled';
@@ -34,6 +35,7 @@ export class StrategyBuilderService {
     private portfolioService: PortfolioService,
     private messageService: MessageService,
     private swingtradeStrategiesService: SwingtradeStrategiesService,
+    private schedulerService: SchedulerService,
     private cartService: CartService) { }
 
   getRecentBacktest(symbol: string = null) {
@@ -142,6 +144,7 @@ export class StrategyBuilderService {
       return tableObj;
     } catch (error) {
       console.log(`Backtest table error ${symbol}`, new Date().toString(), error);
+      this.schedulerService.schedule('Rebacktest', () => this.getBacktestData(symbol));
     }
     return null;
   }
@@ -245,7 +248,7 @@ export class StrategyBuilderService {
       }
     }
     if (!potentialStrangle.put) {
-      console.log('Unable to find put for', symbol, optionsData);
+      console.log('Unable to find put for', symbol, potentialStrangle, optionsData);
     }
     return potentialStrangle;
   }

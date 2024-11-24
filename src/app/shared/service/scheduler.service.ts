@@ -91,4 +91,18 @@ export class SchedulerService {
       }
     }, timeout);
   }
+
+  addTask(taskName, cb, timeout = 0, executionTime = 0) {
+    this.scheduledTasks.push({ taskName, taskCb: cb, timeout, executionTime});
+  }
+
+  executeTask() {
+    if (this.scheduledTasks.length) {
+      const task = this.scheduledTasks.shift();
+      console.log('Executing', task.taskName);
+      task.taskCb();
+      return true;
+    }
+    return false;
+  }
 }
