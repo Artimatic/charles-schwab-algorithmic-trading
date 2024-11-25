@@ -1,5 +1,5 @@
 import * as _ from 'lodash';
-import { Indicators, DaytradeRecommendation } from './backtest.constants';
+import { Indicators, DaytradeRecommendation, OrderType } from './backtest.constants';
 import DecisionService from '../mean-reversion/reversion-decision.service';
 
 class AlgoService {
@@ -99,7 +99,47 @@ class AlgoService {
     return DaytradeRecommendation.Neutral;
   }
 
-  checkMfiDivergence(mfiPrevious: number, mfi: number, roc10Previous: number, roc10: number): DaytradeRecommendation {
+  checkMfiDivergence(indicators: Indicators[]): DaytradeRecommendation {
+    if (!indicators) {
+      return DaytradeRecommendation.Neutral;
+    }
+    return indicators.reduce((previous, current) => {
+      if (current.recommendation.mfiLow === DaytradeRecommendation.Bullish ||
+        current.recommendation.mfiLow === DaytradeRecommendation.Bearish) {
+        previous.mfiLow = current.recommendation.mfiLow;
+      }
+
+      if (current.bband80 && current.bband80[1] && current.bband80[1][0]) {
+        const change = DecisionService.getPercentChange(close, current.bband80[1][0]);
+        if (change > 0 && change < 0.1) {
+          previous.bband = DaytradeRecommendation.Bullish;
+        } else if (change < 0 && change < 0.1) {
+          previous.bband = DaytradeRecommendation.Bearish;
+        }
+      }
+
+      if (current.open > current.close) {
+        previous.downCloseCount++;
+      } else {
+        previous.upCloseCount++;
+      }
+
+      if (previous.upCloseCount < previous.downCloseCount && previous.bband === DaytradeRecommendation.Bearish && previous.mfiLow === DaytradeRecommendation.Bearish) {
+        previous.recommendation = DaytradeRecommendation.Bearish;
+      } else if (previous.upCloseCount < previous.downCloseCount && previous.bband === DaytradeRecommendation.Bullish && previous.mfiLow === DaytradeRecommendation.Bullish) {
+        previous.recommendation = DaytradeRecommendation.Bullish;
+      }
+      return previous;
+    }, {
+      mfiLow: DaytradeRecommendation.Neutral,
+      bband: DaytradeRecommendation.Neutral,
+      downCloseCount: 0,
+      upCloseCount: 0,
+      recommendation: DaytradeRecommendation.Neutral
+    }).recommendation;
+  }
+
+  checkMfiDivergence2(mfiPrevious: number, mfi: number, roc10Previous: number, roc10: number): DaytradeRecommendation {
     const mfiChange = Math.abs(DecisionService.getPercentChange(mfi, mfiPrevious));
     const roc10Change = Math.abs(DecisionService.getPercentChange(roc10, roc10Previous));
     if (mfiChange > 0.18 && roc10Change > 0.1) {
@@ -161,6 +201,35 @@ class AlgoService {
 
   checkBBandBreakout(isBreakout) {
     return isBreakout ? DaytradeRecommendation.Bullish : DaytradeRecommendation.Neutral;
+  }
+
+  determineFinalRecommendation(indicators: Indicators[]): OrderType {
+    if (!indicators) {
+      return OrderType.None;
+    }
+    const minCount = indicators.length / 5;
+
+    return indicators.reduce((previous, current) => {
+      const recommendations = current.recommendation;
+      for (let rec in recommendations) {
+        if (recommendations[rec] === DaytradeRecommendation.Bullish) {
+          previous.bullishCounter++;
+        } else if (recommendations[rec] === DaytradeRecommendation.Bearish) {
+          previous.bearishCounter++;
+        }
+      }
+
+      if (previous.bullishCounter > minCount && previous.bullishCounter > previous.bearishCounter) {
+        previous.recommendation = OrderType.Buy;
+      } else if (previous.bearishCounter > minCount && previous.bullishCounter < previous.bearishCounter) {
+        previous.recommendation = OrderType.Sell;
+      }
+      return previous;
+    }, {
+      bullishCounter: 0,
+      bearishCounter: 0,
+      recommendation: OrderType.None
+    }).recommendation;
   }
 }
 

@@ -39,7 +39,7 @@ export class CartService {
       }
     }
 
-    let log = `Adding order ${order.side} ${order.quantity} ${order.holding.symbol}`;
+    let log = `Adding order ${order.side} ${order.quantity} ${order.holding.symbol} ${reason}`;
     if (order.primaryLeg) {
       log += `Primary leg: ${order.side} ${order.primaryLeg.quantity} ${order.primaryLeg.symbol} `;
     }

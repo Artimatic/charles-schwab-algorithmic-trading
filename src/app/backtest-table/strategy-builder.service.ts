@@ -71,7 +71,7 @@ export class StrategyBuilderService {
       return Promise.resolve(recentBacktest);
     }
     const current = moment().format('YYYY-MM-DD');
-    const start = moment().subtract(365, 'days').format('YYYY-MM-DD');
+    const start = moment().subtract(250, 'days').format('YYYY-MM-DD');
 
     try {
       const results = await this.backtestService.getBacktestEvaluation(symbol, start, current, 'daily-indicators').toPromise();
@@ -183,7 +183,7 @@ export class StrategyBuilderService {
     let potentialStrangle = { call: null, put: null };
     let expiration = minExpiration;
 
-    while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 5) {
+    while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 6) {
       expiration++;
       let strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
       potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
@@ -222,7 +222,7 @@ export class StrategyBuilderService {
     let potentialStrangle = { call: null, put: null };
     let expiration = minExpiration;
     
-    while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 5) {
+    while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 6) {
       expiration++;
       if (optionsChain.monthlyStrategyList) {
         const strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);

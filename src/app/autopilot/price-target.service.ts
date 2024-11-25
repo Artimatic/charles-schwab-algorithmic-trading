@@ -13,7 +13,6 @@ export class PriceTargetService {
   constructor(private backtestService: BacktestService,
     private portfolioService: PortfolioService,
     private cartService: CartService,
-    private optionsOrderBuilderService: OptionsOrderBuilderService,
     private orderHandlingService: OrderHandlingService,
     private reportingService: ReportingService
   ) { }
