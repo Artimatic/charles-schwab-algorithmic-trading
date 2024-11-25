@@ -332,7 +332,7 @@ class BacktestService {
             indicator,
             idx > 0 ? indicators[idx - 1] : null, false);
 
-          orderType = recommendation.recommendation;          
+          orderType = recommendation.recommendation;
           indicator.recommendation = recommendation;
         }
         orders = this.calcTrade(orders, indicator, orderType, avgPrice);
@@ -423,7 +423,7 @@ class BacktestService {
     recommendations.mfiTrade = mfiTradeRec;
     recommendations.vwma = vwmaRecommendation;
     recommendations.bbandBreakout = bbandBreakoutRecommendation;
-    
+
     return recommendations;
   }
 
@@ -508,7 +508,8 @@ class BacktestService {
         } else {
           const recommendation: Recommendation = recommendationFn(indicator.close,
             indicator,
-            idx > 0 ? indicators[idx - 1] : null);
+            idx > 0 ? indicators[idx - 1] : null,
+            indicators.slice(idx - 20, idx));
 
           orderType = recommendation.recommendation;
           indicator.recommendation = recommendation;
@@ -518,121 +519,21 @@ class BacktestService {
               indicator.recommendation.mfi === DaytradeRecommendation.Bullish) {
               isMfiLowIdx = idx;
             } else if (isMfiLowIdx > -1 && (idx - isMfiLowIdx) < 45) {
-              indicator.recommendation.mfiTrade = indicators.slice(idx - 20, idx).reduce((previous, current) => {
-                if (previous.lowestLow === -1) {
-                  previous.lowestLow = current.close;
-                } else if (current.low < previous.lowestLow && current.mfiLeft > 38) {
-                  previous.lowestLow = current.close;
-                  previous.newLows++;
-                }
+              if (indicators[idx - 5].mfiLeft < indicators[idx - 4].mfiLeft && indicators[idx - 4].mfiLeft < indicators[idx - 1].mfiLeft &&
+                indicators[idx - 5].mfiLeft < indicators[idx - 3].mfiLeft &&
+                indicators[idx - 5].open > indicators[idx - 5].close && indicators[idx - 4].open < indicators[idx - 4].close && indicators[idx - 3].open < indicators[idx - 3].close) {
+                indicator.recommendation.mfiTrade = indicators.slice(idx - 20, idx).reduce((previous, current) => {
+                  if (previous.lowestLow === -1) {
+                    previous.lowestLow = current.close;
+                  } else if (current.low < previous.lowestLow && current.mfiLeft > 38) {
+                    previous.lowestLow = current.close;
+                    previous.newLows++;
+                  }
 
-                if (current.recommendation.demark9 === DaytradeRecommendation.Bullish ||
-                  current.recommendation.demark9 === DaytradeRecommendation.Bearish) {
-                  previous.demark = current.recommendation.demark9;
-                }
-                if (current.recommendation.bband === DaytradeRecommendation.Bullish ||
-                  current.recommendation.bband === DaytradeRecommendation.Bearish) {
-                  previous.bband = current.recommendation.bband;
-                }
-                if (current.recommendation.macd === DaytradeRecommendation.Bullish ||
-                  current.recommendation.macd === DaytradeRecommendation.Bearish) {
-                  previous.macd = current.recommendation.macd;
-                }
-
-                if (previous.bband === DaytradeRecommendation.Bullish && (previous.demark === DaytradeRecommendation.Bullish &&
-                  previous.macd === DaytradeRecommendation.Bullish) &&
-                  (previous.newLows <= 3)
-                ) {
-                  previous.recommendation = DaytradeRecommendation.Bullish;
-                }
-                return previous;
-              }, {
-                lowestLow: -1,
-                newLows: 0,
-                demark: DaytradeRecommendation.Neutral,
-                bband: DaytradeRecommendation.Neutral,
-                macd: DaytradeRecommendation.Neutral,
-                recommendation: DaytradeRecommendation.Neutral
-              }).recommendation;
-              indicator.recommendation.recommendation = indicator.recommendation.mfiTrade === DaytradeRecommendation.Bullish ? OrderType.Buy : OrderType.None;
-            } else if (indicator.recommendation.mfi === DaytradeRecommendation.Bearish) {
-              isMfiHighIdx = idx;
-            } else if (isMfiHighIdx > -1 && (idx - isMfiHighIdx) < 45) {
-              indicator.recommendation.mfiTrade = indicators.slice(idx - 20, idx).reduce((previous, current) => {
-                if (previous.highestHigh === -1) {
-                  previous.highestHigh = current.close;
-                } else if (current.high > previous.highestHigh && current.mfiLeft < 61) {
-                  previous.highestHigh = current.close;
-                  previous.newHighs++;
-                }
-
-                if (current.recommendation.demark9 === DaytradeRecommendation.Bullish ||
-                  current.recommendation.demark9 === DaytradeRecommendation.Bearish) {
-                  previous.demark = current.recommendation.demark9;
-                }
-                if (current.recommendation.bband === DaytradeRecommendation.Bullish ||
-                  current.recommendation.bband === DaytradeRecommendation.Bearish) {
-                  previous.bband = current.recommendation.bband;
-                }
-                if (current.recommendation.macd === DaytradeRecommendation.Bullish ||
-                  current.recommendation.macd === DaytradeRecommendation.Bearish) {
-                  previous.macd = current.recommendation.macd;
-                }
-
-                if (previous.bband === DaytradeRecommendation.Bearish && (previous.demark === DaytradeRecommendation.Bearish &&
-                  previous.macd === DaytradeRecommendation.Bearish) &&
-                  previous.newHighs <= 3
-                ) {
-                  previous.recommendation = DaytradeRecommendation.Bearish;
-                }
-                return previous;
-              }, {
-                highestHigh: -1,
-                newHighs: 0,
-                demark: DaytradeRecommendation.Neutral,
-                bband: DaytradeRecommendation.Neutral,
-                macd: DaytradeRecommendation.Neutral,
-                recommendation: DaytradeRecommendation.Neutral
-              }).recommendation;
-              indicator.recommendation.recommendation = indicator.recommendation.mfiTrade === DaytradeRecommendation.Bearish ? OrderType.Sell : OrderType.None;
-            }
-
-            // 2020-07-02T05:00:00.000+0000b
-            if (indicators[idx - 6].mfiLeft < indicators[idx - 5].mfiLeft && indicators[idx - 5].mfiLeft < indicators[idx - 1].mfiLeft &&
-              indicators[idx - 5].mfiLeft < indicators[idx - 3].mfiLeft && 
-              (indicators[idx - 6].open > indicators[idx - 6].close && indicators[idx - 5].open < indicators[idx - 5].close && indicators[idx - 3].open < indicators[idx - 3].close && indicators[idx - 1].open < indicators[idx - 1].close)) {
-              indicator.recommendation.mfiDivergence  = indicators.slice(idx - 15, idx).reduce((previous, current) => {
-                if (current.recommendation.bband === DaytradeRecommendation.Bullish ||
-                  current.recommendation.bband === DaytradeRecommendation.Bearish) {
-                  previous.bband = current.recommendation.bband;
-                }
-                if (current.recommendation.macd === DaytradeRecommendation.Bullish ||
-                  current.recommendation.macd === DaytradeRecommendation.Bearish) {
-                  previous.macd = current.recommendation.macd;
-                }
-
-                if (current.recommendation.mfi === DaytradeRecommendation.Bullish ||
-                  current.recommendation.mfi === DaytradeRecommendation.Bearish) {
-                  previous.mfi = current.recommendation.mfi;
-                }
-
-                if (previous.bband === DaytradeRecommendation.Bearish || previous.bband === DaytradeRecommendation.Bullish ||
-                   previous.mfi === DaytradeRecommendation.Bearish || previous.mfi === DaytradeRecommendation.Bullish ||
-                  previous.macd === DaytradeRecommendation.Bearish || previous.macd === DaytradeRecommendation.Bullish) {
-                  previous.recommendation = DaytradeRecommendation.Bullish;
-                }
-                return previous;
-              }, {
-                mfi: DaytradeRecommendation.Neutral,
-                bband: DaytradeRecommendation.Neutral,
-                macd: DaytradeRecommendation.Neutral,
-                recommendation: DaytradeRecommendation.Neutral
-              }).recommendation;
-              indicator.recommendation.recommendation = indicator.recommendation.mfiDivergence === DaytradeRecommendation.Bullish ? OrderType.Buy : OrderType.None;
-            } else if (indicators[idx - 6].mfiLeft > indicators[idx - 5].mfiLeft && indicators[idx - 5].mfiLeft > indicators[idx - 1].mfiLeft &&
-              indicators[idx - 5].mfiLeft > indicators[idx - 3].mfiLeft && 
-              (indicators[idx - 6].open < indicators[idx - 6].close && indicators[idx - 5].open > indicators[idx - 5].close && indicators[idx - 3].open > indicators[idx - 3].close && indicators[idx - 1].open > indicators[idx - 1].close)) {
-                indicator.recommendation.mfiDivergence  = indicators.slice(idx - 15, idx).reduce((previous, current) => {
+                  if (current.recommendation.demark9 === DaytradeRecommendation.Bullish ||
+                    current.recommendation.demark9 === DaytradeRecommendation.Bearish) {
+                    previous.demark = current.recommendation.demark9;
+                  }
                   if (current.recommendation.bband === DaytradeRecommendation.Bullish ||
                     current.recommendation.bband === DaytradeRecommendation.Bearish) {
                     previous.bband = current.recommendation.bband;
@@ -641,26 +542,70 @@ class BacktestService {
                     current.recommendation.macd === DaytradeRecommendation.Bearish) {
                     previous.macd = current.recommendation.macd;
                   }
-  
-                  if (current.recommendation.mfi === DaytradeRecommendation.Bullish ||
-                    current.recommendation.mfi === DaytradeRecommendation.Bearish) {
-                    previous.mfi = current.recommendation.mfi;
-                  }
-  
-                  if (previous.bband === DaytradeRecommendation.Bearish || previous.bband === DaytradeRecommendation.Bullish ||
-                     previous.mfi === DaytradeRecommendation.Bearish || previous.mfi === DaytradeRecommendation.Bullish ||
-                    previous.macd === DaytradeRecommendation.Bearish || previous.macd === DaytradeRecommendation.Bullish) {
-                    previous.recommendation = DaytradeRecommendation.Bearish;
+
+                  if (previous.bband === DaytradeRecommendation.Bullish && (previous.demark === DaytradeRecommendation.Bullish &&
+                    previous.macd === DaytradeRecommendation.Bullish) &&
+                    (previous.newLows <= 3)
+                  ) {
+                    previous.recommendation = DaytradeRecommendation.Bullish;
                   }
                   return previous;
                 }, {
-                  mfi: DaytradeRecommendation.Neutral,
+                  lowestLow: -1,
+                  newLows: 0,
+                  demark: DaytradeRecommendation.Neutral,
                   bband: DaytradeRecommendation.Neutral,
                   macd: DaytradeRecommendation.Neutral,
                   recommendation: DaytradeRecommendation.Neutral
                 }).recommendation;
-              indicator.recommendation.recommendation = indicator.recommendation.mfiDivergence === DaytradeRecommendation.Bearish ? OrderType.Sell : OrderType.None;
+                indicator.recommendation.recommendation = indicator.recommendation.mfiTrade === DaytradeRecommendation.Bullish ? OrderType.Buy : OrderType.None;
+              }
+            } else if (indicator.recommendation.mfi === DaytradeRecommendation.Bearish) {
+              isMfiHighIdx = idx;
+            } else if (isMfiHighIdx > -1 && (idx - isMfiHighIdx) < 45) {
+              if (indicators[idx - 5].mfiLeft > indicators[idx - 4].mfiLeft && indicators[idx - 4].mfiLeft > indicators[idx - 3].mfiLeft &&
+                indicators[idx - 5].mfiLeft > indicators[idx - 2].mfiLeft &&
+                indicators[idx - 5].open < indicators[idx - 5].close && indicators[idx - 4].open > indicators[idx - 4].close && indicators[idx - 3].open > indicators[idx - 3].close) {
+                indicator.recommendation.mfiTrade = indicators.slice(idx - 20, idx).reduce((previous, current) => {
+                  if (previous.highestHigh === -1) {
+                    previous.highestHigh = current.close;
+                  } else if (current.high > previous.highestHigh && current.mfiLeft < 61) {
+                    previous.highestHigh = current.close;
+                    previous.newHighs++;
+                  }
+
+                  if (current.recommendation.demark9 === DaytradeRecommendation.Bullish ||
+                    current.recommendation.demark9 === DaytradeRecommendation.Bearish) {
+                    previous.demark = current.recommendation.demark9;
+                  }
+                  if (current.recommendation.bband === DaytradeRecommendation.Bullish ||
+                    current.recommendation.bband === DaytradeRecommendation.Bearish) {
+                    previous.bband = current.recommendation.bband;
+                  }
+                  if (current.recommendation.macd === DaytradeRecommendation.Bullish ||
+                    current.recommendation.macd === DaytradeRecommendation.Bearish) {
+                    previous.macd = current.recommendation.macd;
+                  }
+
+                  if (previous.bband === DaytradeRecommendation.Bearish && (previous.demark === DaytradeRecommendation.Bearish &&
+                    previous.macd === DaytradeRecommendation.Bearish) &&
+                    previous.newHighs <= 3
+                  ) {
+                    previous.recommendation = DaytradeRecommendation.Bearish;
+                  }
+                  return previous;
+                }, {
+                  highestHigh: -1,
+                  newHighs: 0,
+                  demark: DaytradeRecommendation.Neutral,
+                  bband: DaytradeRecommendation.Neutral,
+                  macd: DaytradeRecommendation.Neutral,
+                  recommendation: DaytradeRecommendation.Neutral
+                }).recommendation;
+                indicator.recommendation.recommendation = indicator.recommendation.mfiTrade === DaytradeRecommendation.Bearish ? OrderType.Sell : OrderType.None;
+              }
             }
+            // 2020-07-02T05:00:00.000+0000b
           }
         }
 
@@ -1266,8 +1211,8 @@ class BacktestService {
       .then(macd => {
         currentQuote.macd = macd;
         return Promise.all([
-          this.getMacd(indicators.reals.slice(0, indicators.reals.length - 1), 12, 26, 9), 
-          this.getMacd(indicators.reals.slice(0, indicators.reals.length - 2), 12, 26, 9), 
+          this.getMacd(indicators.reals.slice(0, indicators.reals.length - 1), 12, 26, 9),
+          this.getMacd(indicators.reals.slice(0, indicators.reals.length - 2), 12, 26, 9),
           this.getMacd(indicators.reals.slice(0, indicators.reals.length - 3), 12, 26, 9)
         ]);
       })
@@ -1322,7 +1267,7 @@ class BacktestService {
       .then((mfiPrevious) => {
         const len = mfiPrevious[0].length - 1;
         currentQuote.mfiPrevious = _.round(mfiPrevious[0][len], 3);
-        return BBandBreakoutService.isBreakout(indicators.reals, currentQuote.mfiPrevious, 
+        return BBandBreakoutService.isBreakout(indicators.reals, currentQuote.mfiPrevious,
           currentQuote.mfiLeft, currentQuote.bband80, bbandPeriod);
       })
       .then((bbandBreakout) => {
@@ -1781,7 +1726,7 @@ class BacktestService {
       });
   }
 
-  getAllRecommendations(price: number, indicator: Indicators, previousIndicator: Indicators): Recommendation {
+  getAllRecommendations(price: number, indicator: Indicators, previousIndicator: Indicators, allIndicators: Indicators[]): Recommendation {
     const recommendations: Recommendation = {
       recommendation: OrderType.None,
       mfi: DaytradeRecommendation.Neutral,
@@ -1809,25 +1754,33 @@ class BacktestService {
       AlgoService.getLowerBBand(indicator.bband80), AlgoService.getUpperBBand(indicator.bband80));
 
     recommendations.vwma = AlgoService.checkVwma(price, indicator.vwma);
-    let counter = {
-      bullishCounter: 0,
-      bearishCounter: 0
-    };
+    recommendations.mfiDivergence2 = AlgoService.checkMfiDivergence(allIndicators);
 
-    for (let rec in recommendations) {
-      if (recommendations[rec] === DaytradeRecommendation.Bullish) {
-        counter.bullishCounter++;
-      } else if (recommendations[rec] === DaytradeRecommendation.Bearish) {
-        counter.bearishCounter++;
+    recommendations.mfiDivergence2 = AlgoService.checkMfiDivergence2(indicator.mfiPrevious, indicator.mfiLeft, indicator.roc10Previous, indicator.roc10);
+    
+    if (allIndicators) {
+      recommendations.recommendation = AlgoService.determineFinalRecommendation(allIndicators);
+    } else {
+      let counter = {
+        bullishCounter: 0,
+        bearishCounter: 0
+      };
+      
+      for (let rec in recommendations) {
+        if (recommendations[rec] === DaytradeRecommendation.Bullish) {
+          counter.bullishCounter++;
+        } else if (recommendations[rec] === DaytradeRecommendation.Bearish) {
+          counter.bearishCounter++;
+        }
       }
-    }
-
-    if (recommendations.vwma === DaytradeRecommendation.Bullish && counter.bullishCounter > 1 && counter.bullishCounter > counter.bearishCounter) {
-      recommendations.recommendation = OrderType.Buy;
-    } else if (counter.bullishCounter > 2 && counter.bullishCounter > counter.bearishCounter) {
-      recommendations.recommendation = OrderType.Buy;
-    } else if (counter.bearishCounter > 1 && counter.bearishCounter > counter.bullishCounter) {
-      recommendations.recommendation = OrderType.Sell;
+  
+      if (recommendations.vwma === DaytradeRecommendation.Bullish && counter.bullishCounter > 1 && counter.bullishCounter > counter.bearishCounter) {
+        recommendations.recommendation = OrderType.Buy;
+      } else if (counter.bullishCounter > 2 && counter.bullishCounter > counter.bearishCounter) {
+        recommendations.recommendation = OrderType.Buy;
+      } else if (counter.bearishCounter > 1 && counter.bearishCounter > counter.bullishCounter) {
+        recommendations.recommendation = OrderType.Sell;
+      }
     }
 
     return recommendations;

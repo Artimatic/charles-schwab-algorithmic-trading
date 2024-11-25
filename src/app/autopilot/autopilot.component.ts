@@ -1259,7 +1259,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       const name = stock.ticker;
       try {
         const backtestResults = await this.strategyBuilderService.getBacktestData(name);
-        if (backtestResults && backtestResults.ml !== null && (backtestResults.ml < 0.5 && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL'))) {
+        if (backtestResults && backtestResults.ml !== null && (backtestResults.ml < 0.3 && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL'))) {
           const msg = `Sell ${name}, date: ${moment().format()}`;
           this.messageService.add({ severity: 'error', summary: 'Sell alert', detail: msg, life: 21600000 });
           console.log(msg);
