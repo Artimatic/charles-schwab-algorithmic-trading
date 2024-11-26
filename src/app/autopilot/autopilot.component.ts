@@ -816,7 +816,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         console.log('Backtest error', error);
       }
     });
-    this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
   }
 
   getTechnicalIndicators(stock: string, startDate: string, currentDate: string) {
@@ -1079,8 +1078,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
   }
 
-  async checkIfOverBalance() {
-    const balance = await this.portfolioService.getTdBalance().toPromise();
+  async checkIfOverBalance(balance = null) {
+    if (!balance) {
+      balance = await this.portfolioService.getTdBalance().toPromise();
+    }
     const isOverBalance = Boolean(Number(balance.cashBalance) < 0);
     if (isOverBalance) {
       this.currentHoldings = await this.cartService.findCurrentPositions();
@@ -1578,10 +1579,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (isOpened) {
       if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 15) {
         this.lastOptionsCheckCheck = moment();
+        const balance = await this.portfolioService.getTdBalance().toPromise();
+
         this.currentHoldings = await this.cartService.findCurrentPositions();
         await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
-        await this.priceTargetService.checkProfitTarget(this.currentHoldings);
-        await this.checkIfOverBalance();
+        if (balance.cashBalance / balance.liquidationValue < 0.6) {
+          await this.priceTargetService.checkProfitTarget(this.currentHoldings);
+        }
+        await this.checkIfOverBalance(balance);
         await this.balanceCallPutRatio(this.currentHoldings);
       } else {
         this.executeOrderList();
