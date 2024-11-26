@@ -44,6 +44,10 @@ export class AppComponent implements OnInit, AfterViewInit {
         routerLink: '/'
       },
       {
+        label: 'Backtesting',
+        routerLink: '/research'
+      },
+      {
         label: 'Additional Options',
         items: [{
           label: 'Machine Learning',
@@ -58,11 +62,8 @@ export class AppComponent implements OnInit, AfterViewInit {
         {
           label: 'Daytrade Backtest',
           routerLink: '/backtest'
-        },
-        {
-          label: 'Backtesting',
-          routerLink: '/research'
-        }]
+        }
+      ]
       },
       {
         label: 'Export Logs',

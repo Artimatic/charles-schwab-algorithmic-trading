@@ -13,9 +13,9 @@ class AlgoService {
 
   checkVwma(lastClose: number, vwma: number): DaytradeRecommendation {
     if (_.isNumber(lastClose) && _.isNumber(vwma)) {
-      if (lastClose >= vwma) {
+      if (lastClose < vwma) {
         return DaytradeRecommendation.Bullish;
-      } if (lastClose < vwma) {
+      } else {
         return DaytradeRecommendation.Bearish;
       }
     }
@@ -212,9 +212,8 @@ class AlgoService {
     if (!indicators.length) {
       return OrderType.None;
     }
-    const minCount = indicators.length / 5;
 
-    return indicators.reduce((previous, current) => {
+    return indicators.slice(-5).reduce((previous, current) => {
       const recommendations = current.recommendation;
       for (let rec in recommendations) {
         if (recommendations[rec] === DaytradeRecommendation.Bullish) {
@@ -224,9 +223,9 @@ class AlgoService {
         }
       }
 
-      if (previous.bullishCounter > minCount && previous.bullishCounter > previous.bearishCounter) {
+      if (previous.bullishCounter > 9 && previous.bullishCounter > previous.bearishCounter) {
         previous.recommendation = OrderType.Buy;
-      } else if (previous.bearishCounter > minCount && previous.bullishCounter < previous.bearishCounter) {
+      } else if (previous.bearishCounter > 9 && previous.bullishCounter < previous.bearishCounter) {
         previous.recommendation = OrderType.Sell;
       }
       return previous;
