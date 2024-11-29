@@ -71,7 +71,7 @@ export class StrategyBuilderService {
       return Promise.resolve(recentBacktest);
     }
     const current = moment().format('YYYY-MM-DD');
-    const start = moment().subtract(250, 'days').format('YYYY-MM-DD');
+    const start = moment().subtract(185, 'days').format('YYYY-MM-DD');
 
     try {
       const results = await this.backtestService.getBacktestEvaluation(symbol, start, current, 'daily-indicators').toPromise();
@@ -380,11 +380,11 @@ export class StrategyBuilderService {
       const pairs = tradingPairs[key];
       const bObj = backtests[key];
       if (bObj !== undefined && bObj !== null && bObj.ml !== null) {
-        if ((!bObj.optionsChainLength || bObj.optionsChainLength > 10) && (bObj.buySignals.length > bObj.sellSignals.length || bObj.recommendation.toLowerCase() === 'strongbuy')) {
+        if (bObj.buySignals.length > bObj.sellSignals.length || bObj.recommendation.toLowerCase() === 'strongbuy') {
           if (bObj.ml > 0.5) {
             for (const pairVal of pairs) {
               if (pairVal !== null && backtests[pairVal.symbol] && backtests[pairVal.symbol].ml !== null && (!backtests[pairVal.symbol].optionsChainLength || backtests[pairVal.symbol].optionsChainLength > 10)) {
-                if (backtests[pairVal.symbol].ml < 0.5 && (bObj.sellSignals.length > bObj.buySignals.length || bObj.recommendation.toLowerCase() === 'strongsell')) {
+                if (backtests[pairVal.symbol].ml < 0.5 && (backtests[pairVal.symbol].recommendation.toLowerCase() === 'strongsell')) {
                   const trade = {
                     name: `${bObj.stock} Pair trade`,
                     date: moment().format(),
@@ -393,7 +393,8 @@ export class StrategyBuilderService {
                     strategy: {
                       buy: [bObj.stock],
                       sell: [pairVal.symbol]
-                    }
+                    },
+                    reason: 'pair'
                   };
                   this.addTradingStrategy(trade);
                 }

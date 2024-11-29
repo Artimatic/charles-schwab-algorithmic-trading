@@ -38,7 +38,7 @@
         <div *ngIf="display">
             <p-tag value="Active"></p-tag>
         </div>
-        <span *ngIf="strategyList[strategyCounter] === 'Daytrade'">
+        <span *ngIf="daytradeMode">
             <!-- <app-ai-picks></app-ai-picks> -->
             <app-daytrade-active-search></app-daytrade-active-search>
         </span>
@@ -71,4 +71,7 @@
         pTooltip="Day trade allocation - percentage of total bp"></p-tag>
     <p-tag pTooltip="Swing trade allocation - percentage of cash balance" [value]="riskToleranceList[riskCounter]"
         severity="danger"></p-tag>
+    <label for="daytrade-switch">Daytrade mode</label>
+    <p-inputSwitch inputId="daytrade-switch" [(ngModel)]="daytradeMode"></p-inputSwitch>
+
 </ng-template>

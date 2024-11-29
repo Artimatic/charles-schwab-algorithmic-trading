@@ -4,6 +4,7 @@ export interface PotentialTrade {
     name: string;
     type: string;
     key: string;
+    reason: string;
 }
 
 export interface Strategy {
