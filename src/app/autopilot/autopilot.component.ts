@@ -223,6 +223,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   startButtonOptions: MenuItem[];
   tradingPairs: SmartOrder[][] = [];
   manualStart = false;
+  daytradeMode = false;
+  isLive = false;
+
   constructor(
     private portfolioService: PortfolioService,
     private backtestService: BacktestService,
@@ -374,7 +377,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.lastCredentialCheck = moment();
           await this.backtestOneStock(true, false);
           if (!this.schedulerService.executeTask()) {
-            this.padOrders(startStopTime.startDateTime, startStopTime.endDateTime);
+            if (this.isLive) {
+              this.findDaytradeService.getRefreshObserver().next(true);
+            } else {
+              this.padOrders(startStopTime.startDateTime, startStopTime.endDateTime);
+            }
           }
         } else if (moment().isAfter(moment(startStopTime.endDateTime).subtract(8, 'minutes')) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
@@ -503,6 +510,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     console.log(msg);
     this.reportingService.addAuditLog(null, msg);
+
+    if (this.strategyList[this.strategyCounter] === 'Daytrade') {
+      this.daytradeMode = true;
+    }
 
     if (saveOption) {
       const profitObj: ProfitLossRecord = {
@@ -1575,8 +1586,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async handleIntraday() {
-    const isOpened = await this.isMarketOpened();
-    if (isOpened) {
+    this.isLive = await this.isMarketOpened();
+    if (this.isLive) {
       if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 15) {
         this.lastOptionsCheckCheck = moment();
         const balance = await this.portfolioService.getTdBalance().toPromise();
