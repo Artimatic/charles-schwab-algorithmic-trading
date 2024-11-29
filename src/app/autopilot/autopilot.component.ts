@@ -400,7 +400,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
               this.resetCart();
               this.developStrategy();
               this.boughtAtClose = false;
-            }, 10800000);
+            }, 1200000);
           }
 
           this.boughtAtClose = true;
