@@ -100,11 +100,10 @@ export class SchedulerService {
   executeTask() {
     if (this.scheduledTasks.length) {
       const task = this.scheduledTasks.shift();
-      console.log('Executing', task.taskName, task);
       if (typeof task.taskCb === 'function') {
         task.taskCb();
       } else {
-        
+        console.log('Failed to execute', task);
       }
       return true;
     }
