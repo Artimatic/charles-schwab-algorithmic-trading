@@ -143,7 +143,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     Strategy.BuyWinners,
     Strategy.InverseDispersion,
     Strategy.BuyMfiTrade,
-    Strategy.SellMfiTrade,
+    // Strategy.SellMfiTrade,
     Strategy.Swingtrade,
     // Strategy.SingleStockPick,
     // Strategy.StateMachine,
@@ -156,14 +156,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     Strategy.Short,
     // Strategy.DaytradeFullList,
     Strategy.BuyCalls,
-    Strategy.InverseStrategies,
+    // Strategy.InverseStrategies,
     Strategy.BuyMfiDiv,
-    Strategy.SellMfiDiv,
+    // Strategy.SellMfiDiv,
     Strategy.BuySnP,
     Strategy.BuyMfi,
     Strategy.BuyBband,
-    Strategy.SellMfi,
-    Strategy.SellBband
+    // Strategy.SellMfi,
+    // Strategy.SellBband
     //Strategy.None
   ];
 
