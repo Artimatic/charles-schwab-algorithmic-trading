@@ -93,19 +93,14 @@ export class SchedulerService {
   }
 
   addTask(name: string, cb, timeout = 0, executionTime = 0) {
-    console.log('Add task', name, cb);
     this.scheduledTasks.push({ taskName: name, taskCb: cb, timeout, executionTime});
   }
 
   executeTask() {
     if (this.scheduledTasks.length) {
       const task = this.scheduledTasks.shift();
-      console.log('Executing', task.taskName, task);
-      if (typeof task.taskCb === 'function') {
-        task.taskCb();
-      } else {
-        
-      }
+      console.log('Executing', task.taskName);
+      task.taskCb();
       return true;
     }
     return false;
