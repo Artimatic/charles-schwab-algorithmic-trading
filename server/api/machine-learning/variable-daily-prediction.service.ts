@@ -14,11 +14,11 @@ import { patternFinderService } from './pattern-finder.service';
 const mlServiceUrl = configurations.apps.armadillo;
 
 class VariableDailyPredicationService extends PredictionService {
-  modelName = 'dailymodel2024-03-06';
+  modelName = 'dailymodel2024-12-02';
   foundPatterns = [];
 
   constructor() {
-    super(2, 0.01);
+    super(2, 0.001);
   }
 
   setOutputRange(range: number) {
