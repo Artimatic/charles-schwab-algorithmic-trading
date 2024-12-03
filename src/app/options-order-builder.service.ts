@@ -60,8 +60,9 @@ export class OptionsOrderBuilderService {
 
   getTradeHashValue(arr: SmartOrder[]) {
     const str = arr.reduce((acc: string, val: SmartOrder) => {
-      if (!val.holding) {
+      if (!val || !val.holding) {
         console.log('Data missing from', val);
+        return acc;
       }
       return acc + val.holding.symbol;
     }, '');
@@ -143,6 +144,9 @@ export class OptionsOrderBuilderService {
     minCashAllocation: number,
     maxCashAllocation: number,
     addToList = true) {
+    if (minCashAllocation === maxCashAllocation) {
+      minCashAllocation = 0;
+    }
     for (const buy of buyList) {
       const buyOptionsData = await this.optionsDataService.getImpliedMove(buy).toPromise();
       if (buyOptionsData && buyOptionsData.move && buyOptionsData.move < this.maxImpliedMovement) {
@@ -156,7 +160,7 @@ export class OptionsOrderBuilderService {
             underlying: buy
           };
           let currentPut = null;
-          if (callPrice > 200 && callPrice < 8000) {
+          if (callPrice > 200 && callPrice < 8000 && callPrice >= minCashAllocation && callPrice <= maxCashAllocation) {
             for (const sell of sellList) {
               if (!currentHoldings || !currentHoldings.find(holding => holding.name === sell)) {
                 const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);

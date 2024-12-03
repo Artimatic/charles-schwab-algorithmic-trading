@@ -11,7 +11,7 @@ router.get('/activate', MachineLearningController.activateV2Model);
 router.post('/activate-at-close-model', MachineLearningController.activateBuyAtCloseModel);
 router.get('/activation-data', MachineLearningController.getDailyActivationData);
 router.get('/current-activation-data', MachineLearningController.getCurrentIntradayActivationData);
-router.get('/v3/train', MachineLearningController.trainV3);
+router.get('/v3/train-intraday', MachineLearningController.trainV3);
 router.get('/v3/train-daily', MachineLearningController.trainDailyV3);
 router.get('/v3/activate', MachineLearningController.activateV3);
 router.get('/v3/quotes', MachineLearningController.getQuotes);

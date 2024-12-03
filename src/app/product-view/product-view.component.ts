@@ -440,7 +440,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
           y: close,
           marker: {
             symbol: 'diamond',
-            fillColor: 'green',
+            fillColor: 'blue',
             radius: radius
           },
           name: '<br><h6>AI Buy</h6><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
