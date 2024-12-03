@@ -11,7 +11,7 @@ class DailyPredicationService extends PredictionService {
   modelName = 'model2020-04-02';
 
   constructor() {
-    super(2, 0.001);
+    super(3, 0.001);
   }
 
   getModelName(featureUse) {
