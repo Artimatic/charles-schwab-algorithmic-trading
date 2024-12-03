@@ -18,7 +18,7 @@ class VariableDailyPredicationService extends PredictionService {
   foundPatterns = [];
 
   constructor() {
-    super(2, 0.001);
+    super(3, 0.001);
   }
 
   setOutputRange(range: number) {
