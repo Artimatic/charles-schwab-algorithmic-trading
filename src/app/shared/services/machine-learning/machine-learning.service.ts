@@ -46,7 +46,7 @@ export class MachineLearningService {
     if (features) {
       options.params.features = String(features);
     }
-    return this.http.get<MLResult[]>(`${BASE_URL}api/machine-learning/v3/train`,
+    return this.http.get<MLResult[]>(`${BASE_URL}api/machine-learning/v3/train-intraday`,
       options);
   }
 

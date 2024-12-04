@@ -1144,7 +1144,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     const price = await this.portfolioService.getPrice(buySymbol).toPromise();
     const balance = await this.portfolioService.getTdBalance().toPromise();
-    const allocation = backtestData?.ml || 0.01;
+    const allocation = backtestData.ml < 0.5 ? backtestData.ml : this.riskToleranceList[this.riskCounter];
     const cash = (balance.cashBalance < balance.availableFunds * 0.01) ? balance.cashBalance : balance.cashBalance * allocation;
     const quantity = this.strategyBuilderService.getQuantity(price, 1, cash);
     const order = this.cartService.buildOrderWithAllocation(buySymbol, quantity, price, 'Buy',
@@ -1274,10 +1274,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           const msg = `Sell ${name}, date: ${moment().format()}`;
           this.messageService.add({ severity: 'error', summary: 'Sell alert', detail: msg, life: 21600000 });
           console.log(msg);
-          const cash = await this.cartService.getAvailableFunds(false);
-          const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
-          const minCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
-          this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [name], minCash, maxCash);
+          const cash = await this.getMinMaxCashForOptions();
+
+          this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [name], cash.minCash, cash.maxCash);
 
         }
       } catch (error) {
@@ -1399,10 +1398,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async inverseStrategies() {
     const inverse = async (symbol: string, prediction: number, backtestData: any) => {
       if (prediction > 0.8 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
-        const cash = await this.cartService.getAvailableFunds(false);
-        const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
-        const minCash = round(this.riskToleranceList[0] * cash, 2);
-        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [symbol], minCash, maxCash);
+        const cash = await this.getMinMaxCashForOptions();
+
+        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [symbol], cash.minCash, cash.maxCash);
       } else if ((prediction < 0.4 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
         const stock: PortfolioInfoHolding = {
           name: symbol,
@@ -1513,20 +1511,18 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async buyCallsOrPuts(optionsType = 'calls') {
     const findCalls = async (symbol: string, prediction: number, backtestData: any) => {
       if (prediction > 0.7 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
-        const cash = await this.cartService.getAvailableFunds(false);
-        const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
-        const minCash = round(this.riskToleranceList[0] * cash, 2);
-        const option = await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, [symbol], [symbol], minCash, maxCash);
+        const cash = await this.getMinMaxCashForOptions();
+
+        const option = await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, [symbol], [symbol], cash.minCash, cash.maxCash);
         this.optionsOrderBuilderService.addTradingPairs([option[0]]);
       }
     };
 
     const findPuts = async (symbol: string, prediction: number, backtestData: any) => {
       if (prediction < 0.3 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
-        const cash = await this.cartService.getAvailableFunds(false);
-        const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
-        const minCash = round(this.riskToleranceList[0] * cash, 2);
-        const option = await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, [symbol], [symbol], minCash, maxCash);
+        const cash = await this.getMinMaxCashForOptions();
+
+        const option = await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, [symbol], [symbol], cash.minCash, cash.maxCash);
         this.optionsOrderBuilderService.addTradingPairs([option[0]]);
       }
     };
@@ -1614,10 +1610,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async placePairOrders() {
-    const cash = await this.cartService.getAvailableFunds(false);
-    const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
-    const minCash = round(this.riskToleranceList[1] * cash, 2);
-    await this.optionsOrderBuilderService.createTradingPair(this.currentHoldings, minCash, maxCash);
+    const cash = await this.getMinMaxCashForOptions();
+
+    await this.optionsOrderBuilderService.createTradingPair(this.currentHoldings, cash.minCash, cash.maxCash);
     this.addTradingPairOrders();
   }
 
