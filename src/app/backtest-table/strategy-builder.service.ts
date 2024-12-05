@@ -112,7 +112,7 @@ export class StrategyBuilderService {
         console.log('Error training', error);
         latestMlResult = await this.aiPicksService.trainAndActivate(symbol);
       }
-
+      this.aiPicksService.mlNeutralResults.next(latestMlResult);
       const tableObj = {
         recommendation: indicatorResults.recommendation,
         stock: indicatorResults.stock,
