@@ -18,7 +18,6 @@ import { Subscription, Observable, Subject } from 'rxjs';
 import { DailyBacktestService } from '@shared/daily-backtest.service';
 import { AiPicksService } from '@shared/services/ai-picks.service';
 import { ReportingService } from '@shared/services/reporting.service';
-import { ClientSmsService } from '@shared/services/client-sms.service';
 import { SchedulerService } from '@shared/service/scheduler.service';
 
 export interface Algo {
@@ -58,7 +57,6 @@ export interface BacktestResponse extends Stock {
 })
 export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
   @Input() data: AlgoParam[];
-  @Input() displayedColumns: string[];
 
   selectedRecommendation: string[];
   stockList: Stock[] = [];
@@ -115,7 +113,6 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
     private dailyBacktestService: DailyBacktestService,
     private aiPicksService: AiPicksService,
     private reportingService: ReportingService,
-    private clientSmsService: ClientSmsService,
     private schedulerService: SchedulerService,
     private machineLearningService: MachineLearningService,
     private portfolioService: PortfolioService) { }

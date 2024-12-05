@@ -31,6 +31,7 @@ import { AddOptionsTradeComponent } from './add-options-trade/add-options-trade.
 import { FindDaytradeService } from './find-daytrade.service';
 import { PriceTargetService } from './price-target.service';
 import { SchedulerService } from '@shared/service/scheduler.service';
+import { AlgoEvaluationService } from '../algo-evaluation/algo-evaluation.service';
 
 export interface PositionHoldings {
   name: string;
@@ -100,7 +101,7 @@ export enum Strategy {
 }
 
 export enum RiskTolerance {
-  Zero = 0.009,
+  Zero = 0.005,
   One = 0.01,
   Two = 0.025,
   Lower = 0.05,
@@ -248,7 +249,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private daytradeService: DaytradeService,
     private portfolioMgmtService: PortfolioMgmtService,
     private priceTargetService: PriceTargetService,
-    private schedulerService: SchedulerService
+    private schedulerService: SchedulerService,
+    private algoEvaluationService: AlgoEvaluationService
   ) { }
 
   ngOnInit(): void {
@@ -295,6 +297,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     ];
 
     this.multibuttonOptions = [
+      {
+        label: 'Backtest',
+        command: () => {
+          this.algoEvaluationService.openDialog();
+        }
+      },
       {
         label: 'Add strangle',
         command: () => {
@@ -468,6 +476,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const msg = `Decrease risk to ${this.riskToleranceList[this.riskCounter]}`;
     console.log(msg);
     this.reportingService.addAuditLog(this.strategyList[this.strategyCounter], msg);
+    this.saveRisk();
   }
 
   decreaseDayTradeRiskTolerance() {
@@ -494,6 +503,24 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
   }
 
+  saveRisk() {
+    const profitObj: ProfitLossRecord = {
+      'date': moment().format(),
+      profit: 0,
+      lastStrategy: this.strategyList[this.strategyCounter],
+      lastRiskTolerance: this.riskCounter,
+      profitRecord: {}
+    };
+    const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
+    if (lastProfitLoss && lastProfitLoss.profit) {
+      profitObj.date = lastProfitLoss.date;
+      profitObj.profit = lastProfitLoss.profit;
+      profitObj.profitRecord = lastProfitLoss.profitRecord;
+    }
+
+    localStorage.setItem('profitLoss', JSON.stringify(profitObj));
+  }
+
   changeStrategy(saveOption = false) {
     if (this.strategyCounter < this.strategyList.length - 1) {
       this.strategyCounter++;
@@ -515,21 +542,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
 
     if (saveOption) {
-      const profitObj: ProfitLossRecord = {
-        'date': moment().format(),
-        profit: 0,
-        lastStrategy: this.strategyList[this.strategyCounter],
-        lastRiskTolerance: this.riskCounter,
-        profitRecord: {}
-      };
-      const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
-      if (lastProfitLoss && lastProfitLoss.profit) {
-        profitObj.date = lastProfitLoss.date;
-        profitObj.profit = lastProfitLoss.profit;
-        profitObj.profitRecord = lastProfitLoss.profitRecord;
-      }
-
-      localStorage.setItem('profitLoss', JSON.stringify(profitObj));
+      this.saveRisk();
     }
   }
 

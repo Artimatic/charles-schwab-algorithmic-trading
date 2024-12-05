@@ -108,13 +108,8 @@ export class OrderHandlingService {
             const hasSellPotential = this.daytradeStrategiesService.isPotentialSell(analysis);
             if (hasBuyPotential || hasSellPotential) {
               const startTime = new Date().valueOf();
-              let mlResult = {
-                nextOutput: 0,
-                guesses: 0,
-                correct: 0,
-                score: 0
-              };
-              if (!this.skipMl) {
+              let mlResult = null;
+              if (!this.skipMl || symbol === 'SPY' || symbol === 'QQQ') {
                 try {
                   mlResult = await this.machineLearningService.activate(symbol,
                     this.globalSettingsService.daytradeAlgo).toPromise();
@@ -131,6 +126,13 @@ export class OrderHandlingService {
                   console.log(error);
                   this.trainIntradayModel(analysis, symbol);
                 }
+              } else {
+                mlResult = {
+                  nextOutput: hasBuyPotential ? 1 : 0,
+                  guesses: 0,
+                  correct: 0,
+                  score: 0
+                };
               }
 
               const queueItem: AlgoQueueItem = {

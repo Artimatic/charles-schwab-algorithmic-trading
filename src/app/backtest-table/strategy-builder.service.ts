@@ -27,7 +27,7 @@ export class StrategyBuilderService {
   correlationThreshold = 0.55;
   sumNet = 0;
   countNet = 0;
-  defaultMinExpiration = 39;
+  defaultMinExpiration = 55;
 
   constructor(private backtestService: BacktestService,
     private aiPicksService: AiPicksService,

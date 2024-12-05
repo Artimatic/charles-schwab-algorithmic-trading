@@ -1,0 +1,59 @@
+<p-table [columns]="selectedColumns" [value]="currentList" [paginator]="true" [rows]="10" selectionMode="single"
+  [(selection)]="selectedStock" dataKey="stock">
+  <ng-template pTemplate="caption">
+  </ng-template>
+  <ng-template pTemplate="header" let-columns>
+    <tr>
+      <th *ngFor="let col of columns" [pSortableColumn]="col.field" pResizableColumn pReorderableColumn>
+        {{col.header}}
+        <p-sortIcon [field]="col.field"></p-sortIcon>
+      </th>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="body" let-element let-columns="columns">
+    <tr [pSelectableRow]="element">
+      <td *ngFor="let col of selectedColumns" [ngSwitch]="col.field" class="table-cell">
+        <span *ngSwitchCase="'returns'">
+          {{element[col.field] | percent}}
+        </span>
+        <span *ngSwitchCase="'lastVolume'">
+          {{element.lastVolume | number}}
+        </span>
+        <span *ngSwitchCase="'lastPrice'">
+          {{element.lastVolume | currency}}
+        </span>
+        <span *ngSwitchCase="'impliedMovement'">
+          {{element?.impliedMovement | percent}}
+        </span>
+        <span *ngSwitchCase="'previousImpliedMovement'">
+          {{element?.previousImpliedMovement | percent}}
+        </span>
+        <span *ngSwitchCase="'kellyCriterion'">
+          <button pButton color="primary" *ngIf=!element.kellyCriterion (click)="getKellyCriterion(element)">Get
+            Allocation</button>
+          <span *ngIf=element.kellyCriterion>{{element.kellyCriterion}}</span>
+        </span>
+        <span *ngSwitchCase="'ml'">
+          <div [ngClass]="{'bullish-title': element.ml >= 0.5, 'bearish-title': element.ml < 0.5 }">
+            {{element.ml}}
+          </div>
+        </span>
+        <span *ngSwitchDefault>
+          <div [ngClass]="{'bullish-title': element[col.field] === 'STRONGBUY', 'bearish-title': element[col.field] === 'STRONGSELL' }">
+            {{element[col.field]}}
+          </div>
+        </span>
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="emptymessage" let-columns>
+    <tr class="empty-table">
+      <td [attr.colspan]="columns.length + 1">
+        No stocks found
+      </td>
+    </tr>
+  </ng-template>
+  <ng-template pTemplate="summary">
+
+  </ng-template>
+</p-table>

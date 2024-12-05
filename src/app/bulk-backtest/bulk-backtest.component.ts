@@ -10,12 +10,10 @@ import { AlgoParam, Row } from '../shared';
 })
 export class BulkBacktestComponent implements OnInit {
   public stocks: AlgoParam[] = [];
-  headers: Array<string>;
 
   constructor() {}
 
   ngOnInit() {
-    this.headers = ['stock', 'totalReturns', 'lastVolume', 'lastPrice', 'totalTrades', 'trending'];
   }
 
   import(event) {

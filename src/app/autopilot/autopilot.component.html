@@ -35,12 +35,13 @@
         </div>
     </div>
     <div class="p-toolbar">
-        <div *ngIf="display">
-            <p-tag value="Active"></p-tag>
-        </div>
         <span *ngIf="daytradeMode">
             <!-- <app-ai-picks></app-ai-picks> -->
             <app-daytrade-active-search></app-daytrade-active-search>
+        </span>
+        <span *ngIf="!daytradeMode">
+            <!-- <app-ai-picks></app-ai-picks> -->
+            <app-algo-evaluation></app-algo-evaluation>
         </span>
     </div>
     <div class="p-toolbar-group-right">
@@ -67,9 +68,9 @@
     <span *ngIf="strategyList[strategyCounter] !== 'Daytrade'">
         <p-tag [value]="strategyList[strategyCounter]" pTooltip="Current strategy" severity="danger"></p-tag>
     </span>
-    <p-tag [value]="dayTradingRiskToleranceList[dayTradeRiskCounter]" severity="warning"
+    <p-tag [value]="dayTradingRiskToleranceList[dayTradeRiskCounter] * 100 +'%'" severity="warning"
         pTooltip="Day trade allocation - percentage of total bp"></p-tag>
-    <p-tag pTooltip="Swing trade allocation - percentage of cash balance" [value]="riskToleranceList[riskCounter]"
+    <p-tag pTooltip="Swing trade allocation - percentage of cash balance" [value]="riskToleranceList[riskCounter] * 100 +'%'"
         severity="danger"></p-tag>
     <label for="daytrade-switch">Daytrade mode</label>
     <p-inputSwitch inputId="daytrade-switch" [(ngModel)]="daytradeMode"></p-inputSwitch>
