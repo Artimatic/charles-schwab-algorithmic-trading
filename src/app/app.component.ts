@@ -111,7 +111,6 @@ export class AppComponent implements OnInit, AfterViewInit {
 
     this.backtestService.pingArmidillo().subscribe(
       (data: ServiceStatus) => {
-        console.log('ml service:', data);
         if (data) {
           switch (data.status) {
             case 'UP':

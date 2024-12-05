@@ -90,6 +90,7 @@ import { AddOptionsTradeComponent } from './autopilot/add-options-trade/add-opti
 import { DaytradeActiveSearchComponent } from './autopilot/daytrade-active-search/daytrade-active-search.component';
 import { StockListDialogComponent } from './stock-list-dialog/stock-list-dialog.component';
 import { SimulationChartComponent } from './simulation/simulation-chart/simulation-chart.component';
+import { AlgoEvaluationModule } from './algo-evaluation/algo-evaluation.module';
 
 @NgModule({
   declarations: [
@@ -172,7 +173,8 @@ import { SimulationChartComponent } from './simulation/simulation-chart/simulati
     ToolbarModule,
     TooltipModule,
     RippleModule,
-    TabMenuModule
+    TabMenuModule,
+    AlgoEvaluationModule
   ],
   providers: [
     BacktestService,

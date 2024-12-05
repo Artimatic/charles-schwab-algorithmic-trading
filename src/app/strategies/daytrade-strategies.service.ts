@@ -46,11 +46,17 @@ export class DaytradeStrategiesService extends BaseStrategiesService {
   }
 
   isPotentialBuy(analysis: Recommendation) {
-    return this.hasRecommendations(analysis);
+    if (analysis.recommendation.toLowerCase() === 'buy') {
+      return true;
+    }
+    return false;
   }
 
   isPotentialSell(analysis: Recommendation) {
-    return this.hasRecommendations(analysis);
+    if (analysis.recommendation.toLowerCase() === 'sell') {
+      return true;
+    }
+    return false;
   }
 
   getName(analysis: Recommendation) {
