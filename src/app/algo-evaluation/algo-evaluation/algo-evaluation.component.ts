@@ -37,10 +37,10 @@ export class AlgoEvaluationComponent implements OnInit {
       }
     }
     this.currentList = this.stockList.filter(stock => {
-      if ((stock.ml === null || stock.ml === undefined || stock?.ml >= 0.5) &&(stock.recommendation.toLowerCase() === 'buy' || stock.recommendation.toLowerCase() === 'strongbuy')) {
+      if ((stock?.ml >= 0.5) &&(stock.recommendation.toLowerCase() === 'buy' || stock.recommendation.toLowerCase() === 'strongbuy')) {
         stock.recommendation = 'Buy';
         return true;
-      } else if (((stock.ml === null || stock.ml === undefined || stock?.ml < 0.5)) && (stock.recommendation.toLowerCase() === 'sell' || stock.recommendation.toLowerCase() === 'strongsell')) {
+      } else if ((stock.ml === 0 || stock?.ml < 0.5) && (stock.recommendation.toLowerCase() === 'sell' || stock.recommendation.toLowerCase() === 'strongsell')) {
         stock.recommendation = 'Sell';
         return true;
       }
