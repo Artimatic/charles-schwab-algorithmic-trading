@@ -141,28 +141,28 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   tradingPairsCounter = 0;
   strategyList = [
     Strategy.Default,
-    Strategy.BuyWinners,
-    Strategy.InverseDispersion,
-    Strategy.BuyMfiTrade,
-    // Strategy.SellMfiTrade,
     Strategy.Swingtrade,
+    Strategy.InverseDispersion,
+    // Strategy.SellMfiTrade,
     // Strategy.SingleStockPick,
     // Strategy.StateMachine,
     // Strategy.InverseSwingtrade,
     //Strategy.DaytradeShort,
     // Strategy.TradingPairs,
     Strategy.BuyML,
-    Strategy.Daytrade,
-    Strategy.TrimHoldings,
-    Strategy.Short,
-    // Strategy.DaytradeFullList,
     Strategy.BuyCalls,
-    // Strategy.InverseStrategies,
+    Strategy.Daytrade,
     Strategy.BuyMfiDiv,
-    // Strategy.SellMfiDiv,
+    Strategy.TrimHoldings,
     Strategy.BuySnP,
+    Strategy.BuyWinners,
+    Strategy.BuyMfiTrade,
+    // Strategy.DaytradeFullList,
+    // Strategy.InverseStrategies,
+    // Strategy.SellMfiDiv,
     Strategy.BuyMfi,
-    Strategy.BuyBband,
+    Strategy.Short,
+    Strategy.BuyBband
     // Strategy.SellMfi,
     // Strategy.SellBband
     //Strategy.None
@@ -562,7 +562,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.checkPersonalLists();
     await this.hedge();
     const balance = await this.machineDaytradingService.getPortfolioBalance().toPromise();
-    if (balance.liquidationValue < 28000) {
+    if (balance.liquidationValue < 26000) {
       await this.getNewTrades(null, null, 3);
       return;
     }
