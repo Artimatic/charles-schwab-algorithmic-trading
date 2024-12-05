@@ -495,6 +495,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const msg = `Increase risk to ${this.riskToleranceList[this.riskCounter]}`;
     console.log(msg);
     this.reportingService.addAuditLog(this.strategyList[this.strategyCounter], msg);
+    this.saveRisk();
   }
 
   increaseDayTradeRiskTolerance() {
