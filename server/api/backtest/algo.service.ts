@@ -254,9 +254,9 @@ class AlgoService {
         }
       }
 
-      if (previous.bullishCounter > 9 && previous.bullishCounter > previous.bearishCounter) {
+      if (previous.bullishCounter > 9 && previous.bearishCounter < 3) {
         previous.recommendation = OrderType.Buy;
-      } else if (previous.bearishCounter > 9 && previous.bullishCounter < previous.bearishCounter) {
+      } else if (previous.bearishCounter > 9 && previous.bullishCounter < 3) {
         previous.recommendation = OrderType.Sell;
       }
       return previous;
