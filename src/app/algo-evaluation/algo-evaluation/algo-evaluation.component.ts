@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { AiPicksService } from '@shared/services';
 import { Stock } from '@shared/stock.interface';
 
 @Component({
@@ -12,25 +13,39 @@ export class AlgoEvaluationComponent implements OnInit {
     { field: 'buySignals', header: 'Buy' },
     { field: 'sellSignals', header: 'Sell' },
     { field: 'recommendation', header: 'Recommendation' },
-    { field: 'ml', header: 'Prediction' },
-    { field: 'returns', header: 'Returns' },
-    { field: 'impliedMovement', header: 'Implied Movement' },
-    { field: 'lastPrice', header: 'Last Price' }
+    { field: 'impliedMovement', header: 'Implied Movement' }
   ];
   selectedStock: any;
   currentList: Stock[] = [];
   stockList: Stock[] = [];
 
-  constructor() { }
+  constructor(private aiPicksService: AiPicksService) { }
 
   ngOnInit(): void {
+    this.getBacktests();
+
+    this.aiPicksService.mlNeutralResults.subscribe(() => {
+      this.getBacktests();
+    });
+  }
+
+  getBacktests() {
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     if (savedBacktest) {
       for (const saved in savedBacktest) {
         this.stockList.push(savedBacktest[saved]);
       }
     }
-    this.currentList = this.stockList;
+    this.currentList = this.stockList.filter(stock => {
+      if ((stock.ml === null || stock.ml === undefined || stock?.ml >= 0.5) &&(stock.recommendation.toLowerCase() === 'buy' || stock.recommendation.toLowerCase() === 'strongbuy')) {
+        stock.recommendation = 'Buy';
+        return true;
+      } else if (((stock.ml === null || stock.ml === undefined || stock?.ml < 0.5)) && (stock.recommendation.toLowerCase() === 'sell' || stock.recommendation.toLowerCase() === 'strongsell')) {
+        stock.recommendation = 'Sell';
+        return true;
+      }
+      return false;
+    });
   }
 
 }

@@ -33,13 +33,8 @@
             Allocation</button>
           <span *ngIf=element.kellyCriterion>{{element.kellyCriterion}}</span>
         </span>
-        <span *ngSwitchCase="'ml'">
-          <div [ngClass]="{'bullish-title': element.ml >= 0.5, 'bearish-title': element.ml < 0.5 }">
-            {{element.ml}}
-          </div>
-        </span>
         <span *ngSwitchDefault>
-          <div [ngClass]="{'bullish-title': element[col.field] === 'STRONGBUY', 'bearish-title': element[col.field] === 'STRONGSELL' }">
+          <div [ngClass]="{'bullish-title': element[col.field] === 'Buy', 'bearish-title': element[col.field] === 'Sell' }">
             {{element[col.field]}}
           </div>
         </span>
