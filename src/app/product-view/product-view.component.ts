@@ -3,7 +3,7 @@ import * as moment from 'moment';
 
 import { BacktestService } from '../shared';
 import { ChartParam } from '../shared/services/backtest.service';
-import { AiPicksService } from '@shared/services';
+import { AiPicksService, MachineLearningService } from '@shared/services';
 import { AiPicksPredictionData } from '@shared/services/ai-picks.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -24,7 +24,8 @@ export class ProductViewComponent implements OnInit, OnDestroy {
   constructor(
     private algo: BacktestService,
     private aiPicksService: AiPicksService,
-    private chartService: ChartService
+    private chartService: ChartService,
+    private machineLearningService: MachineLearningService
   ) { }
 
   ngOnInit() {
@@ -42,7 +43,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
           algorithm: 'daily-indicators',
           symbol: predictionData.stock,
           date: predictionData.date
-        }, predictions);
+        });
       });
 
     this.algo.currentChart.subscribe((chart: ChartParam) => {
@@ -72,7 +73,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
           break;
         }
         case 'all': {
-          this.loadDefaultChart(chart, null);
+          this.loadMLChart(chart);
           break;
         }
         default: {
@@ -185,7 +186,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
       const signal = this.buildSignal(day.action, day.close, day.volume, '');
       seriesData.push(signal);
 
-     this.chart = this.chartService.initChart(symbol, time, seriesData);
+      this.chart = this.chartService.initChart(symbol, time, seriesData);
     });
   }
 
@@ -226,29 +227,49 @@ export class ProductViewComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadMLChart(data: ChartParam, predictionData = {}) {
-    const defaultPeriod = 500;
-    data.algorithm = 'daily-indicators';
-    this.resolving = true;
-    const currentDate = moment(data.date).format('YYYY-MM-DD');
-    const pastDate = moment(data.date).subtract(defaultPeriod, 'days').format('YYYY-MM-DD');
+  loadMLChart(data: ChartParam) {
+    const endDate = moment().format('YYYY-MM-DD');
+    const startDate = moment(endDate).subtract({ day: 365 }).format('YYYY-MM-DD');
+    this.machineLearningService.trainPredictDailyV4(data.symbol,
+      endDate,
+      startDate,
+      0.7,
+      null,
+      10,
+      0.001
+    )
+      .subscribe((data) => {
+        const prediction = {
+          stock: data.symbol,
+          algorithm: 10,
+          prediction: data[0].nextOutput,
+          accuracy: null,
+          predictionHistory: data[0].predictionHistory
+        };
 
-    this.algo.getBacktestEvaluation(data.symbol, pastDate, currentDate, data.algorithm)
-      .map(result => {
-        if (result.signals > defaultPeriod) {
-          result.signals = result.signals.slice(result.signals.length - defaultPeriod, result.signals.length);
-        }
-        this.initMlResults(data.symbol, result, result.signals, predictionData);
-      })
-      .subscribe(
-        response => {
-          this.stock = data.symbol;
-          this.resolving = false;
-        },
-        err => {
-          this.resolving = false;
-        }
-      );
+        const defaultPeriod = 500;
+        data.algorithm = 'daily-indicators';
+        this.resolving = true;
+        const currentDate = moment(data.date).format('YYYY-MM-DD');
+        const pastDate = moment(data.date).subtract(defaultPeriod, 'days').format('YYYY-MM-DD');
+
+        this.algo.getBacktestEvaluation(data.symbol, pastDate, currentDate, data.algorithm)
+          .map(result => {
+            if (result.signals > defaultPeriod) {
+              result.signals = result.signals.slice(result.signals.length - defaultPeriod, result.signals.length);
+            }
+            this.initMlResults(data.symbol, result, result.signals, prediction);
+          })
+          .subscribe(
+            response => {
+              this.stock = data.symbol;
+              this.resolving = false;
+            },
+            err => {
+              this.resolving = false;
+            }
+          );
+      });
   }
 
   initMlResults(symbol, result, signals, predictionData = {}) {
