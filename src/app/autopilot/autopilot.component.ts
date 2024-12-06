@@ -181,12 +181,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   dayTradeRiskCounter = 0;
 
   riskToleranceList = [
-    RiskTolerance.Zero,
     RiskTolerance.One,
     RiskTolerance.Two,
-    RiskTolerance.Two,
     RiskTolerance.Lower,
-    RiskTolerance.Low,
     RiskTolerance.Low,
     RiskTolerance.ExtremeFear,
     RiskTolerance.Fear,
@@ -1375,6 +1372,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         break;
       case Strategy.MLPairs:
         await this.addMLPairs();
+        await this.addMLPairs(false);
         break;
       case Strategy.SellMfiTrade:
         await this.buyByIndicator(SwingtradeAlgorithms.mfiTrade, 'sell');
