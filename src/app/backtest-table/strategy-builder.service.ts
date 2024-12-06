@@ -226,7 +226,9 @@ export class StrategyBuilderService {
       expiration++;
       if (optionsChain.monthlyStrategyList) {
         const strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
-
+        if (!strategyList) {
+          console.log('Options list not found', symbol, optionsChain);
+        }
         potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
           if ((!prev.call && curr.strategyStrike > goal) ||
             (this.isCallHedge(goal, curr.strategyStrike, impliedMovement))) {

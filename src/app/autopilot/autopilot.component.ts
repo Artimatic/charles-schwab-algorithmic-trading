@@ -88,6 +88,7 @@ export enum Strategy {
   BuyWinners = 'Buy Winners',
   BuyML = 'Buy by ML signal',
   MLPairs = 'ML trade pairs',
+  VolatilityPairs = 'Implied Movement trade pairs',
   SellMfiTrade = 'Buy by mfi trade sell signal',
   BuyMfiTrade = 'Buy by mfi trade buy signal',
   SellMfiDiv = 'Buy by mfi divergence sell signal',
@@ -157,6 +158,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     Strategy.Daytrade,
     Strategy.BuyMfiDiv,
     Strategy.TrimHoldings,
+    Strategy.VolatilityPairs,
     Strategy.BuySnP,
     Strategy.BuyWinners,
     Strategy.BuyMfiTrade,
@@ -926,7 +928,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);
   }
 
-  async checkStopLoss(holding: PortfolioInfoHolding, stopLoss = -0.045, addStop = 0.01) {
+  async checkStopLoss(holding: PortfolioInfoHolding, stopLoss = -0.045, profitTarget = 0.01) {
     const pnl = holding.pnlPercentage;
     const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
     const price = await this.backtestService.getLastPriceTiingo({ symbol: holding.name }).toPromise();
@@ -937,11 +939,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       if (isOptionOnly) {
         stopLoss = (backtestResults.averageMove / lastPrice) * -12;
         this.reportingService.addAuditLog(holding.name, `Setting options stop loss to ${stopLoss}`);
-        addStop = (backtestResults.averageMove / lastPrice) * 10;
+        profitTarget = (backtestResults.averageMove / lastPrice) * 10;
       } else {
         stopLoss = (backtestResults.averageMove / lastPrice) * -3;
         this.reportingService.addAuditLog(holding.name, `Setting stock stop loss to ${stopLoss}`);
-        addStop = (backtestResults.averageMove / lastPrice) / 3;
+        profitTarget = (backtestResults.averageMove / lastPrice) / 3;
       }
     }
     if (pnl < stopLoss) {
@@ -950,13 +952,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       } else {
         await this.cartService.portfolioSell(holding, `Stop loss ${pnl}`);
       }
-    } else if (pnl > addStop * 1.8) {
+    } else if (pnl > profitTarget * 1.8) {
       if (isOptionOnly) {
         await this.sellOptionsHolding(holding, `Options price target reached ${pnl}`);
       } else {
         await this.cartService.portfolioSell(holding, `Price target met ${pnl}`);
       }
-    } else if (pnl > addStop) {
+    } else if (pnl > 0 && pnl < profitTarget) {
       if (!isOptionOnly) {
         await this.addBuy(holding, null, 'Profit loss is positive');
       }
@@ -1068,7 +1070,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
         if (profit > 0) {
           this.increaseDayTradeRiskTolerance();
-          this.decreaseRiskTolerance();
         } else if (profit < 0) {
           this.decreaseDayTradeRiskTolerance();
           this.increaseRiskTolerance();
@@ -1374,6 +1375,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.addMLPairs();
         await this.addMLPairs(false);
         break;
+      case Strategy.VolatilityPairs:
+        await this.addVolatilityPairs();
+        break;
       case Strategy.SellMfiTrade:
         await this.buyByIndicator(SwingtradeAlgorithms.mfiTrade, 'sell');
         break;
@@ -1437,6 +1441,39 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       }
     };
     await this.getNewTrades(inverse);
+  }
+
+  async addVolatilityPairs() {
+    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
+    const MlBuys = {};
+    const MlSells = {};
+    if (savedBacktest) {
+      for (const saved in savedBacktest) {
+        const backtestObj = savedBacktest[saved];
+        const key = Math.round(savedBacktest[saved].impliedMovement * 100);
+        const symbol = backtestObj.stock
+        if (backtestObj.ml > 0.6) {
+          if (MlBuys[key]) {
+            MlBuys[key].push(symbol);
+          } else {
+            MlBuys[key] = [symbol];
+          }
+        } else if (backtestObj.ml !== null && backtestObj.ml < 0.4) {
+          if (MlSells[key]) {
+            MlSells[key].push(symbol);
+          } else {
+            MlSells[key] = [symbol];
+          }
+        }
+      }
+    }
+
+    for (const buyKey in MlBuys) {
+      if (MlSells[buyKey] && MlSells[buyKey].length) {
+        const cash = await this.getMinMaxCashForOptions();
+        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, MlBuys[buyKey], MlSells[buyKey], cash.minCash, cash.maxCash);
+      }
+    }
   }
 
   async addMLPairs(useSellSignal = true) {
@@ -1640,7 +1677,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         this.currentHoldings = await this.cartService.findCurrentPositions();
         await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
         if (balance.cashBalance / balance.liquidationValue < 0.6) {
-          await this.priceTargetService.checkProfitTarget(this.currentHoldings);
+          const metTarget = await this.priceTargetService.checkProfitTarget(this.currentHoldings);
+          if (metTarget) {
+            this.decreaseRiskTolerance();
+          }
         }
         await this.checkIfOverBalance(balance);
         await this.balanceCallPutRatio(this.currentHoldings);

@@ -227,10 +227,10 @@ export class ProductViewComponent implements OnInit, OnDestroy {
     });
   }
 
-  loadMLChart(data: ChartParam) {
+  loadMLChart(chartParameters: ChartParam) {
     const endDate = moment().format('YYYY-MM-DD');
-    const startDate = moment(endDate).subtract({ day: 365 }).format('YYYY-MM-DD');
-    this.machineLearningService.trainPredictDailyV4(data.symbol,
+    const startDate = moment(endDate).subtract({ day: 300 }).format('YYYY-MM-DD');
+    this.machineLearningService.trainPredictDailyV4(chartParameters.symbol,
       endDate,
       startDate,
       0.7,
@@ -253,7 +253,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
         const currentDate = moment(data.date).format('YYYY-MM-DD');
         const pastDate = moment(data.date).subtract(defaultPeriod, 'days').format('YYYY-MM-DD');
 
-        this.algo.getBacktestEvaluation(data.symbol, pastDate, currentDate, data.algorithm)
+        this.algo.getBacktestEvaluation(chartParameters.symbol, pastDate, currentDate, chartParameters.algorithm)
           .map(result => {
             if (result.signals > defaultPeriod) {
               result.signals = result.signals.slice(result.signals.length - defaultPeriod, result.signals.length);
@@ -262,7 +262,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
           })
           .subscribe(
             response => {
-              this.stock = data.symbol;
+              this.stock = chartParameters.symbol;
               this.resolving = false;
             },
             err => {

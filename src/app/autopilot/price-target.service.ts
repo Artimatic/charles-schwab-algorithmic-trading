@@ -67,6 +67,7 @@ export class PriceTargetService {
         }
       });
     }
+    return targetMet;
   }
 
   getCallPutBalance(retrievedHoldings: PortfolioInfoHolding[]) {
