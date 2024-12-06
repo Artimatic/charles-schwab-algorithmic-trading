@@ -87,6 +87,7 @@ export enum Strategy {
   BuySnP = 'Buy S&P500',
   BuyWinners = 'Buy Winners',
   BuyML = 'Buy by ML signal',
+  MLPairs = 'ML trade pairs',
   SellMfiTrade = 'Buy by mfi trade sell signal',
   BuyMfiTrade = 'Buy by mfi trade buy signal',
   SellMfiDiv = 'Buy by mfi divergence sell signal',
@@ -148,9 +149,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     // Strategy.StateMachine,
     // Strategy.InverseSwingtrade,
     //Strategy.DaytradeShort,
-    // Strategy.TradingPairs,
     Strategy.BuyML,
+    Strategy.MLPairs,
+    Strategy.SellMfi,
     Strategy.BuyCalls,
+    Strategy.BuyBband,
     Strategy.Daytrade,
     Strategy.BuyMfiDiv,
     Strategy.TrimHoldings,
@@ -162,9 +165,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     // Strategy.SellMfiDiv,
     Strategy.BuyMfi,
     Strategy.Short,
-    Strategy.BuyBband
-    // Strategy.SellMfi,
-    // Strategy.SellBband
+    Strategy.TradingPairs,
+    Strategy.SellBband
     //Strategy.None
   ];
 
@@ -1371,6 +1373,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       case Strategy.BuyML:
         await this.buyByMLSignal();
         break;
+      case Strategy.MLPairs:
+        await this.addMLPairs();
+        break;
       case Strategy.SellMfiTrade:
         await this.buyByIndicator(SwingtradeAlgorithms.mfiTrade, 'sell');
         break;
@@ -1434,6 +1439,39 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       }
     };
     await this.getNewTrades(inverse);
+  }
+
+  async addMLPairs(useSellSignal = true) {
+    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
+    const MlBuys = {};
+    const MlSells = {};
+    if (savedBacktest) {
+      for (const saved in savedBacktest) {
+        const backtestObj = savedBacktest[saved];
+        const key = useSellSignal ? savedBacktest[saved].sellSignals.sort() : savedBacktest[saved].buySignals.sort();
+        const symbol = backtestObj.stock
+        if (backtestObj.ml > 0.6) {
+          if (MlBuys[key]) {
+            MlBuys[key].push(symbol);
+          } else {
+            MlBuys[key] = [symbol];
+          }
+        } else if (backtestObj.ml !== null && backtestObj.ml < 0.4) {
+          if (MlSells[key]) {
+            MlSells[key].push(symbol);
+          } else {
+            MlSells[key] = [symbol];
+          }
+        }
+      }
+    }
+
+    for (const buyKey in MlBuys) {
+      if (MlSells[buyKey] && MlSells[buyKey].length) {
+        const cash = await this.getMinMaxCashForOptions();
+        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, MlBuys[buyKey], MlSells[buyKey], cash.minCash, cash.maxCash);
+      }
+    }
   }
 
   async buyByMLSignal() {

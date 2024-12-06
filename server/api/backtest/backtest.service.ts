@@ -1729,7 +1729,7 @@ class BacktestService {
       });
   }
 
-  getAllRecommendations(price: number, indicator: Indicators, previousIndicator: Indicators, allIndicators: Indicators[] = []): Recommendation {
+  getAllRecommendations(price: number, indicator: Indicators, previousIndicator: Indicators, allIndicators: Indicators[]): Recommendation {
     const recommendations: Recommendation = {
       recommendation: OrderType.None,
       mfi: DaytradeRecommendation.Neutral,
@@ -1759,31 +1759,8 @@ class BacktestService {
     recommendations.vwma = AlgoService.checkVwma(price, indicator.vwma);
     recommendations.mfiDivergence2 = AlgoService.checkMfiDivergence2(allIndicators);
 
-    if (allIndicators && allIndicators.length) {
-      recommendations.mfiDivergence = AlgoService.checkMfiDivergence(allIndicators);
-      recommendations.recommendation = AlgoService.determineFinalRecommendation(allIndicators);
-    } else {
-      let counter = {
-        bullishCounter: 0,
-        bearishCounter: 0
-      };
-
-      for (let rec in recommendations) {
-        if (recommendations[rec] === DaytradeRecommendation.Bullish) {
-          counter.bullishCounter++;
-        } else if (recommendations[rec] === DaytradeRecommendation.Bearish) {
-          counter.bearishCounter++;
-        }
-      }
-
-      if (recommendations.vwma === DaytradeRecommendation.Bullish && counter.bullishCounter > 1 && counter.bullishCounter > counter.bearishCounter) {
-        recommendations.recommendation = OrderType.Buy;
-      } else if (counter.bullishCounter > 2 && counter.bullishCounter > counter.bearishCounter) {
-        recommendations.recommendation = OrderType.Buy;
-      } else if (counter.bearishCounter > 1 && counter.bearishCounter > counter.bullishCounter) {
-        recommendations.recommendation = OrderType.Sell;
-      }
-    }
+    recommendations.mfiDivergence = AlgoService.checkMfiDivergence(allIndicators);
+    recommendations.recommendation = AlgoService.determineFinalRecommendation(allIndicators);
 
     return recommendations;
   }

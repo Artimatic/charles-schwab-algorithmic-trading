@@ -30,6 +30,7 @@ export class AlgoEvaluationComponent implements OnInit {
   }
 
   getBacktests() {
+    this.stockList = [];
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     if (savedBacktest) {
       for (const saved in savedBacktest) {

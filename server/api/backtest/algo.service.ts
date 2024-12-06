@@ -255,9 +255,13 @@ class AlgoService {
       }
 
       if (previous.bullishCounter > 9 && previous.bearishCounter < 3) {
-        previous.recommendation = OrderType.Buy;
+        if (indicators[indicators.length - 3].mfiLeft < indicators[indicators.length - 1].mfiLeft && indicators[indicators.length - 3].close < indicators[indicators.length - 1].close) {
+          previous.recommendation = OrderType.Buy;
+        }
       } else if (previous.bearishCounter > 9 && previous.bullishCounter < 3) {
-        previous.recommendation = OrderType.Sell;
+        if (indicators[indicators.length - 3].mfiLeft > indicators[indicators.length - 1].mfiLeft && indicators[indicators.length - 3].close > indicators[indicators.length - 1].close) {
+          previous.recommendation = OrderType.Sell;
+        }
       }
       return previous;
     }, {
