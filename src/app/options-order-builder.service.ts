@@ -118,7 +118,7 @@ export class OptionsOrderBuilderService {
     this.strategyBuilderService.getTradingStrategies().forEach(async (strat) => {
       const buys: string[] = strat.strategy.buy;
       const sells: string[] = strat.strategy.sell;
-      await this.balanceTrades(currentHoldings, buys, sells, minCashAllocation, maxCashAllocation);
+      await this.balanceTrades(currentHoldings, buys, sells, minCashAllocation, maxCashAllocation, strat.reason ? strat.reason : 'Trading pair');
     });
   }
 
@@ -143,6 +143,7 @@ export class OptionsOrderBuilderService {
     sellList: string[],
     minCashAllocation: number,
     maxCashAllocation: number,
+    reason: string,
     addToList = true) {
     if (minCashAllocation === maxCashAllocation) {
       minCashAllocation = 0;
@@ -204,8 +205,14 @@ export class OptionsOrderBuilderService {
             }
 
             if (currentPut && currentCall) {
-              const option1 = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy', currentCall.quantity);
-              const option2 = this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put], currentPut.price, currentPut.quantity, OrderTypes.put, 'Buy', currentCall.quantity);
+              const option1 = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], 
+                currentCall.price, currentCall.quantity, 
+                OrderTypes.call, reason,
+                'Buy', currentCall.quantity);
+              const option2 = this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put], 
+                currentPut.price, currentPut.quantity, 
+                OrderTypes.put, reason, 
+                'Buy', currentCall.quantity);
 
               if (addToList) {
                 this.addTradingPairs([option1, option2]);

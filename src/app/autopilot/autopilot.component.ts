@@ -1290,7 +1290,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           console.log(msg);
           const cash = await this.getMinMaxCashForOptions();
 
-          this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [name], cash.minCash, cash.maxCash);
+          this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [name], cash.minCash, cash.maxCash, 'Bearish pick');
 
         }
       } catch (error) {
@@ -1421,7 +1421,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       if (prediction > 0.8 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
         const cash = await this.getMinMaxCashForOptions();
 
-        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [symbol], cash.minCash, cash.maxCash);
+        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [symbol], cash.minCash, cash.maxCash, 'Inverse strategies');
       } else if ((prediction < 0.4 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
         const stock: PortfolioInfoHolding = {
           name: symbol,
@@ -1471,7 +1471,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     for (const buyKey in MlBuys) {
       if (MlSells[buyKey] && MlSells[buyKey].length) {
         const cash = await this.getMinMaxCashForOptions();
-        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, MlBuys[buyKey], MlSells[buyKey], cash.minCash, cash.maxCash);
+        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, 
+          MlBuys[buyKey], MlSells[buyKey], 
+          cash.minCash, cash.maxCash, 'Volatility pair');
       }
     }
   }
@@ -1504,7 +1506,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     for (const buyKey in MlBuys) {
       if (MlSells[buyKey] && MlSells[buyKey].length) {
         const cash = await this.getMinMaxCashForOptions();
-        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, MlBuys[buyKey], MlSells[buyKey], cash.minCash, cash.maxCash);
+        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, 
+          MlBuys[buyKey], MlSells[buyKey], 
+          cash.minCash, cash.maxCash, 'Machine learning pair');
       }
     }
   }
@@ -1543,14 +1547,18 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       if (matchBuy && prediction > 0.6 && this.priceTargetService.getDiff(backtestData.invested, backtestData.invested + backtestData.net) > 0) {
         if (this.optionsOrderBuilderService.currentTradeIdeas.puts.length) {
           const cash = await this.getMinMaxCashForOptions();
-          await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, [symbol], this.optionsOrderBuilderService.getSellList(), cash.minCash, cash.maxCash);
+          await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, 
+            [symbol], this.optionsOrderBuilderService.getSellList(), 
+            cash.minCash, cash.maxCash, `${direction} ${indicator}`);
         } else {
           this.optionsOrderBuilderService.currentTradeIdeas.calls.push(symbol);
         }
       } else if (matchBuy && prediction < 0.4 && this.priceTargetService.getDiff(backtestData.invested, backtestData.invested + backtestData.net) > 0) {
         if (this.optionsOrderBuilderService.currentTradeIdeas.calls.length) {
           const cash = await this.getMinMaxCashForOptions();
-          await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, this.optionsOrderBuilderService.getBuyList(), [symbol], cash.minCash, cash.maxCash);
+          await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, 
+            this.optionsOrderBuilderService.getBuyList(), [symbol], 
+            cash.minCash, cash.maxCash, `${direction} ${indicator}`);
         } else {
           this.optionsOrderBuilderService.currentTradeIdeas.puts.push(symbol);
         }
@@ -1600,7 +1608,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       if (prediction > 0.7 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
         const cash = await this.getMinMaxCashForOptions();
 
-        const option = await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, [symbol], [symbol], cash.minCash, cash.maxCash);
+        const option = await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, 
+          [symbol], [symbol], cash.minCash, cash.maxCash, `Buy ${optionsType}`);
         this.optionsOrderBuilderService.addTradingPairs([option[0]]);
       }
     };
@@ -1609,7 +1618,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       if (prediction < 0.3 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
         const cash = await this.getMinMaxCashForOptions();
 
-        const option = await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, [symbol], [symbol], cash.minCash, cash.maxCash);
+        const option = await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, 
+          [symbol], [symbol], cash.minCash, cash.maxCash, 'Buy puts');
         this.optionsOrderBuilderService.addTradingPairs([option[0]]);
       }
     };
@@ -1620,7 +1630,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const findPuts = async (symbol: string, prediction: number, backtestData: any) => {
       if (prediction < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
         const cash = await this.getMinMaxCashForOptions();
-        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, ['SPY'], [symbol], cash.minCash, cash.maxCash);
+        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, 
+          ['SPY'], [symbol], cash.minCash, cash.maxCash, 'Inverse dispersion');
       } else if ((prediction > 0.8 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
         const stock: PortfolioInfoHolding = {
           name: symbol,
