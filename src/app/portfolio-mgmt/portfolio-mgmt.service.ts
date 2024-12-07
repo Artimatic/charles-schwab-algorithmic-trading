@@ -54,7 +54,7 @@ export class PortfolioMgmtService {
             1,
             minCash,
             maxCash).callQuantity;
-          const option = this.cartService.createOptionOrder('SPY', [spyStrangle.call], callPrice, callQuantity, OrderTypes.call, 'Buy', callQuantity);
+          const option = this.cartService.createOptionOrder('SPY', [spyStrangle.call], callPrice, callQuantity, OrderTypes.call, 'Hedge put', 'Buy', callQuantity);
           this.cartService.addToCart(option, true, 'Hedging put with SPY');
         }
       }

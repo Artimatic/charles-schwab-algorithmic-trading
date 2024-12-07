@@ -39,7 +39,7 @@ export class CartService {
       }
     }
 
-    let log = `Adding order ${order.side} ${order.quantity} ${order.holding.symbol} ${reason}`;
+    let log = `Adding order ${order.side} ${order.quantity} ${order.holding.symbol} ${reason} ${order?.reason}`;
     if (order.primaryLeg) {
       log += `Primary leg: ${order.side} ${order.primaryLeg.quantity} ${order.primaryLeg.symbol} `;
     }
@@ -330,9 +330,11 @@ export class CartService {
     price: number,
     quantity: number,
     optionType,
+    reason,
     side = 'Buy',
     orderSize = 1,
-    executeImmediately = false) {
+    executeImmediately = false,
+    ) {
     const foundExistingOrder = this.buyOrders.find(order => order.primaryLegs && order.holding.symbol === symbol && order.primaryLegs[0].symbol === primaryLegs[0].symbol && !order.secondaryLegs);
     if (foundExistingOrder) {
       console.log('Found existing buy order', foundExistingOrder);
@@ -362,7 +364,8 @@ export class CartService {
         allocation: 0.05,
         primaryLegs,
         type: optionType,
-        forImmediateExecution: executeImmediately
+        forImmediateExecution: executeImmediately,
+        reason
       };
 
       return order;
@@ -375,7 +378,7 @@ export class CartService {
     side = 'Buy', reason: string = '', executeImmediately = false) {
     const order = this.createOptionOrder(symbol, primaryLegs,
       price, quantity,
-      optionType, side,
+      optionType, reason, side,
       null, executeImmediately);
     if (order && order.primaryLegs) {
       console.log('Adding option order for', symbol, primaryLegs, price, quantity, optionType, side, reason);

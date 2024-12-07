@@ -622,7 +622,9 @@ export class StrategyBuilderService {
         quantity: quantity,
         underlying: 'SPY'
       };
-      const order = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], currentCall.price, currentCall.quantity, OrderTypes.call, 'Buy', currentCall.quantity);
+      const order = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], 
+        currentCall.price, currentCall.quantity, 
+        OrderTypes.call, 'Buy SnP strategy', 'Buy', currentCall.quantity);
       this.cartService.addToCart(order, true, 'Buy SPY');
     }
   }
