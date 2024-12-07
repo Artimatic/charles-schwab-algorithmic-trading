@@ -136,7 +136,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   destroy$ = new Subject();
   currentHoldings: PortfolioInfoHolding[] = [];
   strategyCounter = null;
-  maxTradeCount = 6;
+  maxTradeCount = 20;
   maxHoldings = 10;
   addedOrdersCount = 0;
   developedStrategy = false;
@@ -906,7 +906,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     this.backtestList(callback, this.currentHoldings);
 
-    await this.checkIfTooManyHoldings(this.currentHoldings, 5);
+    await this.checkIfTooManyHoldings(this.currentHoldings, 10);
   }
 
   async analyseRecommendations(holding: PortfolioInfoHolding) {
@@ -1109,7 +1109,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const isOverBalance = Boolean(Number(balance.cashBalance) < 0);
     if (isOverBalance) {
       this.currentHoldings = await this.cartService.findCurrentPositions();
-      await this.checkIfTooManyHoldings(this.currentHoldings, 5);
+      await this.checkIfTooManyHoldings(this.currentHoldings, 10);
     }
     return isOverBalance;
   }
@@ -1413,7 +1413,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         break;
       }
     }
-    await this.trimHoldings();
   }
 
   async inverseStrategies() {
