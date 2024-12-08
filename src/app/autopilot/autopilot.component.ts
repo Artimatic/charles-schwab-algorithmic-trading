@@ -99,6 +99,7 @@ export enum Strategy {
   SellBband = 'Buy by bband sell signal',
   InverseDispersion = 'Inverse dispersion trade',
   InverseStrategies = 'Inverse',
+  PerfectPair = 'Perfect Pair',
   None = 'None'
 }
 
@@ -137,7 +138,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   currentHoldings: PortfolioInfoHolding[] = [];
   strategyCounter = null;
   maxTradeCount = 20;
-  maxHoldings = 10;
+  maxHoldings = 25;
   addedOrdersCount = 0;
   developedStrategy = false;
   tradingPairsCounter = 0;
@@ -168,7 +169,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     Strategy.BuyMfi,
     Strategy.Short,
     Strategy.TradingPairs,
-    Strategy.SellBband
+    Strategy.SellBband,
+    Strategy.PerfectPair
     //Strategy.None
   ];
 
@@ -1368,6 +1370,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       case Strategy.BuyWinners:
         await this.buyWinners();
         break;
+      case Strategy.PerfectPair:
+        await this.getPerfectPair();
+        break;
       case Strategy.BuyML:
         await this.buyByMLSignal();
         break;
@@ -1441,7 +1446,41 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     };
     await this.getNewTrades(inverse);
   }
+  async addPerfectPair() {
+    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
+    const MlBuys = {};
+    const MlSells = {};
+    if (savedBacktest) {
+      for (const saved in savedBacktest) {
+        const backtestObj = savedBacktest[saved];
+        const key = savedBacktest[saved].sellSignals.sort() + savedBacktest[saved].buySignals.sort() + Math.round(savedBacktest[saved].impliedMovement * 100);
+        const symbol = backtestObj.stock
+        if (backtestObj.ml > 0.5) {
+          if (MlBuys[key]) {
+            MlBuys[key].push(symbol);
+          } else {
+            MlBuys[key] = [symbol];
+          }
+        } else if (backtestObj.ml !== null && backtestObj.ml < 0.5) {
+          if (MlSells[key]) {
+            MlSells[key].push(symbol);
+          } else {
+            MlSells[key] = [symbol];
+          }
+        }
+      }
+    }
 
+    for (const buyKey in MlBuys) {
+      if (MlSells[buyKey] && MlSells[buyKey].length) {
+        const cash = await this.getMinMaxCashForOptions();
+        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, 
+          MlBuys[buyKey], MlSells[buyKey], 
+          cash.minCash, cash.maxCash, 'Perfect pair');
+      }
+    }
+  }
+  
   async addVolatilityPairs() {
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     const MlBuys = {};
