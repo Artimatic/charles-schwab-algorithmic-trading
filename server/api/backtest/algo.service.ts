@@ -254,11 +254,13 @@ class AlgoService {
         }
       }
 
-      if (previous.bullishCounter > 9 && previous.bearishCounter < 3) {
+
+      if (indicators[0].mfiLeft < indicators[indicators.length - 1].mfiLeft && indicators[0].close < indicators[indicators.length - 1].close && previous.bullishCounter > 9 && previous.bearishCounter < 2) {
         if (indicators[indicators.length - 3].mfiLeft < indicators[indicators.length - 1].mfiLeft && indicators[indicators.length - 3].close < indicators[indicators.length - 1].close) {
           previous.recommendation = OrderType.Buy;
         }
-      } else if (previous.bearishCounter > 9 && previous.bullishCounter < 3) {
+      } else if (indicators[0].mfiLeft > indicators[indicators.length - 1].mfiLeft &&
+        indicators[0].close > indicators[indicators.length - 1].close && previous.bearishCounter > 9 && previous.bullishCounter < 2) {
         if (indicators[indicators.length - 3].mfiLeft > indicators[indicators.length - 1].mfiLeft && indicators[indicators.length - 3].close > indicators[indicators.length - 1].close) {
           previous.recommendation = OrderType.Sell;
         }

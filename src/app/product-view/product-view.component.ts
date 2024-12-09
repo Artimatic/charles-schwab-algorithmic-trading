@@ -248,12 +248,11 @@ export class ProductViewComponent implements OnInit, OnDestroy {
         };
 
         const defaultPeriod = 500;
-        data.algorithm = 'daily-indicators';
         this.resolving = true;
         const currentDate = moment(data.date).format('YYYY-MM-DD');
         const pastDate = moment(data.date).subtract(defaultPeriod, 'days').format('YYYY-MM-DD');
 
-        this.algo.getBacktestEvaluation(chartParameters.symbol, pastDate, currentDate, chartParameters.algorithm)
+        this.algo.getBacktestEvaluation(chartParameters.symbol, pastDate, currentDate, 'daily-indicators')
           .map(result => {
             if (result.signals > defaultPeriod) {
               result.signals = result.signals.slice(result.signals.length - defaultPeriod, result.signals.length);

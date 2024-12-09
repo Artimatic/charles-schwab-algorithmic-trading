@@ -94,6 +94,10 @@ export class OptionsOrderBuilderService {
 
   }
 
+  clearTradingPairs() {
+    this.tradingPairs = [];
+  }
+
   async createProtectivePutOrder(holding: PortfolioInfoHolding) {
     if (holding.shares && !holding.primaryLegs) {
       let putsNeeded = Math.floor(holding.shares / 100);
