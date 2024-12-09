@@ -467,6 +467,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   resetCart() {
+    this.optionsOrderBuilderService.clearTradingPairs();
     this.addedOrdersCount = 0;
     this.lastOrderListIndex = 0;
     this.cartService.removeCompletedOrders();
