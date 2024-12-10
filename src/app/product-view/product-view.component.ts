@@ -257,7 +257,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
             if (result.signals > defaultPeriod) {
               result.signals = result.signals.slice(result.signals.length - defaultPeriod, result.signals.length);
             }
-            this.initMlResults(data.symbol, result, result.signals, prediction);
+            this.initMlResults(chartParameters.symbol, result, result.signals, prediction);
           })
           .subscribe(
             response => {
