@@ -34,10 +34,10 @@ export class ProductViewComponent implements OnInit, OnDestroy {
         takeUntil(this.destroy$)
       )
       .subscribe((predictionData: AiPicksPredictionData) => {
-        const predictions = predictionData.predictionHistory.reduce((previous, current) => {
-          previous[current.date] = current.prediction;
-          return previous;
-        }, {});
+        // const predictions = predictionData.predictionHistory.reduce((previous, current) => {
+        //   previous[current.date] = current.prediction;
+        //   return previous;
+        // }, {});
 
         this.loadMLChart({
           algorithm: 'daily-indicators',
@@ -282,7 +282,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
       const prediction = predictionData[day.date];
       if (prediction > 0.5) {
         action = 'BUY';
-      } else if (prediction <= 0.3) {
+      } else if (prediction < 0.5) {
         action = 'SELL';
       }
 
@@ -481,7 +481,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
           marker: {
             enabled: false
           },
-          name: '<br><b>Volume:</b> ' + volume
+          name: '<br><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
         };
     }
   }

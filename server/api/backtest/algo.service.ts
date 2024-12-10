@@ -106,36 +106,44 @@ class AlgoService {
     if (indicators[0].mfiLeft > indicators[indicators.length - 1].mfiLeft &&
       indicators[0].close < indicators[indicators.length - 1].close) {
       return indicators.reduce((previous, current) => {
-        if (current.open > current.close) {
-          previous.downCloseCount++;
-        } else {
-          previous.upCloseCount++;
+        if (current.recommendation.mfiLow === DaytradeRecommendation.Bullish ||
+          current.recommendation.mfiLow === DaytradeRecommendation.Bearish) {
+          previous.mfiLow = current.recommendation.mfiLow;
         }
 
-        if (previous.upCloseCount > previous.downCloseCount) {
+        if (current.recommendation.macd === DaytradeRecommendation.Bullish ||
+          current.recommendation.macd === DaytradeRecommendation.Bearish) {
+          previous.macd = current.recommendation.macd;
+        }
+
+        if (previous.macd === DaytradeRecommendation.Bullish && previous.mfiLow === DaytradeRecommendation.Bullish) {
           previous.recommendation = DaytradeRecommendation.Bullish;
         }
         return previous;
       }, {
-        downCloseCount: 0,
-        upCloseCount: 0,
+        mfiLow: DaytradeRecommendation.Neutral,
+        macd: DaytradeRecommendation.Neutral,
         recommendation: DaytradeRecommendation.Neutral
       }).recommendation;
     } else if (indicators[0].mfiLeft < indicators[indicators.length - 1].mfiLeft && indicators[0].close > indicators[indicators.length - 1].close) {
       return indicators.reduce((previous, current) => {
-        if (current.open > current.close) {
-          previous.downCloseCount++;
-        } else {
-          previous.upCloseCount++;
+        if (current.recommendation.mfiLow === DaytradeRecommendation.Bullish ||
+          current.recommendation.mfiLow === DaytradeRecommendation.Bearish) {
+          previous.mfiLow = current.recommendation.mfiLow;
         }
 
-        if (previous.upCloseCount < previous.downCloseCount) {
+        if (current.recommendation.macd === DaytradeRecommendation.Bullish ||
+          current.recommendation.macd === DaytradeRecommendation.Bearish) {
+          previous.macd = current.recommendation.macd;
+        }
+
+        if (previous.macd === DaytradeRecommendation.Bearish && previous.mfiLow === DaytradeRecommendation.Bearish) {
           previous.recommendation = DaytradeRecommendation.Bearish;
         }
         return previous;
       }, {
-        downCloseCount: 0,
-        upCloseCount: 0,
+        mfiLow: DaytradeRecommendation.Neutral,
+        macd: DaytradeRecommendation.Neutral,
         recommendation: DaytradeRecommendation.Neutral
       }).recommendation;
     } else {
@@ -255,12 +263,11 @@ class AlgoService {
       }
 
 
-      if (indicators[0].mfiLeft < indicators[indicators.length - 1].mfiLeft && indicators[0].close < indicators[indicators.length - 1].close && previous.bullishCounter > 9 && previous.bearishCounter < 2) {
+      if (previous.bullishCounter > 7 && previous.bearishCounter < 3) {
         if (indicators[indicators.length - 3].mfiLeft < indicators[indicators.length - 1].mfiLeft && indicators[indicators.length - 3].close < indicators[indicators.length - 1].close) {
           previous.recommendation = OrderType.Buy;
         }
-      } else if (indicators[0].mfiLeft > indicators[indicators.length - 1].mfiLeft &&
-        indicators[0].close > indicators[indicators.length - 1].close && previous.bearishCounter > 9 && previous.bullishCounter < 2) {
+      } else if (previous.bearishCounter > 7 && previous.bullishCounter < 3) {
         if (indicators[indicators.length - 3].mfiLeft > indicators[indicators.length - 1].mfiLeft && indicators[indicators.length - 3].close > indicators[indicators.length - 1].close) {
           previous.recommendation = OrderType.Sell;
         }
