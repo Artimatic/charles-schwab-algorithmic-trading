@@ -271,7 +271,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
       });
   }
 
-  initMlResults(symbol, result, signals, predictionData = {}) {
+  initMlResults(symbol, result, signals, predictionData) {
     this.backtestResults = [result];
     const time = [];
     const seriesData = [];
@@ -279,7 +279,8 @@ export class ProductViewComponent implements OnInit, OnDestroy {
     signals.forEach(day => {
       time.push(day.date);
       let action;
-      const prediction = predictionData[day.date];
+      const prediction = predictionData.predictionHistory.find(predict => predict.date === day.date);
+      action = day.recommendation.recommendation.toUpperCase();
       if (prediction > 0.5) {
         action = 'BUY';
       } else if (prediction < 0.5) {
