@@ -282,12 +282,12 @@ export class ProductViewComponent implements OnInit, OnDestroy {
       const prediction = predictionData.predictionHistory.find(predict => predict.date === day.date);
       action = day.recommendation.recommendation.toUpperCase();
       if (prediction > 0.5) {
-        action = 'BUY';
+        action = 'STRONGBUY';
       } else if (prediction < 0.5) {
-        action = 'SELL';
+        action = 'STRONGSELL';
       }
 
-      const signal = this.buildSignal(action, day.close, day.volume, day.recommendation);
+      const signal = this.buildSignal(action, day.close, day.volume, day.recommendation, prediction);
 
       seriesData.push(signal);
 
@@ -433,7 +433,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
     return buyText + sellText;
   }
 
-  buildSignal(action: string, close: number, volume: number, recommendations: any) {
+  buildSignal(action: string, close: number, volume: number, recommendations: any, prediction) {
     const radius = 3
     switch (action) {
       case 'SELL':
@@ -441,10 +441,10 @@ export class ProductViewComponent implements OnInit, OnDestroy {
           y: close,
           marker: {
             symbol: 'diamond',
-            fillColor: 'pink',
-            radius: radius
+            fillColor: 'red',
+            radius: radius * 2
           },
-          name: '<br><h6>AI sell</h6><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
+          name: '<br><b>Prediction:</b> ' + prediction + '<b>Volume:</b> '+ volume + this.buildAlgoText(recommendations)
         };
       case 'STRONGSELL':
         return {
@@ -454,17 +454,17 @@ export class ProductViewComponent implements OnInit, OnDestroy {
             fillColor: 'red',
             radius: radius * 2
           },
-          name: '<br><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
+          name: '<br><b>Prediction:</b> ' + prediction + '<b>Volume:</b> '+ volume + this.buildAlgoText(recommendations)
         };
       case 'BUY':
         return {
           y: close,
           marker: {
             symbol: 'diamond',
-            fillColor: 'blue',
-            radius: radius
+            fillColor: 'green',
+            radius: radius * 2
           },
-          name: '<br><h6>AI Buy</h6><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
+          name: '<br><b>Prediction:</b> ' + prediction + '<b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
         };
       case 'STRONGBUY':
         return {
@@ -474,7 +474,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
             fillColor: 'green',
             radius: radius * 2
           },
-          name: '<br><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
+          name: '<br><b>Prediction:</b> ' + prediction + '<b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
         };
       default:
         return {
@@ -482,7 +482,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
           marker: {
             enabled: false
           },
-          name: '<br><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
+          name: '<br><b>Prediction:</b> ' + prediction + '<b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
         };
     }
   }
