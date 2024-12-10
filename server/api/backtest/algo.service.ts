@@ -103,6 +103,53 @@ class AlgoService {
 
   checkMfiDivergence(indicators: Indicators[]): DaytradeRecommendation {
     return indicators.reduce((previous, current) => {
+      if (current.recommendation.mfi === DaytradeRecommendation.Bearish) {
+        previous.mfi = DaytradeRecommendation.Bullish;
+      } else if (current.recommendation.mfi === DaytradeRecommendation.Bullish) {
+        previous.mfi = DaytradeRecommendation.Bearish;
+      }
+
+      if (current.bband80 && current.bband80[1] && current.bband80[1][0]) {
+        const change = DecisionService.getPercentChange(current.close, current.bband80[1][0]);
+        if (change > 0 && change < 0.10) {
+          previous.bband = DaytradeRecommendation.Bullish;
+        } else if (change < 0 && change < 0.10) {
+          previous.bband = DaytradeRecommendation.Bearish;
+        }
+      }
+
+      if (previous.lastClose < current.close && previous.lastMfi > current.mfiLeft) {
+        previous.divergent = DaytradeRecommendation.Bullish;
+      } else if (previous.lastClose > current.close && previous.lastMfi < current.mfiLeft) {
+        previous.divergent = DaytradeRecommendation.Bearish;
+      } else {
+        previous.lastClose = current.close;
+        previous.lastMfi = current.mfiLeft;
+      }
+
+      if (previous.bband === DaytradeRecommendation.Bullish &&
+        previous.divergent === DaytradeRecommendation.Bullish &&
+        previous.mfi === DaytradeRecommendation.Bullish) {
+        previous.recommendation = DaytradeRecommendation.Bullish;
+      } else if (previous.bband === DaytradeRecommendation.Bearish &&
+        previous.divergent === DaytradeRecommendation.Bearish &&
+        previous.mfi === DaytradeRecommendation.Bearish) {
+        previous.recommendation = DaytradeRecommendation.Bearish;
+      }
+      return previous;
+    }, {
+      mfi: DaytradeRecommendation.Neutral,
+      macd: DaytradeRecommendation.Neutral,
+      bband: DaytradeRecommendation.Neutral,
+      lastMfi: 0,
+      lastClose: 0,
+      divergent: DaytradeRecommendation.Neutral,
+      recommendation: DaytradeRecommendation.Neutral
+    }).recommendation;
+  }
+
+  checkMfiTrade(indicators: Indicators[]): DaytradeRecommendation {
+    return indicators.reduce((previous, current) => {
       if (current.recommendation.mfiLow === DaytradeRecommendation.Bullish ||
         current.recommendation.mfiLow === DaytradeRecommendation.Bearish) {
         previous.mfiLow = current.recommendation.mfiLow;
