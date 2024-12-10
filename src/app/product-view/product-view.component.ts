@@ -433,7 +433,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
     return buyText + sellText;
   }
 
-  buildSignal(action: string, close: number, volume: number, recommendations: any, prediction) {
+  buildSignal(action: string, close: number, volume: number, recommendations: any, prediction = 0) {
     const radius = 3
     switch (action) {
       case 'SELL':
