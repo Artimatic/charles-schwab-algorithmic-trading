@@ -514,7 +514,7 @@ class BacktestService {
           orderType = recommendation.recommendation;
           indicator.recommendation = recommendation;
           try {
-            if (idx > 80) {
+            if (idx > 80 && (!indicator.recommendation.mfiTrade || indicator.recommendation.mfiTrade === DaytradeRecommendation.Neutral)) {
               if (indicator.recommendation.mfiLow === DaytradeRecommendation.Bullish ||
                 indicator.recommendation.mfi === DaytradeRecommendation.Bullish) {
                 isMfiLowIdx = idx;
@@ -1757,9 +1757,10 @@ class BacktestService {
       AlgoService.getLowerBBand(indicator.bband80), AlgoService.getUpperBBand(indicator.bband80));
 
     recommendations.vwma = AlgoService.checkVwma(price, indicator.vwma);
-    recommendations.mfiDivergence2 = AlgoService.checkMfiDivergence2(allIndicators);
 
     recommendations.mfiDivergence = AlgoService.checkMfiDivergence(allIndicators);
+    recommendations.mfiDivergence2 = AlgoService.checkMfiDivergence2(allIndicators);
+    recommendations.mfiTrade = AlgoService.checkMfiTrade(allIndicators);
     recommendations.recommendation = AlgoService.determineFinalRecommendation(allIndicators);
 
     return recommendations;

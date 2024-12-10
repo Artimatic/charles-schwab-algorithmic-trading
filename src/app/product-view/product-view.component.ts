@@ -283,10 +283,12 @@ export class ProductViewComponent implements OnInit, OnDestroy {
       const prediction = predictionData.predictionHistory.find(predict => predict.date === day.date);
       action = day.recommendation.recommendation.toUpperCase();
       if (prediction && prediction.prediction) {
-        if (prediction.prediction > 0.5) {
+        if (prediction.prediction > 0.5 && (action === 'BUY' || action === 'STRONGBUY')) {
           action = 'STRONGBUY';
-        } else if (prediction.prediction < 0.5) {
+        } else if (prediction.prediction < 0.5 && (action === 'SELL' || action === 'STRONGSELL')) {
           action = 'STRONGSELL';
+        } else {
+          action = null;
         }
         predictionNum = prediction.prediction;
       }
@@ -448,7 +450,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
             fillColor: 'red',
             radius: radius * 2
           },
-          name: '<br><b>Prediction:</b> ' + prediction + 'br><b>Volume:</b> '+ volume + this.buildAlgoText(recommendations)
+          name: '<br><b>Prediction:</b> ' + prediction + '<br><b>Volume:</b> '+ volume + this.buildAlgoText(recommendations)
         };
       case 'STRONGSELL':
         return {
@@ -458,7 +460,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
             fillColor: 'red',
             radius: radius * 2
           },
-          name: '<br><b>Prediction:</b> ' + prediction + 'br><b>Volume:</b> '+ volume + this.buildAlgoText(recommendations)
+          name: '<br><b>Prediction:</b> ' + prediction + '<br><b>Volume:</b> '+ volume + this.buildAlgoText(recommendations)
         };
       case 'BUY':
         return {
@@ -468,7 +470,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
             fillColor: 'green',
             radius: radius * 2
           },
-          name: '<br><b>Prediction:</b> ' + prediction + 'br><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
+          name: '<br><b>Prediction:</b> ' + prediction + '<br><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
         };
       case 'STRONGBUY':
         return {
@@ -478,7 +480,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
             fillColor: 'green',
             radius: radius * 2
           },
-          name: '<br><b>Prediction:</b> ' + prediction + 'br><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
+          name: '<br><b>Prediction:</b> ' + prediction + '<br><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
         };
       default:
         return {
@@ -486,7 +488,7 @@ export class ProductViewComponent implements OnInit, OnDestroy {
           marker: {
             enabled: false
           },
-          name: '<br><b>Prediction:</b> ' + prediction + 'br><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
+          name: '<br><b>Prediction:</b> ' + prediction + '<br><b>Volume:</b> ' + volume + this.buildAlgoText(recommendations)
         };
     }
   }
