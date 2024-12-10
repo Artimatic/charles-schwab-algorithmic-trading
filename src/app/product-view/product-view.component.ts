@@ -281,10 +281,12 @@ export class ProductViewComponent implements OnInit, OnDestroy {
       let action;
       const prediction = predictionData.predictionHistory.find(predict => predict.date === day.date);
       action = day.recommendation.recommendation.toUpperCase();
-      if (prediction > 0.5) {
-        action = 'STRONGBUY';
-      } else if (prediction < 0.5) {
-        action = 'STRONGSELL';
+      if (prediction && prediction.prediction) {
+        if (prediction.prediction > 0.5) {
+          action = 'STRONGBUY';
+        } else if (prediction < 0.5) {
+          action = 'STRONGSELL';
+        }  
       }
 
       const signal = this.buildSignal(action, day.close, day.volume, day.recommendation, prediction);
