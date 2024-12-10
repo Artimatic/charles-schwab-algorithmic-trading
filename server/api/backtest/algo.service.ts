@@ -14,7 +14,7 @@ class AlgoService {
   checkVwma(lastClose: number, vwma: number): DaytradeRecommendation {
     const change = DecisionService.getPercentChange(lastClose, vwma);
 
-    if (_.isNumber(lastClose) && _.isNumber(vwma) && Math.abs(change) < 0.05) {
+    if (_.isNumber(lastClose) && _.isNumber(vwma) && Math.abs(change) < 0.03) {
       if (lastClose < vwma) {
         return DaytradeRecommendation.Bullish;
       } else {
