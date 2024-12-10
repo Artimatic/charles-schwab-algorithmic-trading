@@ -284,12 +284,12 @@ export class ProductViewComponent implements OnInit, OnDestroy {
       if (prediction && prediction.prediction) {
         if (prediction.prediction > 0.5) {
           action = 'STRONGBUY';
-        } else if (prediction < 0.5) {
+        } else if (prediction.prediction < 0.5) {
           action = 'STRONGSELL';
         }  
       }
 
-      const signal = this.buildSignal(action, day.close, day.volume, day.recommendation, prediction);
+      const signal = this.buildSignal(action, day.close, day.volume, day.recommendation, prediction.prediction);
 
       seriesData.push(signal);
 
