@@ -137,8 +137,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   destroy$ = new Subject();
   currentHoldings: PortfolioInfoHolding[] = [];
   strategyCounter = null;
-  maxTradeCount = 20;
-  maxHoldings = 25;
+  maxTradeCount = 10;
+  maxHoldings = 30;
   addedOrdersCount = 0;
   developedStrategy = false;
   tradingPairsCounter = 0;
@@ -1161,8 +1161,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     const price = await this.portfolioService.getPrice(buySymbol).toPromise();
     const balance = await this.portfolioService.getTdBalance().toPromise();
-    const allocation = backtestData.ml < 0.5 ? backtestData.ml : this.riskToleranceList[this.riskCounter];
-    const cash = (balance.cashBalance < balance.availableFunds * 0.01) ? balance.cashBalance : balance.cashBalance * allocation;
+    const allocation = backtestData.ml > 0 ? backtestData.ml : 0.01;
+    const cash = (balance.cashBalance < balance.availableFunds * 0.01) ? balance.cashBalance : (balance.cashBalance * this.riskToleranceList[this.riskCounter] * allocation);
     const quantity = this.strategyBuilderService.getQuantity(price, 1, cash);
     const order = this.cartService.buildOrderWithAllocation(buySymbol, quantity, price, 'Buy',
       1, null, null,
