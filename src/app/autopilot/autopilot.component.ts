@@ -228,7 +228,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private priceTargetService: PriceTargetService,
     private schedulerService: SchedulerService,
     private algoEvaluationService: AlgoEvaluationService,
-    private autopilotService: AutopilotService
+    public autopilotService: AutopilotService
   ) { }
 
   ngOnInit(): void {
