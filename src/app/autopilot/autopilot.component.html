@@ -70,7 +70,7 @@
     </span>
     <p-tag [value]="dayTradingRiskToleranceList[dayTradeRiskCounter] * 100 +'%'" severity="warning"
         pTooltip="Day trade allocation - percentage of total bp"></p-tag>
-    <p-tag pTooltip="Swing trade allocation - percentage of cash balance" [value]="riskToleranceList[riskCounter] * 100 +'%'"
+    <p-tag pTooltip="Swing trade allocation - percentage of cash balance" [value]="autopilotService.riskToleranceList[autopilotService.riskCounter] * 100 +'%'"
         severity="danger"></p-tag>
     <label for="daytrade-switch">Daytrade mode</label>
     <p-inputSwitch inputId="daytrade-switch" [(ngModel)]="daytradeMode"></p-inputSwitch>
