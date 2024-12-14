@@ -229,6 +229,7 @@ export class OptionsOrderBuilderService {
         }
       }
     }
+    return null;
   }
 
   getCallPutQuantities(callPrice, callQuantity, putPrice, putQuantity, multiple = 1, minCashAllocation: number, maxCashAllocation: number) {

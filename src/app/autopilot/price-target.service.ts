@@ -17,6 +17,14 @@ export class PriceTargetService {
     private reportingService: ReportingService
   ) { }
 
+  isProfitable(invested: number, pl: number, target = 0.05) {
+    return this.getDiff(invested, invested + pl) > target;
+  }
+
+  notProfitable(invested: number, pl: number, target = 0) {
+    return this.getDiff(invested, invested + pl) < target;
+  }
+
   async todaysPortfolioPl() {
     const portData = await this.portfolioService.getTdPortfolio().toPromise();
     const todayPl = portData.reduce((acc, curr) => {
