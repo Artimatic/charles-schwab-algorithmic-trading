@@ -32,6 +32,7 @@ import { FindDaytradeService } from './find-daytrade.service';
 import { PriceTargetService } from './price-target.service';
 import { SchedulerService } from '@shared/service/scheduler.service';
 import { AlgoEvaluationService } from '../algo-evaluation/algo-evaluation.service';
+import { AutopilotService, RiskTolerance } from './autopilot.service';
 
 export interface PositionHoldings {
   name: string;
@@ -100,24 +101,8 @@ export enum Strategy {
   InverseDispersion = 'Inverse dispersion trade',
   InverseStrategies = 'Inverse',
   PerfectPair = 'Perfect Pair',
+  AnyPair = 'Any Pair',
   None = 'None'
-}
-
-export enum RiskTolerance {
-  Zero = 0.005,
-  One = 0.01,
-  Two = 0.025,
-  Lower = 0.05,
-  Low = 0.1,
-  ExtremeFear = 0.15,
-  Fear = 0.2,
-  Neutral = 0.25,
-  Greed = 0.5,
-  ExtremeGreed = 0.6,
-  XLGreed = 0.7,
-  XXLGreed = 0.8,
-  XXXLGreed = 0.9,
-  XXXXLGreed = 1
 }
 
 @Component({
@@ -170,7 +155,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     Strategy.Short,
     Strategy.TradingPairs,
     Strategy.SellBband,
-    Strategy.PerfectPair
+    Strategy.PerfectPair,
+    Strategy.AnyPair
     //Strategy.None
   ];
 
@@ -181,19 +167,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     Strategy.Short
   ];
 
-  riskCounter = 0;
   dayTradeRiskCounter = 0;
-
-  riskToleranceList = [
-    RiskTolerance.One,
-    RiskTolerance.Two,
-    RiskTolerance.Lower,
-    RiskTolerance.Low,
-    RiskTolerance.ExtremeFear,
-    RiskTolerance.Fear,
-    RiskTolerance.Neutral,
-    RiskTolerance.Greed
-  ];
 
   dayTradingRiskToleranceList = [
     RiskTolerance.Low,
@@ -253,7 +227,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private portfolioMgmtService: PortfolioMgmtService,
     private priceTargetService: PriceTargetService,
     private schedulerService: SchedulerService,
-    private algoEvaluationService: AlgoEvaluationService
+    private algoEvaluationService: AlgoEvaluationService,
+    private autopilotService: AutopilotService
   ) { }
 
   ngOnInit(): void {
@@ -261,7 +236,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (lastStrategy && lastStrategy.lastStrategy) {
       const lastStrategyCount = this.strategyList.findIndex(strat => strat.toLowerCase() === lastStrategy.lastStrategy.toLowerCase());
       this.strategyCounter = lastStrategyCount >= 0 ? lastStrategyCount : 0;
-      this.riskCounter = lastStrategy.lastRiskTolerance || 0;
+      this.autopilotService.riskCounter = lastStrategy.lastRiskTolerance || 0;
       console.log('Previous profit loss', lastStrategy);
     } else {
       this.strategyCounter = 0;
@@ -449,7 +424,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         'date': moment().format(),
         profit: profit,
         lastStrategy: this.strategyList[this.strategyCounter],
-        lastRiskTolerance: this.riskCounter,
+        lastRiskTolerance: this.autopilotService.riskCounter,
         profitRecord: tempProfitRecord
       };
       localStorage.setItem('profitLoss', JSON.stringify(profitObj));
@@ -476,8 +451,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   decreaseRiskTolerance() {
-    this.riskCounter = 0;
-    const msg = `Decrease risk to ${this.riskToleranceList[this.riskCounter]}`;
+    this.autopilotService.riskCounter = 0;
+    const msg = `Decrease risk to ${this.autopilotService.riskToleranceList[this.autopilotService.riskCounter]}`;
     console.log(msg);
     this.reportingService.addAuditLog(this.strategyList[this.strategyCounter], msg);
     this.saveRisk();
@@ -491,12 +466,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   increaseRiskTolerance() {
-    if (this.riskCounter < this.riskToleranceList.length - 1) {
-      this.riskCounter++;
+    if (this.autopilotService.riskCounter < this.autopilotService.riskToleranceList.length - 1) {
+      this.autopilotService.riskCounter++;
     }
     this.changeStrategy();
 
-    const msg = `Increase risk to ${this.riskToleranceList[this.riskCounter]}`;
+    const msg = `Increase risk to ${this.autopilotService.riskToleranceList[this.autopilotService.riskCounter]}`;
     console.log(msg);
     this.reportingService.addAuditLog(this.strategyList[this.strategyCounter], msg);
     this.saveRisk();
@@ -513,7 +488,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       'date': moment().format(),
       profit: 0,
       lastStrategy: this.strategyList[this.strategyCounter],
-      lastRiskTolerance: this.riskCounter,
+      lastRiskTolerance: this.autopilotService.riskCounter,
       profitRecord: {}
     };
     const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
@@ -533,7 +508,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       this.strategyCounter = 0;
     }
     const strat = this.strategyList[this.strategyCounter];
-    const msg = `Strategy changed to ${strat}. Risk tolerance ${this.riskCounter}`;
+    const msg = `Strategy changed to ${strat}. Risk tolerance ${this.autopilotService.riskCounter}`;
     this.messageService.add({
       severity: 'info',
       summary: msg
@@ -733,7 +708,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const indicators = allIndicators.signals[allIndicators.signals.length - 1];
         const thresholds = this.getStopLoss(indicators.low, indicators.high);
         await this.cartService.portfolioBuy(holding,
-          allocation || this.riskToleranceList[this.riskCounter],
+          allocation || this.autopilotService.riskToleranceList[this.autopilotService.riskCounter],
           thresholds.profitTakingThreshold,
           thresholds.stopLoss, reason);
         await this.orderHandlingService.intradayStep(holding.name);
@@ -995,7 +970,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     profitThreshold: number = null,
     stopLossThreshold: number = null) {
     await this.cartService.portfolioDaytrade(symbol,
-      allocation || this.riskToleranceList[this.riskCounter],
+      allocation || this.autopilotService.riskToleranceList[this.autopilotService.riskCounter],
       profitThreshold,
       stopLossThreshold);
   }
@@ -1162,7 +1137,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const price = await this.portfolioService.getPrice(buySymbol).toPromise();
     const balance = await this.portfolioService.getTdBalance().toPromise();
     const allocation = backtestData.ml > 0 ? backtestData.ml : 0.01;
-    const cash = (balance.cashBalance < balance.availableFunds * 0.01) ? balance.cashBalance : (balance.cashBalance * this.riskToleranceList[this.riskCounter] * allocation);
+    const cash = (balance.cashBalance < balance.availableFunds * 0.01) ? balance.cashBalance : (balance.cashBalance * this.autopilotService.riskToleranceList[this.autopilotService.riskCounter] * allocation);
     const quantity = this.strategyBuilderService.getQuantity(price, 1, cash);
     const order = this.cartService.buildOrderWithAllocation(buySymbol, quantity, price, 'Buy',
       1, null, null,
@@ -1303,7 +1278,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async hedge() {
-    await this.portfolioMgmtService.hedge(this.currentHoldings, this.optionsOrderBuilderService.getTradingPairs(), this.riskToleranceList[1], this.riskToleranceList[this.riskCounter]);
+    await this.portfolioMgmtService.hedge(this.currentHoldings, this.optionsOrderBuilderService.getTradingPairs(), this.autopilotService.riskToleranceList[1], this.autopilotService.riskToleranceList[this.autopilotService.riskCounter]);
   }
 
   async sellAll() {
@@ -1361,7 +1336,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         break;
       case Strategy.BuySnP:
         const balance = await this.portfolioService.getTdBalance().toPromise();
-        const maxCash = round(this.riskToleranceList[0] * balance.cashBalance);
+        const maxCash = round(this.autopilotService.riskToleranceList[0] * balance.cashBalance);
         await this.strategyBuilderService.buySnP(maxCash, balance.cashBalance);
         await this.getNewTrades(null, null, 1);
         break;
@@ -1372,7 +1347,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.buyWinners();
         break;
       case Strategy.PerfectPair:
-        await this.addPerfectPair();
+        await this.autopilotService.addPerfectPair(this.currentHoldings);
+        break;
+      case Strategy.AnyPair:
+        await this.autopilotService.addAnyPair(this.currentHoldings);
         break;
       case Strategy.BuyML:
         await this.buyByMLSignal();
@@ -1447,41 +1425,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     };
     await this.getNewTrades(inverse);
   }
-  async addPerfectPair() {
-    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
-    const MlBuys = {};
-    const MlSells = {};
-    if (savedBacktest) {
-      for (const saved in savedBacktest) {
-        const backtestObj = savedBacktest[saved];
-        const key = savedBacktest[saved].sellSignals.sort() + savedBacktest[saved].buySignals.sort() + Math.round(savedBacktest[saved].impliedMovement * 100);
-        const symbol = backtestObj.stock
-        if (backtestObj.ml > 0.5) {
-          if (MlBuys[key]) {
-            MlBuys[key].push(symbol);
-          } else {
-            MlBuys[key] = [symbol];
-          }
-        } else if (backtestObj.ml !== null && backtestObj.ml < 0.5) {
-          if (MlSells[key]) {
-            MlSells[key].push(symbol);
-          } else {
-            MlSells[key] = [symbol];
-          }
-        }
-      }
-    }
 
-    for (const buyKey in MlBuys) {
-      if (MlSells[buyKey] && MlSells[buyKey].length) {
-        const cash = await this.getMinMaxCashForOptions();
-        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, 
-          MlBuys[buyKey], MlSells[buyKey], 
-          cash.minCash, cash.maxCash, 'Perfect pair');
-      }
-    }
-  }
-  
   async addVolatilityPairs() {
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     const MlBuys = {};
@@ -1510,8 +1454,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     for (const buyKey in MlBuys) {
       if (MlSells[buyKey] && MlSells[buyKey].length) {
         const cash = await this.getMinMaxCashForOptions();
-        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, 
-          MlBuys[buyKey], MlSells[buyKey], 
+        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings,
+          MlBuys[buyKey], MlSells[buyKey],
           cash.minCash, cash.maxCash, 'Volatility pair');
       }
     }
@@ -1545,8 +1489,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     for (const buyKey in MlBuys) {
       if (MlSells[buyKey] && MlSells[buyKey].length) {
         const cash = await this.getMinMaxCashForOptions();
-        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, 
-          MlBuys[buyKey], MlSells[buyKey], 
+        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings,
+          MlBuys[buyKey], MlSells[buyKey],
           cash.minCash, cash.maxCash, 'Machine learning pair');
       }
     }
@@ -1554,7 +1498,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async buyByMLSignal() {
     const buyWinner = async (symbol: string, prediction: number, backtestData: any) => {
-      if (prediction > 0.8 && this.priceTargetService.getDiff(backtestData.invested, backtestData.invested + backtestData.net) > 0) {
+      if (prediction > 0.8 && this.priceTargetService.isProfitable(backtestData.invested, backtestData.net)) {
         const stock: PortfolioInfoHolding = {
           name: symbol,
           pl: 0,
@@ -1583,20 +1527,20 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       } else {
         matchBuy = backtestData.sellSignals.find(sig => sig === indicator)
       }
-      if (matchBuy && prediction > 0.6 && this.priceTargetService.getDiff(backtestData.invested, backtestData.invested + backtestData.net) > 0) {
+      if (matchBuy && prediction > 0.6 && this.priceTargetService.isProfitable(backtestData.invested, backtestData.net)) {
         if (this.optionsOrderBuilderService.currentTradeIdeas.puts.length) {
           const cash = await this.getMinMaxCashForOptions();
-          await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, 
-            [symbol], this.optionsOrderBuilderService.getSellList(), 
+          await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings,
+            [symbol], this.optionsOrderBuilderService.getSellList(),
             cash.minCash, cash.maxCash, `${direction} ${indicator}`);
         } else {
           this.optionsOrderBuilderService.currentTradeIdeas.calls.push(symbol);
         }
-      } else if (matchBuy && prediction < 0.4 && this.priceTargetService.getDiff(backtestData.invested, backtestData.invested + backtestData.net) > 0) {
+      } else if (matchBuy && prediction < 0.4 && this.priceTargetService.isProfitable(backtestData.invested, backtestData.net)) {
         if (this.optionsOrderBuilderService.currentTradeIdeas.calls.length) {
           const cash = await this.getMinMaxCashForOptions();
-          await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, 
-            this.optionsOrderBuilderService.getBuyList(), [symbol], 
+          await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings,
+            this.optionsOrderBuilderService.getBuyList(), [symbol],
             cash.minCash, cash.maxCash, `${direction} ${indicator}`);
         } else {
           this.optionsOrderBuilderService.currentTradeIdeas.puts.push(symbol);
@@ -1608,7 +1552,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async buyWinners() {
     const buyWinner = async (symbol: string, prediction: number, backtestData: any) => {
-      if (prediction > 0.7 && this.priceTargetService.getDiff(backtestData.invested, backtestData.invested + backtestData.net) > 0.15) {
+      if (prediction > 0.7 && this.priceTargetService.isProfitable(backtestData.invested, backtestData.net)) {
         const stock: PortfolioInfoHolding = {
           name: symbol,
           pl: 0,
@@ -1630,13 +1574,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async getMinMaxCashForOptions() {
     const cash = await this.cartService.getAvailableFunds(false);
-    const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
+    const maxCash = round(this.autopilotService.riskToleranceList[this.autopilotService.riskCounter] * cash, 2);
     const minCash = maxCash - (cash * RiskTolerance.Zero);
     return {
       maxCash,
       minCash
     };
   }
+
   async createTradingPairs() {
     const cash = await this.getMinMaxCashForOptions();
     await this.optionsOrderBuilderService.createTradingPair(this.currentHoldings, cash.minCash, cash.maxCash);
@@ -1644,10 +1589,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async buyCallsOrPuts(optionsType = 'calls') {
     const findCalls = async (symbol: string, prediction: number, backtestData: any) => {
-      if (prediction > 0.7 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
+      if (prediction > 0.7 &&
+        (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY') &&
+        (this.priceTargetService.isProfitable(backtestData.invested, backtestData.net))) {
         const cash = await this.getMinMaxCashForOptions();
 
-        const option = await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, 
+        const option = await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings,
           [symbol], [symbol], cash.minCash, cash.maxCash, `Buy ${optionsType}`);
         this.optionsOrderBuilderService.addTradingPairs([option[0]]);
       }
@@ -1657,7 +1604,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       if (prediction < 0.3 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
         const cash = await this.getMinMaxCashForOptions();
 
-        const option = await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, 
+        const option = await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings,
           [symbol], [symbol], cash.minCash, cash.maxCash, 'Buy puts');
         this.optionsOrderBuilderService.addTradingPairs([option[0]]);
       }
@@ -1669,7 +1616,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const findPuts = async (symbol: string, prediction: number, backtestData: any) => {
       if (prediction < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
         const cash = await this.getMinMaxCashForOptions();
-        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings, 
+        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings,
           ['SPY'], [symbol], cash.minCash, cash.maxCash, 'Inverse dispersion');
       } else if ((prediction > 0.8 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
         const stock: PortfolioInfoHolding = {
@@ -1765,7 +1712,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   hasReachedBuyLimit(maxTradeCount = this.maxTradeCount) {
-    return (this.optionsOrderBuilderService.getTradingPairs().length + this.addedOrdersCount + this.cartService.buyOrders.length + this.cartService.otherOrders.length) >= maxTradeCount;
+    return (this.optionsOrderBuilderService.getTradingPairs().length + this.addedOrdersCount + this.cartService.buyOrders.length + this.cartService.otherOrders.length) >= 3;
   }
 
   unsubscribeStockFinder() {

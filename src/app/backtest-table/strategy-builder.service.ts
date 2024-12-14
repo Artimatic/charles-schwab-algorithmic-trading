@@ -64,7 +64,7 @@ export class StrategyBuilderService {
     }
     return { buySignals, sellSignals };
   }
-
+  
   async getBacktestData(symbol: string, overwrite = false) {
     const recentBacktest = this.getRecentBacktest(symbol);
     if (recentBacktest && !overwrite) {
