@@ -471,7 +471,7 @@ export class OptionsOrderBuilderService {
           }
           if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
             if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.80)) {
-              const reason = 'Low volatility';
+              const reason = trade[0].reason ? trade[0].reason : 'Low volatility';
               this.cartService.addToCart(trade[0], true, reason);
               this.removeTradingPair(trade[0].holding.symbol);
             }
@@ -479,14 +479,14 @@ export class OptionsOrderBuilderService {
         } else {
           const shouldBuy = await this.shouldBuyOption(trade[0].holding.symbol);
           if (shouldBuy) {
-            this.addTradingPair(trade, 'Low volatility');
+            this.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Low volatility');
           }
         }
       } else if (trade.length === 2 && trade[0] && trade[1]) {
         const shouldBuyCall = await this.shouldBuyOption(trade[0].holding.symbol);
         const shouldBuyPut = await this.shouldBuyOption(trade[1].holding.symbol);
         if (shouldBuyCall && shouldBuyPut) {
-          this.addTradingPair(trade, 'Low volatility');
+          this.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Low volatility');
         }
       }
     }
