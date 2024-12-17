@@ -1536,7 +1536,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else {
           this.optionsOrderBuilderService.currentTradeIdeas.calls.push(symbol);
         }
-      } else if (matchBuy && prediction < 0.4 && this.priceTargetService.isProfitable(backtestData.invested, backtestData.net)) {
+      } else if (matchBuy && prediction < 0.4 && this.priceTargetService.notProfitable(backtestData.invested, backtestData.net)) {
         if (this.optionsOrderBuilderService.currentTradeIdeas.calls.length) {
           const cash = await this.getMinMaxCashForOptions();
           await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings,
