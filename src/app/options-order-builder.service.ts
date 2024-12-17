@@ -165,7 +165,9 @@ export class OptionsOrderBuilderService {
             underlying: buy
           };
           let currentPut = null;
-          if (callPrice > 200 && callPrice < 8000 && callPrice >= minCashAllocation && callPrice <= maxCashAllocation) {
+          if (callPrice > 200 && callPrice < 8000 &&
+            callPrice >= minCashAllocation &&
+            callPrice <= maxCashAllocation) {
             for (const sell of sellList) {
               if (!currentHoldings || !currentHoldings.find(holding => holding.name === sell)) {
                 const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
@@ -209,13 +211,13 @@ export class OptionsOrderBuilderService {
             }
 
             if (currentPut && currentCall) {
-              const option1 = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], 
-                currentCall.price, currentCall.quantity, 
+              const option1 = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call],
+                currentCall.price, currentCall.quantity,
                 OrderTypes.call, reason,
                 'Buy', currentCall.quantity);
-              const option2 = this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put], 
-                currentPut.price, currentPut.quantity, 
-                OrderTypes.put, reason, 
+              const option2 = this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put],
+                currentPut.price, currentPut.quantity,
+                OrderTypes.put, reason,
                 'Buy', currentCall.quantity);
 
               if (addToList) {
