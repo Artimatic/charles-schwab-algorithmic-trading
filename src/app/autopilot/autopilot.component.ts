@@ -1673,7 +1673,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
         this.currentHoldings = await this.cartService.findCurrentPositions();
         await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
-        if (balance.cashBalance / balance.liquidationValue < 0.6) {
+        if (balance.cashBalance / balance.liquidationValue < 0.8) {
           const metTarget = await this.priceTargetService.checkProfitTarget(this.currentHoldings);
           if (metTarget) {
             this.decreaseRiskTolerance();
