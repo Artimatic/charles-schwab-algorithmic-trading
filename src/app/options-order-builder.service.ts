@@ -224,7 +224,7 @@ export class OptionsOrderBuilderService {
               return [option1, option2];
             }
           } else {
-            console.log('Call price too low or high', bullishStrangle.call, callPrice);
+            console.log('Call price too low or high', bullishStrangle.call, callPrice, minCashAllocation, maxCashAllocation);
           }
         }
       }
