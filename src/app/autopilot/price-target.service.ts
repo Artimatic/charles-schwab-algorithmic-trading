@@ -43,6 +43,13 @@ export class PriceTargetService {
     return  (currentValue - cost) / cost;
   }
 
+  async isDownDay() {
+    const symbol = 'SPY';
+    const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
+    const diff = this.getDiff(price[symbol].quote.closePrice, price[symbol].quote.lastPrice);
+    return diff < 0.002;
+  }
+
   async hasMetPriceTarget() {
       const symbol = 'SPY';
       const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
