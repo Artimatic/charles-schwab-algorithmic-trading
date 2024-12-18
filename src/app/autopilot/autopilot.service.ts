@@ -120,11 +120,11 @@ export class AutopilotService {
       const cash = await this.getMinMaxCashForOptions();
 
       let initial = null;
-      do {
+      while (buyList.length && sellList.length && !initial){
         initial = await this.optionsOrderBuilderService.balanceTrades(currentHoldings,
           [buyList.pop()], [sellList.pop()],
           cash.minCash, cash.maxCash, 'Any pair', true);
-      } while (!initial)
+      }
       return initial;
     }
     return null;
