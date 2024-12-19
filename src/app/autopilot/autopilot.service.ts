@@ -34,7 +34,6 @@ export class AutopilotService {
   addedOrdersCount = 0;
   maxTradeCount = 10;
   riskToleranceList = [
-    RiskTolerance.One,
     RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,
@@ -144,7 +143,7 @@ export class AutopilotService {
   }
 
   hasReachedBuyLimit(addedOrdersCount = this.addedOrdersCount) {
-    return (this.optionsOrderBuilderService.getTradingPairs().length + addedOrdersCount + this.cartService.buyOrders.length + this.cartService.otherOrders.length) >= 3;
+    return (this.optionsOrderBuilderService.getTradingPairs().length + addedOrdersCount + this.cartService.buyOrders.length + this.cartService.otherOrders.length) > 2;
   }
 
   getTechnicalIndicators(stock: string, startDate: string, currentDate: string) {
