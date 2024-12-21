@@ -940,9 +940,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         console.log(lastProfitMsg);
         this.reportingService.addAuditLog(this.strategyList[this.strategyCounter], lastProfitMsg);
 
+        const metTarget = await this.priceTargetService.checkProfitTarget(this.currentHoldings);
+        console.log('Met target', metTarget);
         if (profit > 0) {
           this.increaseDayTradeRiskTolerance();
-        } else if (profit < 0) {
+        } else if (profit < 0 || !metTarget) {
           this.decreaseDayTradeRiskTolerance();
           this.increaseRiskTolerance();
         } else {
@@ -1566,7 +1568,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
         this.currentHoldings = await this.cartService.findCurrentPositions();
         await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
-        if (balance.cashBalance / balance.liquidationValue < 0.8) {
+        if (balance.cashBalance / balance.liquidationValue < 0.6) {
           const metTarget = await this.priceTargetService.checkProfitTarget(this.currentHoldings);
           if (metTarget) {
             this.decreaseRiskTolerance();

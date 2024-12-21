@@ -97,4 +97,8 @@ export class PriceTargetService {
       return previousValue
     }, { call: 0, put: 0});
   }
+
+  calculateOptionChangeOfProfit(delta: number) {
+    return delta;
+  }
 }
