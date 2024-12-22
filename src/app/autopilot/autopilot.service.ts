@@ -34,6 +34,7 @@ export class AutopilotService {
   addedOrdersCount = 0;
   maxTradeCount = 10;
   riskToleranceList = [
+    RiskTolerance.One,
     RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,

@@ -50,11 +50,11 @@ export class PriceTargetService {
     return diff < 0.002;
   }
 
-  async hasMetPriceTarget() {
+  async hasMetPriceTarget(target = this.targetDiff) {
       const symbol = 'SPY';
       const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
       const portfolioPl = await this.todaysPortfolioPl();
-      const priceTarget = this.getDiff(price[symbol].quote.closePrice, price[symbol].quote.lastPrice) + this.targetDiff;
+      const priceTarget = this.getDiff(price[symbol].quote.closePrice, price[symbol].quote.lastPrice) + target;
       this.portfolioPl = portfolioPl;
       if (portfolioPl && portfolioPl > priceTarget) {
         this.reportingService.addAuditLog(null, `Profit target met. Portfolio PnL: ${portfolioPl}. target: ${priceTarget}`);
@@ -63,8 +63,8 @@ export class PriceTargetService {
       return false;
   }
 
-  async checkProfitTarget(retrievedHoldings: PortfolioInfoHolding[] = null) {
-    const targetMet = await this.hasMetPriceTarget();
+  async checkProfitTarget(retrievedHoldings: PortfolioInfoHolding[] = null, target = this.targetDiff) {
+    const targetMet = await this.hasMetPriceTarget(target);
     if (targetMet) {
       const holdings = retrievedHoldings? retrievedHoldings : await this.cartService.findCurrentPositions();
       holdings.forEach(async(portItem: PortfolioInfoHolding) => {
