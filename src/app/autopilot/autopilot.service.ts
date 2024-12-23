@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BacktestService, CartService, PortfolioInfoHolding } from '@shared/services';
+import { BacktestService, CartService, PortfolioInfoHolding, ReportingService } from '@shared/services';
 import { round } from 'lodash';
 import * as moment from 'moment-timezone';
 import { OptionsOrderBuilderService } from '../options-order-builder.service';
@@ -48,7 +48,8 @@ export class AutopilotService {
     private machineDaytradingService: MachineDaytradingService,
     private strategyBuilderService: StrategyBuilderService,
     private backtestService: BacktestService,
-    private orderHandlingService: OrderHandlingService
+    private orderHandlingService: OrderHandlingService,
+    private reportingService: ReportingService
   ) { }
 
   async getMinMaxCashForOptions() {
@@ -110,11 +111,13 @@ export class AutopilotService {
         const buys = backtestResults.filter(backtestData => backtestData.ml > 0.5 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY'));
         buys.sort((a, b) => a.pnl - b.pnl);
         buyList = buys.map(b => b.stock);
+        this.reportingService.addAuditLog(null, `Buys: ${buyList.join(', ')}`);
       }
       if (!sellList) {
         const sells = sellList ? sellList : backtestResults.filter(backtestData => backtestData.ml < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'));
         sells.sort((a, b) => b.pnl - a.pnl);
         sellList = sells.map(b => b.stock);
+        this.reportingService.addAuditLog(null, `Sells: ${sellList.join(', ')}`);
       }
       console.log('sorted', buyList, sellList);
       const cash = await this.getMinMaxCashForOptions();
