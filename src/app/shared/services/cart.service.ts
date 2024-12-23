@@ -335,7 +335,7 @@ export class CartService {
     orderSize = 1,
     executeImmediately = false,
     ) {
-    const foundExistingOrder = this.buyOrders.find(order => order.primaryLegs && order.holding.symbol === symbol && order.primaryLegs[0].symbol === primaryLegs[0].symbol && !order.secondaryLegs);
+    const foundExistingOrder = this.buyOrders.find(order => order.primaryLegs && order.holding.symbol === symbol && !order.secondaryLegs);
     if (foundExistingOrder) {
       console.log('Found existing buy order', foundExistingOrder);
       return null;
