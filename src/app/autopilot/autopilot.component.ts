@@ -1571,7 +1571,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
         await this.checkIfOverBalance(balance);
         await this.balanceCallPutRatio(this.currentHoldings);
-        await this.autopilotService.checkIntradayStrategies(this.currentHoldings);
+        await this.autopilotService.checkIntradayStrategies();
       } else {
         this.executeOrderList();
         if (this.strategyList[this.strategyCounter] === Strategy.Daytrade &&
