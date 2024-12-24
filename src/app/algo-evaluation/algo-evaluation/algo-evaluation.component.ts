@@ -13,6 +13,7 @@ export class AlgoEvaluationComponent implements OnInit {
     { field: 'buySignals', header: 'Buy' },
     { field: 'sellSignals', header: 'Sell' },
     { field: 'recommendation', header: 'Recommendation' },
+    { field: 'returns', header: 'Returns' },
     { field: 'impliedMovement', header: 'Implied Movement' }
   ];
   selectedStock: any;

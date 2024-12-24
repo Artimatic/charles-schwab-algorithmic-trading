@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BacktestService, CartService, PortfolioInfoHolding } from '@shared/services';
+import { BacktestService, CartService, PortfolioInfoHolding, PortfolioService, ReportingService } from '@shared/services';
 import { round } from 'lodash';
 import * as moment from 'moment-timezone';
 import { OptionsOrderBuilderService } from '../options-order-builder.service';
@@ -48,7 +48,9 @@ export class AutopilotService {
     private machineDaytradingService: MachineDaytradingService,
     private strategyBuilderService: StrategyBuilderService,
     private backtestService: BacktestService,
-    private orderHandlingService: OrderHandlingService
+    private orderHandlingService: OrderHandlingService,
+    private reportingService: ReportingService,
+    private portfolioService: PortfolioService
   ) { }
 
   async getMinMaxCashForOptions() {
@@ -110,11 +112,13 @@ export class AutopilotService {
         const buys = backtestResults.filter(backtestData => backtestData.ml > 0.5 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY'));
         buys.sort((a, b) => a.pnl - b.pnl);
         buyList = buys.map(b => b.stock);
+        this.reportingService.addAuditLog(null, `Buys: ${buyList.join(', ')}`);
       }
       if (!sellList) {
         const sells = sellList ? sellList : backtestResults.filter(backtestData => backtestData.ml < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'));
         sells.sort((a, b) => b.pnl - a.pnl);
         sellList = sells.map(b => b.stock);
+        this.reportingService.addAuditLog(null, `Sells: ${sellList.join(', ')}`);
       }
       console.log('sorted', buyList, sellList);
       const cash = await this.getMinMaxCashForOptions();
@@ -197,6 +201,25 @@ export class AutopilotService {
       };
       await this.addBuy(stock, null, 'Swing trade buy');
     }
+  }
+
+  async buyUpro() {
+    const backtestData = await this.strategyBuilderService.getBacktestData('SPY');
+    const allocation = backtestData.ml > 0 ? backtestData.ml : 0.01;
+    const stock: PortfolioInfoHolding = {
+      name: 'UPRO',
+      pl: 0,
+      netLiq: 0,
+      shares: 0,
+      alloc: 0,
+      recommendation: 'None',
+      buyReasons: '',
+      sellReasons: '',
+      buyConfidence: 0,
+      sellConfidence: 0,
+      prediction: null
+    };
+    await this.addBuy(stock, allocation, 'Swing trade buy');
   }
 
   async getNewTrades(cb = null, list = null, currentHoldings) {

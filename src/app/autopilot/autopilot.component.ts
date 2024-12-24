@@ -102,6 +102,7 @@ export enum Strategy {
   InverseStrategies = 'Inverse',
   PerfectPair = 'Perfect Pair',
   AnyPair = 'Any Pair',
+  UPRO = 'Buy UPRO',
   None = 'None'
 }
 
@@ -141,7 +142,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     Strategy.SellMfi,
     Strategy.BuyCalls,
     Strategy.BuyBband,
-    Strategy.Daytrade,
+    // Strategy.Daytrade,
     Strategy.BuyMfiDiv,
     Strategy.TrimHoldings,
     Strategy.VolatilityPairs,
@@ -201,6 +202,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   manualStart = false;
   daytradeMode = false;
   isLive = false;
+  tradeObserverSub;
 
   constructor(
     private portfolioService: PortfolioService,
@@ -239,16 +241,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     } else {
       this.strategyCounter = 0;
     }
-
-    this.findDaytradeService.getTradeObserver()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((trade: Trade) => {
-        this.lastReceivedRecommendation = moment();
-        if (this.hasTradeCapacity()) {
-          this.addDaytrade(trade.stock);
-          this.cartService.removeCompletedOrders();
-        }
-      });
 
     this.startButtonOptions = [
       {
@@ -362,7 +354,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.backtestOneStock(true, false);
           if (!this.schedulerService.executeTask()) {
             if (this.isLive) {
-              this.findDaytradeService.getRefreshObserver().next(true);
+              this.triggerDaytradeRefresh();
             } else {
               this.padOrders(startStopTime.startDateTime, startStopTime.endDateTime);
             }
@@ -813,7 +805,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const price = await this.backtestService.getLastPriceTiingo({ symbol: holding.name }).toPromise();
     const lastPrice = price[holding.name].quote.lastPrice;
 
-    const isOptionOnly = !this.cartService.isStrangle(holding) && holding.primaryLegs && holding.shares === 0;
+    const isOptionOnly = holding.primaryLegs && !holding.shares;
     if (backtestResults.averageMove) {
       if (isOptionOnly) {
         stopLoss = (backtestResults.averageMove / lastPrice) * -12;
@@ -1286,6 +1278,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       case Strategy.InverseStrategies:
         await this.inverseStrategies();
         break;
+      case Strategy.UPRO:
+        await this.autopilotService.buyUpro();
+        break;
       default: {
         await this.createTradingPairs();
         await this.addInverseDispersionTrade();
@@ -1581,7 +1576,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         this.executeOrderList();
         if (this.strategyList[this.strategyCounter] === Strategy.Daytrade &&
           (this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
-          this.findDaytradeService.getRefreshObserver().next(true);
+          this.triggerDaytradeRefresh();
         }
       }
     }
@@ -1607,11 +1602,37 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     });
   }
 
+  handleDaytrade() {
+    if (this.tradeObserverSub) {
+      this.tradeObserverSub.unsubscribe();
+    }
+    if (this.daytradeMode) {
+      this.tradeObserverSub = this.findDaytradeService.getTradeObserver()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((trade: Trade) => {
+        this.lastReceivedRecommendation = moment();
+        if (this.hasTradeCapacity()) {
+          this.addDaytrade(trade.stock);
+          this.cartService.removeCompletedOrders();
+        }
+      });
+    }
+  }
+
+  triggerDaytradeRefresh() {
+    if (this.daytradeMode) {
+      this.findDaytradeService.getRefreshObserver().next(true);
+    }
+  }
+
   cleanUp() {
     this.resetCart();
     if (this.destroy$) {
       this.destroy$.next();
       this.destroy$.complete();
+    }
+    if (this.tradeObserverSub) {
+      this.tradeObserverSub.unsubscribe();
     }
     if (this.backtestBuffer$) {
       this.backtestBuffer$.unsubscribe();
