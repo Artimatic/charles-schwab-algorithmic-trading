@@ -8,6 +8,7 @@ import { MachineDaytradingService } from '../machine-daytrading/machine-daytradi
 import { CurrentStockList } from '../rh-table/stock-list.constant';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
+import { OrderTypes } from '@shared/models/smart-order';
 
 export enum RiskTolerance {
   Zero = 0.005,
@@ -98,7 +99,7 @@ export class AutopilotService {
     }
   }
 
-  async addAnyPair(currentHoldings, buyList = null, sellList = null, addToList = true) {
+  async addAnyPair(currentHoldings, buyList = null, sellList = null) {
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     const backtestResults = [];
     if (savedBacktest) {
@@ -124,7 +125,7 @@ export class AutopilotService {
       const cash = await this.getMinMaxCashForOptions();
 
       let initial = null;
-      while (buyList.length && sellList.length && !initial){
+      while (buyList.length && sellList.length && !initial) {
         initial = await this.optionsOrderBuilderService.balanceTrades(currentHoldings,
           [buyList.pop()], [sellList.pop()],
           cash.minCash, cash.maxCash, 'Any pair', true);
@@ -134,15 +135,19 @@ export class AutopilotService {
     return null;
   }
 
-  async checkIntradayStrategies(currentHoldings) {
+  async checkIntradayStrategies() {
     const start = moment().tz('America/New_York').set({ hour: 10, minute: 15 });
-    const end = moment().tz('America/New_York').set({ hour: 10, minute: 45 });
+    const end = moment().tz('America/New_York').set({ hour: 11, minute: 0 });
     if (moment().isAfter(moment(start)) &&
       moment().isBefore(moment(end))) {
       const isDown = await this.priceTargetService.isDownDay();
       if (isDown) {
-        const order = await this.addAnyPair(currentHoldings, ['SPY']);
-        this.optionsOrderBuilderService.addTradingPair(order, 'SPY down day');
+        const spy = 'SPY';
+        const callOption = await this.strategyBuilderService.getCallStrangleTrade(spy);
+        const estimatedPrice = this.strategyBuilderService.findOptionsPrice(callOption.call.bid, callOption.call.ask);
+        this.cartService.addOptionOrder(spy, [callOption.call],
+          estimatedPrice, 1, OrderTypes.call, 'Buy',
+          'Buying the dip');
       }
     }
   }
