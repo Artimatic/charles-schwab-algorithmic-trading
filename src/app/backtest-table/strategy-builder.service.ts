@@ -186,6 +186,9 @@ export class StrategyBuilderService {
     while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 6) {
       expiration++;
       let strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
+      if (!strategyList) {
+        console.log('Unable to find options chain for', optionsChain);
+      }
       potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
         if ((!prev.call || (Math.abs(Number(curr.strategyStrike) - goal) < Math.abs(Number(prev.call.strikePrice) - goal)))) {
           if (curr.secondaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.secondaryLeg.openInterest, curr.secondaryLeg.totalVolume, prev.call)) {

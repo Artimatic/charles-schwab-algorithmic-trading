@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BacktestService, CartService, PortfolioInfoHolding, ReportingService } from '@shared/services';
+import { BacktestService, CartService, PortfolioInfoHolding, PortfolioService, ReportingService } from '@shared/services';
 import { round } from 'lodash';
 import * as moment from 'moment-timezone';
 import { OptionsOrderBuilderService } from '../options-order-builder.service';
@@ -49,7 +49,8 @@ export class AutopilotService {
     private strategyBuilderService: StrategyBuilderService,
     private backtestService: BacktestService,
     private orderHandlingService: OrderHandlingService,
-    private reportingService: ReportingService
+    private reportingService: ReportingService,
+    private portfolioService: PortfolioService
   ) { }
 
   async getMinMaxCashForOptions() {
@@ -200,6 +201,25 @@ export class AutopilotService {
       };
       await this.addBuy(stock, null, 'Swing trade buy');
     }
+  }
+
+  async buyUpro() {
+    const backtestData = await this.strategyBuilderService.getBacktestData('SPY');
+    const allocation = backtestData.ml > 0 ? backtestData.ml : 0.01;
+    const stock: PortfolioInfoHolding = {
+      name: 'UPRO',
+      pl: 0,
+      netLiq: 0,
+      shares: 0,
+      alloc: 0,
+      recommendation: 'None',
+      buyReasons: '',
+      sellReasons: '',
+      buyConfidence: 0,
+      sellConfidence: 0,
+      prediction: null
+    };
+    await this.addBuy(stock, allocation, 'Swing trade buy');
   }
 
   async getNewTrades(cb = null, list = null, currentHoldings) {
