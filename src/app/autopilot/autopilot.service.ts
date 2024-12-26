@@ -34,8 +34,8 @@ export class AutopilotService {
   riskCounter = 0;
   addedOrdersCount = 0;
   maxTradeCount = 10;
+  lastSpyMl = 0;
   riskToleranceList = [
-    RiskTolerance.One,
     RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,
@@ -252,5 +252,13 @@ export class AutopilotService {
       }
       counter--;
     }
+  }
+
+  setLastSpyMl(val: number) {
+    this.lastSpyMl = val;
+  }
+
+  getLastSpyMl() {
+    return this.lastSpyMl;
   }
 }

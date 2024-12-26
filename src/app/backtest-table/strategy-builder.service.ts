@@ -12,6 +12,7 @@ import { Indicators } from '@shared/stock-backtest.interface';
 import { MessageService } from 'primeng/api';
 import { AlwaysBuy } from '../rh-table/backtest-stocks.constant';
 import { SchedulerService } from '@shared/service/scheduler.service';
+import { BacktestAggregatorService } from './backtest-aggregator.service';
 
 export interface ComplexStrategy {
   state: 'assembling' | 'assembled' | 'disassembling' | 'disassembled';
@@ -36,15 +37,16 @@ export class StrategyBuilderService {
     private messageService: MessageService,
     private swingtradeStrategiesService: SwingtradeStrategiesService,
     private schedulerService: SchedulerService,
-    private cartService: CartService) { }
+    private cartService: CartService,
+    private backtestAggregatorService: BacktestAggregatorService) { }
 
-  getRecentBacktest(symbol: string = null) {
+  getRecentBacktest(symbol: string = null, expiry = 1) {
     const backtestStorage = this.getStorage('backtest');
     if (!symbol) {
       return backtestStorage;
     }
     const backtestData = backtestStorage[symbol];
-    if (backtestData && backtestData.backtestDate && moment().diff(moment(backtestData.backtestDate), 'days') < 1) {
+    if (backtestData && backtestData.backtestDate && moment().diff(moment(backtestData.backtestDate), 'days') < expiry) {
       return backtestData;
     }
     return null;
@@ -75,6 +77,7 @@ export class StrategyBuilderService {
 
     try {
       const results = await this.backtestService.getBacktestEvaluation(symbol, start, current, 'daily-indicators').toPromise();
+      this.backtestAggregatorService.analyseBacktest(results);
       const indicatorResults = this.swingtradeStrategiesService.processSignals(results);
       this.addToOrderHistoryStorage(symbol, indicatorResults.orderHistory);
       indicatorResults.stock = symbol;
@@ -144,7 +147,10 @@ export class StrategyBuilderService {
       return tableObj;
     } catch (error) {
       console.log(`Backtest table error ${symbol}`, new Date().toString(), error);
-      this.schedulerService.schedule(() => this.getBacktestData(symbol), 'Rebacktest');
+      const lastBacktest = this.getRecentBacktest(symbol, 30); 
+      if (lastBacktest && lastBacktest.net && lastBacktest.net > 10) {
+        this.schedulerService.schedule(() => this.getBacktestData(symbol), 'Rebacktest');
+      }
     }
     return null;
   }

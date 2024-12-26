@@ -33,6 +33,7 @@ import { PriceTargetService } from './price-target.service';
 import { SchedulerService } from '@shared/service/scheduler.service';
 import { AlgoEvaluationService } from '../algo-evaluation/algo-evaluation.service';
 import { AutopilotService, RiskTolerance } from './autopilot.service';
+import { BacktestAggregatorService } from '../backtest-table/backtest-aggregator.service';
 
 export interface PositionHoldings {
   name: string;
@@ -228,7 +229,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private priceTargetService: PriceTargetService,
     private schedulerService: SchedulerService,
     private algoEvaluationService: AlgoEvaluationService,
-    public autopilotService: AutopilotService
+    public autopilotService: AutopilotService,
+    private backtestAggregatorService: BacktestAggregatorService
   ) { }
 
   ngOnInit(): void {
@@ -517,6 +519,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async developStrategy() {
+    console.log(this.backtestAggregatorService.getTimeLine());
+    this.backtestAggregatorService.clearTimeLine();
     if (this.manualStart) {
       return;
     }
@@ -982,7 +986,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async balanceCallPutRatio(holdings: PortfolioInfoHolding[]) {
     const results = this.priceTargetService.getCallPutBalance(holdings);
-    if (results.put > results.call) {
+    if (results.put + (results.put * this.autopilotService.getLastSpyMl()) > results.call) {
       const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade('SPY');
       const callPrice = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) * 100;
       const targetBalance = (results.put - results.call);
@@ -1025,6 +1029,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const price = await this.portfolioService.getPrice(buySymbol).toPromise();
     const balance = await this.portfolioService.getTdBalance().toPromise();
     const allocation = backtestData.ml > 0 ? backtestData.ml : 0.01;
+    this.autopilotService.setLastSpyMl(backtestData.ml);
     const cash = (balance.cashBalance < balance.availableFunds * 0.01) ? balance.cashBalance : (balance.cashBalance * this.autopilotService.riskToleranceList[this.autopilotService.riskCounter] * allocation);
     const quantity = this.strategyBuilderService.getQuantity(price, 1, cash);
     const order = this.cartService.buildOrderWithAllocation(buySymbol, quantity, price, 'Buy',
