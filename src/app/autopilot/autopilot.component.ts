@@ -125,7 +125,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   currentHoldings: PortfolioInfoHolding[] = [];
   strategyCounter = null;
   maxTradeCount = 10;
-  maxHoldings = 30;
+  maxHoldings = 100;
   addedOrdersCount = 0;
   developedStrategy = false;
   tradingPairsCounter = 0;
@@ -819,7 +819,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       } else {
         stopLoss = (backtestResults.averageMove / lastPrice) * -3;
         this.reportingService.addAuditLog(holding.name, `Setting stock stop loss to ${stopLoss}`);
-        profitTarget = (backtestResults.averageMove / lastPrice) / 5;
+        profitTarget = (backtestResults.averageMove / lastPrice) * 5;
         this.reportingService.addAuditLog(holding.name, `Setting stock profit target to ${profitTarget}`);
       }
     }
@@ -829,13 +829,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       } else {
         await this.cartService.portfolioSell(holding, `Stop loss ${pnl}`);
       }
-    } else if (pnl > profitTarget * 0.9) {
+    } else if (pnl > profitTarget) {
       if (isOptionOnly) {
         await this.sellOptionsHolding(holding, `Options price target reached ${pnl}`);
       } else {
         await this.cartService.portfolioSell(holding, `Price target met ${pnl}`);
       }
-    } else if (pnl > 0 && pnl < profitTarget * 0.05) {
+    } else if (pnl < profitTarget * 0.1) {
       if (!isOptionOnly) {
         await this.autopilotService.addBuy(holding, null, 'Profit loss is positive');
       }
