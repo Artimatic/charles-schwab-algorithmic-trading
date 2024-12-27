@@ -49,7 +49,7 @@ export class StrategyBuilderService {
     if (backtestData && backtestData.backtestDate && moment().diff(moment(backtestData.backtestDate), 'days') < expiry) {
       return backtestData;
     }
-    return null;
+    return [];
   }
 
   getBuySellSignals(lastSignal: Indicators) {
