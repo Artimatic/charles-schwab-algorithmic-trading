@@ -532,7 +532,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             });
         }
         const resolve = (response) => {
-          console.log(`${moment().format('hh:mm')} ${log}`);
+          console.log(`${moment().format('hh:mm')} - ${log}`);
           this.reportingService.addAuditLog(this.order.holding.symbol, log);
         };
 
@@ -558,7 +558,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
               this.scoreKeeperService.addProfitLoss(this.order.holding.symbol, pl);
             });
         }
-        console.log(`${moment(order.signalTime).format('hh:mm')} ${log}`);
+        console.log(`${moment(order.signalTime).format('hh:mm')}: ${log}`);
         this.reportingService.addAuditLog(this.order.holding.symbol, log);
 
         this.clientSmsService.sendSellSms(order.holding.symbol, this.firstFormGroup.value.phoneNumber, order.price, order.quantity).subscribe();
@@ -591,7 +591,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     let log = this.createLog(signalTime, analysis);
 
     console.log(log);
-    this.reportingService.addAuditLog(this.order.holding.symbol, log);
+    this.reportingService.addAuditLog(this.order.holding.symbol, 'Buy order: ' + log);
     return this.daytradeService.createOrder(this.order.holding, 'Buy', orderQuantity, price, signalTime);
   }
 
@@ -600,7 +600,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
     if (log) {
       console.log(log);
-      this.reportingService.addAuditLog(this.order.holding.symbol, log);
+      this.reportingService.addAuditLog(this.order.holding.symbol, 'Sell order: ' + log);
     } else {
       console.log('Unable to create sell log for ', this.order.holding.symbol, analysis);
     }
