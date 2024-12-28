@@ -98,7 +98,7 @@ export class StockListDialogComponent implements OnInit {
     this.stockList = this.strategyBuilderService.getBuyList();
   }
 
-  addRow(stock: string) {
+  addRow(stock: string = null) {
     stock = stock ? stock : this.newStock;
     stock = stock.toUpperCase();
     switch (this.activeList.value) {
