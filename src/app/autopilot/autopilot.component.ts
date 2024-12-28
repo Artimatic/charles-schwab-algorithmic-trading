@@ -998,6 +998,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       };
       const reason = 'Balance call put ratio';
       this.cartService.addOptionOrder(currentCall.underlying, [currentCall.call], callPrice, currentCall.quantity || 1, OrderTypes.call, 'Buy', reason);
+      this.autopilotService.buyUpro('Balance call put ratio', 0.01);
     } else if (results.call / results.put > 2) {
       await this.trimHoldings();
     }

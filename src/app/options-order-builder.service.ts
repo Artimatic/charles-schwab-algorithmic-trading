@@ -81,6 +81,18 @@ export class OptionsOrderBuilderService {
     const hashValue = this.getTradeHashValue(orders);
     this.tradingPairDate[hashValue] = new Date().valueOf();
     this.tradingPairs.push(orders);
+    const calls = [];
+    const puts = [];
+    orders.forEach(order => {
+      if (order.type === OrderTypes.call) {
+        calls.push(order.holding.symbol);
+      } else if (order.type === OrderTypes.put) {
+        puts.push(order.holding.symbol);
+      }
+    });
+    if (calls.length && puts.length) {
+      this.strategyBuilderService.createStrategy('Pair', calls[0], calls, puts);
+    }
   }
 
   removeTradingPair(symbol1: string, symbol2: string = null) {
@@ -344,7 +356,7 @@ export class OptionsOrderBuilderService {
       backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
     }
     if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
-      if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.8)) {
+      if (Math.abs(lastPrice - closePrice) < backtestResults.averageMove) {
         return true;
       }
     }

@@ -384,6 +384,21 @@ export class StrategyBuilderService {
     return newBacktestData;
   }
 
+  createStrategy(tradeName: string, key: string, buyList: string[], sellList: string[], reason = 'pair') {
+    const trade = {
+      name: tradeName,
+      date: moment().format(),
+      type: 'pairTrade',
+      key: key,
+      strategy: {
+        buy: buyList,
+        sell: sellList
+      },
+      reason: reason
+    };
+    this.addTradingStrategy(trade);
+  }
+
   findTrades() {
     const backtests = this.sanitizeData();
     const tradingPairs = JSON.parse(localStorage.getItem('tradingPairs'));
@@ -396,18 +411,7 @@ export class StrategyBuilderService {
             for (const pairVal of pairs) {
               if (pairVal !== null && backtests[pairVal.symbol] && backtests[pairVal.symbol].ml !== null && (!backtests[pairVal.symbol].optionsChainLength || backtests[pairVal.symbol].optionsChainLength > 10)) {
                 if (backtests[pairVal.symbol].ml < 0.5 && (backtests[pairVal.symbol].recommendation.toLowerCase() === 'strongsell')) {
-                  const trade = {
-                    name: `${bObj.stock} Pair trade`,
-                    date: moment().format(),
-                    type: 'pairTrade',
-                    key: bObj.stock,
-                    strategy: {
-                      buy: [bObj.stock],
-                      sell: [pairVal.symbol]
-                    },
-                    reason: 'pair'
-                  };
-                  this.addTradingStrategy(trade);
+                  this.createStrategy(`${bObj.stock} Pair trade`, bObj.stock, [bObj.stock], [pairVal.symbol]);
                 }
               }
             }
