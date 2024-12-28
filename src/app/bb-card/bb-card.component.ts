@@ -632,7 +632,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           }
         }
       }
-      const log = `${this.order.type} ${analysis.recommendation} Buys(${buys}) Sells(${sells})`;
+      const log = `${this.firstFormGroup.value.orderType} ${this.order.type} ${analysis.recommendation} Buys(${buys}) Sells(${sells})`;
       this.reportingService.addAuditLog(this.order.holding.symbol, log);
     }
 
@@ -1067,37 +1067,41 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     await this.strategyBuilderService.buyProtectivePut(this.order.holding.symbol, this.order.orderSize)
   }
 
+  async sendOptionsOrder(cashBalance: number) {
+    const primaryLegPrice = await this.orderHandlingService.getEstimatedPrice(this.order.primaryLegs[0].symbol);
+    this.reportingService.addAuditLog(this.order.holding.symbol, `Option price ${primaryLegPrice * this.order.primaryLegs[0].quantity}, balance: ${cashBalance}`);
+
+    if (this.order.secondaryLegs) {
+      const secondaryLegPrice = await this.orderHandlingService.getEstimatedPrice(this.order.secondaryLegs[0].symbol);
+      const totalPrice = (primaryLegPrice * this.order.primaryLegs[0].quantity) + (secondaryLegPrice * this.order.secondaryLegs[0].quantity);
+      this.reportingService.addAuditLog(this.order.holding.symbol, `Price ${totalPrice}, balance: ${cashBalance}`);
+      if (totalPrice < cashBalance) {
+        this.incrementBuy();
+        this.reportingService.addAuditLog(this.order.holding.symbol, `Buying ${this.order.primaryLegs[0].quantity} ${this.order.primaryLegs[0].symbol}`);
+        this.reportingService.addAuditLog(this.order.holding.symbol, `Buying ${this.order.secondaryLegs[0].quantity} ${this.order.secondaryLegs[0].symbol}`);
+
+        await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity || 1, primaryLegPrice);
+        await this.orderHandlingService.buyOption(this.order.secondaryLegs[0].symbol, this.order.secondaryLegs[0].quantity || 1, secondaryLegPrice);
+      }
+    } else {
+      const totalPrice = primaryLegPrice * this.order.primaryLegs[0].quantity;
+      this.reportingService.addAuditLog(this.order.holding.symbol, `Option price ${totalPrice}, balance: ${cashBalance}`);
+
+      if (totalPrice < cashBalance) {
+        this.incrementBuy();
+        this.reportingService.addAuditLog(this.order.holding.symbol, `Buying ${this.order.orderSize} ${this.order.primaryLegs[0].symbol}`);
+        await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize || 1);
+      }
+    }
+  }
+
   async buyOptions() {
     this.reportingService.addAuditLog(this.order.holding.symbol, 'Buy options');
 
     this.machineDaytradingService.getPortfolioBalance().subscribe(async (balance) => {
-      const currentBalance = balance.cashBalance;
-      const primaryLegPrice = await this.orderHandlingService.getEstimatedPrice(this.order.primaryLegs[0].symbol);
-      this.reportingService.addAuditLog(this.order.holding.symbol, `Option price ${primaryLegPrice * this.order.primaryLegs[0].quantity}, balance: ${currentBalance}`);
-
-      if (this.order.secondaryLegs) {
-        const secondaryLegPrice = await this.orderHandlingService.getEstimatedPrice(this.order.secondaryLegs[0].symbol);
-        const totalPrice = (primaryLegPrice * this.order.primaryLegs[0].quantity) + (secondaryLegPrice * this.order.secondaryLegs[0].quantity);
-        this.reportingService.addAuditLog(this.order.holding.symbol, `Price ${totalPrice}, balance: ${currentBalance}`);
-        if (totalPrice < currentBalance) {
-          this.incrementBuy();
-          this.reportingService.addAuditLog(this.order.holding.symbol, `Buying ${this.order.primaryLegs[0].quantity} ${this.order.primaryLegs[0].symbol}`);
-          this.reportingService.addAuditLog(this.order.holding.symbol, `Buying ${this.order.secondaryLegs[0].quantity} ${this.order.secondaryLegs[0].symbol}`);
-
-          await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity || 1, primaryLegPrice);
-          await this.orderHandlingService.buyOption(this.order.secondaryLegs[0].symbol, this.order.secondaryLegs[0].quantity || 1, secondaryLegPrice);
-        }
-      } else {
-        const totalPrice = primaryLegPrice * this.order.primaryLegs[0].quantity;
-        this.reportingService.addAuditLog(this.order.holding.symbol, `Option price ${totalPrice}, balance: ${currentBalance}`);
-
-        if (totalPrice < currentBalance) {
-          this.incrementBuy();
-          this.reportingService.addAuditLog(this.order.holding.symbol, `Buying ${this.order.orderSize} ${this.order.primaryLegs[0].symbol}`);
-          await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize || 1);
-        }
-      }
-
+      this.sendOptionsOrder(balance.cashBalance);
+    }, (error) => {
+      this.sendOptionsOrder(this.machineDaytradingService.lastBalance.cashBalance);
     });
   }
 

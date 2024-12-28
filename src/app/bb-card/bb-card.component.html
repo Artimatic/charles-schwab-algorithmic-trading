@@ -87,7 +87,10 @@
         <div fxFlex="5%">
           <p-header>
             <h3>{{order.holding.symbol}}</h3>
-            <h4>{{order.type}}</h4>
+            <p-tag *ngIf="order.type==1" styleClass="p-mr-2" severity="contast" value="Options"></p-tag>
+            <p-tag *ngIf="order.type==3" styleClass="p-mr-2" severity="contast" value="Strangle"></p-tag>
+            <p-tag *ngIf="order.type==4" styleClass="p-mr-2" severity="contast" value="Put"></p-tag>
+            <p-tag *ngIf="order.type==5" styleClass="p-mr-2" severity="contast" value="Call"></p-tag>
             <div *ngIf="order.primaryLeg">
               <label>{{order.primaryLeg.description}}</label>
             </div>
