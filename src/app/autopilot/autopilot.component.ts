@@ -1044,7 +1044,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   updateStockList() {
     this.dialogService.open(StockListDialogComponent, {
       header: 'Stock list',
-      contentStyle: { 'overflow-y': 'unset' }
+      contentStyle: { 'overflow-y': 'auto' }
     });
   }
 

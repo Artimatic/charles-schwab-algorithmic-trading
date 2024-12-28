@@ -1,4 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, ViewChild } from '@angular/core';
+import * as XLSX from 'xlsx';
+
 import { CurrentStockList } from '../rh-table/stock-list.constant';
 import { PersonalBearishPicks } from '../rh-table/backtest-stocks.constant';
 import { AlgoParam } from '@shared/algo-param.interface';
@@ -13,6 +15,7 @@ import { StrategyBuilderService } from '../backtest-table/strategy-builder.servi
   styleUrls: ['./stock-list-dialog.component.css']
 })
 export class StockListDialogComponent implements OnInit {
+  @ViewChild('fileInput', {static: false}) fileInput;
   stockList: { ticker: string }[] = [];
   newList: { ticker: string }[] = [];
   listType: any[];
@@ -95,11 +98,14 @@ export class StockListDialogComponent implements OnInit {
     this.stockList = this.strategyBuilderService.getBuyList();
   }
 
-  addRow() {
-    this.newStock = this.newStock.toUpperCase();
+  addRow(stock: string) {
+    stock = stock ? stock : this.newStock;
+    stock = stock.toUpperCase();
     switch (this.activeList.value) {
       case 'full':
-        CurrentStockList.push({ ticker: this.newStock });
+        if (CurrentStockList.find(s => s.ticker === stock)) {
+          CurrentStockList.push({ ticker: stock });
+        }
         break;
       case 'buy':
         this.strategyBuilderService.addToBuyList(this.newStock);
@@ -110,5 +116,26 @@ export class StockListDialogComponent implements OnInit {
         break;
     }
     this.newStock = '';
+  }
+
+  upload() {
+    const reader = new FileReader();
+    const fileBrowser = this.fileInput.nativeElement;
+
+    const overwriteOnload = function (evt: any) {
+      const data = evt.target.result;
+
+      const workbook = XLSX.read(data, { type: 'binary' });
+
+      const parsedData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+      parsedData.forEach((row: any) => {
+        if (row.__EMPTY && row.__EMPTY !== 'Ticker') {
+          this.addRow(row.__EMPTY);
+        }
+      });
+    };
+
+    reader.onload = overwriteOnload.bind(this);
+    reader.readAsBinaryString(fileBrowser.files[0]);
   }
 }
