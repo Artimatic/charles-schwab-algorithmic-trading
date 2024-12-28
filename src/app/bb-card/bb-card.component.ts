@@ -1101,6 +1101,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     this.machineDaytradingService.getPortfolioBalance().subscribe(async (balance) => {
       this.sendOptionsOrder(balance.cashBalance);
     }, (error) => {
+      console.log('Error getting balance', error);
       this.sendOptionsOrder(this.machineDaytradingService.lastBalance.cashBalance);
     });
   }

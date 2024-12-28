@@ -238,7 +238,12 @@ export class OptionsOrderBuilderService {
               return [option1, option2];
             }
           } else {
-            console.log('Call price too low or high', bullishStrangle.call, callPrice, minCashAllocation, maxCashAllocation);
+            if (callPrice < minCashAllocation) {
+              console.log('Call price too low', bullishStrangle.call, 'price:', callPrice, 'min:', minCashAllocation, 'max:', maxCashAllocation);
+
+            } else if (callPrice > maxCashAllocation) {
+              console.log('Call price too low', bullishStrangle.call, 'price:', callPrice, 'min:', minCashAllocation, 'max:', maxCashAllocation);
+            }
           }
         }
       }
