@@ -10649,7 +10649,11 @@ describe('StrategyBuilderService', () => {
   it('should find call strangle', async () => {
     optionsDataServiceSpy.getImpliedMove.and.returnValue(of(testOptionsChain));
     const callStrangle = await service.getCallStrangleTrade('AAPL');
-    expect(callStrangle.call).toBe({symbol: 'AAPL', putCallInd: 'C'});
-    expect(callStrangle.put).toBe({symbol: 'AAPL', putCallInd: 'P'});
+    expect(callStrangle.call).toBeDefined();
+    expect(callStrangle.call.symbol).toEqual('AAPL  250221C00230000');
+    expect(callStrangle.call.putCallInd).toEqual( 'C');
+    expect(callStrangle.put).toBeDefined()
+    expect(callStrangle.put.symbol).toEqual('AAPL  250221P00215000');
+    expect(callStrangle.put.putCallInd).toEqual('P');
   });
 });

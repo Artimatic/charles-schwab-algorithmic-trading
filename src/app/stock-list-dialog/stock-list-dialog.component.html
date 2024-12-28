@@ -1,6 +1,8 @@
 <p-selectButton [options]="listType" [(ngModel)]="activeList" optionLabel="label"
     (click)="changedList()"></p-selectButton>
 <div class="actions">
+    <input type="file" #fileInput placeholder="Upload file..." (change)="upload()" accept=".xls,.xlsx,.ods"/>
+
     <input type="text" pInputText [(ngModel)]="newStock" />
     <button pButton type="button" label="Add Stock" (click)="addRow()"></button>
     <p-splitButton label="Get winners" icon="pi pi-check" (onClick)="getWinners()" [model]="items"></p-splitButton>

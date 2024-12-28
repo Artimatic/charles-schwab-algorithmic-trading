@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AlgoEvaluationComponent } from './algo-evaluation.component';
+import { AiPicksService } from '@shared/services';
+import { of } from 'rxjs';
 
 describe('AlgoEvaluationComponent', () => {
   let component: AlgoEvaluationComponent;
@@ -8,7 +10,10 @@ describe('AlgoEvaluationComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [ AlgoEvaluationComponent ]
+      declarations: [ AlgoEvaluationComponent ],
+      providers: [
+        { provide: AiPicksService, useValue: { mlNeutralResults: of([]) } },
+      ]
     })
     .compileComponents();
   });

@@ -14,3 +14,7 @@
 .product-list-detail {
     float: left;
 }
+
+p-splitButton {
+    margin-left: 1rem;
+}
