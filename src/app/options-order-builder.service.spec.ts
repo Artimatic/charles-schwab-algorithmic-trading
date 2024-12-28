@@ -253,15 +253,15 @@ describe('OptionsOrderBuilderService', () => {
       };
     });
 
-    await service.balanceTrades(null, ['BAC'], ['MO'], 1000, 5000);
+    await service.balanceTrades(null, ['BAC'], ['MO'], 100, 5000, 'test');
     expect(cartServiceSpy.createOptionOrder).toHaveBeenCalledTimes(2);
 
     expect(cartServiceSpy.createOptionOrder).toHaveBeenCalledWith(
-      'BAC', [{ symbol: 'test BAC call', underlying: 'BAC', bid: 2.8, ask: 2.9, quantity: 1 }], 560, 1, 5, 'Buy', 1
+      'BAC', [{ symbol: 'test BAC call', underlying: 'BAC', bid: 2.8, ask: 2.9, quantity: 1 }], 560, 1, 5, 'test', 'Buy', 1
     );
 
     expect(cartServiceSpy.createOptionOrder).toHaveBeenCalledWith(
-      'MO', [{ symbol: 'MO put 1', underlying: 'MO', bid: 5.5, ask: 5.7, quantity: 1 }], 560, 1, 4, 'Buy', 1
+      'MO', [{ symbol: 'MO put 1', underlying: 'MO', bid: 5.5, ask: 5.7, quantity: 1 }], 560, 1, 4, 'test', 'Buy', 1
     );
     expect(service.getTradingPairs().length).toEqual(1);
     expect(service.getTradingPairs()[0]).toEqual([{
@@ -462,7 +462,8 @@ describe('OptionsOrderBuilderService', () => {
       };
     });
 
-    await service.balanceTrades(null, ['BAC'], ['MO'], 1000, 5000);
+    await service.balanceTrades(null, ['BAC'], ['MO'], 100, 5000, 'test');
+    expect(service.getTradeHashValue(service.getTradingPairs()[0])).toBe('93acbe56');
     expect(service.getTradeHashValue(service.getTradingPairs()[0])).toBe('93acbe56');
     expect(service.getTradeHashValue([{
       holding: {
@@ -579,7 +580,8 @@ describe('OptionsOrderBuilderService', () => {
       }
     } as any]];
     service.tradingPairDate = { '1c5adddb': 123, 'db6ee64b': new Date().valueOf() - 402000000 };
-    await service.balanceTrades(null, ['BAC'], ['MO'], 1000, 5000);
+    await service.balanceTrades(null, ['BAC'], ['MO'], 100, 5000, 'test');
+    expect(service.getTradeHashValue(service.getTradingPairs()[0])).toBe('db6ee64b');
     expect(service.getTradingPairs().length).toBe(2);
     expect(service.getTradingPairs()[0]).toEqual([{
       holding: {

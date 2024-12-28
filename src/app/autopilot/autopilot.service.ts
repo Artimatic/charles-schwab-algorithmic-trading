@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BacktestService, CartService, PortfolioInfoHolding, PortfolioService, ReportingService } from '@shared/services';
+import { BacktestService, CartService, PortfolioInfoHolding, ReportingService } from '@shared/services';
 import { round } from 'lodash';
 import * as moment from 'moment-timezone';
 import { OptionsOrderBuilderService } from '../options-order-builder.service';
@@ -50,8 +50,7 @@ export class AutopilotService {
     private strategyBuilderService: StrategyBuilderService,
     private backtestService: BacktestService,
     private orderHandlingService: OrderHandlingService,
-    private reportingService: ReportingService,
-    private portfolioService: PortfolioService
+    private reportingService: ReportingService
   ) { }
 
   async getMinMaxCashForOptions() {
