@@ -1471,7 +1471,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async getMinMaxCashForOptions() {
     const cash = await this.cartService.getAvailableFunds(false);
     const maxCash = round(this.autopilotService.riskToleranceList[this.autopilotService.riskCounter] * cash, 2);
-    const minCash = maxCash - (cash * RiskTolerance.Zero);
+    const minCash = cash * RiskTolerance.Zero;
     return {
       maxCash,
       minCash
