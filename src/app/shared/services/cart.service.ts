@@ -527,13 +527,7 @@ export class CartService {
 
   async getAvailableFunds(useCashBalance: boolean) {
     const balance = await this.portfolioService.getTdBalance().toPromise();
-    let usableBalance = useCashBalance ? Number(balance.cashBalance) : Number(balance.availableFunds);
-    const currentHoldings = await this.findCurrentPositions();
-    const vtiHolding = currentHoldings.find(holding => holding.name === 'VTI');
-    if (vtiHolding) {
-      usableBalance += Number(vtiHolding.netLiq);
-    }
-    return usableBalance;
+    return useCashBalance ? Number(balance.cashBalance) : Number(balance.availableFunds);
   }
 
   isStrangle(holding: PortfolioInfoHolding) {
