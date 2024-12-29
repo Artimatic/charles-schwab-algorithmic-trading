@@ -632,7 +632,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           }
         }
       }
-      const log = `${this.firstFormGroup.value.orderType} ${this.order.type} ${analysis.recommendation} Buys(${buys}) Sells(${sells})`;
+      const log = `Recommendation: ${analysis.recommendation.toLowerCase()}, order type:${this.firstFormGroup.value.orderType} ${this.order.type} Buys(${buys}) Sells(${sells})`;
       this.reportingService.addAuditLog(this.order.holding.symbol, log);
     }
 

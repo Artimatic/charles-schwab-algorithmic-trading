@@ -1323,6 +1323,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async addVolatilityPairs() {
+    console.log('Start addVolatilityPairs');
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     const MlBuys = {};
     const MlSells = {};
@@ -1346,6 +1347,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       }
     }
+    console.log('MlBuys', MlBuys);
+    console.log('MlSells', MlSells);
 
     for (const buyKey in MlBuys) {
       if (MlSells[buyKey] && MlSells[buyKey].length) {
@@ -1358,6 +1361,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async addMLPairs(useSellSignal = true) {
+    console.log('Start addMLPairs');
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     const MlBuys = {};
     const MlSells = {};
@@ -1381,7 +1385,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       }
     }
-
+    console.log('MlBuys', MlBuys);
+    console.log('MlSells', MlSells);
     for (const buyKey in MlBuys) {
       if (MlSells[buyKey] && MlSells[buyKey].length) {
         const cash = await this.getMinMaxCashForOptions();
@@ -1419,9 +1424,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const buyIndicator = async (symbol: string, prediction: number, backtestData: any) => {
       let matchBuy = false;
       if (direction === 'buy') {
-        matchBuy = backtestData.buySignals.find(sig => sig === indicator)
+        matchBuy = backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator);
       } else {
-        matchBuy = backtestData.sellSignals.find(sig => sig === indicator)
+        matchBuy = backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator);
       }
       if (matchBuy && prediction > 0.6 && this.priceTargetService.isProfitable(backtestData.invested, backtestData.net)) {
         if (this.optionsOrderBuilderService.currentTradeIdeas.puts.length) {

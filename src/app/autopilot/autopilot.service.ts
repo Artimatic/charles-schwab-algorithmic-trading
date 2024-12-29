@@ -64,6 +64,7 @@ export class AutopilotService {
   }
 
   async addPerfectPair(currentHoldings) {
+    console.log('Start addPerfectPair');
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     const MlBuys = {};
     const MlSells = {};
@@ -87,6 +88,8 @@ export class AutopilotService {
         }
       }
     }
+    console.log('MlBuys', MlBuys);
+    console.log('MlSells', MlSells);
 
     for (const buyKey in MlBuys) {
       if (MlSells[buyKey] && MlSells[buyKey].length) {
@@ -99,6 +102,7 @@ export class AutopilotService {
   }
 
   async addAnyPair(currentHoldings, buyList = null, sellList = null) {
+    console.log('Start addAnyPair');
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     const backtestResults = [];
     if (savedBacktest) {
