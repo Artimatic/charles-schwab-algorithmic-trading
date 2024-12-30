@@ -822,22 +822,22 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         profitTarget = (backtestResults.averageMove / lastPrice) * 5;
         this.reportingService.addAuditLog(holding.name, `Setting stock profit target to ${profitTarget}`);
       }
-    }
-    if (pnl < stopLoss) {
-      if (isOptionOnly) {
-        await this.sellOptionsHolding(holding, `Options stop loss reached ${pnl}`);
-      } else {
-        await this.cartService.portfolioSell(holding, `Stop loss met ${pnl}`);
-      }
-    } else if (pnl > profitTarget) {
-      if (isOptionOnly) {
-        await this.sellOptionsHolding(holding, `Options price target reached ${pnl}`);
-      } else {
-        await this.cartService.portfolioSell(holding, `Price target met ${pnl}`);
-      }
-    } else if (pnl > -0.01 && pnl < profitTarget * 0.1) {
-      if (!isOptionOnly) {
-        await this.autopilotService.addBuy(holding, null, 'Profit loss is positive');
+      if (pnl < stopLoss) {
+        if (isOptionOnly) {
+          await this.sellOptionsHolding(holding, `Options stop loss reached ${pnl}`);
+        } else {
+          await this.cartService.portfolioSell(holding, `Stop loss met ${pnl}`);
+        }
+      } else if (pnl > profitTarget) {
+        if (isOptionOnly) {
+          await this.sellOptionsHolding(holding, `Options price target reached ${pnl}`);
+        } else {
+          await this.cartService.portfolioSell(holding, `Price target met ${pnl}`);
+        }
+      } else if (pnl > -0.01 && pnl < profitTarget * 0.1) {
+        if (!isOptionOnly) {
+          await this.autopilotService.addBuy(holding, null, 'Profit loss is positive');
+        }
       }
     }
   }
@@ -1368,19 +1368,22 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (savedBacktest) {
       for (const saved in savedBacktest) {
         const backtestObj = savedBacktest[saved];
-        const key = useSellSignal ? savedBacktest[saved].sellSignals.sort() : savedBacktest[saved].buySignals.sort();
-        const symbol = backtestObj.stock
-        if (backtestObj.ml > 0.6) {
-          if (MlBuys[key]) {
-            MlBuys[key].push(symbol);
-          } else {
-            MlBuys[key] = [symbol];
-          }
-        } else if (backtestObj.ml !== null && backtestObj.ml < 0.4) {
-          if (MlSells[key]) {
-            MlSells[key].push(symbol);
-          } else {
-            MlSells[key] = [symbol];
+        const signals = useSellSignal ? backtestObj.sellSignals : backtestObj.buySignals;
+        if (signals && signals.length) {
+          const key = signals.sort();
+          const symbol = backtestObj.stock
+          if (backtestObj.ml > 0.6) {
+            if (MlBuys[key]) {
+              MlBuys[key].push(symbol);
+            } else {
+              MlBuys[key] = [symbol];
+            }
+          } else if (backtestObj.ml !== null && backtestObj.ml < 0.4) {
+            if (MlSells[key]) {
+              MlSells[key].push(symbol);
+            } else {
+              MlSells[key] = [symbol];
+            }
           }
         }
       }
@@ -1619,14 +1622,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
     if (this.daytradeMode) {
       this.tradeObserverSub = this.findDaytradeService.getTradeObserver()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe((trade: Trade) => {
-        this.lastReceivedRecommendation = moment();
-        if (this.hasTradeCapacity()) {
-          this.addDaytrade(trade.stock);
-          this.cartService.removeCompletedOrders();
-        }
-      });
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((trade: Trade) => {
+          this.lastReceivedRecommendation = moment();
+          if (this.hasTradeCapacity()) {
+            this.addDaytrade(trade.stock);
+            this.cartService.removeCompletedOrders();
+          }
+        });
     }
   }
 

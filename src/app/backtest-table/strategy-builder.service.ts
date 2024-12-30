@@ -131,13 +131,10 @@ export class StrategyBuilderService {
         impliedMovement: optionsData.move,
         optionsVolume: optionsVolume,
         marketCap: instruments[symbol] ? instruments[symbol]?.fundamental.marketCap : instruments[0]?.fundamental.marketCap,
-        strongbuySignals: [],
         buySignals: buySignals,
-        strongsellSignals: [],
         sellSignals: sellSignals,
         high52: instruments[symbol] ? instruments[symbol]?.fundamental.high52 : instruments[0]?.fundamental.high52,
-        backtestDate: moment().format(),
-        optionsChainLength: optionsChain.length
+        backtestDate: moment().format()
       };
 
       this.addToResultStorage(tableObj);
@@ -266,13 +263,16 @@ export class StrategyBuilderService {
   }
 
   addToResultStorage(result: Stock) {
-    if (result.net > 10 && result.returns > 0 && result.buySignals.length + result.sellSignals.length > 1) {
+    if (result.net > 1 && result.returns > 0 && result.buySignals.length + result.sellSignals.length > 1) {
       this.addToStorage('backtest', result.stock, result);
     } else {
       this.addToStorage('backtest', result.stock, {
         backtestDate: moment().format(),
         ml: result.ml,
-        recommendation: result.recommendation
+        recommendation: result.recommendation,
+        stock: result.stock,
+        returns: result.returns,
+        impliedMovement: result.impliedMovement
       });
     }
   }
@@ -410,7 +410,7 @@ export class StrategyBuilderService {
     for (const key in tradingPairs) {
       const pairs = tradingPairs[key];
       const bObj = backtests[key];
-      if (bObj !== undefined && bObj !== null && bObj.ml !== null) {
+      if (bObj !== undefined && bObj !== null && bObj.ml !== null && bObj.buySignals) {
         if (bObj.buySignals.length > bObj.sellSignals.length || bObj.recommendation.toLowerCase() === 'strongbuy') {
           if (bObj.ml > 0.5) {
             for (const pairVal of pairs) {
