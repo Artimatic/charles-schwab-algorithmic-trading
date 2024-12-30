@@ -13,6 +13,9 @@ export enum OrderType {
 export interface Recommendation {
   name?: string,
   time?: string,
+  lastVolume?: number;
+  lastPrice?: number;
+  totalReturns?: number;
   recommendation?: OrderType;
   mfi: DaytradeRecommendation;
   roc: DaytradeRecommendation;

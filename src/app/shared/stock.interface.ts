@@ -1,6 +1,9 @@
 export interface Stock {
   stock: string;
-  totalTrades: number;
+  totalReturns?: number;
+  lastVolume?: number;
+  lastPrice?: number;
+  totalTrades?: number;
   trending?: string;
   recommendation?: string;
   algo ?: string;
