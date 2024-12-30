@@ -259,7 +259,8 @@ export class StrategyBuilderService {
   }
 
   findOptionsPrice(bid: number, ask: number): number {
-    return Number(((bid + ask) / 2).toFixed(1) + '0');
+    const optionsPrice = Number(((bid + ask) / 2).toFixed(1) + '0');
+    return optionsPrice ? optionsPrice : bid;
   }
 
   addToResultStorage(result: Stock) {
