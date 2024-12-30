@@ -115,7 +115,6 @@ export class OptionsOrderBuilderService {
       let putsNeeded = Math.floor(holding.shares / 100);
 
       putsNeeded -= this.protectivePutCount(holding);
-      console.log(putsNeeded, 'Protective puts needed for', holding.name);
       if (putsNeeded > 0) {
         const putOption = await this.strategyBuilderService.getCallStrangleTrade(holding.name);
         const estimatedPrice = this.strategyBuilderService.findOptionsPrice(putOption.put.bid, putOption.put.ask);
@@ -178,7 +177,7 @@ export class OptionsOrderBuilderService {
           };
           let currentPut = null;
           if (callPrice > 200 && callPrice < 8000 &&
-            callPrice >= minCashAllocation &&
+            callPrice >= (minCashAllocation / 100) &&
             callPrice <= maxCashAllocation) {
             for (const sell of sellList) {
               if (!currentHoldings || !currentHoldings.find(holding => holding.name === sell)) {
@@ -242,7 +241,7 @@ export class OptionsOrderBuilderService {
               console.log('Call price too low', bullishStrangle.call, 'price:', callPrice, 'min:', minCashAllocation, 'max:', maxCashAllocation);
 
             } else if (callPrice > maxCashAllocation) {
-              console.log('Call price too low', bullishStrangle.call, 'price:', callPrice, 'min:', minCashAllocation, 'max:', maxCashAllocation);
+              console.log('Call price too high', bullishStrangle.call, 'price:', callPrice, 'min:', minCashAllocation, 'max:', maxCashAllocation);
             }
           }
         }

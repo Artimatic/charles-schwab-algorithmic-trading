@@ -158,7 +158,6 @@ export class CartService {
           this.globalSettingsService.daytradeAlgo
         ).subscribe();
     };
-    this.schedulerService.addTask('Order ml', mlTask);
     switch (order.side.toLowerCase()) {
       case 'sell':
         this.sellOrders.push(order);

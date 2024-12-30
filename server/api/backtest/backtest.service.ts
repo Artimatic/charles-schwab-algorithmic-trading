@@ -1107,7 +1107,9 @@ class BacktestService {
         }
         orders.total += (avgPrice * len);
         orders.net += profit;
-        orders.returns += profit / (avgPrice * len);
+        const drawdown = profit / (avgPrice * len);
+        orders.maxDrawdown = (!orders.maxDrawdown || drawdown < orders.maxDrawdown) ? drawdown : orders.maxDrawdown;
+        orders.returns = orders.net / orders.total;
         dayQuote.signal = 'sell';
         orders.history.push(dayQuote);
         orders.buy = [];
