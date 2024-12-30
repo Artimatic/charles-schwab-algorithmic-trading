@@ -827,7 +827,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       if (isOptionOnly) {
         await this.sellOptionsHolding(holding, `Options stop loss reached ${pnl}`);
       } else {
-        await this.cartService.portfolioSell(holding, `Stop loss ${pnl}`);
+        await this.cartService.portfolioSell(holding, `Stop loss met ${pnl}`);
       }
     } else if (pnl > profitTarget) {
       if (isOptionOnly) {
