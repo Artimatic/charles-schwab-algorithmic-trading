@@ -168,10 +168,11 @@ export class OrderHandlingService {
 
   async getEstimatedPrice(symbol: string) {
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
-
-    const askPrice = price[symbol].quote.askPrice;
-    const bidPrice = price[symbol].quote.bidPrice;
-
+    const askPrice = Number(price[symbol].quote.askPrice);
+    const bidPrice = Number(price[symbol].quote.bidPrice);
+    if (symbol.includes('SPY') || symbol.includes('QQQ')) {
+      console.log('SPY or QQQ price', symbol, price[symbol]);
+    }
     return this.strategyBuilderService.findOptionsPrice(bidPrice, askPrice);
   }
 

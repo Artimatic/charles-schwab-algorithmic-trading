@@ -252,8 +252,7 @@ export class OptionsOrderBuilderService {
 
   getCallPutQuantities(callPrice, callQuantity, putPrice, putQuantity, multiple = 1, minCashAllocation: number, maxCashAllocation: number) {
     while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > 500 &&
-      ((callPrice * callQuantity) + (putPrice * putQuantity)) <= maxCashAllocation
-      && ((callPrice * callQuantity) + (putPrice * putQuantity)) < minCashAllocation) {
+      callQuantity + putQuantity < 20) {
       if (callPrice > putPrice) {
         callQuantity++;
         putQuantity *= multiple;
@@ -263,17 +262,15 @@ export class OptionsOrderBuilderService {
       }
     }
 
-    if (callQuantity + putQuantity > 20) {
-      while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > 500 && callQuantity + putQuantity < 20 && ((callPrice * callQuantity) + (putPrice * putQuantity)) <= maxCashAllocation) {
-        if (callPrice > putPrice) {
-          callQuantity++;
-          putQuantity *= multiple;
-        } else {
-          putQuantity++;
-          callQuantity *= multiple;
-        }
-      }
+    let commonMaximum = 1;
+    while (((callPrice * (callQuantity * commonMaximum)) + (putPrice * (putQuantity * commonMaximum))) <= maxCashAllocation && 
+      ((callPrice * (callQuantity * commonMaximum)) + (putPrice * (putQuantity * commonMaximum))) < minCashAllocation) {
+      commonMaximum++;
     }
+
+    callPrice *= commonMaximum;
+    putPrice *= commonMaximum;
+
     return { callQuantity, putQuantity };
   }
 
