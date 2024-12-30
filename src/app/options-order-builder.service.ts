@@ -264,7 +264,7 @@ export class OptionsOrderBuilderService {
     }
 
     if (callQuantity + putQuantity > 20) {
-      while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > 500 && callQuantity + putQuantity < 20) {
+      while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > 500 && callQuantity + putQuantity < 20 && ((callPrice * callQuantity) + (putPrice * putQuantity)) <= maxCashAllocation) {
         if (callPrice > putPrice) {
           callQuantity++;
           putQuantity *= multiple;
