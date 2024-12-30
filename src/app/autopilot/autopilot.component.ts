@@ -835,7 +835,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       } else {
         await this.cartService.portfolioSell(holding, `Price target met ${pnl}`);
       }
-    } else if (pnl < profitTarget * 0.1) {
+    } else if (pnl > -0.01 && pnl < profitTarget * 0.1) {
       if (!isOptionOnly) {
         await this.autopilotService.addBuy(holding, null, 'Profit loss is positive');
       }

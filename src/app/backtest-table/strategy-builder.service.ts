@@ -25,7 +25,7 @@ export interface ComplexStrategy {
 })
 export class StrategyBuilderService {
   orderHistory = {};
-  correlationThreshold = 0.55;
+  correlationThreshold = 0.6;
   sumNet = 0;
   countNet = 0;
   defaultMinExpiration = 55;
@@ -127,9 +127,6 @@ export class StrategyBuilderService {
         averageMove: indicatorResults.averageMove,
         profitableTrades: indicatorResults.profitableTrades,
         totalTrades: indicatorResults.totalTrades,
-        lastVolume: indicatorResults.lastVolume || null,
-        totalReturns: indicatorResults.totalReturns || null,
-        lastPrice: indicatorResults.lastPrice || null,
         ml: latestMlResult ? latestMlResult.value : null,
         impliedMovement: optionsData.move,
         optionsVolume: optionsVolume,
@@ -269,7 +266,15 @@ export class StrategyBuilderService {
   }
 
   addToResultStorage(result: Stock) {
-    this.addToStorage('backtest', result.stock, result);
+    if (result.net > 10 && result.returns > 0 && result.buySignals.length + result.sellSignals.length > 1) {
+      this.addToStorage('backtest', result.stock, result);
+    } else {
+      this.addToStorage('backtest', result.stock, {
+        backtestDate: moment().format(),
+        ml: result.ml,
+        recommendation: result.recommendation
+      });
+    }
   }
 
   addToOrderHistoryStorage(symbol: string, tradingHistory: any[]) {

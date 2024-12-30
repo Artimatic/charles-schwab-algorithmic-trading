@@ -65,14 +65,11 @@ export interface StockBacktest {
   totalTrades: number;
   invested?: number;
   returns: number;
-  lastVolume?: number;
-  lastPrice?: number;
   startDate?: number;
   endDate?: number;
   upperResistance?: number;
   lowerResistance?: number;
   profitableTrades?: any;
   stock: string;
-  totalReturns: number;
   averageMove?: number;
 }
