@@ -263,7 +263,7 @@ export class StrategyBuilderService {
   }
 
   addToResultStorage(result: Stock) {
-    if (result.net > 1 && result.returns > 0 && result.buySignals.length + result.sellSignals.length > 1) {
+    if (result.recommendation.toLowerCase() !== 'indeterminate' || (result.net > 1 && result.returns > 0 && result.buySignals.length + result.sellSignals.length > 1)) {
       this.addToStorage('backtest', result.stock, result);
     } else {
       this.addToStorage('backtest', result.stock, {
