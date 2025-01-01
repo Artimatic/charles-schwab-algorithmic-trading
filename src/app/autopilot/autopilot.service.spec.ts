@@ -3,7 +3,7 @@ import { AutopilotService } from './autopilot.service';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
 import { OptionsOrderBuilderService } from '../options-order-builder.service';
-import { BacktestService, CartService } from '@shared/services';
+import { BacktestService, CartService, PortfolioService } from '@shared/services';
 import { ReportingService } from '@shared/services';
 import { PriceTargetService } from './price-target.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
@@ -20,7 +20,8 @@ describe('AutopilotService', () => {
       { provide: BacktestService, useValue: {} },
       { provide: PriceTargetService, useValue: {} },
       { provide: OrderHandlingService, useValue: {} },
-      { provide: ReportingService, useValue: {} }
+      { provide: ReportingService, useValue: {} },
+      { provide: PortfolioService, useValue: {} }
     ]});
     service = TestBed.inject(AutopilotService);
   });

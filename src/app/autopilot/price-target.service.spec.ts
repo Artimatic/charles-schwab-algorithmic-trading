@@ -8,7 +8,7 @@ import { of } from 'rxjs';
 
 describe('PriceTargetService', () => {
   let service: PriceTargetService;
-  const cartServiceSpy = jasmine.createSpyObj('CartService', ['addOptionOrder', 'getAvailableFunds', 'createOptionOrder', 'portfolioSell', 'isStrangle']);
+  const cartServiceSpy = jasmine.createSpyObj('CartService', ['addSingleLegOptionOrder', 'getAvailableFunds', 'createOptionOrder', 'portfolioSell', 'isStrangle']);
   const orderHandlingServiceSpy = jasmine.createSpyObj('OrderHandlingService', ['getEstimatedPrice']);
   const portfolioServiceSpy = jasmine.createSpyObj('PortfolioService', ['getTdPortfolio']);
   const backtestServiceSpy = jasmine.createSpyObj('BacktestService', ['getLastPriceTiingo']);
@@ -676,7 +676,7 @@ describe('PriceTargetService', () => {
     expect(priceTargetMet).toEqual(true);
 
     await service.checkProfitTarget(testHoldings);
-    expect(cartServiceSpy.addOptionOrder).toHaveBeenCalledTimes(2);
+    expect(cartServiceSpy.addSingleLegOptionOrder).toHaveBeenCalledTimes(2);
     expect(cartServiceSpy.portfolioSell).not.toHaveBeenCalled();
   });
 

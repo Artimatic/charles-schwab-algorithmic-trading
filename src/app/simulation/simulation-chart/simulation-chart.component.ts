@@ -165,6 +165,5 @@ export class SimulationChartComponent implements OnInit {
       };
       this.tradeService.algoQueue.next(queueItem);
     }
-
   }
 }

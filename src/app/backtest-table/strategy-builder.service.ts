@@ -25,10 +25,10 @@ export interface ComplexStrategy {
 })
 export class StrategyBuilderService {
   orderHistory = {};
-  correlationThreshold = 0.6;
+  correlationThreshold = 0.55;
   sumNet = 0;
   countNet = 0;
-  defaultMinExpiration = 55;
+  defaultMinExpiration = 50;
 
   constructor(private backtestService: BacktestService,
     private aiPicksService: AiPicksService,

@@ -110,6 +110,23 @@ export class OptionsOrderBuilderService {
     this.tradingPairs = [];
   }
 
+  async addOptionByBalance(symbol: string, targetBalance: number, reason: string, isCall: boolean) {
+    const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade(symbol);
+    const bid = isCall ? optionStrategy.call.bid : optionStrategy.put.bid;
+    const ask = isCall ? optionStrategy.call.ask : optionStrategy.put.ask;
+    const price = this.strategyBuilderService.findOptionsPrice(bid, ask) * 100;
+    let currentOption = {
+      call: optionStrategy.call,
+      put: optionStrategy.put,
+      price: price,
+      quantity: Math.floor(targetBalance / price) || 1,
+      underlying: symbol
+    };
+
+    const option = isCall ? currentOption.call : currentOption.put;
+    this.cartService.addSingleLegOptionOrder(currentOption.underlying, [option], price, currentOption.quantity || 1, isCall ? OrderTypes.call : OrderTypes.put, 'Buy', reason);
+  }
+
   async createProtectivePutOrder(holding: PortfolioInfoHolding) {
     if (holding.shares && !holding.primaryLegs) {
       let putsNeeded = Math.floor(holding.shares / 100);
@@ -122,9 +139,8 @@ export class OptionsOrderBuilderService {
           console.log(`Protective put price for ${holding.name} is too low`, estimatedPrice);
           return;
         }
-        this.cartService.addOptionOrder(holding.name, [putOption.put],
-          estimatedPrice, putsNeeded, OrderTypes.protectivePut, 'Buy',
-          'Adding protective put');
+
+        this.addOptionByBalance(holding.name, estimatedPrice, 'Protective put', false);
       }
     }
   }
@@ -466,14 +482,14 @@ export class OptionsOrderBuilderService {
             if (shouldSell || (backtestData && backtestData.ml < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'))) {
               const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
               const reason = shouldSell ? 'Should sell options' : 'Backtest recommends selling';
-              this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);
+              this.cartService.addSingleLegOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);
             }
           } else if (callPutInd === 'p') {
             orderType = OrderTypes.put;
             if (shouldSell || (backtestData && backtestData.ml > 0.5 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY'))) {
               const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
               const reason = shouldSell ? 'Should sell options' : 'Backtest recommends selling';
-              this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);
+              this.cartService.addSingleLegOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);
             }
           }
         }

@@ -7,7 +7,7 @@ import { OptionsOrderBuilderService } from '../options-order-builder.service';
 
 xdescribe('PricingService', () => {
   let service: PricingService;
-  const cartServiceSpy = jasmine.createSpyObj('CartService', ['addOptionOrder', 'getAvailableFunds', 'createOptionOrder']);
+  const cartServiceSpy = jasmine.createSpyObj('CartService', ['addSingleLegOptionOrder', 'getAvailableFunds', 'createOptionOrder']);
   const orderHandlingServiceSpy = jasmine.createSpyObj('OrderHandlingService', ['getEstimatedPrice']);
 
   beforeEach(() => {
