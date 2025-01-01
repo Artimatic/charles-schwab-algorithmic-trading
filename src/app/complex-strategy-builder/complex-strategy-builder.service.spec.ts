@@ -44,7 +44,7 @@ xdescribe('ComplexStrategyBuilderService', () => {
       profitTarget: 0.004,
       sellAtClose: true,
       primaryLegs: [
-        { symbol: '12345', putCallInd: 'C' }
+        { symbol: '12345', putCallInd: 'C', quantity: 1, putCall: 'C' }
       ]
     };
     const testOrder2: SmartOrder = {
@@ -65,7 +65,7 @@ xdescribe('ComplexStrategyBuilderService', () => {
       profitTarget: 0.004,
       sellAtClose: true,
       primaryLegs: [
-        { symbol: '9', putCallInd: 'C' }
+        { symbol: '9', putCallInd: 'C', quantity: 1, putCall: 'C' }
       ]
     };
     spyOn(mockStrategyBuilderService, 'getComplexStrategy').and.returnValue([

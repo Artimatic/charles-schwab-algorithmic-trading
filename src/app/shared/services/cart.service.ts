@@ -10,7 +10,6 @@ import { Options } from '@shared/models/options';
 import { ReportingService } from './reporting.service';
 import { MachineLearningService } from './machine-learning/machine-learning.service';
 import { GlobalSettingsService } from 'src/app/settings/global-settings.service';
-import { SchedulerService } from '@shared/service/scheduler.service';
 
 @Injectable()
 export class CartService {
@@ -25,20 +24,10 @@ export class CartService {
     private reportingService: ReportingService,
     private messageService: MessageService,
     private machineLearningService: MachineLearningService,
-    private globalSettingsService: GlobalSettingsService,
-    private schedulerService: SchedulerService) { }
+    private globalSettingsService: GlobalSettingsService) { }
 
-  addToCart(order: SmartOrder, replaceAnyExistingOrders = false, reason = '') {
-    order.createdTime = moment().format();
-    const indices = this.searchAllLists(order);
-    let noDup = true;
-    for (const idx of indices) {
-      if (idx > -1) {
-        noDup = false;
-        break;
-      }
-    }
 
+  createOrderLog(order: SmartOrder, reason: string) {
     let log = `Adding order ${order.side} ${order.quantity} ${order.holding.symbol} ${reason} ${order?.reason}`;
     if (order.primaryLeg) {
       log += `Primary leg: ${order.side} ${order.primaryLeg.quantity} ${order.primaryLeg.symbol} `;
@@ -56,6 +45,21 @@ export class CartService {
         log += ` Secondary legs ${order.side} ${leg.quantity} ${leg.symbol} `;
       });
     }
+    return log;
+  }
+
+  addToCart(order: SmartOrder, replaceAnyExistingOrders = false, reason = '') {
+    order.createdTime = moment().format();
+    const indices = this.searchAllLists(order);
+    let noDup = true;
+    for (const idx of indices) {
+      if (idx > -1) {
+        noDup = false;
+        break;
+      }
+    }
+
+    const log = this.createOrderLog(order, reason);
     this.reportingService.addAuditLog(order.holding.symbol, log, reason);
 
     if (!noDup && replaceAnyExistingOrders && order.quantity) {
@@ -324,6 +328,10 @@ export class CartService {
     this.addToCart(order);
   }
 
+  private existingOptionsCheck(order, underlyingSymbol: string, optionSymbol: string) {
+    return order.primaryLegs && (order.holding.symbol === underlyingSymbol || order.primaryLegs[0].symbol === optionSymbol);
+  }
+
   createOptionOrder(symbol: string,
     primaryLegs: Options[],
     price: number,
@@ -333,13 +341,10 @@ export class CartService {
     side = 'Buy',
     orderSize = 1,
     executeImmediately = false,
-    ) {
-    const foundExistingOrder = this.buyOrders.find(order => order.primaryLegs && order.holding.symbol === symbol && !order.secondaryLegs);
-    if (foundExistingOrder) {
-      console.log('Found existing buy order', foundExistingOrder);
-      return null;
-    } if (this.sellOrders.find(order => order.primaryLegs && order.holding.symbol === symbol && order.primaryLegs[0].symbol === primaryLegs[0].symbol && !order.secondaryLegs)) {
-      console.log('Found existing sell order');
+  ) {
+    if (this.buyOrders.find(order => this.existingOptionsCheck(order, symbol, primaryLegs[0].symbol) ||
+      this.sellOrders.find(order => this.existingOptionsCheck(order, symbol, primaryLegs[0].symbol)))) {
+      console.log('Found existing order');
       return null;
     } else {
       const order: SmartOrder = {
@@ -371,11 +376,19 @@ export class CartService {
     }
   }
 
-  async addOptionOrder(symbol: string,
+  async addSingleLegOptionOrder(symbol: string,
     primaryLegs: Options[], price: number,
     quantity: number, optionType,
     side = 'Buy', reason: string = '', executeImmediately = false) {
-    const order = this.createOptionOrder(symbol, primaryLegs,
+
+    if (primaryLegs.find(leg => !leg.quantity)) {
+      console.log('Legs missing quantity', primaryLegs);
+      primaryLegs.forEach(leg => {
+        leg.quantity = quantity;
+      });
+    }
+
+    let order = this.createOptionOrder(symbol, primaryLegs,
       price, quantity,
       optionType, reason, side,
       null, executeImmediately);
@@ -383,7 +396,9 @@ export class CartService {
       console.log('Adding option order for', symbol, primaryLegs, price, quantity, optionType, side, reason);
       this.addToCart(order, side.toLowerCase() === 'sell', reason);
     } else {
-      console.log('Invalid option order', symbol, primaryLegs, price, quantity, optionType, side, order, reason);
+      const log = `Invalid option order ${symbol} ${JSON.stringify(primaryLegs)} ${price} ${quantity} ${optionType} ${side} ${JSON.stringify(order)} ${reason}`;
+      console.log(log);
+      this.reportingService.addAuditLog(order.holding.symbol, log, reason);
     }
   }
 

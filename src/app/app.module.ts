@@ -91,6 +91,7 @@ import { DaytradeActiveSearchComponent } from './autopilot/daytrade-active-searc
 import { StockListDialogComponent } from './stock-list-dialog/stock-list-dialog.component';
 import { SimulationChartComponent } from './simulation/simulation-chart/simulation-chart.component';
 import { AlgoEvaluationModule } from './algo-evaluation/algo-evaluation.module';
+import { LiveSimulationComponent } from './simulation/live-simulation/live-simulation.component';
 
 @NgModule({
   declarations: [
@@ -140,6 +141,7 @@ import { AlgoEvaluationModule } from './algo-evaluation/algo-evaluation.module';
     DaytradeActiveSearchComponent,
     StockListDialogComponent,
     SimulationChartComponent,
+    LiveSimulationComponent,
   ],
   entryComponents: [
     OrderDialogComponent,

@@ -118,7 +118,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     const algoQueueSub = this.tradeService.algoQueue.subscribe(async (item: AlgoQueueItem) => {
       setTimeout(async () => {
         if (!this.order) {
-          console.log('Order deleted: ', this.order.holding.symbol);
+          console.log('Order deleted: ', this.order);
           this.ngOnDestroy();
         } else if (this.order.holding.symbol === item.symbol || (this.order.id !== undefined && this.order.id === item.id)) {
           if (item.reset) {
@@ -1069,12 +1069,10 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
   async sendOptionsOrder(cashBalance: number) {
     const primaryLegPrice = await this.orderHandlingService.getEstimatedPrice(this.order.primaryLegs[0].symbol);
-    this.reportingService.addAuditLog(this.order.holding.symbol, `Option price ${primaryLegPrice * this.order.primaryLegs[0].quantity}, balance: ${cashBalance}`);
-
     if (this.order.secondaryLegs) {
       const secondaryLegPrice = await this.orderHandlingService.getEstimatedPrice(this.order.secondaryLegs[0].symbol);
       const totalPrice = (primaryLegPrice * this.order.primaryLegs[0].quantity) + (secondaryLegPrice * this.order.secondaryLegs[0].quantity);
-      this.reportingService.addAuditLog(this.order.holding.symbol, `Price ${totalPrice}, balance: ${cashBalance}`);
+      this.reportingService.addAuditLog(this.order.holding.symbol, `Total Price with secondary leg ${totalPrice}, balance: ${cashBalance}`);
       if (totalPrice < cashBalance) {
         this.incrementBuy();
         this.reportingService.addAuditLog(this.order.holding.symbol, `Buying ${this.order.primaryLegs[0].quantity} ${this.order.primaryLegs[0].symbol}`);

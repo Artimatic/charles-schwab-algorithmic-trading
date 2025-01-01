@@ -11,7 +11,7 @@ import { OrderHandlingService } from './order-handling/order-handling.service';
 describe('OptionsOrderBuilderService', () => {
   let service: OptionsOrderBuilderService;
   const strategyBuilderServiceSpy = jasmine.createSpyObj('StrategyBuilderService', ['getCallStrangleTrade', 'findOptionsPrice', 'getTradingStrategies', 'getPutStrangleTrade']);
-  const cartServiceSpy = jasmine.createSpyObj('CartService', ['addOptionOrder', 'getAvailableFunds', 'createOptionOrder']);
+  const cartServiceSpy = jasmine.createSpyObj('CartService', ['addSingleLegOptionOrder', 'getAvailableFunds', 'createOptionOrder']);
   const optionsDataServiceSpy = jasmine.createSpyObj('OptionsDataService', ['getImpliedMove']);
   const reportingServiceSpy = jasmine.createSpyObj('ReportingService', ['addAuditLog']);
   const orderHandlingServiceSpy = jasmine.createSpyObj('OrderHandlingService', ['getEstimatedPrice']);
@@ -32,7 +32,7 @@ describe('OptionsOrderBuilderService', () => {
   });
 
   afterEach(() => {
-    cartServiceSpy.addOptionOrder.calls.reset();
+    cartServiceSpy.addSingleLegOptionOrder.calls.reset();
     cartServiceSpy.createOptionOrder.calls.reset();
   });
 
@@ -80,7 +80,7 @@ describe('OptionsOrderBuilderService', () => {
     strategyBuilderServiceSpy.findOptionsPrice.and.returnValue(4.5);
 
     await service.createProtectivePutOrder(testHoldings[0]);
-    expect(cartServiceSpy.addOptionOrder).not.toHaveBeenCalled();
+    expect(cartServiceSpy.addSingleLegOptionOrder).not.toHaveBeenCalled();
   });
 
   it('should not create protective put if options price too low', async () => {
@@ -110,7 +110,7 @@ describe('OptionsOrderBuilderService', () => {
     strategyBuilderServiceSpy.findOptionsPrice.and.returnValue(0.5);
 
     await service.createProtectivePutOrder(testHoldings[0]);
-    expect(cartServiceSpy.addOptionOrder).not.toHaveBeenCalled();
+    expect(cartServiceSpy.addSingleLegOptionOrder).not.toHaveBeenCalled();
   });
 
   it('should add 1 protective put', async () => {
@@ -143,7 +143,7 @@ describe('OptionsOrderBuilderService', () => {
     strategyBuilderServiceSpy.findOptionsPrice.and.returnValue(4.5);
 
     await service.createProtectivePutOrder(testHoldings[0]);
-    expect(cartServiceSpy.addOptionOrder).toHaveBeenCalledWith('OKTA', [testStrangleObj.put], 4.5, 1, OrderTypes.protectivePut, 'Buy', 'Adding protective put');
+    expect(cartServiceSpy.addSingleLegOptionOrder).toHaveBeenCalledWith('OKTA', [testStrangleObj.put], 4.5, 1, OrderTypes.protectivePut, 'Buy', 'Adding protective put');
   });
   it('should add 3 protective put', async () => {
     const testHoldings = [
@@ -175,7 +175,7 @@ describe('OptionsOrderBuilderService', () => {
     strategyBuilderServiceSpy.findOptionsPrice.and.returnValue(4.5);
 
     await service.createProtectivePutOrder(testHoldings[0]);
-    expect(cartServiceSpy.addOptionOrder).toHaveBeenCalledWith('OKTA', [testStrangleObj.put], 4.5, 3, OrderTypes.protectivePut, 'Buy', 'Adding protective put');
+    expect(cartServiceSpy.addSingleLegOptionOrder).toHaveBeenCalledWith('OKTA', [testStrangleObj.put], 4.5, 3, OrderTypes.protectivePut, 'Buy', 'Adding protective put');
   });
 
   it('should add balanced trades', async () => {

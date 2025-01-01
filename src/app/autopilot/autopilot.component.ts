@@ -617,15 +617,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     return null;
   }
 
-  async backtestList(cb = async (stock: any, mlResult: number) => { }, stockList: (PortfolioInfoHolding[] | any[]) = CurrentStockList) {
-    stockList.forEach(async (stock) => {
-      const backtestResults = await this.strategyBuilderService.getBacktestData(stock.name);
-      if (backtestResults) {
-        cb(stock, backtestResults.ml);
-      }
-    });
-  }
-
   async backtestOneStock(overwrite = false, addTrade = true) {
     try {
       let stock = this.machineDaytradingService.getNextStock();
@@ -754,53 +745,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     });
   }
 
-  async trimHoldings() {
-    const callback = async (symbol: string, prediction: number) => {
-      const stock: PortfolioInfoHolding = {
-        name: symbol,
-        pl: 0,
-        netLiq: 0,
-        shares: 0,
-        alloc: 0,
-        recommendation: 'None',
-        buyReasons: '',
-        sellReasons: '',
-        buyConfidence: 0,
-        sellConfidence: 0,
-        prediction: null
-      };
-      if (prediction < 0.5) {
-        const sellHolding = this.currentHoldings.find(holdingInfo => {
-          return holdingInfo.name === stock.name;
-        });
-        if (sellHolding && !sellHolding.primaryLegs.length) {
-          await this.cartService.portfolioSell(sellHolding, 'Trim holdings');
-        }
-      }
-    };
-
-    this.backtestList(callback, this.currentHoldings);
-
-    await this.checkIfTooManyHoldings(this.currentHoldings, 10);
-  }
-
   async analyseRecommendations(holding: PortfolioInfoHolding) {
     if (holding.recommendation.toLowerCase() === 'buy') {
       await this.autopilotService.addBuy(holding, null, 'Recommendated buy');
     } else if (holding.recommendation.toLowerCase() === 'sell') {
       await this.cartService.portfolioSell(holding, 'Recommended sell');
     }
-  }
-
-  async sellOptionsHolding(holding: PortfolioInfoHolding, reason: string) {
-    let orderType = null;
-    if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
-      orderType = OrderTypes.call;
-    } else if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
-      orderType = OrderTypes.put;
-    }
-    const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
-    this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);
   }
 
   async checkStopLoss(holding: PortfolioInfoHolding, stopLoss = -0.045, profitTarget = 0.01) {
@@ -824,13 +774,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       }
       if (pnl < stopLoss) {
         if (isOptionOnly) {
-          await this.sellOptionsHolding(holding, `Options stop loss reached ${pnl}`);
+          await this.autopilotService.sellOptionsHolding(holding, `Options stop loss reached ${pnl}`);
         } else {
           await this.cartService.portfolioSell(holding, `Stop loss met ${pnl}`);
         }
       } else if (pnl > profitTarget) {
         if (isOptionOnly) {
-          await this.sellOptionsHolding(holding, `Options price target reached ${pnl}`);
+          await this.autopilotService.sellOptionsHolding(holding, `Options price target reached ${pnl}`);
         } else {
           await this.cartService.portfolioSell(holding, `Price target met ${pnl}`);
         }
@@ -841,24 +791,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       }
     }
   }
-
-  async checkIfTooManyHoldings(currentHoldings: any[], maxHoldings = this.maxTradeCount) {
-    if (currentHoldings.length > maxHoldings) {
-      currentHoldings.sort((a, b) => a.pl - b.pl);
-      const toBeSold = currentHoldings.slice(0, 1);
-      console.log('too many holdings. selling', toBeSold, 'from', currentHoldings);
-      toBeSold.forEach(async (holdingInfo) => {
-        if (this.cartService.isStrangle(holdingInfo)) {
-          this.optionsOrderBuilderService.sellStrangle(holdingInfo);
-        } else if (holdingInfo.shares) {
-          await this.cartService.portfolioSell(holdingInfo, 'Too many holdings');
-        } else if (holdingInfo.primaryLegs) {
-          await this.sellOptionsHolding(holdingInfo, 'Too many holdings');
-        }
-      });
-    }
-  }
-
 
   getAllocationPct(totalAllocationPct: number = 0.1, numberOfOrders: number) {
     return round(divide(totalAllocationPct, numberOfOrders), 2);
@@ -925,9 +857,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     if (backtestResults && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL')) {
       console.log('Backtest recommendation', backtestResults.recommendation);
-
       this.increaseDayTradeRiskTolerance();
-      await this.trimHoldings();
+      this.adjustRiskTolerance();
     } else {
       const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
       if (lastProfitLoss && lastProfitLoss.profit) {
@@ -979,29 +910,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const isOverBalance = Boolean(Number(balance.cashBalance) < 0);
     if (isOverBalance) {
       this.currentHoldings = await this.cartService.findCurrentPositions();
-      await this.checkIfTooManyHoldings(this.currentHoldings, 10);
+      await this.autopilotService.checkIfTooManyHoldings(this.currentHoldings, 10);
     }
     return isOverBalance;
-  }
-
-  async balanceCallPutRatio(holdings: PortfolioInfoHolding[]) {
-    const results = this.priceTargetService.getCallPutBalance(holdings);
-    if (results.put + (results.put * this.autopilotService.getLastSpyMl()) > results.call) {
-      const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade('SPY');
-      const callPrice = this.strategyBuilderService.findOptionsPrice(optionStrategy.call.bid, optionStrategy.call.ask) * 100;
-      const targetBalance = (results.put - results.call);
-      let currentCall = {
-        call: optionStrategy.call,
-        price: callPrice,
-        quantity: Math.floor(targetBalance / callPrice) || 1,
-        underlying: 'SPY'
-      };
-      const reason = 'Balance call put ratio';
-      this.cartService.addOptionOrder(currentCall.underlying, [currentCall.call], callPrice, currentCall.quantity || 1, OrderTypes.call, 'Buy', reason);
-      this.autopilotService.buyUpro('Balance call put ratio', 0.01);
-    } else if (results.call / results.put > 2) {
-      await this.trimHoldings();
-    }
   }
 
   cleanUpOrders() {
@@ -1099,22 +1010,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (this.lastMarketHourCheck && this.lastMarketHourCheck.diff(moment(), 'minutes') < 29) {
       return false;
     }
-    try {
-      const marketHour: any = await this.portfolioService.getEquityMarketHours(moment().format('YYYY-MM-DD')).toPromise();
-      if (marketHour && marketHour.equity) {
-        if (marketHour.equity.EQ.isOpen) {
-          return true;
-        } else {
-          this.lastMarketHourCheck = moment();
-          return false;
-        }
-      } else {
-        return false;
-      }
-    } catch (error) {
-      console.log('error checking equity hours', error);
+    const opened = await this.autopilotService.isMarketOpened();
+    if (!opened) {
+      this.lastMarketHourCheck = moment();
     }
-    return false;
+    return opened;
   }
 
   getPreferences() {
@@ -1202,7 +1102,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             orderType = OrderTypes.put;
           }
 
-          this.cartService.addOptionOrder(holding.name, [holding.primaryLegs[0]],
+          this.cartService.addSingleLegOptionOrder(holding.name, [holding.primaryLegs[0]],
             estPrice, holding.primaryLegs[0].quantity,
             orderType, 'Sell', 'Manual command to sell all options');
         }
@@ -1219,7 +1119,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.autopilotService.getNewTrades(null, null, this.currentHoldings);
         break;
       case Strategy.TrimHoldings:
-        await this.trimHoldings();
+        await this.autopilotService.sellLoser(this.currentHoldings);
         break;
       case Strategy.Short:
         await this.buyCallsOrPuts('puts');
@@ -1584,7 +1484,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           }
         }
         await this.checkIfOverBalance(balance);
-        await this.balanceCallPutRatio(this.currentHoldings);
+        await this.autopilotService.balanceCallPutRatio(this.currentHoldings);
         await this.autopilotService.checkIntradayStrategies();
       } else {
         this.executeOrderList();

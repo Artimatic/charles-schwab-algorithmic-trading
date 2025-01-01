@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BacktestService, CartService, PortfolioInfoHolding, ReportingService } from '@shared/services';
+import { BacktestService, CartService, PortfolioInfoHolding, PortfolioService, ReportingService } from '@shared/services';
 import { round } from 'lodash';
 import * as moment from 'moment-timezone';
 import { OptionsOrderBuilderService } from '../options-order-builder.service';
@@ -50,7 +50,8 @@ export class AutopilotService {
     private strategyBuilderService: StrategyBuilderService,
     private backtestService: BacktestService,
     private orderHandlingService: OrderHandlingService,
-    private reportingService: ReportingService
+    private reportingService: ReportingService,
+    private portfolioService: PortfolioService
   ) { }
 
   async getMinMaxCashForOptions() {
@@ -148,7 +149,7 @@ export class AutopilotService {
         const spy = 'SPY';
         const callOption = await this.strategyBuilderService.getCallStrangleTrade(spy);
         const estimatedPrice = this.strategyBuilderService.findOptionsPrice(callOption.call.bid, callOption.call.ask);
-        this.cartService.addOptionOrder(spy, [callOption.call],
+        this.cartService.addSingleLegOptionOrder(spy, [callOption.call],
           estimatedPrice, 1, OrderTypes.call, 'Buy',
           'Buying the dip');
       }
@@ -265,5 +266,60 @@ export class AutopilotService {
 
   getLastSpyMl() {
     return this.lastSpyMl;
+  }
+
+  async sellOptionsHolding(holding: PortfolioInfoHolding, reason: string) {
+    let orderType = null;
+    if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
+      orderType = OrderTypes.call;
+    } else if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
+      orderType = OrderTypes.put;
+    }
+    const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
+    this.cartService.addSingleLegOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);
+  }
+
+  sellLoser(currentHoldings: PortfolioInfoHolding[]) {
+    currentHoldings.sort((a, b) => a.pl - b.pl);
+    const toBeSold = currentHoldings.slice(0, 1);
+    toBeSold.forEach(async (holdingInfo) => {
+      if (this.cartService.isStrangle(holdingInfo)) {
+        this.optionsOrderBuilderService.sellStrangle(holdingInfo);
+      } else if (holdingInfo.shares) {
+        await this.cartService.portfolioSell(holdingInfo, 'Selling loser');
+      } else if (holdingInfo.primaryLegs) {
+        await this.sellOptionsHolding(holdingInfo, 'Selling loser');
+      }
+    });
+  }
+
+  async checkIfTooManyHoldings(currentHoldings: any[], maxHoldings = this.maxTradeCount) {
+    if (currentHoldings.length > maxHoldings) {
+      this.sellLoser(currentHoldings);
+    }
+  }
+
+  async balanceCallPutRatio(holdings: PortfolioInfoHolding[]) {
+    const results = this.priceTargetService.getCallPutBalance(holdings);
+    if (results.put + (results.put * this.getLastSpyMl()) > results.call) {
+      const targetBalance = Number(results.put - results.call);
+      this.optionsOrderBuilderService.addOptionByBalance('SPY', targetBalance, 'Balance call put ratio', true);
+    } else if (results.call / results.put > 2) {
+      this.sellLoser(holdings);
+    }
+  }
+
+  async isMarketOpened() {
+    try {
+      const marketHour: any = await this.portfolioService.getEquityMarketHours(moment().format('YYYY-MM-DD')).toPromise();
+      if (marketHour && marketHour.equity) {
+        return Boolean(marketHour.equity.EQ.isOpen);
+      } else {
+        return false;
+      }
+    } catch (error) {
+      console.log('error checking equity hours', error);
+    }  
+    return false;
   }
 }
