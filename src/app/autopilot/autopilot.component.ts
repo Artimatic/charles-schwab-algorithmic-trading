@@ -384,6 +384,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.boughtAtClose = true;
         } else if (moment().isAfter(moment(startStopTime.startDateTime)) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
+          console.log('handle intraday', moment().format());
           await this.handleIntraday();
         } else {
           if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 3) {
@@ -1007,7 +1008,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async isMarketOpened() {
-    if (this.lastMarketHourCheck && this.lastMarketHourCheck.diff(moment(), 'minutes') < 29) {
+    if (this.lastMarketHourCheck && Math.abs(this.lastMarketHourCheck.diff(moment(), 'minutes')) < 35) {
       return false;
     }
     const opened = await this.autopilotService.isMarketOpened();
@@ -1331,6 +1332,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       } else {
         matchBuy = backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator);
       }
+
       if (matchBuy && prediction > 0.6 && this.priceTargetService.isProfitable(backtestData.invested, backtestData.net)) {
         if (this.optionsOrderBuilderService.currentTradeIdeas.puts.length) {
           const cash = await this.getMinMaxCashForOptions();
