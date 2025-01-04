@@ -9,6 +9,8 @@ import { CurrentStockList } from '../rh-table/stock-list.constant';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { OrderTypes } from '@shared/models/smart-order';
+import { map } from 'rxjs/operators';
+import { of } from 'rxjs';
 
 export enum RiskTolerance {
   Zero = 0.005,
@@ -35,6 +37,9 @@ export class AutopilotService {
   addedOrdersCount = 0;
   maxTradeCount = 10;
   lastSpyMl = 0;
+  lastMarketHourCheck = null;
+  sessionStart = null;
+  sessionEnd = null;
   riskToleranceList = [
     RiskTolerance.Two,
     RiskTolerance.Lower,
@@ -309,17 +314,26 @@ export class AutopilotService {
     }
   }
 
-  async isMarketOpened() {
-    try {
-      const marketHour: any = await this.portfolioService.getEquityMarketHours(moment().format('YYYY-MM-DD')).toPromise();
-      if (marketHour && marketHour.equity) {
-        return Boolean(marketHour.equity.EQ.isOpen);
-      } else {
-        return false;
-      }
-    } catch (error) {
-      console.log('error checking equity hours', error);
-    }  
-    return false;
+  private marketHourCheck(marketHour: any) {
+    return marketHour && marketHour.equity && marketHour.equity.EQ && Boolean(marketHour.equity.EQ.isOpen);
+  }
+
+  isMarketOpened() {
+    if (this.lastMarketHourCheck && Math.abs(this.lastMarketHourCheck.diff(moment(), 'minutes')) < 20) {
+      return of(false);
+    }
+    return this.portfolioService.getEquityMarketHours(moment().format('YYYY-MM-DD')).pipe(
+      map((marketHour: any) => {
+        const isOpen = this.marketHourCheck(marketHour);
+        this.sessionStart = marketHour?.equity?.EQ?.sessionHours?.regularMarket?.[0]?.start;
+        this.sessionEnd = marketHour?.equity?.EQ?.sessionHours?.regularMarket?.[0]?.end;
+        if (!isOpen) {
+          this.lastMarketHourCheck = moment();
+        }
+        console.log('sessionStart', moment(this.sessionStart).diff(moment(), 'minutes'), moment(this.sessionStart).format('HH:mm YYYY-MM-DD'));
+        console.log('sessionEnd', moment(this.sessionEnd).diff(moment(), 'minutes'), moment(this.sessionEnd).format('HH:mm YYYY-MM-DD'));
+        return isOpen;
+      })
+    );
   }
 }
