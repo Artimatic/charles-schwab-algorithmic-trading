@@ -355,11 +355,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.lastCredentialCheck = moment();
           await this.backtestOneStock(true, false);
           if (!this.schedulerService.executeTask()) {
-            if (this.isLive) {
-              this.triggerDaytradeRefresh();
-            } else {
-              this.padOrders(startStopTime.startDateTime, startStopTime.endDateTime);
-            }
+            this.padOrders(startStopTime.startDateTime, startStopTime.endDateTime);
           }
         } else if (moment().isAfter(moment(startStopTime.endDateTime).subtract(8, 'minutes')) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
@@ -385,7 +381,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else if (moment().isAfter(moment(startStopTime.startDateTime)) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
           console.log('handle intraday', moment().format());
-          await this.handleIntraday();
+          this.handleIntraday();
         } else {
           if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 3) {
             await this.backtestOneStock(false, false);
@@ -520,6 +516,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async developStrategy() {
+    console.log('developStrategy', moment().format('HH:mm YYYY-MM-DD'));
     console.log(this.backtestAggregatorService.getTimeLine());
     this.backtestAggregatorService.clearTimeLine();
     if (this.manualStart) {
@@ -1007,17 +1004,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     });
   }
 
-  async isMarketOpened() {
-    if (this.lastMarketHourCheck && Math.abs(this.lastMarketHourCheck.diff(moment(), 'minutes')) < 35) {
-      return false;
-    }
-    const opened = await this.autopilotService.isMarketOpened();
-    if (!opened) {
-      this.lastMarketHourCheck = moment();
-    }
-    return opened;
-  }
-
   getPreferences() {
     this.portfolioService.getUserPreferences().subscribe(pref => {
       console.log('pref', pref);
@@ -1471,31 +1457,35 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async handleIntraday() {
-    this.isLive = await this.isMarketOpened();
-    if (this.isLive) {
-      if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 15) {
-        this.lastOptionsCheckCheck = moment();
-        const balance = await this.portfolioService.getTdBalance().toPromise();
+    await this.autopilotService.isMarketOpened().subscribe(async (isOpen) => {
+      if (isOpen) {
+        if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 15) {
+          this.lastOptionsCheckCheck = moment();
+          const balance = await this.portfolioService.getTdBalance().toPromise();
 
-        this.currentHoldings = await this.cartService.findCurrentPositions();
-        await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
-        if (balance.cashBalance / balance.liquidationValue < 0.6) {
-          const metTarget = await this.priceTargetService.checkProfitTarget(this.currentHoldings);
-          if (metTarget) {
-            this.decreaseRiskTolerance();
+          this.currentHoldings = await this.cartService.findCurrentPositions();
+          await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
+          if (balance.cashBalance / balance.liquidationValue < 0.6) {
+            const metTarget = await this.priceTargetService.checkProfitTarget(this.currentHoldings);
+            if (metTarget) {
+              this.decreaseRiskTolerance();
+            }
+          }
+          await this.checkIfOverBalance(balance);
+          await this.autopilotService.balanceCallPutRatio(this.currentHoldings);
+          await this.autopilotService.checkIntradayStrategies();
+        } else {
+          this.executeOrderList();
+          if (this.strategyList[this.strategyCounter] === Strategy.Daytrade &&
+            (this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
+            this.triggerDaytradeRefresh();
           }
         }
-        await this.checkIfOverBalance(balance);
-        await this.autopilotService.balanceCallPutRatio(this.currentHoldings);
-        await this.autopilotService.checkIntradayStrategies();
       } else {
-        this.executeOrderList();
-        if (this.strategyList[this.strategyCounter] === Strategy.Daytrade &&
-          (this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
-          this.triggerDaytradeRefresh();
-        }
+        await this.backtestOneStock(false, false);
       }
-    }
+    });
+
   }
 
   async placeInverseDispersionOrders() {

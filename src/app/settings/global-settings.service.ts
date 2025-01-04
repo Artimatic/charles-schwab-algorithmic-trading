@@ -85,7 +85,7 @@ export class GlobalSettingsService {
 
   getStartStopTime() {
     const endTime = '16:00';
-    const currentMoment = moment().tz('America/New_York').set({ hour: 9, minute: 40 });
+    const currentMoment = moment().tz('America/New_York').set({ hour: 9, minute: 31 });
     const currentEndMoment = moment().tz('America/New_York').set({ hour: 16, minute: 0 });
     const currentDay = currentMoment.day();
     let startDate;
