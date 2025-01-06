@@ -344,7 +344,10 @@ export class CartService {
   ) {
     if (this.buyOrders.find(order => this.existingOptionsCheck(order, symbol, primaryLegs[0].symbol) ||
       this.sellOrders.find(order => this.existingOptionsCheck(order, symbol, primaryLegs[0].symbol)))) {
-      console.log('Found existing order');
+      const log = `Found existing order ${symbol} ${primaryLegs[0].symbol}`;
+        console.log(log);
+      this.reportingService.addAuditLog(symbol, log);
+
       return null;
     } else {
       const order: SmartOrder = {
@@ -380,6 +383,7 @@ export class CartService {
     primaryLegs: Options[], price: number,
     quantity: number, optionType,
     side = 'Buy', reason: string = '', executeImmediately = false) {
+      this.reportingService.addAuditLog(symbol, `Adding single leg option ${primaryLegs[0].symbol}`);
 
     if (primaryLegs.find(leg => !leg.quantity)) {
       console.log('Legs missing quantity', primaryLegs);

@@ -308,7 +308,7 @@ export class AutopilotService {
     const results = this.priceTargetService.getCallPutBalance(holdings);
     if (results.put + (results.put * this.getLastSpyMl()) > results.call) {
       const targetBalance = Number(results.put - results.call);
-      this.optionsOrderBuilderService.addOptionByBalance('SPY', targetBalance, 'Balance call put ratio', true);
+      console.log('SPY', targetBalance, `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${targetBalance}`);
     } else if (results.call / results.put > 2) {
       this.sellLoser(holdings);
     }

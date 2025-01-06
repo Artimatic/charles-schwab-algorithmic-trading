@@ -372,7 +372,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
               await this.modifyStrategy();
               this.scoreKeeperService.resetTotal();
               this.resetCart();
-              this.developStrategy();
               this.boughtAtClose = false;
             }, 1200000);
           }
@@ -516,7 +515,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async developStrategy() {
-    console.log('developStrategy', moment().format('HH:mm YYYY-MM-DD'));
+    console.log('developing strategy', moment().format('HH:mm YYYY-MM-DD'));
     console.log(this.backtestAggregatorService.getTimeLine());
     this.backtestAggregatorService.clearTimeLine();
     if (this.manualStart) {
