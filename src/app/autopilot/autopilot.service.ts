@@ -44,8 +44,7 @@ export class AutopilotService {
     RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,
-    RiskTolerance.Neutral,
-    RiskTolerance.Greed
+    RiskTolerance.Neutral
   ];
 
   constructor(private cartService: CartService,
@@ -306,11 +305,14 @@ export class AutopilotService {
 
   async balanceCallPutRatio(holdings: PortfolioInfoHolding[]) {
     const results = this.priceTargetService.getCallPutBalance(holdings);
-    if (results.put + (results.put * this.getLastSpyMl()) > results.call) {
+    if (results.put + (results.put * this.getLastSpyMl() * (this.riskToleranceList[this.riskCounter] * 3)) > results.call) {
       const targetBalance = Number(results.put - results.call);
+      console.log('SPY', targetBalance, `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${targetBalance}`);
       this.optionsOrderBuilderService.addOptionByBalance('SPY', targetBalance, 'Balance call put ratio', true);
-    } else if (results.call / results.put > 2) {
+    } else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
       this.sellLoser(holdings);
+      console.log('Sell loser', results.call / results.put, `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${(1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])}`);
+
     }
   }
 

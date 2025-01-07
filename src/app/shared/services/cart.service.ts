@@ -138,6 +138,7 @@ export class CartService {
   }
 
   deleteOrder(order: SmartOrder) {
+    console.log('Deleting order', order);
     switch (order.side.toLowerCase()) {
       case 'sell':
         this.deleteSell(order);
@@ -344,7 +345,10 @@ export class CartService {
   ) {
     if (this.buyOrders.find(order => this.existingOptionsCheck(order, symbol, primaryLegs[0].symbol) ||
       this.sellOrders.find(order => this.existingOptionsCheck(order, symbol, primaryLegs[0].symbol)))) {
-      console.log('Found existing order');
+      const log = `Found existing order ${symbol} ${primaryLegs[0].symbol}`;
+        console.log(log);
+      this.reportingService.addAuditLog(symbol, log);
+
       return null;
     } else {
       const order: SmartOrder = {
@@ -380,6 +384,7 @@ export class CartService {
     primaryLegs: Options[], price: number,
     quantity: number, optionType,
     side = 'Buy', reason: string = '', executeImmediately = false) {
+      this.reportingService.addAuditLog(symbol, `Adding single leg option ${primaryLegs[0].symbol}`);
 
     if (primaryLegs.find(leg => !leg.quantity)) {
       console.log('Legs missing quantity', primaryLegs);
@@ -398,7 +403,7 @@ export class CartService {
     } else {
       const log = `Invalid option order ${symbol} ${JSON.stringify(primaryLegs)} ${price} ${quantity} ${optionType} ${side} ${JSON.stringify(order)} ${reason}`;
       console.log(log);
-      this.reportingService.addAuditLog(order.holding.symbol, log, reason);
+      this.reportingService.addAuditLog(symbol, log, reason);
     }
   }
 
@@ -449,12 +454,14 @@ export class CartService {
                 if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'c' &&
                   holding.instrument.putCall.toLowerCase() === 'call') {
                   holdingInfo.primaryLegs.push(this.createOptionObj(holding));
+                  holdingInfo.primaryLegs.sort((a, b) => b.quantity - a.quantity);
                 } else if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'c' &&
                   holding.instrument.putCall.toLowerCase() === 'put') {
                   if (!holdingInfo.secondaryLegs) {
                     holdingInfo.secondaryLegs = [];
                   }
                   holdingInfo.secondaryLegs.push(this.createOptionObj(holding));
+                  holdingInfo.secondaryLegs.sort((a, b) => b.quantity - a.quantity);
                 } else if (holdingInfo.primaryLegs[0].putCallInd.toLowerCase() === 'p' &&
                   holding.instrument.putCall.toLowerCase() === 'put') {
                   holdingInfo.primaryLegs.push(this.createOptionObj(holding));
