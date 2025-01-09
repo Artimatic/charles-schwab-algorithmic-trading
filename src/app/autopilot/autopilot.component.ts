@@ -351,13 +351,16 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(async () => {
         const startStopTime = this.globalSettingsService.getStartStopTime();
+
         if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 25) {
+          console.log('new start time ', moment(this.autopilotService.sessionStart).tz('America/New_York').format('HH:mm YYYY-MM-DD'));
+          console.log('new stop time ', moment(this.autopilotService.sessionEnd).tz('America/New_York').format('HH:mm YYYY-MM-DD'));
           this.lastCredentialCheck = moment();
           await this.backtestOneStock(true, false);
           if (!this.schedulerService.executeTask()) {
             this.padOrders(startStopTime.startDateTime, startStopTime.endDateTime);
           }
-        } else if (moment().isAfter(moment(startStopTime.endDateTime).subtract(8, 'minutes')) &&
+        } else if (moment().isAfter(moment(startStopTime.endDateTime).subtract(7, 'minutes')) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
           if (!this.boughtAtClose) {
             await this.buySellAtClose();
@@ -379,7 +382,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.boughtAtClose = true;
         } else if (moment().isAfter(moment(startStopTime.startDateTime)) &&
           moment().isBefore(moment(startStopTime.endDateTime))) {
-          console.log('handle intraday', moment().format());
           this.handleIntraday();
         } else {
           if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 3) {
