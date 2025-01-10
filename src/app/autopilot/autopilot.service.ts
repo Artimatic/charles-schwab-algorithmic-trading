@@ -11,6 +11,7 @@ import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { OrderTypes } from '@shared/models/smart-order';
 import { map } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { GlobalSettingsService } from '../settings/global-settings.service';
 
 export enum RiskTolerance {
   Zero = 0.005,
@@ -55,8 +56,13 @@ export class AutopilotService {
     private backtestService: BacktestService,
     private orderHandlingService: OrderHandlingService,
     private reportingService: ReportingService,
-    private portfolioService: PortfolioService
-  ) { }
+    private portfolioService: PortfolioService,
+    private globalSettingsService: GlobalSettingsService
+  ) { 
+    const globalStartStop = this.globalSettingsService.getStartStopTime();
+    this.sessionStart = globalStartStop.startDateTime;
+    this.sessionEnd  = globalStartStop.endDateTime;
+  }
 
   async getMinMaxCashForOptions() {
     const cash = await this.cartService.getAvailableFunds(false);
@@ -328,8 +334,15 @@ export class AutopilotService {
     return this.portfolioService.getEquityMarketHours(moment().format('YYYY-MM-DD')).pipe(
       map((marketHour: any) => {
         const isOpen = this.marketHourCheck(marketHour);
-        this.sessionStart = marketHour?.equity?.EQ?.sessionHours?.regularMarket?.[0]?.start;
-        this.sessionEnd = marketHour?.equity?.EQ?.sessionHours?.regularMarket?.[0]?.end;
+        if (marketHour?.equity?.EQ?.sessionHours?.regularMarket?.[0]) {
+          this.sessionStart = moment(marketHour?.equity?.EQ?.sessionHours?.regularMarket?.[0]?.start).tz('America/New_York');
+          this.sessionEnd = moment(marketHour?.equity?.EQ?.sessionHours?.regularMarket?.[0]?.end).tz('America/New_York');
+        } else {
+          const globalStartStop = this.globalSettingsService.getStartStopTime(1);
+          this.sessionStart = globalStartStop.startDateTime;
+          this.sessionEnd  = globalStartStop.endDateTime;
+        }
+
         if (!isOpen) {
           this.lastMarketHourCheck = moment();
         }

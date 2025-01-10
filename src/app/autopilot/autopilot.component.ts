@@ -350,18 +350,17 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.timer = TimerObservable.create(1000, this.interval)
       .pipe(takeUntil(this.destroy$))
       .subscribe(async () => {
-        const startStopTime = this.globalSettingsService.getStartStopTime();
-
         if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 25) {
+          await this.autopilotService.isMarketOpened().toPromise();
           console.log('new start time ', moment(this.autopilotService.sessionStart).tz('America/New_York').format('HH:mm YYYY-MM-DD'));
           console.log('new stop time ', moment(this.autopilotService.sessionEnd).tz('America/New_York').format('HH:mm YYYY-MM-DD'));
           this.lastCredentialCheck = moment();
           await this.backtestOneStock(true, false);
           if (!this.schedulerService.executeTask()) {
-            this.padOrders(startStopTime.startDateTime, startStopTime.endDateTime);
+            this.padOrders(this.autopilotService.sessionStart, this.autopilotService.sessionEnd);
           }
-        } else if (moment().isAfter(moment(startStopTime.endDateTime).subtract(7, 'minutes')) &&
-          moment().isBefore(moment(startStopTime.endDateTime))) {
+        } else if (moment().isAfter(moment(this.autopilotService.sessionEnd).subtract(7, 'minutes')) &&
+          moment().isBefore(moment(this.autopilotService.sessionEnd))) {
           if (!this.boughtAtClose) {
             await this.buySellAtClose();
             setTimeout(async () => {
@@ -380,14 +379,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           }
 
           this.boughtAtClose = true;
-        } else if (moment().isAfter(moment(startStopTime.startDateTime)) &&
-          moment().isBefore(moment(startStopTime.endDateTime))) {
+        } else if (moment().isAfter(moment(this.autopilotService.sessionStart)) &&
+          moment().isBefore(moment(this.autopilotService.sessionEnd))) {
           this.handleIntraday();
         } else {
           if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 3) {
             await this.backtestOneStock(false, false);
             this.startFindingTrades();
-            this.padOrders(startStopTime.startDateTime, startStopTime.endDateTime);
+            this.padOrders(this.autopilotService.sessionStart, this.autopilotService.sessionEnd);
           }
         }
       });
@@ -1458,7 +1457,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async handleIntraday() {
-    await this.autopilotService.isMarketOpened().subscribe(async (isOpen) => {
+    this.autopilotService.isMarketOpened().subscribe(async (isOpen) => {
       if (isOpen) {
         if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 15) {
           this.lastOptionsCheckCheck = moment();
@@ -1484,7 +1483,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.backtestOneStock(false, false);
       }
     });
-
   }
 
   async placeInverseDispersionOrders() {
