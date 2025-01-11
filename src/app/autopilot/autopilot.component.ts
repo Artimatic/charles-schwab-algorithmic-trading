@@ -187,7 +187,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   lastMarketHourCheck = null;
   lastOptionsCheckCheck = null;
-  lastCredentialCheck = moment();
+  lastCredentialCheck;
 
   revealPotentialStrategy = false;
 
@@ -350,10 +350,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.timer = TimerObservable.create(1000, this.interval)
       .pipe(takeUntil(this.destroy$))
       .subscribe(async () => {
-        if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 25) {
+        if (!this.lastCredentialCheck || Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 25) {
           await this.autopilotService.isMarketOpened().toPromise();
-          console.log('new start time ', moment(this.autopilotService.sessionStart).tz('America/New_York').format('HH:mm YYYY-MM-DD'));
-          console.log('new stop time ', moment(this.autopilotService.sessionEnd).tz('America/New_York').format('HH:mm YYYY-MM-DD'));
+          console.log('new start time ', this.autopilotService.sessionStart);
+          console.log('new stop time ', this.autopilotService.sessionStart);
           this.lastCredentialCheck = moment();
           await this.backtestOneStock(true, false);
           if (!this.schedulerService.executeTask()) {
