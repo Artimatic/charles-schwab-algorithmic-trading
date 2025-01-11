@@ -334,9 +334,9 @@ export class AutopilotService {
     return this.portfolioService.getEquityMarketHours(moment().format('YYYY-MM-DD')).pipe(
       map((marketHour: any) => {
         const isOpen = this.marketHourCheck(marketHour);
-        if (marketHour?.equity?.EQ?.sessionHours?.regularMarket?.[0]) {
-          this.sessionStart = moment(marketHour?.equity?.EQ?.sessionHours?.regularMarket?.[0]?.start).tz('America/New_York');
-          this.sessionEnd = moment(marketHour?.equity?.EQ?.sessionHours?.regularMarket?.[0]?.end).tz('America/New_York');
+        if (marketHour?.equity?.EQ?.sessionHours?.regularMarket[0]) {
+          this.sessionStart = moment(marketHour?.equity?.EQ?.sessionHours?.regularMarket[0]?.start).tz('America/New_York').toDate();
+          this.sessionEnd = moment(marketHour?.equity?.EQ?.sessionHours?.regularMarket[0]?.end).tz('America/New_York').toDate();
         } else {
           const globalStartStop = this.globalSettingsService.getStartStopTime(1);
           this.sessionStart = globalStartStop.startDateTime;
