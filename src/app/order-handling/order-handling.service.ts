@@ -178,10 +178,11 @@ export class OrderHandlingService {
     }
   }
 
-  async buyOption(symbol: string, quantity: number, estimatedPrice = null) {
+  async buyOption(symbol: string, quantity: number, estimatedPrice = null, cb: Function) {
     const estPrice = estimatedPrice ? estimatedPrice : await this.getEstimatedPrice(symbol);
     this.portfolioService.sendOptionBuy(symbol, quantity, estPrice, false).subscribe(data => {
-      console.log('Bought option', symbol, data)
+      console.log('Bought option', symbol, data);
+      cb();
     });
   }
 }

@@ -30,7 +30,7 @@ export class BacktestTableComponent implements OnInit {
     const result = await this.backtestService.getYahooIntraday(symbol).toPromise();
     this.backtestService.postIntraday(result).toPromise();
 
-    const startDate = moment().subtract(1, 'days').format('YYYY-MM-DD');
+    const startDate = moment().subtract(5, 'days').format('YYYY-MM-DD');
     const futureDate = moment().add(1, 'days').format('YYYY-MM-DD');
 
     this.backtestService.getDaytradeBacktest(symbol,
