@@ -47,6 +47,7 @@ export class AutopilotService {
     RiskTolerance.Low,
     RiskTolerance.Neutral
   ];
+  isOpened = false;
 
   constructor(private cartService: CartService,
     private optionsOrderBuilderService: OptionsOrderBuilderService,
@@ -333,22 +334,25 @@ export class AutopilotService {
     }
     return this.portfolioService.getEquityMarketHours(moment().format('YYYY-MM-DD')).pipe(
       map((marketHour: any) => {
-        const isOpen = this.marketHourCheck(marketHour);
+        if (marketHour.accountId) {
+          return this.isOpened;
+        }
+        this.isOpened = this.marketHourCheck(marketHour);
         if (marketHour?.equity?.EQ?.sessionHours?.regularMarket[0]) {
           this.sessionStart = moment(marketHour?.equity?.EQ?.sessionHours?.regularMarket[0]?.start).tz('America/New_York').toDate();
           this.sessionEnd = moment(marketHour?.equity?.EQ?.sessionHours?.regularMarket[0]?.end).tz('America/New_York').toDate();
-        } else {
+        } else if (!this.isOpened && !this.sessionStart && !this.sessionEnd) {
           const globalStartStop = this.globalSettingsService.getStartStopTime(1);
           this.sessionStart = globalStartStop.startDateTime;
           this.sessionEnd  = globalStartStop.endDateTime;
         }
 
-        if (!isOpen) {
+        if (!this.isOpened) {
           this.lastMarketHourCheck = moment();
         }
         console.log('sessionStart', moment(this.sessionStart).diff(moment(), 'minutes'), moment(this.sessionStart).format('HH:mm YYYY-MM-DD'));
         console.log('sessionEnd', moment(this.sessionEnd).diff(moment(), 'minutes'), moment(this.sessionEnd).format('HH:mm YYYY-MM-DD'));
-        return isOpen;
+        return this.isOpened;
       })
     );
   }
