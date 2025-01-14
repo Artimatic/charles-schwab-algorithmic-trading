@@ -91,6 +91,8 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
   lastMlResult: TrainingResults = null;
 
+  sendingOrder = false;
+
   constructor(private _formBuilder: FormBuilder,
     private backtestService: BacktestService,
     private daytradeService: DaytradeService,
@@ -224,6 +226,10 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     });
 
     this.setup();
+  }
+
+  resetBuying () {
+    this.sendingOrder = false;
   }
 
   getTimeStamp() {
@@ -387,6 +393,10 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   incrementBuy(order = null) {
+    if (this.sendingOrder) {
+      return false;
+    }
+    this.sendingOrder = true;
     if (order) {
       console.log('Sent buy order', order.holding.symbol, order, this.order);
 
@@ -398,6 +408,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       this.order.positionCount += 1;
     }
     this.cartService.updateOrder(this.order);
+    return true;
   }
 
   incrementSell(order = null) {
@@ -1074,12 +1085,15 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       const totalPrice = (primaryLegPrice * this.order.primaryLegs[0].quantity) + (secondaryLegPrice * this.order.secondaryLegs[0].quantity);
       this.reportingService.addAuditLog(this.order.holding.symbol, `Total Price with secondary leg ${totalPrice}, balance: ${cashBalance}`);
       if (totalPrice < cashBalance) {
-        this.incrementBuy();
-        this.reportingService.addAuditLog(this.order.holding.symbol, `Buying ${this.order.primaryLegs[0].quantity} ${this.order.primaryLegs[0].symbol}`);
-        this.reportingService.addAuditLog(this.order.holding.symbol, `Buying ${this.order.secondaryLegs[0].quantity} ${this.order.secondaryLegs[0].symbol}`);
+        if (this.incrementBuy()) {
+          this.reportingService.addAuditLog(this.order.holding.symbol, `Buying ${this.order.primaryLegs[0].quantity} ${this.order.primaryLegs[0].symbol}`);
+          this.reportingService.addAuditLog(this.order.holding.symbol, `Buying ${this.order.secondaryLegs[0].quantity} ${this.order.secondaryLegs[0].symbol}`);
 
-        await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity || 1, primaryLegPrice);
-        await this.orderHandlingService.buyOption(this.order.secondaryLegs[0].symbol, this.order.secondaryLegs[0].quantity || 1, secondaryLegPrice);
+          await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.primaryLegs[0].quantity || 1, primaryLegPrice, this.resetBuying);
+          await this.orderHandlingService.buyOption(this.order.secondaryLegs[0].symbol, this.order.secondaryLegs[0].quantity || 1, secondaryLegPrice, this.resetBuying);
+        } else {
+          this.resetBuying();
+        }
       }
     } else {
       const totalPrice = primaryLegPrice * this.order.primaryLegs[0].quantity;

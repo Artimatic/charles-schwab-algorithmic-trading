@@ -99,12 +99,12 @@
             </div>
             <ul *ngIf="order.primaryLegs">
               <li *ngFor="let leg of order.primaryLegs">
-                {{leg.description}}
+                {{leg.quantity}} x {{leg.description}}
               </li>
             </ul>
             <ul *ngIf="order.secondaryLegs">
               <li *ngFor="let leg of order.secondaryLegs">
-                {{leg.description}}
+                {{leg.quantity}} x {{leg.description}}
               </li>
             </ul>
             <p>
