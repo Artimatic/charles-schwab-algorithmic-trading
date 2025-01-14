@@ -1100,9 +1100,12 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       this.reportingService.addAuditLog(this.order.holding.symbol, `Option price ${totalPrice}, balance: ${cashBalance}`);
 
       if (totalPrice < cashBalance) {
-        this.incrementBuy();
-        this.reportingService.addAuditLog(this.order.holding.symbol, `Buying ${this.order.orderSize} ${this.order.primaryLegs[0].symbol}`);
-        await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize || 1);
+        if (this.incrementBuy()) {
+          this.reportingService.addAuditLog(this.order.holding.symbol, `Buying ${this.order.orderSize} ${this.order.primaryLegs[0].symbol}`);
+          await this.orderHandlingService.buyOption(this.order.primaryLegs[0].symbol, this.order.orderSize || 1);
+        } else {
+          this.resetBuying();
+        }
       }
     }
   }
