@@ -6,6 +6,7 @@ import TrainingService from './training.service';
 import IntradayPredicationService from './intraday-prediction.service';
 import DailyPredicationService from './daily-prediction.service';
 import VariableDailyPredicationService from './variable-daily-prediction.service';
+import PairTradingPrediction from './pair-trading-prediction.service';
 
 class MachineLearningController extends BaseController {
 
@@ -125,6 +126,21 @@ class MachineLearningController extends BaseController {
     VariableDailyPredicationService.setOutputLimit(Number(request.query.limit));
     VariableDailyPredicationService.setOutputRange(Number(request.query.range));
     VariableDailyPredicationService.train(request.query.symbol,
+      request.query.startDate,
+      request.query.endDate,
+      request.query.trainingSize,
+      features)
+      .then((data) => BaseController.requestGetSuccessHandler(response, data))
+      .catch((err) => BaseController.requestErrorHandler(response, err));
+  }
+
+  trainDailyTradingPair(request, response) {
+    const features = request.query.features && request.query.features !== 'null' ? request.query.features.split(',') : null;
+
+    PairTradingPrediction.setOutputLimit(Number(request.query.limit));
+    PairTradingPrediction.setOutputRange(Number(request.query.range));
+    PairTradingPrediction.train(request.query.symbol1,
+      request.query.symbol2,
       request.query.startDate,
       request.query.endDate,
       request.query.trainingSize,

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import crc from 'crc';
 import * as moment from 'moment-timezone';
-import { BacktestService, CartService, PortfolioInfoHolding, ReportingService } from '@shared/services';
+import { BacktestService, CartService, MachineLearningService, PortfolioInfoHolding, ReportingService } from '@shared/services';
 import { StrategyBuilderService } from './backtest-table/strategy-builder.service';
 import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
 import { OptionsDataService } from '@shared/options-data.service';
@@ -31,7 +31,8 @@ export class OptionsOrderBuilderService {
     private optionsDataService: OptionsDataService,
     private backtestService: BacktestService,
     private reportingService: ReportingService,
-    private orderHandlingService: OrderHandlingService
+    private orderHandlingService: OrderHandlingService,
+    private machineLearningService: MachineLearningService
   ) { }
 
   resetCurrentTradeIdeas() {
@@ -251,6 +252,14 @@ export class OptionsOrderBuilderService {
                 this.reportingService.addAuditLog(null, `Trading pair ${option1.primaryLegs[0].symbol} ${option2.primaryLegs[0].symbol}. Reason: ${reason}`);
                 this.addTradingPairs([option1, option2]);
               }
+
+              const endDate = moment().format('YYYY-MM-DD');
+              const startDate = moment().subtract({ day: 600 }).format('YYYY-MM-DD');
+
+              const range = 10;
+              const limit = 0.001;
+              this.machineLearningService.trainTradingPair(currentCall.underlying,
+                currentPut.underlying, endDate, startDate, 0.8, null, range, limit).subscribe();
               return [option1, option2];
             }
           } else {
@@ -280,7 +289,7 @@ export class OptionsOrderBuilderService {
     }
 
     let commonMaximum = 1;
-    while (((callPrice * (callQuantity * commonMaximum)) + (putPrice * (putQuantity * commonMaximum))) <= maxCashAllocation && 
+    while (((callPrice * (callQuantity * commonMaximum)) + (putPrice * (putQuantity * commonMaximum))) <= maxCashAllocation &&
       ((callPrice * (callQuantity * commonMaximum)) + (putPrice * (putQuantity * commonMaximum))) < minCashAllocation) {
       commonMaximum++;
     }
