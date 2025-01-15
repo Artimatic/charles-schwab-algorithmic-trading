@@ -4,6 +4,12 @@ import { Indicators } from '../backtest/backtest.constants';
 import DecisionService from '../mean-reversion/reversion-decision.service';
 import * as _ from 'lodash';
 
+export interface FeatureSet {
+  date: string;
+  input: number[];
+  output: number[];
+}
+
 export default class PredictionService {
   outputRange: number;
   outputLimit: number;
@@ -13,7 +19,7 @@ export default class PredictionService {
     this.outputLimit = limit;
   }
 
-  processBacktestResults(results: BacktestResults, featureUse): any[] {
+  processBacktestResults(results: BacktestResults, featureUse): FeatureSet[] {
     const signals = results.signals;
     console.log('Got backtest: ', signals[0].date, signals[signals.length - 1].date);
 

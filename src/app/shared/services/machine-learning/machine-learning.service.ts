@@ -139,6 +139,7 @@ export class MachineLearningService {
     return this.http.get(`${BASE_URL}api/machine-learning/v4/train-daily`,
       options);
   }
+
   getPredictDailyDataV4(symbol: string,
     endDate: string = null,
     startDate: string = null,
@@ -202,6 +203,33 @@ export class MachineLearningService {
       }
     };
     return this.http.get(`${BASE_URL}api/machine-learning/v4/score-daily`, options);
+  }
+
+  trainTradingPair(symbol1: string,
+    symbol2: string,
+    endDate: string = null,
+    startDate: string = null,
+    trainingSize: number,
+    features: number[] = [],
+    range: number,
+    limit: number): Observable<any> {
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const options = {
+      headers: headers,
+      params: {
+        symbol1,
+        symbol2,
+        startDate,
+        endDate,
+        trainingSize: String(trainingSize),
+        features: features ? String(features) : null,
+        range: String(range),
+        limit: String(limit)
+      }
+    };
+
+    return this.http.get(`${BASE_URL}api/machine-learning/train/pair-trade`,
+      options);
   }
 
   getFoundPatterns(): Observable<any> {
