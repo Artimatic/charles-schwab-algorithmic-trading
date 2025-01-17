@@ -73,7 +73,7 @@ export class StrategyBuilderService {
       return Promise.resolve(recentBacktest);
     }
     const current = moment().format('YYYY-MM-DD');
-    const start = moment().subtract(600, 'days').format('YYYY-MM-DD');
+    const start = moment().subtract(200, 'days').format('YYYY-MM-DD');
 
     try {
       const results = await this.backtestService.getBacktestEvaluation(symbol, start, current, 'daily-indicators').toPromise();

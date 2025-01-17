@@ -40,9 +40,9 @@ export class AiPicksService {
   constructor(private globalSettingsService: GlobalSettingsService,
     private machineLearningService: MachineLearningService) { }
 
-  async trainAndActivate(symbol, range = 10, limit = 0.001) {
+  async trainAndActivate(symbol, range = 5, limit = 0.001) {
     const endDate = this.globalSettingsService.getLastTradeDate().format('YYYY-MM-DD');
-    const startDate = moment(endDate).subtract({ day: 600 }).format('YYYY-MM-DD');
+    const startDate = moment(endDate).subtract({ day: 200 }).format('YYYY-MM-DD');
     let trainingResult = null;
     try {
       trainingResult = await this.machineLearningService.trainPredictDailyV4(symbol,
