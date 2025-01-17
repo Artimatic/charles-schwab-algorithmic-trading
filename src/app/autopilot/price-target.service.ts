@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
 import { BacktestService, CartService, PortfolioInfoHolding, PortfolioService, ReportingService } from '@shared/services';
-import { OptionsOrderBuilderService } from '../options-order-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { OrderTypes } from '@shared/models/smart-order';
 

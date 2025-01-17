@@ -92,15 +92,14 @@ export class CartService {
 
   deleteSell(deleteOrder: SmartOrder) {
     console.log('Deleting sell orders that match', deleteOrder.holding.symbol);
-    this.sellOrders = this.sellOrders.filter(fullOrder => fullOrder.holding.symbol !== deleteOrder.holding.symbol);
+    this.sellOrders = this.sellOrders.filter(fullOrder => deleteOrder.primaryLegs && fullOrder.primaryLegs ? deleteOrder.primaryLegs[0].symbol !== fullOrder.primaryLegs[0].symbol : deleteOrder.holding.symbol !== fullOrder.holding.symbol);
     this.cartObserver.next(true);
   }
 
   deleteBuy(deleteOrder: SmartOrder) {
     console.log('Deleting buy orders that match', deleteOrder.holding.symbol);
-    this.buyOrders = this.buyOrders.filter(fullOrder => fullOrder.holding.symbol !== deleteOrder.holding.symbol);
+    this.buyOrders = this.buyOrders.filter(fullOrder => deleteOrder.primaryLegs && fullOrder.primaryLegs ? deleteOrder.primaryLegs[0].symbol !== fullOrder.primaryLegs[0].symbol : deleteOrder.holding.symbol !== fullOrder.holding.symbol);
     this.cartObserver.next(true);
-
   }
 
   deleteDaytrade(deleteOrder: SmartOrder) {
