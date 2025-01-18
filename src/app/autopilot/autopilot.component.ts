@@ -6,7 +6,7 @@ import { Options } from '@shared/models/options';
 import { OrderTypes } from '@shared/models/smart-order';
 import { Trade } from '@shared/models/trade';
 import { BacktestService, CartService, DaytradeService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
-import { AiPicksPredictionData } from '@shared/services/ai-picks.service';
+import { AiPicksPredictionData, AiPicksService } from '@shared/services/ai-picks.service';
 import { ScoringIndex } from '@shared/services/score-keeper.service';
 import { divide, round } from 'lodash';
 import { MenuItem, MessageService } from 'primeng/api';
@@ -22,7 +22,6 @@ import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { PortfolioMgmtService } from '../portfolio-mgmt/portfolio-mgmt.service';
 import { PricingService } from '../pricing/pricing.service';
 import { PersonalBearishPicks } from '../rh-table/backtest-stocks.constant';
-import { CurrentStockList } from '../rh-table/stock-list.constant';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { StockListDialogComponent } from '../stock-list-dialog/stock-list-dialog.component';
 import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
@@ -230,7 +229,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private schedulerService: SchedulerService,
     private algoEvaluationService: AlgoEvaluationService,
     public autopilotService: AutopilotService,
-    private backtestAggregatorService: BacktestAggregatorService
+    private backtestAggregatorService: BacktestAggregatorService,
+    private aiPicksService: AiPicksService
   ) { }
 
   ngOnInit(): void {
@@ -320,7 +320,72 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         command: async () => {
           await this.priceTargetService.checkProfitTarget(this.currentHoldings);
         }
-      }
+      },
+      {
+        label: 'Test ml',
+        command: async () => {
+          const endDate = moment().format('YYYY-MM-DD');
+
+          this.machineLearningService.trainTradingPair('GOOG',
+            'AAPL', endDate, moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.8, null, 5, 0.001).subscribe((result) => {
+              console.log('GOOG' + ' AAPL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+            });
+          this.machineLearningService.trainSellOff('CVNA', endDate,
+            moment().subtract({ day: 500 }).format('YYYY-MM-DD'), 0.8, null, 1, -0.001).subscribe((result) => {
+              console.log('CVNA SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+            });
+          this.machineLearningService.trainSellOff('PLTR', endDate,
+            moment().subtract({ day: 1000 }).format('YYYY-MM-DD'), 0.8, null, 1, -0.05).subscribe((result) => {
+              console.log('CVNA SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+            });
+          this.machineLearningService.trainSellOff('ROKU', endDate,
+            moment().subtract({ day: 700 }).format('YYYY-MM-DD'), 0.8, null, 1, -0.009).subscribe((result) => {
+              console.log('CVNA SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+            });
+          this.machineLearningService.trainSellOff('CRWD', endDate,
+            moment().subtract({ day: 200 }).format('YYYY-MM-DD'), 0.8, null, 3, -0.005).subscribe((result) => {
+              console.log('CRWD SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+            });
+
+          this.machineLearningService.trainSellOff('LULU', endDate,
+            moment().subtract({ day: 300 }).format('YYYY-MM-DD'), 0.8, null, 15, -0.01).subscribe((result) => {
+              console.log('LULU SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+            });
+          this.machineLearningService.trainSellOff('NVDA', endDate,
+            moment().subtract({ day: 400 }).format('YYYY-MM-DD'), 0.8, null, 20, -0.05).subscribe((result) => {
+              console.log('NVDA SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+            });
+          this.machineLearningService.trainPredictDailyV4('CRWD',
+            endDate,
+            moment().subtract({ day: 500 }).format('YYYY-MM-DD'),
+            0.8,
+            null,
+            10,
+            0.005
+          ).subscribe((result) => {
+            console.log('CRWD', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+          });
+          this.machineLearningService.trainPredictDailyV4('UBER',
+            endDate,
+            moment().subtract({ day: 600 }).format('YYYY-MM-DD'),
+            0.8,
+            null,
+            3,
+            0.008
+          ).subscribe((result) => {
+            console.log('UBER', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+          });
+        }
+      },
+      {
+        label: 'Test one ml',
+        command: async () => {
+          this.machineLearningService.trainSellOff('CVNA', moment().format('YYYY-MM-DD'),
+            moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.6, null, 5, -0.001).subscribe((result) => {
+              console.log('CVNA SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+            });
+        }
+      },
     ];
   }
 
@@ -690,7 +755,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         if (holding.primaryLegs) {
           if (this.cartService.isStrangle(holding)) {
             const { callsTotalPrice, putsTotalPrice } = await this.pricingService.getPricing(holding.primaryLegs, holding.secondaryLegs);
-            if (putsTotalPrice > callsTotalPrice && backtestResults && backtestResults.ml !== null && backtestResults.ml < 0.3) {
+            if (putsTotalPrice > callsTotalPrice && backtestResults && backtestResults.ml !== null && backtestResults.sellMl > 0.6) {
               this.optionsOrderBuilderService.sellStrangle(holding);
             } else if (callsTotalPrice > putsTotalPrice && backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.7) {
               this.optionsOrderBuilderService.sellStrangle(holding);
@@ -1043,7 +1108,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       const name = stock.ticker;
       try {
         const backtestResults = await this.strategyBuilderService.getBacktestData(name);
-        if (backtestResults && backtestResults.ml !== null && (backtestResults.ml < 0.3 && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL'))) {
+        if (backtestResults && backtestResults.ml !== null && (backtestResults.sellMl > 0.6 && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL'))) {
           const msg = `Sell ${name}, date: ${moment().format()}`;
           this.messageService.add({ severity: 'error', summary: 'Sell alert', detail: msg, life: 21600000 });
           console.log(msg);
@@ -1225,7 +1290,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           } else {
             MlBuys[key] = [symbol];
           }
-        } else if (backtestObj.ml !== null && backtestObj.ml < 0.4) {
+        } else if (backtestObj.ml !== null && backtestObj.sellMl > 0.6) {
           if (MlSells[key]) {
             MlSells[key].push(symbol);
           } else {
@@ -1265,7 +1330,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             } else {
               MlBuys[key] = [symbol];
             }
-          } else if (backtestObj.ml !== null && backtestObj.ml < 0.4) {
+          } else if (backtestObj.ml !== null && backtestObj.sellMl > 0.6) {
             if (MlSells[key]) {
               MlSells[key].push(symbol);
             } else {

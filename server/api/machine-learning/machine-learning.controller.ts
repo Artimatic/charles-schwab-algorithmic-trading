@@ -7,6 +7,7 @@ import IntradayPredicationService from './intraday-prediction.service';
 import DailyPredicationService from './daily-prediction.service';
 import VariableDailyPredicationService from './variable-daily-prediction.service';
 import PairTradingPrediction from './pair-trading-prediction.service';
+import BearPredictionService from './bear-prediction.service';
 
 class MachineLearningController extends BaseController {
 
@@ -145,6 +146,28 @@ class MachineLearningController extends BaseController {
       request.query.endDate,
       request.query.trainingSize,
       features)
+      .then((data) => BaseController.requestGetSuccessHandler(response, data))
+      .catch((err) => BaseController.requestErrorHandler(response, err));
+  }
+
+  trainDailyBear(request, response) {
+    BearPredictionService.setOutputLimit(Number(request.query.limit));
+    BearPredictionService.setOutputRange(Number(request.query.range));
+    BearPredictionService.train(request.query.symbol,
+      request.query.startDate,
+      request.query.endDate,
+      request.query.trainingSize)
+      .then((data) => BaseController.requestGetSuccessHandler(response, data))
+      .catch((err) => BaseController.requestErrorHandler(response, err));
+  }
+
+  trainVolitility(request, response) {
+    BearPredictionService.setOutputLimit(Number(request.query.limit));
+    BearPredictionService.setOutputRange(Number(request.query.range));
+    BearPredictionService.train(request.query.symbol,
+      request.query.startDate,
+      request.query.endDate,
+      request.query.trainingSize)
       .then((data) => BaseController.requestGetSuccessHandler(response, data))
       .catch((err) => BaseController.requestErrorHandler(response, err));
   }

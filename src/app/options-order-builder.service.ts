@@ -253,13 +253,13 @@ export class OptionsOrderBuilderService {
                 this.addTradingPairs([option1, option2]);
               }
 
-              const endDate = moment().format('YYYY-MM-DD');
-              const startDate = moment().subtract({ day: 600 }).format('YYYY-MM-DD');
+              // const endDate = moment().format('YYYY-MM-DD');
+              // const startDate = moment().subtract({ day: 600 }).format('YYYY-MM-DD');
 
-              const range = 10;
-              const limit = 0.001;
-              this.machineLearningService.trainTradingPair(currentCall.underlying,
-                currentPut.underlying, endDate, startDate, 0.8, null, range, limit).subscribe();
+              // const range = 10;
+              // const limit = 0.001;
+              // this.machineLearningService.trainTradingPair(currentCall.underlying,
+              //   currentPut.underlying, endDate, startDate, 0.8, null, range, limit).subscribe();
               return [option1, option2];
             }
           } else {
@@ -489,7 +489,7 @@ export class OptionsOrderBuilderService {
           const backtestData = await this.strategyBuilderService.getBacktestData(holding.name);
           if (callPutInd === 'c') {
             orderType = OrderTypes.call;
-            if (shouldSell || (backtestData && backtestData.ml < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'))) {
+            if (shouldSell || (backtestData && backtestData.sellMl > 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'))) {
               const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
               const reason = shouldSell ? 'Should sell options' : 'Backtest recommends selling';
               this.cartService.addSingleLegOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);

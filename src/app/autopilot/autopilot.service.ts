@@ -91,7 +91,7 @@ export class AutopilotService {
           } else {
             MlBuys[key] = [symbol];
           }
-        } else if (backtestObj.ml !== null && backtestObj.ml < 0.5 && this.priceTargetService.notProfitable(backtestObj.invested, backtestObj.net)) {
+        } else if (backtestObj.ml !== null && backtestObj.sellMl > 0.6 && this.priceTargetService.notProfitable(backtestObj.invested, backtestObj.net)) {
           if (MlSells[key]) {
             MlSells[key].push(symbol);
           } else {
@@ -131,7 +131,7 @@ export class AutopilotService {
         this.reportingService.addAuditLog(null, `Buys: ${buyList.join(', ')}`);
       }
       if (!sellList) {
-        const sells = sellList ? sellList : backtestResults.filter(backtestData => backtestData.ml < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'));
+        const sells = sellList ? sellList : backtestResults.filter(backtestData => backtestData.sellMl > 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'));
         sells.sort((a, b) => b.pnl - a.pnl);
         sellList = sells.map(b => b.stock);
         this.reportingService.addAuditLog(null, `Sells: ${sellList.join(', ')}`);
@@ -350,8 +350,7 @@ export class AutopilotService {
         if (!this.isOpened) {
           this.lastMarketHourCheck = moment();
         }
-        console.log('sessionStart', moment(this.sessionStart).diff(moment(), 'minutes'), moment(this.sessionStart).format('HH:mm YYYY-MM-DD'));
-        console.log('sessionEnd', moment(this.sessionEnd).diff(moment(), 'minutes'), moment(this.sessionEnd).format('HH:mm YYYY-MM-DD'));
+
         return this.isOpened;
       })
     );

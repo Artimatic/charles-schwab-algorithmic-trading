@@ -7,6 +7,10 @@ class AlgoService {
     return bband[0][0];
   }
 
+  getBBandMA(bband): number {
+    return bband[1][0];
+  }
+
   getUpperBBand(bband): number {
     return bband[2][0];
   }
