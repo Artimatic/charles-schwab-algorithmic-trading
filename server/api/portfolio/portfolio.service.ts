@@ -2,7 +2,7 @@ import * as request from 'request-promise';
 import * as charlesSchwabApi from 'charles-schwab-api';
 import * as _ from 'lodash';
 import * as moment from 'moment';
-
+import * as configurations from '../../config/environment';
 import QuoteService from '../quote/quote.service';
 import PortfolioDbService from '../mongodb/portfolio-db.service';
 
@@ -47,8 +47,28 @@ class PortfolioService {
       });
   }
 
-  getAccessToken(accountId, code, reply) {
-    return charlesSchwabApi.getAccessToken(this.accountStore[accountId].appKey, this.accountStore[accountId].secret, 'authorization_code', code, this.accountStore[accountId].callbackUrl)
+  useCookie(cookie) {
+    const cookieObj = cookie.split(';')
+    .map(v => v.split('='))
+    .reduce((acc, v) => {
+      acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim());
+      return acc;
+    }, {});
+    if (cookieObj.accountId) {
+      this.accountStore[cookieObj.accountId] = {
+        appKey: cookieObj.appKey,
+        secret: cookieObj.secret,
+        callbackUrl: cookieObj.callbackUrl
+      }
+    }
+  }
+
+  getAccessToken(accountId, code, reply, cookie) {
+    this.useCookie(cookie);
+    const appKey = this.accountStore[accountId].appKey;
+    const secret = this.accountStore[accountId].secret;
+    const callbackUrl = this.accountStore[accountId].callbackUrl;
+    return charlesSchwabApi.getAccessToken(appKey, secret, 'authorization_code', code, callbackUrl)
       .then((response) => {
         const data = (response as any).data;
         this.getAccountNumbers(data?.access_token)
@@ -77,11 +97,19 @@ class PortfolioService {
   }
 
   refreshAccessToken(accountId) {
-    if (!accountId || !this.accountStore[accountId]?.appKey ||
-      !this.accountStore[accountId]?.secret ||
-      !this.refreshTokensHash[accountId]) {
-      return Promise.reject(new Error('Missing credentials. Please log in.'));
+    if (!accountId) {
+      return Promise.reject(new Error('Missing accountId. Please log in.'));
     }
+    if (!this.accountStore[accountId]?.appKey) {
+      return Promise.reject(new Error('Missing appKey. Please log in.'));
+    }
+    if (!this.accountStore[accountId]?.secret) {
+      return Promise.reject(new Error('Missing secret. Please log in.'));
+    }
+    if (!this.refreshTokensHash[accountId]) {
+      return Promise.reject(new Error('Missing refresh token. Please log in.'));
+    }
+
     return charlesSchwabApi.refreshAccessToken(this.accountStore[accountId].appKey,
       this.accountStore[accountId].secret,
       this.refreshTokensHash[accountId]
@@ -772,7 +800,11 @@ class PortfolioService {
     response.status(200).send();
   }
 
-  isSet(accountId, response) {
+  isSet(accountId, response, cookie) {
+    this.useCookie(cookie);
+    if (configurations.charles.refresh_token) {
+      this.refreshTokensHash[accountId] = configurations.charles.refresh_token;
+    }
     this.lastTokenRequest = null;
     this.refreshAccessToken(accountId)
       .then(res => {

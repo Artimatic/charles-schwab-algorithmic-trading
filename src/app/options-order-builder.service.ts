@@ -253,13 +253,13 @@ export class OptionsOrderBuilderService {
                 this.addTradingPairs([option1, option2]);
               }
 
-              const endDate = moment().format('YYYY-MM-DD');
-              const startDate = moment().subtract({ day: 600 }).format('YYYY-MM-DD');
+              // const endDate = moment().format('YYYY-MM-DD');
+              // const startDate = moment().subtract({ day: 600 }).format('YYYY-MM-DD');
 
-              const range = 10;
-              const limit = 0.001;
-              this.machineLearningService.trainTradingPair(currentCall.underlying,
-                currentPut.underlying, endDate, startDate, 0.8, null, range, limit).subscribe();
+              // const range = 10;
+              // const limit = 0.001;
+              // this.machineLearningService.trainTradingPair(currentCall.underlying,
+              //   currentPut.underlying, endDate, startDate, 0.8, null, range, limit).subscribe();
               return [option1, option2];
             }
           } else {

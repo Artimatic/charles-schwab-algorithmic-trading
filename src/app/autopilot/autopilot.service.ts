@@ -350,8 +350,7 @@ export class AutopilotService {
         if (!this.isOpened) {
           this.lastMarketHourCheck = moment();
         }
-        console.log('sessionStart', moment(this.sessionStart).diff(moment(), 'minutes'), moment(this.sessionStart).format('HH:mm YYYY-MM-DD'));
-        console.log('sessionEnd', moment(this.sessionEnd).diff(moment(), 'minutes'), moment(this.sessionEnd).format('HH:mm YYYY-MM-DD'));
+
         return this.isOpened;
       })
     );

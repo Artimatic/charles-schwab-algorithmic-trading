@@ -7,6 +7,7 @@ import IntradayPredicationService from './intraday-prediction.service';
 import DailyPredicationService from './daily-prediction.service';
 import VariableDailyPredicationService from './variable-daily-prediction.service';
 import PairTradingPrediction from './pair-trading-prediction.service';
+import BearPredictionService from './bear-prediction.service';
 
 class MachineLearningController extends BaseController {
 
@@ -141,6 +142,34 @@ class MachineLearningController extends BaseController {
     PairTradingPrediction.setOutputRange(Number(request.query.range));
     PairTradingPrediction.train(request.query.symbol1,
       request.query.symbol2,
+      request.query.startDate,
+      request.query.endDate,
+      request.query.trainingSize,
+      features)
+      .then((data) => BaseController.requestGetSuccessHandler(response, data))
+      .catch((err) => BaseController.requestErrorHandler(response, err));
+  }
+
+  trainDailyBear(request, response) {
+    const features = request.query.features && request.query.features !== 'null' ? request.query.features.split(',') : null;
+
+    BearPredictionService.setOutputLimit(Number(request.query.limit));
+    BearPredictionService.setOutputRange(Number(request.query.range));
+    BearPredictionService.train(request.query.symbol,
+      request.query.startDate,
+      request.query.endDate,
+      request.query.trainingSize,
+      features)
+      .then((data) => BaseController.requestGetSuccessHandler(response, data))
+      .catch((err) => BaseController.requestErrorHandler(response, err));
+  }
+
+  trainVolitility(request, response) {
+    const features = request.query.features && request.query.features !== 'null' ? request.query.features.split(',') : null;
+
+    BearPredictionService.setOutputLimit(Number(request.query.limit));
+    BearPredictionService.setOutputRange(Number(request.query.range));
+    BearPredictionService.train(request.query.symbol,
       request.query.startDate,
       request.query.endDate,
       request.query.trainingSize,

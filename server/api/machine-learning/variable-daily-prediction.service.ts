@@ -10,11 +10,12 @@ import TrainingService from './training.service';
 import * as configurations from '../../config/environment';
 
 import { patternFinderService } from './pattern-finder.service';
+import InputHelperService from './input-helper.service';
 
 const mlServiceUrl = configurations.apps.armadillo;
 
 class VariableDailyPredicationService extends PredictionService {
-  modelName = 'dailymodel2024-12-02';
+  modelName = 'dailymodel2025-01-04';
   foundPatterns = [];
 
   constructor() {
@@ -53,8 +54,9 @@ class VariableDailyPredicationService extends PredictionService {
       // _.round(DecisionService.getPercentChange(openingPrice, close) * 1000, 0),
       // _.round(currentSignal.macd[2][currentSignal.macd[2].length - 1] * 1000)
       (openingPrice > close) ? 0 : 1,
-      (currentSignal.mfiLeft > 75) ? 0 : 1
     ]
+      .concat(InputHelperService.checkMacd(currentSignal.macd, currentSignal.macdPrevious))
+      .concat(InputHelperService.convertMfiToInput(currentSignal.mfiLeft))
       .concat(this.comparePrices(currentSignal.vwma, close))
       .concat(this.comparePrices(currentSignal.high, close))
       .concat(this.comparePrices(currentSignal.low, close))
@@ -86,13 +88,6 @@ class VariableDailyPredicationService extends PredictionService {
     return dataSetObj;
   }
 
-  getDataSet(symbol, startDate, endDate, trainingSize, featureUse) {
-    return BacktestService.initDailyStrategy(symbol, moment(endDate).valueOf(), moment(startDate).valueOf(), { minQuotes: 80 })
-      .then((results: BacktestResults) => {
-        return this.processBacktestResults(results, featureUse);
-      });
-  }
-
   train(symbol, startDate, endDate, trainingSize, featureUse) {
     return BacktestService.initDailyStrategy(symbol, moment(endDate).valueOf(), moment(startDate).valueOf(), { minQuotes: 80 })
       .then((results: BacktestResults) => {
@@ -100,10 +95,12 @@ class VariableDailyPredicationService extends PredictionService {
         const foundPatterns = patternFinderService.findPatternsInFeatureSet(symbol, finalDataSet.slice(finalDataSet.length - 30, finalDataSet.length));
         if (foundPatterns.length > 0) {
           this.foundPatterns.push(foundPatterns);
-          if(this.foundPatterns.length > 25) {
+          if (this.foundPatterns.length > 25) {
             this.foundPatterns.shift();
           }
         }
+        console.log('finalTrainingSet', finalDataSet);
+
         return BacktestService.trainCustomModel(symbol, this.getModelName(), finalDataSet, trainingSize, moment().format('YYYY-MM-DD'));
       });
   }
@@ -133,6 +130,13 @@ class VariableDailyPredicationService extends PredictionService {
       .then((signal) => {
         const inputData = this.buildInputSet(openingPrice, signal, featureUse);
         return BacktestService.activateCustomModel(symbol, this.getModelName(), inputData.input, moment().format('YYYY-MM-DD'));
+      });
+  }
+
+  getDataSet(symbol, startDate, endDate, trainingSize, featureUse) {
+    return BacktestService.initDailyStrategy(symbol, moment(endDate).valueOf(), moment(startDate).valueOf(), { minQuotes: 80 })
+      .then((results: BacktestResults) => {
+        return this.processBacktestResults(results, featureUse);
       });
   }
 

@@ -24,7 +24,7 @@ class PortfolioController extends BaseController {
   }
 
   getAccessToken(request, response) {
-    PortfolioService.getAccessToken(request.body.accountId, request.body.code, response);
+    PortfolioService.getAccessToken(request.body.accountId, request.body.code, response, request.headers.cookie);
   }
 
   getInstruments(request, response) {
@@ -171,7 +171,7 @@ class PortfolioController extends BaseController {
   }
 
   checkForCredentials(request, response) {
-    PortfolioService.isSet(request.body.accountId, response);
+    PortfolioService.isSet(request.body.accountId, response, request.headers.cookie);
   }
 
   deleteCredentials(request, response) {
