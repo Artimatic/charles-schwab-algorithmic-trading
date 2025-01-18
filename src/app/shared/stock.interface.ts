@@ -1,4 +1,5 @@
 export interface Stock {
+  sellMl?: number;
   stock: string;
   totalReturns?: number;
   lastVolume?: number;
@@ -48,7 +49,7 @@ export interface Stock {
   bullishProbability?: number;
   previousImpliedMovement?: number;
   kellyCriterion?: number;
-  ml?: any;
+  ml?: number;
   optionsVolume?: number;
   marketCap?: number;
   high52?: number;

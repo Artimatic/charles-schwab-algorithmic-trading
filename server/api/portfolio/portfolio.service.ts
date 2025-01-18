@@ -2,6 +2,7 @@ import * as request from 'request-promise';
 import * as charlesSchwabApi from 'charles-schwab-api';
 import * as _ from 'lodash';
 import * as moment from 'moment';
+
 import * as configurations from '../../config/environment';
 import QuoteService from '../quote/quote.service';
 import PortfolioDbService from '../mongodb/portfolio-db.service';
@@ -81,6 +82,9 @@ class PortfolioService {
               timestamp: moment().valueOf(),
               token: data?.access_token || null
             };
+            if (configurations.charles.refresh_token) {
+              console.log(this.refreshTokensHash[accountId])
+            }
           });
 
         reply.status(200).send(data);

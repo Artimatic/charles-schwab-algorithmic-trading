@@ -151,29 +151,23 @@ class MachineLearningController extends BaseController {
   }
 
   trainDailyBear(request, response) {
-    const features = request.query.features && request.query.features !== 'null' ? request.query.features.split(',') : null;
-
     BearPredictionService.setOutputLimit(Number(request.query.limit));
     BearPredictionService.setOutputRange(Number(request.query.range));
     BearPredictionService.train(request.query.symbol,
       request.query.startDate,
       request.query.endDate,
-      request.query.trainingSize,
-      features)
+      request.query.trainingSize)
       .then((data) => BaseController.requestGetSuccessHandler(response, data))
       .catch((err) => BaseController.requestErrorHandler(response, err));
   }
 
   trainVolitility(request, response) {
-    const features = request.query.features && request.query.features !== 'null' ? request.query.features.split(',') : null;
-
     BearPredictionService.setOutputLimit(Number(request.query.limit));
     BearPredictionService.setOutputRange(Number(request.query.range));
     BearPredictionService.train(request.query.symbol,
       request.query.startDate,
       request.query.endDate,
-      request.query.trainingSize,
-      features)
+      request.query.trainingSize)
       .then((data) => BaseController.requestGetSuccessHandler(response, data))
       .catch((err) => BaseController.requestErrorHandler(response, err));
   }

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { round } from 'lodash';
 import { OptionsDataService } from '@shared/options-data.service';
-import { AiPicksService, BacktestService, CartService, PortfolioService } from '@shared/services';
+import { AiPicksService, BacktestService, CartService, MachineLearningService, PortfolioService } from '@shared/services';
 import { Stock } from '@shared/stock.interface';
 import { PotentialTrade } from './potential-trade.constant';
 import * as moment from 'moment-timezone';
@@ -38,7 +38,8 @@ export class StrategyBuilderService {
     private swingtradeStrategiesService: SwingtradeStrategiesService,
     private schedulerService: SchedulerService,
     private cartService: CartService,
-    private backtestAggregatorService: BacktestAggregatorService) { }
+    private backtestAggregatorService: BacktestAggregatorService,
+    private machineLearningService: MachineLearningService) { }
 
   getRecentBacktest(symbol: string = null, expiry = 1) {
     const backtestStorage = this.getStorage('backtest');
@@ -66,7 +67,7 @@ export class StrategyBuilderService {
     }
     return { buySignals, sellSignals };
   }
-  
+
   async getBacktestData(symbol: string, overwrite = false) {
     const recentBacktest = this.getRecentBacktest(symbol);
     if (recentBacktest && !overwrite) {
@@ -99,9 +100,7 @@ export class StrategyBuilderService {
       const averageNet = (this.sumNet / this.countNet);
       const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
       let optionsVolume = null;
-      let optionsChain = [];
       if (optionsData.optionsChain.monthlyStrategyList) {
-        optionsChain = optionsData.optionsChain.monthlyStrategyList;
         const callsCount = optionsData.optionsChain.monthlyStrategyList[0].optionStrategyList[0].secondaryLeg.totalVolume;
         const putsCount = optionsData.optionsChain.monthlyStrategyList[0].optionStrategyList[0].primaryLeg.totalVolume;
         optionsVolume = Number(callsCount) + Number(putsCount);
@@ -113,7 +112,18 @@ export class StrategyBuilderService {
         latestMlResult = await this.aiPicksService.trainAndActivate(symbol);
       } catch (error) {
         console.log('Error training', error);
-        latestMlResult = await this.aiPicksService.trainAndActivate(symbol);
+      }
+      let sellMlNextOutput = null;
+      let sellMlScore = null;
+      try {
+        const trainingResult = await this.machineLearningService.trainSellOff('CVNA', moment().format('YYYY-MM-DD'),
+          moment().subtract({ day: 500 }).format('YYYY-MM-DD'), 0.8, null, 1, -0.001).toPromise();
+        if (trainingResult.nextOutput) {
+          sellMlNextOutput = trainingResult.nextOutput[0];
+          sellMlScore = trainingResult.score;
+        }
+      } catch (error) {
+        console.log('Error training sell ml', error);
       }
       this.aiPicksService.mlNeutralResults.next(latestMlResult);
       const tableObj = {
@@ -128,6 +138,8 @@ export class StrategyBuilderService {
         profitableTrades: indicatorResults.profitableTrades,
         totalTrades: indicatorResults.totalTrades,
         ml: latestMlResult ? latestMlResult.value : null,
+        sellMl: sellMlNextOutput ? sellMlNextOutput : null,
+        sellMlScore: sellMlScore ? sellMlScore : null,
         impliedMovement: optionsData.move,
         optionsVolume: optionsVolume,
         marketCap: instruments[symbol] ? instruments[symbol]?.fundamental.marketCap : instruments[0]?.fundamental.marketCap,
@@ -141,7 +153,7 @@ export class StrategyBuilderService {
       return tableObj;
     } catch (error) {
       console.log(`Backtest table error ${symbol}`, new Date().toString(), error);
-      const lastBacktest = this.getRecentBacktest(symbol, 30); 
+      const lastBacktest = this.getRecentBacktest(symbol, 30);
       if (lastBacktest && lastBacktest.net && lastBacktest.net > 10) {
         this.schedulerService.schedule(() => this.getBacktestData(symbol), 'Rebacktest');
       }
@@ -224,7 +236,7 @@ export class StrategyBuilderService {
 
     let potentialStrangle = { call: null, put: null };
     let expiration = minExpiration;
-    
+
     while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 6) {
       expiration++;
       if (optionsChain.monthlyStrategyList) {
@@ -416,7 +428,7 @@ export class StrategyBuilderService {
           if (bObj.ml > 0.5) {
             for (const pairVal of pairs) {
               if (pairVal !== null && backtests[pairVal.symbol] && backtests[pairVal.symbol].ml !== null && (!backtests[pairVal.symbol].optionsChainLength || backtests[pairVal.symbol].optionsChainLength > 10)) {
-                if (backtests[pairVal.symbol].ml < 0.5 && (backtests[pairVal.symbol].recommendation.toLowerCase() === 'strongsell')) {
+                if (backtests[pairVal.symbol].sellMl > 0.5 && (backtests[pairVal.symbol].recommendation.toLowerCase() === 'strongsell')) {
                   this.createStrategy(`${bObj.stock} Pair trade`, bObj.stock, [bObj.stock], [pairVal.symbol]);
                 }
               }
@@ -641,8 +653,8 @@ export class StrategyBuilderService {
         quantity: quantity,
         underlying: 'SPY'
       };
-      const order = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call], 
-        currentCall.price, currentCall.quantity, 
+      const order = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call],
+        currentCall.price, currentCall.quantity,
         OrderTypes.call, 'Buy SnP strategy', 'Buy', currentCall.quantity);
       this.cartService.addToCart(order, true, 'Buy SPY');
     }

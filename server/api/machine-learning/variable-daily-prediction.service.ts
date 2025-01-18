@@ -99,8 +99,6 @@ class VariableDailyPredicationService extends PredictionService {
             this.foundPatterns.shift();
           }
         }
-        console.log('finalTrainingSet', finalDataSet);
-
         return BacktestService.trainCustomModel(symbol, this.getModelName(), finalDataSet, trainingSize, moment().format('YYYY-MM-DD'));
       });
   }

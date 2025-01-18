@@ -1847,10 +1847,7 @@ class BacktestService {
       json: true
     };
 
-    return RequestPromise(options)
-      .catch((error) => {
-        console.log('train-custom error: ', error.message);
-      });
+    return RequestPromise(options);
   }
 
   activateTensorModel(symbol, modelName, trainingData, trainingSize, date) {
@@ -1870,10 +1867,7 @@ class BacktestService {
       json: true
     };
 
-    return RequestPromise(options)
-      .catch((error) => {
-        console.log('train-custom error: ', error.message);
-      });
+    return RequestPromise(options);
   }
 
   activateV2Model(symbol, startDate, trainingData) {

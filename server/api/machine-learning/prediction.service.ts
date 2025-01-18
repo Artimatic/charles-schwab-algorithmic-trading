@@ -25,25 +25,24 @@ export default class PredictionService {
 
     const finalDataSet = [];
     signals.forEach((signal, idx) => {
-      if (this.withinBounds(idx, signals.length)) {
         finalDataSet.push(this.buildFeatureSet(signals, signal, idx, featureUse));
-      }
+      
     });
     console.log('Data set size: ', finalDataSet.length);
     return finalDataSet;
   }
 
-  withinBounds(index, totalLength) {
-    return index > this.outputRange && (index + this.outputRange + 1 < totalLength);
-  }
-
   buildFeatureSet(signals, currentSignal, currentIndex, featureUse) {
-    const futureClose = signals[currentIndex + this.outputRange].close;
-    const closePrice = currentSignal.close;
+    const dataSetObj = this.buildInputSet(currentSignal.open, currentSignal, featureUse);
+    const futureIdx = currentIndex + this.outputRange;
+    if (futureIdx < signals.length) {
+      const futureClose = signals[futureIdx].close;
+      const output = this.getOutput(currentSignal.close, futureClose);
 
-    const dataSetObj = this.buildInputSet(signals[0].close, currentSignal, featureUse);
-
-    dataSetObj.output = [this.getOutput(closePrice, futureClose)];
+      dataSetObj.output = [output];
+    } else {
+      dataSetObj.output = [0];
+    }
     return dataSetObj;
   }
 

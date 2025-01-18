@@ -77,12 +77,16 @@ class PairTradingPredicationService extends PredictionService {
           return {
             date: val.date,
             input: dataSet1[idx].input.concat(dataSet2[idx].input).concat(dataSet3[idx].input),
-            output: [val.output === 1 ? 1 : 0]
+            output: [val.output[0] === 1 ? 1 : 0]
           };
         });
 
-        return BacktestService.trainCustomModel(symbol1 + '_' + symbol2, this.getModelName(),
-          finalTrainingSet, trainingSize, moment().format('YYYY-MM-DD'));
+        return BacktestService.trainTensorModel(symbol1 + '_' + symbol2, this.getModelName(), 
+        finalTrainingSet, trainingSize, 
+        moment().format('YYYY-MM-DD'));
+
+        // return BacktestService.trainCustomModel(symbol1 + '_' + symbol2, this.getModelName(),
+        //   finalTrainingSet, trainingSize, moment().format('YYYY-MM-DD'));
       });
   }
 }

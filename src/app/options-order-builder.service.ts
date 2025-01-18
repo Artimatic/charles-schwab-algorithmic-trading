@@ -489,7 +489,7 @@ export class OptionsOrderBuilderService {
           const backtestData = await this.strategyBuilderService.getBacktestData(holding.name);
           if (callPutInd === 'c') {
             orderType = OrderTypes.call;
-            if (shouldSell || (backtestData && backtestData.ml < 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'))) {
+            if (shouldSell || (backtestData && backtestData.sellMl > 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'))) {
               const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
               const reason = shouldSell ? 'Should sell options' : 'Backtest recommends selling';
               this.cartService.addSingleLegOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);
