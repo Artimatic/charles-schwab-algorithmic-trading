@@ -27,8 +27,8 @@ class BearPredictionService extends PredictionService {
         return this.modelName + '_' + this.outputRange + '_' + this.outputLimit;
     }
 
-    getOutput(currentClose, futureClose) {
-        if (DecisionService.getPercentChange(currentClose, futureClose) < this.outputLimit) {
+    getOutput(currentSignal, futureSignal) {
+        if (DecisionService.getPercentChange(currentSignal.close, futureSignal.close) < this.outputLimit) {
             return 1;
         }
 
@@ -114,100 +114,8 @@ class BearPredictionService extends PredictionService {
                 return BacktestService.trainTensorModel(symbol, this.getModelName(),
                     finalTrainingSet, trainingSize,
                     moment().format('YYYY-MM-DD'));
-
-                // return BacktestService.trainCustomModel(symbol, this.getModelName(),
-                //     finalTrainingSet, trainingSize, moment().format('YYYY-MM-DD')).then((model) => {
-                //         model.push(finalTrainingSet);
-                //         return model;
-                //     });
-
-                // const finalDataSet = this.processBacktestResults(results, featureUse);
-                // return BacktestService.trainCustomModel(symbol, this.getModelName(), finalDataSet, trainingSize, moment().format('YYYY-MM-DD'));
             });
     }
-
-    // buildInputSet(currentSignal, featureUse) {
-    //     const dataSetObj = {
-    //         date: null,
-    //         input: null,
-    //         output: null
-    //     };
-
-    //     dataSetObj.date = currentSignal.date;
-
-    //     const input = [
-    //         //(currentSignal.open > currentSignal.close) ? 0 : 1,
-    //     ]
-    //         //.concat(InputHelperService.convertMfiToInput(currentSignal.mfiLeft))
-    //         //.concat(InputHelperService.convertBBandToInput(currentSignal.close, currentSignal.bband80))
-    //         // .concat(InputHelperService.convertRsiToInput(currentSignal.rsi))
-    //         //.concat(InputHelperService.convertVwmaToInput(currentSignal.vwma, currentSignal.close))
-    //         // .concat(InputHelperService.roc(currentSignal.roc10, currentSignal.roc10Previous))
-    //         //.concat(InputHelperService.checkMacd(currentSignal.macd, currentSignal.macdPrevious))
-    //         .concat(this.comparePrices(currentSignal.vwma, currentSignal.close))
-    //         .concat(this.comparePrices(currentSignal.high, currentSignal.close))
-    //         .concat(this.comparePrices(currentSignal.low, currentSignal.close))
-    //         .concat(this.convertRecommendations(currentSignal))
-    //         .concat(this.convertRecommendationsForBearish(currentSignal));
-
-    //     dataSetObj.input = [];
-
-    //     if (!featureUse) {
-    //         featureUse = input.map(val => 1);
-    //     }
-    //     featureUse.forEach((value, idx) => {
-    //         if (value === '1' || value === 1) {
-    //             dataSetObj.input.push(input[idx]);
-    //         }
-    //     });
-
-    //     return dataSetObj;
-    // }
-
-    // buildFeatureSet(signals, currentSignal, currentIndex, featureUse) {
-    //     const futureClose = signals[currentIndex + this.outputRange].close;
-    //     const closePrice = currentSignal.close;
-
-    //     const dataSetObj = this.buildInputSet(currentSignal, featureUse);
-
-    //     dataSetObj.output = [this.getOutput(closePrice, futureClose)];
-    //     return dataSetObj;
-    // }
-
-    // train(symbol, startDate, endDate, trainingSize, featureUse) {
-    //     let dataSet1 = null;
-    //     let dataSet2 = null;
-    //     return BacktestService.initDailyStrategy(symbol, moment(endDate).valueOf(),
-    //         moment(startDate).valueOf(), { minQuotes: 80 })
-    //         .then((result: BacktestResults) => {
-    //             dataSet1 = this.processBacktestResults(result, featureUse);
-    //         //     return BacktestService.initDailyStrategy('VXX', moment(endDate).valueOf(),
-    //         //         moment(startDate).valueOf(), { minQuotes: 80 });
-    //         // })
-    //         // .then((result: BacktestResults) => {
-    //         //     dataSet2 = this.processBacktestResults(result, featureUse);
-    //         //     return BacktestService.initDailyStrategy('TLT', moment(endDate).valueOf(),
-    //         //         moment(startDate).valueOf(), { minQuotes: 80 });
-    //         // })
-    //         // .then((results: BacktestResults) => {
-    //         //     dataSet2 = this.processBacktestResults(results, featureUse);
-
-    //             const finalTrainingSet = dataSet1.map((val, idx) => {
-    //                 return {
-    //                     date: val.date,
-    //                     //input: dataSet1[idx].input.concat(dataSet2[idx].input),
-    //                     input: dataSet1[idx].input,
-    //                     output: [val.output === 1 ? 1 : 0]
-    //                 };
-    //             });
-
-    //             return BacktestService.trainCustomModel(symbol, this.getModelName(),
-    //                 finalTrainingSet, trainingSize, moment().format('YYYY-MM-DD')).then((model) => {
-    //                     model.push(finalTrainingSet);
-    //                     return model;
-    //                 });
-    //         });
-    // }
 }
 
 export default new BearPredictionService();

@@ -27,14 +27,6 @@ class BearPredictionService extends PredictionService {
         return this.modelName + '_' + this.outputRange + '_' + this.outputLimit;
     }
 
-    getOutput(currentClose, futureClose) {
-        if (DecisionService.getPercentChange(currentClose, futureClose) > this.outputLimit) {
-            return 1;
-        }
-
-        return 0;
-    }
-
     buildInputSet(openingPrice, currentSignal, featureUse) {
         const dataSetObj = {
             date: null,
