@@ -108,19 +108,25 @@ export class StrategyBuilderService {
       const instruments = await this.portfolioService.getInstrument(symbol).toPromise();
 
       let latestMlResult = null;
+      let mlScore = null;
       try {
-        latestMlResult = await this.aiPicksService.trainAndActivate(symbol);
+        const buyMl = await this.machineLearningService.trainBuy(symbol, moment().format('YYYY-MM-DD'),
+          moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.8, null, 3, 0.001).toPromise();
+        if (buyMl[0].nextOutput) {
+          latestMlResult = buyMl[0].nextOutput[0];
+          mlScore = buyMl[0].score;
+        }
       } catch (error) {
         console.log('Error training', error);
       }
       let sellMlNextOutput = null;
       let sellMlScore = null;
       try {
-        const trainingResult = await this.machineLearningService.trainSellOff('CVNA', moment().format('YYYY-MM-DD'),
+        const trainingResult = await this.machineLearningService.trainSellOff(symbol, moment().format('YYYY-MM-DD'),
           moment().subtract({ day: 500 }).format('YYYY-MM-DD'), 0.8, null, 1, -0.001).toPromise();
-        if (trainingResult.nextOutput) {
-          sellMlNextOutput = trainingResult.nextOutput[0];
-          sellMlScore = trainingResult.score;
+        if (trainingResult[0].nextOutput) {
+          sellMlNextOutput = trainingResult[0].nextOutput[0];
+          sellMlScore = trainingResult[0].score;
         }
       } catch (error) {
         console.log('Error training sell ml', error);

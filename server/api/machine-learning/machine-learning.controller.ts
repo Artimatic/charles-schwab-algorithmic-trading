@@ -8,6 +8,7 @@ import DailyPredicationService from './daily-prediction.service';
 import VariableDailyPredicationService from './variable-daily-prediction.service';
 import PairTradingPrediction from './pair-trading-prediction.service';
 import BearPredictionService from './bear-prediction.service';
+import BullPredictionService from './bull-prediction.service';
 
 class MachineLearningController extends BaseController {
 
@@ -154,6 +155,17 @@ class MachineLearningController extends BaseController {
     BearPredictionService.setOutputLimit(Number(request.query.limit));
     BearPredictionService.setOutputRange(Number(request.query.range));
     BearPredictionService.train(request.query.symbol,
+      request.query.startDate,
+      request.query.endDate,
+      request.query.trainingSize)
+      .then((data) => BaseController.requestGetSuccessHandler(response, data))
+      .catch((err) => BaseController.requestErrorHandler(response, err));
+  }
+
+  trainDailyBull(request, response) {
+    BullPredictionService.setOutputLimit(Number(request.query.limit));
+    BullPredictionService.setOutputRange(Number(request.query.range));
+    BullPredictionService.train(request.query.symbol,
       request.query.startDate,
       request.query.endDate,
       request.query.trainingSize)
