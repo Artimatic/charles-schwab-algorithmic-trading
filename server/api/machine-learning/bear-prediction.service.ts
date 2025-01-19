@@ -8,7 +8,7 @@ import InputHelperService from './input-helper.service';
 import DecisionService from '../mean-reversion/reversion-decision.service';
 
 class BearPredictionService extends PredictionService {
-    modelName = 'bear_model2025-01-04';
+    modelName = 'bear_model2025-01-18';
     foundPatterns = [];
 
     constructor() {
@@ -28,14 +28,8 @@ class BearPredictionService extends PredictionService {
     }
 
     getOutput(currentClose, futureClose) {
-        if (this.outputLimit < 0) {
-            if (DecisionService.getPercentChange(currentClose, futureClose) < this.outputLimit) {
-                return 1;
-            }
-        } else {
-            if (DecisionService.getPercentChange(currentClose, futureClose) > this.outputLimit) {
-                return 1;
-            }
+        if (DecisionService.getPercentChange(currentClose, futureClose) < this.outputLimit) {
+            return 1;
         }
 
         return 0;
@@ -111,8 +105,8 @@ class BearPredictionService extends PredictionService {
                 const finalTrainingSet = dataSet1.map((val, idx) => {
                     return {
                         date: val.date,
-                        //input: dataSet1[idx].input.concat(dataSet2[idx].input),
-                        input: dataSet1[idx].input,
+                        input: dataSet1[idx].input.concat(dataSet2[idx].input),
+                        //input: dataSet1[idx].input,
                         output: [val.output[0] === 1 ? 1 : 0]
                     };
                 });

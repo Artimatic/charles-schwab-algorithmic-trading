@@ -253,7 +253,32 @@ export class MachineLearningService {
       }
     };
 
-    return this.http.get(`${BASE_URL}api/machine-learning/train/sell-off`,
+    return this.http.get(`${BASE_URL}api/machine-learning/train/sell-model`,
+      options);
+  }
+  
+  trainBuy(symbol: string,
+    endDate: string = null,
+    startDate: string = null,
+    trainingSize: number,
+    features: number[] = [],
+    range: number,
+    limit: number): Observable<any> {
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const options = {
+      headers: headers,
+      params: {
+        symbol,
+        startDate,
+        endDate,
+        trainingSize: String(trainingSize),
+        features: features ? String(features) : null,
+        range: String(range),
+        limit: String(limit)
+      }
+    };
+
+    return this.http.get(`${BASE_URL}api/machine-learning/train/buy-model`,
       options);
   }
 

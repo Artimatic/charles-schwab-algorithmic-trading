@@ -229,8 +229,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private schedulerService: SchedulerService,
     private algoEvaluationService: AlgoEvaluationService,
     public autopilotService: AutopilotService,
-    private backtestAggregatorService: BacktestAggregatorService,
-    private aiPicksService: AiPicksService
+    private backtestAggregatorService: BacktestAggregatorService
   ) { }
 
   ngOnInit(): void {
@@ -319,6 +318,26 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         label: 'Test profit target',
         command: async () => {
           await this.priceTargetService.checkProfitTarget(this.currentHoldings);
+        }
+      },
+      {
+        label: 'Test backtest',
+        command: async () => {
+          const test = 'AAPL';
+          this.machineLearningService.trainBuy(test, moment().format('YYYY-MM-DD'),
+            moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.8, null, 3, 0.001).subscribe((result) => {
+              console.log('BUY', result, result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+              this.machineLearningService.trainPredictDailyV4('MDB',
+                moment().format('YYYY-MM-DD'),
+                moment().subtract({ day: 600 }).format('YYYY-MM-DD'),
+                0.8,
+                null,
+                3,
+                0.008
+              ).subscribe((result) => {
+                console.log(test, result);
+              });
+            });
         }
       },
       {
@@ -417,8 +436,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       .subscribe(async () => {
         if (!this.lastCredentialCheck || Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 25) {
           await this.autopilotService.isMarketOpened().toPromise();
-          console.log('new start time ', this.autopilotService.sessionStart);
-          console.log('new stop time ', this.autopilotService.sessionStart);
           this.lastCredentialCheck = moment();
           await this.backtestOneStock(true, false);
           if (!this.schedulerService.executeTask()) {
