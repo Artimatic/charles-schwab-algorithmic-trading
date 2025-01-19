@@ -323,21 +323,18 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test backtest',
         command: async () => {
-          const test = 'AAPL';
-          this.machineLearningService.trainBuy(test, moment().format('YYYY-MM-DD'),
-            moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.8, null, 3, 0.001).subscribe((result) => {
-              console.log('BUY', result, result[0].predictionHistory.filter(r => r.prediction >= 0.5));
-              this.machineLearningService.trainPredictDailyV4('MDB',
-                moment().format('YYYY-MM-DD'),
-                moment().subtract({ day: 600 }).format('YYYY-MM-DD'),
-                0.8,
-                null,
-                3,
-                0.008
-              ).subscribe((result) => {
-                console.log(test, result);
-              });
-            });
+          const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
+          const backtestResults = [];
+          if (savedBacktest) {
+            for (const saved in savedBacktest) {
+              const backtestObj = savedBacktest[saved];
+              backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
+              backtestResults.push(backtestObj);
+              backtestResults?.sort((a, b) => a.pnl - b.pnl);
+            }
+          }
+          const list = backtestResults?.filter(backtestData => backtestData?.ml > 0.5);
+          console.log('list', list);
         }
       },
       {
@@ -349,59 +346,46 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             'AAPL', endDate, moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.8, null, 5, 0.001).subscribe((result) => {
               console.log('GOOG' + ' AAPL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
             });
-          this.machineLearningService.trainSellOff('CVNA', endDate,
+          this.machineLearningService.trainSellOff('META', endDate,
             moment().subtract({ day: 500 }).format('YYYY-MM-DD'), 0.8, null, 1, -0.001).subscribe((result) => {
-              console.log('CVNA SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+              console.log('META SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+              this.machineLearningService.trainSellOff('V', endDate,
+                moment().subtract({ day: 1000 }).format('YYYY-MM-DD'), 0.8, null, 1, -0.05).subscribe((result) => {
+                  console.log('V SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+                  this.machineLearningService.trainSellOff('UNH', endDate,
+                    moment().subtract({ day: 700 }).format('YYYY-MM-DD'), 0.8, null, 1, -0.009).subscribe((result) => {
+                      console.log('UNH SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+                      this.machineLearningService.trainSellOff('CRWD', endDate,
+                        moment().subtract({ day: 200 }).format('YYYY-MM-DD'), 0.8, null, 3, -0.005).subscribe((result) => {
+                          console.log('CRWD SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+                          this.machineLearningService.trainSellOff('LULU', endDate,
+                            moment().subtract({ day: 300 }).format('YYYY-MM-DD'), 0.8, null, 15, -0.01).subscribe((result) => {
+                              console.log('LULU SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+                              this.machineLearningService.trainSellOff('NVDA', endDate,
+                                moment().subtract({ day: 400 }).format('YYYY-MM-DD'), 0.8, null, 20, -0.05).subscribe((result) => {
+                                  console.log('NVDA SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+                                });
+                            });
+                        });
+                    });
+                });
             });
-          this.machineLearningService.trainSellOff('PLTR', endDate,
-            moment().subtract({ day: 1000 }).format('YYYY-MM-DD'), 0.8, null, 1, -0.05).subscribe((result) => {
-              console.log('CVNA SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
-            });
-          this.machineLearningService.trainSellOff('ROKU', endDate,
-            moment().subtract({ day: 700 }).format('YYYY-MM-DD'), 0.8, null, 1, -0.009).subscribe((result) => {
-              console.log('CVNA SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
-            });
-          this.machineLearningService.trainSellOff('CRWD', endDate,
-            moment().subtract({ day: 200 }).format('YYYY-MM-DD'), 0.8, null, 3, -0.005).subscribe((result) => {
-              console.log('CRWD SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
-            });
-
-          this.machineLearningService.trainSellOff('LULU', endDate,
-            moment().subtract({ day: 300 }).format('YYYY-MM-DD'), 0.8, null, 15, -0.01).subscribe((result) => {
-              console.log('LULU SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
-            });
-          this.machineLearningService.trainSellOff('NVDA', endDate,
-            moment().subtract({ day: 400 }).format('YYYY-MM-DD'), 0.8, null, 20, -0.05).subscribe((result) => {
-              console.log('NVDA SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
-            });
-          this.machineLearningService.trainPredictDailyV4('CRWD',
-            endDate,
-            moment().subtract({ day: 500 }).format('YYYY-MM-DD'),
-            0.8,
-            null,
-            10,
-            0.005
-          ).subscribe((result) => {
-            console.log('CRWD', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
-          });
-          this.machineLearningService.trainPredictDailyV4('UBER',
-            endDate,
-            moment().subtract({ day: 600 }).format('YYYY-MM-DD'),
-            0.8,
-            null,
-            3,
-            0.008
-          ).subscribe((result) => {
-            console.log('UBER', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
-          });
         }
       },
       {
-        label: 'Test one ml',
+        label: 'Test vol',
         command: async () => {
-          this.machineLearningService.trainSellOff('CVNA', moment().format('YYYY-MM-DD'),
-            moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.6, null, 5, -0.001).subscribe((result) => {
-              console.log('CVNA SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+          this.machineLearningService.trainVolatility(moment().format('YYYY-MM-DD'),
+            moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.6, 5, 0).subscribe((result) => {
+              console.log(result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+              this.machineLearningService.trainVolatility(moment().format('YYYY-MM-DD'),
+                moment().subtract({ day: 1000 }).format('YYYY-MM-DD'), 0.6, 6, 0).subscribe((result) => {
+                  console.log(result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+                  this.machineLearningService.trainVolatility(moment().format('YYYY-MM-DD'),
+                    moment().subtract({ day: 700 }).format('YYYY-MM-DD'), 0.6, 4, 0).subscribe((result) => {
+                      console.log(result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+                    });
+                });
             });
         }
       },
@@ -465,8 +449,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           moment().isBefore(moment(this.autopilotService.sessionEnd))) {
           this.handleIntraday();
         } else {
+          await this.backtestOneStock(false, false);
           if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 3) {
-            await this.backtestOneStock(false, false);
             this.startFindingTrades();
             this.padOrders(this.autopilotService.sessionStart, this.autopilotService.sessionEnd);
           }
@@ -772,7 +756,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         if (holding.primaryLegs) {
           if (this.cartService.isStrangle(holding)) {
             const { callsTotalPrice, putsTotalPrice } = await this.pricingService.getPricing(holding.primaryLegs, holding.secondaryLegs);
-            if (putsTotalPrice > callsTotalPrice && backtestResults && backtestResults.ml !== null && backtestResults.sellMl > 0.6) {
+            if (putsTotalPrice > callsTotalPrice && backtestResults && backtestResults.sellMl !== null && backtestResults.sellMl > 0.6) {
               this.optionsOrderBuilderService.sellStrangle(holding);
             } else if (callsTotalPrice > putsTotalPrice && backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.7) {
               this.optionsOrderBuilderService.sellStrangle(holding);
@@ -1125,7 +1109,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       const name = stock.ticker;
       try {
         const backtestResults = await this.strategyBuilderService.getBacktestData(name);
-        if (backtestResults && backtestResults.ml !== null && (backtestResults.sellMl > 0.6 && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL'))) {
+        if (backtestResults && backtestResults.sellMl !== null && (backtestResults.sellMl > 0.6 && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL'))) {
           const msg = `Sell ${name}, date: ${moment().format()}`;
           this.messageService.add({ severity: 'error', summary: 'Sell alert', detail: msg, life: 21600000 });
           console.log(msg);
@@ -1218,11 +1202,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.buyByMLSignal();
         break;
       case Strategy.MLPairs:
-        await this.addMLPairs();
-        await this.addMLPairs(false);
+        await this.autopilotService.addMLPairs(this.currentHoldings);
+        await this.autopilotService.addMLPairs(this.currentHoldings, false);
         break;
       case Strategy.VolatilityPairs:
-        await this.addVolatilityPairs();
+        await this.autopilotService.addVolatilityPairs(this.currentHoldings);
         break;
       case Strategy.SellMfiTrade:
         await this.buyByIndicator(SwingtradeAlgorithms.mfiTrade, 'sell');
@@ -1289,84 +1273,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       }
     };
     await this.autopilotService.getNewTrades(inverse, null, this.currentHoldings);
-  }
-
-  async addVolatilityPairs() {
-    console.log('Start addVolatilityPairs');
-    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
-    const MlBuys = {};
-    const MlSells = {};
-    if (savedBacktest) {
-      for (const saved in savedBacktest) {
-        const backtestObj = savedBacktest[saved];
-        const key = Math.round(savedBacktest[saved].impliedMovement * 100);
-        const symbol = backtestObj.stock
-        if (backtestObj.ml > 0.6) {
-          if (MlBuys[key]) {
-            MlBuys[key].push(symbol);
-          } else {
-            MlBuys[key] = [symbol];
-          }
-        } else if (backtestObj.ml !== null && backtestObj.sellMl > 0.6) {
-          if (MlSells[key]) {
-            MlSells[key].push(symbol);
-          } else {
-            MlSells[key] = [symbol];
-          }
-        }
-      }
-    }
-    console.log('MlBuys', MlBuys);
-    console.log('MlSells', MlSells);
-
-    for (const buyKey in MlBuys) {
-      if (MlSells[buyKey] && MlSells[buyKey].length) {
-        const cash = await this.getMinMaxCashForOptions();
-        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings,
-          MlBuys[buyKey], MlSells[buyKey],
-          cash.minCash, cash.maxCash, 'Volatility pair');
-      }
-    }
-  }
-
-  async addMLPairs(useSellSignal = true) {
-    console.log('Start addMLPairs');
-    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
-    const MlBuys = {};
-    const MlSells = {};
-    if (savedBacktest) {
-      for (const saved in savedBacktest) {
-        const backtestObj = savedBacktest[saved];
-        const signals = useSellSignal ? backtestObj.sellSignals : backtestObj.buySignals;
-        if (signals && signals.length) {
-          const key = signals.sort();
-          const symbol = backtestObj.stock
-          if (backtestObj.ml > 0.6) {
-            if (MlBuys[key]) {
-              MlBuys[key].push(symbol);
-            } else {
-              MlBuys[key] = [symbol];
-            }
-          } else if (backtestObj.ml !== null && backtestObj.sellMl > 0.6) {
-            if (MlSells[key]) {
-              MlSells[key].push(symbol);
-            } else {
-              MlSells[key] = [symbol];
-            }
-          }
-        }
-      }
-    }
-    console.log('MlBuys', MlBuys);
-    console.log('MlSells', MlSells);
-    for (const buyKey in MlBuys) {
-      if (MlSells[buyKey] && MlSells[buyKey].length) {
-        const cash = await this.getMinMaxCashForOptions();
-        await this.optionsOrderBuilderService.balanceTrades(this.currentHoldings,
-          MlBuys[buyKey], MlSells[buyKey],
-          cash.minCash, cash.maxCash, 'Machine learning pair');
-      }
-    }
   }
 
   async buyByMLSignal() {

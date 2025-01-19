@@ -59,10 +59,10 @@ export class AutopilotService {
     private reportingService: ReportingService,
     private portfolioService: PortfolioService,
     private globalSettingsService: GlobalSettingsService
-  ) { 
+  ) {
     const globalStartStop = this.globalSettingsService.getStartStopTime();
     this.sessionStart = globalStartStop.startDateTime;
-    this.sessionEnd  = globalStartStop.endDateTime;
+    this.sessionEnd = globalStartStop.endDateTime;
   }
 
   async getMinMaxCashForOptions() {
@@ -75,23 +75,34 @@ export class AutopilotService {
     };
   }
 
-  async addPerfectPair(currentHoldings) {
-    console.log('Start addPerfectPair');
+  async addPairsFromHashMap(MlBuys, MlSells, currentHoldings, reason) {
+    for (const buyKey in MlBuys) {
+      if (MlSells[buyKey] && MlSells[buyKey].length) {
+        const cash = await this.getMinMaxCashForOptions();
+        await this.optionsOrderBuilderService.balanceTrades(currentHoldings,
+          MlBuys[buyKey], MlSells[buyKey],
+          cash.minCash, cash.maxCash, reason);
+      }
+    }
+  }
+
+  async addVolatilityPairs(currentHoldings) {
+    console.log('Start addVolatilityPairs');
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     const MlBuys = {};
     const MlSells = {};
     if (savedBacktest) {
       for (const saved in savedBacktest) {
         const backtestObj = savedBacktest[saved];
-        const key = savedBacktest[saved].sellSignals.sort() + savedBacktest[saved].buySignals.sort() + Math.round(savedBacktest[saved].impliedMovement * 100);
+        const key = Math.round(savedBacktest[saved].impliedMovement * 100);
         const symbol = backtestObj.stock
-        if (backtestObj.ml > 0.5 && this.priceTargetService.isProfitable(backtestObj.invested, backtestObj.net)) {
+        if (backtestObj.ml > 0.6) {
           if (MlBuys[key]) {
             MlBuys[key].push(symbol);
           } else {
             MlBuys[key] = [symbol];
           }
-        } else if (backtestObj.ml !== null && backtestObj.sellMl > 0.6 && this.priceTargetService.notProfitable(backtestObj.invested, backtestObj.net)) {
+        } else if (backtestObj.sellMl !== null && backtestObj.sellMl > 0.6) {
           if (MlSells[key]) {
             MlSells[key].push(symbol);
           } else {
@@ -100,21 +111,71 @@ export class AutopilotService {
         }
       }
     }
-    console.log('MlBuys', MlBuys);
-    console.log('MlSells', MlSells);
+    await this.addPairsFromHashMap(MlBuys, MlSells, currentHoldings, 'Volatility pairs');
+  }
 
-    for (const buyKey in MlBuys) {
-      if (MlSells[buyKey] && MlSells[buyKey].length) {
-        const cash = await this.getMinMaxCashForOptions();
-        await this.optionsOrderBuilderService.balanceTrades(currentHoldings,
-          MlBuys[buyKey], MlSells[buyKey],
-          cash.minCash, cash.maxCash, 'Perfect pair');
+  async addPerfectPair(currentHoldings) {
+    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
+    const MlBuys = {};
+    const MlSells = {};
+    if (savedBacktest) {
+      for (const saved in savedBacktest) {
+        const backtestObj = savedBacktest[saved];
+        const sellSignalStr = savedBacktest[saved]?.sellSignals?.sort()?.join();
+        const buySignalStr = savedBacktest[saved]?.buySignals?.sort()?.join();
+        const key = (sellSignalStr || '') + '-' + (buySignalStr || '') + Math.round(savedBacktest[saved].impliedMovement * 100);
+        const symbol = backtestObj.stock
+        if (backtestObj.ml > 0.5 && this.priceTargetService.isProfitable(backtestObj.invested, backtestObj.net)) {
+          if (MlBuys[key]) {
+            MlBuys[key].push(symbol);
+          } else {
+            MlBuys[key] = [symbol];
+          }
+        } else if (backtestObj?.sellMl > 0.6 && this.priceTargetService.notProfitable(backtestObj.invested, backtestObj.net)) {
+          if (MlSells[key]) {
+            MlSells[key].push(symbol);
+          } else {
+            MlSells[key] = [symbol];
+          }
+        }
       }
     }
+    await this.addPairsFromHashMap(MlBuys, MlSells, currentHoldings, 'Perfect pair');
+  }
+
+  async addMLPairs(currentHoldings, useSellSignal = true) {
+    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
+    const MlBuys = {};
+    const MlSells = {};
+    if (savedBacktest) {
+      for (const saved in savedBacktest) {
+        const backtestObj = savedBacktest[saved];
+        const signals = useSellSignal ? backtestObj.sellSignals : backtestObj.buySignals;
+        if (signals && signals.length) {
+          const key = signals?.sort()?.join();
+          const symbol = backtestObj.stock;
+          if (key) {
+            if (backtestObj.ml > 0.6) {
+              if (MlBuys[key]) {
+                MlBuys[key].push(symbol);
+              } else {
+                MlBuys[key] = [symbol];
+              }
+            } else if (backtestObj?.sellMl > 0.6) {
+              if (MlSells[key]) {
+                MlSells[key].push(symbol);
+              } else {
+                MlSells[key] = [symbol];
+              }
+            }
+          }
+        }
+      }
+    }
+    await this.addPairsFromHashMap(MlBuys, MlSells, currentHoldings, 'ML pairs');
   }
 
   async addAnyPair(currentHoldings, buyList = null, sellList = null) {
-    console.log('Start addAnyPair');
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     const backtestResults = [];
     if (savedBacktest) {
@@ -125,14 +186,14 @@ export class AutopilotService {
       }
 
       if (!buyList) {
-        const buys = backtestResults.filter(backtestData => backtestData.ml > 0.5 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY'));
-        buys.sort((a, b) => a.pnl - b.pnl);
+        const buys = backtestResults.filter(backtestData => backtestData?.ml > 0.5 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY'));
+        buys?.sort((a, b) => a.pnl - b.pnl);
         buyList = buys.map(b => b.stock);
         this.reportingService.addAuditLog(null, `Buys: ${buyList.join(', ')}`);
       }
       if (!sellList) {
-        const sells = sellList ? sellList : backtestResults.filter(backtestData => backtestData.sellMl > 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'));
-        sells.sort((a, b) => b.pnl - a.pnl);
+        const sells = sellList ? sellList : backtestResults.filter(backtestData => backtestData?.sellMl > 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'));
+        sells?.sort((a, b) => b.pnl - a.pnl);
         sellList = sells.map(b => b.stock);
         this.reportingService.addAuditLog(null, `Sells: ${sellList.join(', ')}`);
       }
@@ -344,7 +405,7 @@ export class AutopilotService {
         } else if (!this.isOpened && !this.sessionStart && !this.sessionEnd) {
           const globalStartStop = this.globalSettingsService.getStartStopTime(1);
           this.sessionStart = globalStartStop.startDateTime;
-          this.sessionEnd  = globalStartStop.endDateTime;
+          this.sessionEnd = globalStartStop.endDateTime;
         }
 
         if (!this.isOpened) {

@@ -434,7 +434,7 @@ export class StrategyBuilderService {
           if (bObj.ml > 0.5) {
             for (const pairVal of pairs) {
               if (pairVal !== null && backtests[pairVal.symbol] && backtests[pairVal.symbol].ml !== null && (!backtests[pairVal.symbol].optionsChainLength || backtests[pairVal.symbol].optionsChainLength > 10)) {
-                if (backtests[pairVal.symbol].sellMl > 0.5 && (backtests[pairVal.symbol].recommendation.toLowerCase() === 'strongsell')) {
+                if (backtests[pairVal.symbol]?.sellMl > 0.5 && (backtests[pairVal.symbol].recommendation.toLowerCase() === 'strongsell')) {
                   this.createStrategy(`${bObj.stock} Pair trade`, bObj.stock, [bObj.stock], [pairVal.symbol]);
                 }
               }

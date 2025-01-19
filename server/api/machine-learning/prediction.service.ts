@@ -36,9 +36,7 @@ export default class PredictionService {
     const dataSetObj = this.buildInputSet(currentSignal.open, currentSignal, featureUse);
     const futureIdx = currentIndex + this.outputRange;
     if (futureIdx < signals.length) {
-      const futureClose = signals[futureIdx].close;
-      const output = this.getOutput(currentSignal.close, futureClose);
-
+      const output = this.getOutput(currentSignal, signals[futureIdx]);
       dataSetObj.output = [output];
     } else {
       dataSetObj.output = [0];
@@ -97,8 +95,8 @@ export default class PredictionService {
     return dataSetObj;
   }
 
-  getOutput(currentClose, futureClose) {
-    if (DecisionService.getPercentChange(currentClose, futureClose) > this.outputLimit) {
+  getOutput(currentSignal, futureSignal) {
+    if (DecisionService.getPercentChange(currentSignal.close, futureSignal.close) > this.outputLimit) {
       return 1;
     }
 

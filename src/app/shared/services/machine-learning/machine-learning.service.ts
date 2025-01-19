@@ -256,7 +256,7 @@ export class MachineLearningService {
     return this.http.get(`${BASE_URL}api/machine-learning/train/sell-model`,
       options);
   }
-  
+
   trainBuy(symbol: string,
     endDate: string = null,
     startDate: string = null,
@@ -279,6 +279,27 @@ export class MachineLearningService {
     };
 
     return this.http.get(`${BASE_URL}api/machine-learning/train/buy-model`,
+      options);
+  }
+
+  trainVolatility(endDate: string = null,
+    startDate: string = null,
+    trainingSize: number,
+    range: number,
+    limit: number): Observable<any> {
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const options = {
+      headers: headers,
+      params: {
+        startDate,
+        endDate,
+        trainingSize: String(trainingSize),
+        range: String(range),
+        limit: String(limit)
+      }
+    };
+
+    return this.http.get(`${BASE_URL}api/machine-learning/train/volatility-model`,
       options);
   }
 
