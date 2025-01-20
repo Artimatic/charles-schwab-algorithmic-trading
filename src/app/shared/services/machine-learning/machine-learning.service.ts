@@ -303,6 +303,26 @@ export class MachineLearningService {
       options);
   }
 
+  trainMfiBuy(symbol: string, endDate: string = null,
+    startDate: string = null, trainingSize: number,
+    range: number, limit: number): Observable<any> {
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const options = {
+      headers: headers,
+      params: {
+        symbol,
+        startDate,
+        endDate,
+        trainingSize: String(trainingSize),
+        range: String(range),
+        limit: String(limit)
+      }
+    };
+
+    return this.http.get(`${BASE_URL}api/machine-learning/train/mfi-model`,
+      options);
+  }
+
   getFoundPatterns(): Observable<any> {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     const options = {

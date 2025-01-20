@@ -10,6 +10,7 @@ import PairTradingPrediction from './pair-trading-prediction.service';
 import BearPredictionService from './bear-prediction.service';
 import BullPredictionService from './bull-prediction.service';
 import VolatilityPredictionService from './volatility-prediction.service';
+import MfiPredictionService from './mfi-prediction.service';
 
 class MachineLearningController extends BaseController {
 
@@ -178,6 +179,17 @@ class MachineLearningController extends BaseController {
     VolatilityPredictionService.setOutputLimit(Number(request.query.limit));
     VolatilityPredictionService.setOutputRange(Number(request.query.range));
     VolatilityPredictionService.train(request.query.startDate,
+      request.query.endDate,
+      request.query.trainingSize)
+      .then((data) => BaseController.requestGetSuccessHandler(response, data))
+      .catch((err) => BaseController.requestErrorHandler(response, err));
+  }
+
+  trainMfi(request, response) {
+    MfiPredictionService.setOutputLimit(Number(request.query.limit));
+    MfiPredictionService.setOutputRange(Number(request.query.range));
+    MfiPredictionService.train(request.query.symbol, 
+      request.query.startDate,
       request.query.endDate,
       request.query.trainingSize)
       .then((data) => BaseController.requestGetSuccessHandler(response, data))
