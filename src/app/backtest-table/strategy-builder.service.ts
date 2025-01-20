@@ -117,7 +117,7 @@ export class StrategyBuilderService {
           mlScore = buyMl[0].score;
         }
       } catch (error) {
-        console.log('Error training', error);
+        console.log('Error training', symbol, error);
       }
       let sellMlNextOutput = null;
       let sellMlScore = null;
@@ -129,7 +129,7 @@ export class StrategyBuilderService {
           sellMlScore = trainingResult[0].score;
         }
       } catch (error) {
-        console.log('Error training sell ml', error);
+        console.log('Error training sell ml', symbol, error);
       }
       this.aiPicksService.mlNeutralResults.next(latestMlResult);
       const tableObj = {
@@ -144,6 +144,7 @@ export class StrategyBuilderService {
         profitableTrades: indicatorResults.profitableTrades,
         totalTrades: indicatorResults.totalTrades,
         ml: latestMlResult ? latestMlResult.value : null,
+        mlScore: mlScore,
         sellMl: sellMlNextOutput ? sellMlNextOutput : null,
         sellMlScore: sellMlScore ? sellMlScore : null,
         impliedMovement: optionsData.move,
