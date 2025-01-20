@@ -24,6 +24,7 @@ router.get('/train/pair-trade', MachineLearningController.trainDailyTradingPair)
 router.get('/train/sell-model', MachineLearningController.trainDailyBear);
 router.get('/train/buy-model', MachineLearningController.trainDailyBull);
 router.get('/train/volatility-model', MachineLearningController.trainVolitility);
+router.get('/train/mfi-model', MachineLearningController.trainMfi);
 router.get('/v4/get-data', MachineLearningController.getTrainingDataDailyV4);
 router.get('/v4/score-daily', MachineLearningController.scoreDailyV4);
 router.get('/v4/get-patterns', MachineLearningController.getFoundPatterns);

@@ -143,7 +143,7 @@ export class StrategyBuilderService {
         averageMove: indicatorResults.averageMove,
         profitableTrades: indicatorResults.profitableTrades,
         totalTrades: indicatorResults.totalTrades,
-        ml: latestMlResult ? latestMlResult.value : null,
+        ml: latestMlResult ? latestMlResult : null,
         mlScore: mlScore,
         sellMl: sellMlNextOutput ? sellMlNextOutput : null,
         sellMlScore: sellMlScore ? sellMlScore : null,

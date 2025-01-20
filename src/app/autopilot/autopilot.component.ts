@@ -341,48 +341,32 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         label: 'Test ml',
         command: async () => {
           const endDate = moment().format('YYYY-MM-DD');
+          ['META', 'CRWD'].forEach(async(sym1) => {
+            const result1 = await this.machineLearningService.trainMfiBuy(sym1, endDate,
+              moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.8, 20, 0.005).toPromise();
+            console.log(sym1, 'MFI', result1[0].score, result1[0].predictionHistory.filter(r => r.prediction >= 0.5));
 
-          this.machineLearningService.trainTradingPair('GOOG',
-            'AAPL', endDate, moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.8, null, 5, 0.001).subscribe((result) => {
-              console.log('GOOG' + ' AAPL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
-            });
-          this.machineLearningService.trainSellOff('META', endDate,
-            moment().subtract({ day: 500 }).format('YYYY-MM-DD'), 0.8, null, 1, -0.001).subscribe((result) => {
-              console.log('META SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
-              this.machineLearningService.trainSellOff('V', endDate,
-                moment().subtract({ day: 1000 }).format('YYYY-MM-DD'), 0.8, null, 1, -0.05).subscribe((result) => {
-                  console.log('V SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
-                  this.machineLearningService.trainSellOff('UNH', endDate,
-                    moment().subtract({ day: 700 }).format('YYYY-MM-DD'), 0.8, null, 1, -0.009).subscribe((result) => {
-                      console.log('UNH SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
-                      this.machineLearningService.trainSellOff('CRWD', endDate,
-                        moment().subtract({ day: 200 }).format('YYYY-MM-DD'), 0.8, null, 3, -0.005).subscribe((result) => {
-                          console.log('CRWD SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
-                          this.machineLearningService.trainSellOff('LULU', endDate,
-                            moment().subtract({ day: 300 }).format('YYYY-MM-DD'), 0.8, null, 15, -0.01).subscribe((result) => {
-                              console.log('LULU SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
-                              this.machineLearningService.trainSellOff('NVDA', endDate,
-                                moment().subtract({ day: 400 }).format('YYYY-MM-DD'), 0.8, null, 20, -0.05).subscribe((result) => {
-                                  console.log('NVDA SELL', result[0].predictionHistory.filter(r => r.prediction >= 0.5));
-                                });
-                            });
-                        });
-                    });
-                });
-            });
+            const result2 = await this.machineLearningService.trainSellOff(sym1, endDate,
+              moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.8, null, 1, -0.001).toPromise();
+              console.log(sym1, 'SELL', result2[0].score, result2[0].predictionHistory.filter(r => r.prediction >= 0.5));
+            const result3 = await this.machineLearningService.trainBuy(sym1, endDate,
+              moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.8, null, 1, 0.001).toPromise();
+              console.log(sym1, 'BUY', result3[0].score, result3[0].predictionHistory.filter(r => r.prediction >= 0.5));
+
+          });
         }
       },
       {
         label: 'Test vol',
         command: async () => {
           this.machineLearningService.trainVolatility(moment().format('YYYY-MM-DD'),
-            moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.6, 5, 0).subscribe((result) => {
+            moment().subtract({ day: 500 }).format('YYYY-MM-DD'), 0.6, 5, 0).subscribe((result) => {
               console.log(result[0].predictionHistory.filter(r => r.prediction >= 0.5));
               this.machineLearningService.trainVolatility(moment().format('YYYY-MM-DD'),
                 moment().subtract({ day: 1000 }).format('YYYY-MM-DD'), 0.6, 6, 0).subscribe((result) => {
                   console.log(result[0].predictionHistory.filter(r => r.prediction >= 0.5));
                   this.machineLearningService.trainVolatility(moment().format('YYYY-MM-DD'),
-                    moment().subtract({ day: 700 }).format('YYYY-MM-DD'), 0.6, 4, 0).subscribe((result) => {
+                    moment().subtract({ day: 1200 }).format('YYYY-MM-DD'), 0.6, 4, 0).subscribe((result) => {
                       console.log(result[0].predictionHistory.filter(r => r.prediction >= 0.5));
                     });
                 });
