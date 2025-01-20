@@ -341,19 +341,19 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         label: 'Test ml',
         command: async () => {
           const endDate = moment().format('YYYY-MM-DD');
-          ['META', 'CRWD'].forEach(async(sym1) => {
-            const result1 = await this.machineLearningService.trainMfiBuy(sym1, endDate,
-              moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.8, 20, 0.005).toPromise();
-            console.log(sym1, 'MFI', result1[0].score, result1[0].predictionHistory.filter(r => r.prediction >= 0.5));
+          const list = ['META', 'CRWD', 'GOOG', 'NFLX', 'AMD'];
+          for (const sym1 of list) {
+            // const result1 = await this.machineLearningService.trainMfiBuy(sym1, endDate,
+            //   moment().subtract({ day: 700 }).format('YYYY-MM-DD'), 0.8, 10, 0.03).toPromise();
+            // console.log(sym1, 'MFI', result1[0].score, result1[0].predictionHistory.filter(r => r.prediction > 0.6));
 
             const result2 = await this.machineLearningService.trainSellOff(sym1, endDate,
-              moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.8, null, 1, -0.001).toPromise();
-              console.log(sym1, 'SELL', result2[0].score, result2[0].predictionHistory.filter(r => r.prediction >= 0.5));
+              moment().subtract({ day: 1000 }).format('YYYY-MM-DD'), 0.8, null, 10, -0.03).toPromise();
+            console.log(sym1, 'SELL', result2[0].score, result2[0].predictionHistory.filter(r => r.prediction > 0.6));
             const result3 = await this.machineLearningService.trainBuy(sym1, endDate,
-              moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.8, null, 1, 0.001).toPromise();
-              console.log(sym1, 'BUY', result3[0].score, result3[0].predictionHistory.filter(r => r.prediction >= 0.5));
-
-          });
+              moment().subtract({ day: 1000 }).format('YYYY-MM-DD'), 0.8, null, 10, 0.03).toPromise();
+            console.log(sym1, 'BUY', result3[0].score, result3[0].predictionHistory.filter(r => r.prediction > 0.6));
+          }
         }
       },
       {

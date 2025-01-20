@@ -12,7 +12,7 @@ class BearPredictionService extends PredictionService {
     foundPatterns = [];
 
     constructor() {
-        super(3, 0.001);
+        super(5, -0.01);
     }
 
     setOutputRange(range: number) {
@@ -28,7 +28,7 @@ class BearPredictionService extends PredictionService {
     }
 
     getOutput(currentSignal, futureSignal) {
-        if (DecisionService.getPercentChange(currentSignal.close, futureSignal.close) < this.outputLimit) {
+        if (DecisionService.getPercentChange(futureSignal.close, currentSignal.close) < this.outputLimit) {
             return 1;
         }
 
