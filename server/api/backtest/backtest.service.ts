@@ -641,7 +641,7 @@ class BacktestService {
     if (!paidPrice || !currentPrice || !lossThreshold || !profitThreshold) {
       return false;
     }
-    const gain = DecisionService.getPercentChange(currentPrice, paidPrice);
+    const gain = DecisionService.getPercentChange(paidPrice, currentPrice);
     if (gain < lossThreshold || gain > profitThreshold) {
       return true;
     }

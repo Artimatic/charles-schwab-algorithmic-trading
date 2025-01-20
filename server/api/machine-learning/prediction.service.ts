@@ -96,7 +96,7 @@ export default class PredictionService {
   }
 
   getOutput(currentSignal, futureSignal) {
-    if (DecisionService.getPercentChange(currentSignal.close, futureSignal.close) > this.outputLimit) {
+    if (DecisionService.getPercentChange(futureSignal.close, currentSignal.close) > this.outputLimit) {
       return 1;
     }
 

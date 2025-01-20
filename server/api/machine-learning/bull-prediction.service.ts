@@ -12,7 +12,7 @@ class BearPredictionService extends PredictionService {
     foundPatterns = [];
 
     constructor() {
-        super(3, 0.001);
+        super(10, 0.01);
     }
 
     setOutputRange(range: number) {
@@ -43,9 +43,13 @@ class BearPredictionService extends PredictionService {
         ]
             .concat(InputHelperService.checkMacd(currentSignal.macd, currentSignal.macdPrevious))
             .concat(InputHelperService.convertMfiToInput(currentSignal.mfiLeft))
+            .concat(InputHelperService.convertBBandToInput(currentSignal.close, currentSignal.bband80))
+            .concat(InputHelperService.convertRsiToInput(currentSignal.rsi))
+            //.concat(InputHelperService.convertVwmaToInput(currentSignal.vwma, currentSignal.close))
+            //.concat(InputHelperService.roc(currentSignal.roc10, currentSignal.roc10Previous))
             .concat(this.comparePrices(currentSignal.vwma, currentSignal.close))
-            .concat(this.comparePrices(currentSignal.high, currentSignal.close))
-            .concat(this.comparePrices(currentSignal.low, currentSignal.close))
+            .concat(this.comparePrices(currentSignal.vwma, currentSignal.high))
+            .concat(this.comparePrices(currentSignal.vwma, currentSignal.low))
             .concat(this.convertRecommendations(currentSignal))
             .concat(this.convertRecommendationsForBearish(currentSignal));
 

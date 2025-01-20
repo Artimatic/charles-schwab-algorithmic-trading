@@ -136,7 +136,7 @@ const fullList = [
     'ISRG',
     'ELV',
     'VRTX',
-    'GE',
+    'LMT',
     'RGEN',
     'HD',
     'LOW',

@@ -28,7 +28,7 @@ class MfiPredictionService extends PredictionService {
     }
 
     getOutput(currentSignal, futureSignal) {
-        if (((futureSignal.mfiLeft - currentSignal.mfiLeft) > 15 || InputHelperService.convertBBandToInput(futureSignal.close, futureSignal.bband80)[0] === 1) && DecisionService.getPercentChange(currentSignal.close, futureSignal.close) > this.outputLimit) {
+        if (((futureSignal.mfiLeft > currentSignal.mfiLeft)) && DecisionService.getPercentChange(futureSignal.close, currentSignal.close) > this.outputLimit) {
             return 1;
         }
 
