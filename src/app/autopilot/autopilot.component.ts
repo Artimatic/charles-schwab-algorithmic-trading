@@ -448,6 +448,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else if (moment().isAfter(moment(this.autopilotService.sessionStart)) &&
           moment().isBefore(moment(this.autopilotService.sessionEnd))) {
           this.handleIntraday();
+        } else if (moment().isAfter(moment(this.autopilotService.sessionStart).subtract(Math.floor(this.interval / 60000) * 2, 'minutes')) &&
+          moment().isBefore(moment(this.autopilotService.sessionStart))) {
+          this.machineLearningService.trainVolatility(moment().format('YYYY-MM-DD'),
+            moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.6, 5, 0).subscribe((result) => {
+              this.autopilotService.setVolatilityMl(result[0].nextOutput);
+            });
         } else {
           await this.backtestOneStock(false, false);
           if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 3) {

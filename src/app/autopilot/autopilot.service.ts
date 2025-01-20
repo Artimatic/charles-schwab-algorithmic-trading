@@ -38,6 +38,7 @@ export class AutopilotService {
   addedOrdersCount = 0;
   maxTradeCount = 10;
   lastSpyMl = 0;
+  volatility = 0;
   lastMarketHourCheck = null;
   sessionStart = null;
   sessionEnd = null;
@@ -340,6 +341,14 @@ export class AutopilotService {
     return this.lastSpyMl;
   }
 
+  setVolatilityMl(val: number) {
+    this.volatility = val;
+  }
+
+  getVolatilityMl() {
+    return this.volatility;
+  }
+
   async sellOptionsHolding(holding: PortfolioInfoHolding, reason: string) {
     let orderType = null;
     if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
@@ -374,14 +383,13 @@ export class AutopilotService {
   async balanceCallPutRatio(holdings: PortfolioInfoHolding[]) {
     const results = this.priceTargetService.getCallPutBalance(holdings);
     this.reportingService.addAuditLog(null, `Calls: ${results.call}, Puts: ${results.put}, ratio: ${results.call / results.put}`);
-    if (results.put + (results.put * this.getLastSpyMl() * (this.riskToleranceList[this.riskCounter] * 3)) > results.call) {
+    if (results.put + (results.put * this.getLastSpyMl() * (this.riskToleranceList[this.riskCounter] * 3) * (1 - this.volatility)) > results.call) {
       const targetBalance = Number(results.put - results.call);
       console.log('SPY', targetBalance, `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${targetBalance}`);
       this.optionsOrderBuilderService.addOptionByBalance('SPY', targetBalance, 'Balance call put ratio', true);
     } else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
       this.sellLoser(holdings);
       console.log('Sell loser', results.call / results.put, `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${(1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])}`);
-
     }
   }
 
