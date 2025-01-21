@@ -28,7 +28,7 @@ class MfiPredictionService extends PredictionService {
     }
 
     getOutput(currentSignal, futureSignal) {
-        if (((futureSignal.mfiLeft > currentSignal.mfiLeft)) && DecisionService.getPercentChange(futureSignal.close, currentSignal.close) > this.outputLimit) {
+        if (DecisionService.getPercentChange(futureSignal.close, currentSignal.close) > this.outputLimit) {
             return 1;
         }
 
@@ -48,16 +48,16 @@ class MfiPredictionService extends PredictionService {
         const input = [
             (openingPrice > close) ? 0 : 1,
         ]
-            // .concat(this.comparePrices(currentSignal.vwma, close))
-            // .concat(this.comparePrices(currentSignal.high, close))
-            // .concat(this.comparePrices(currentSignal.low, close))
-            // .concat(this.convertRecommendationsForBearish(currentSignal))
+            .concat(InputHelperService.checkMacd(currentSignal.macd, currentSignal.macdPrevious))
             .concat(InputHelperService.convertMfiToInput(currentSignal.mfiLeft))
             .concat(InputHelperService.convertBBandToInput(currentSignal.close, currentSignal.bband80))
             .concat(InputHelperService.convertRsiToInput(currentSignal.rsi))
-            .concat(InputHelperService.convertVwmaToInput(currentSignal.vwma, currentSignal.close))
-            .concat(InputHelperService.roc(currentSignal.roc10, currentSignal.roc10Previous))
-            .concat(InputHelperService.checkMacd(currentSignal.macd, currentSignal.macdPrevious));
+            //.concat(InputHelperService.convertVwmaToInput(currentSignal.vwma, currentSignal.close))
+            //.concat(InputHelperService.roc(currentSignal.roc10, currentSignal.roc10Previous))
+            .concat(this.comparePrices(currentSignal.vwma, currentSignal.close))
+            .concat(this.comparePrices(currentSignal.vwma, currentSignal.high))
+            .concat(this.comparePrices(currentSignal.vwma, currentSignal.low))
+            .concat(this.convertRecommendations(currentSignal));
         dataSetObj.input = [];
 
         if (!featureUse) {
