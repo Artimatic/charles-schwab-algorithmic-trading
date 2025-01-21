@@ -324,9 +324,9 @@ export class AutopilotService {
       const backtestResults = await this.strategyBuilderService.getBacktestData(stock);
       if (backtestResults) {
         if (cb) {
-          cb(stock, backtestResults.ml, backtestResults);
+          await cb(stock, backtestResults.ml, backtestResults);
         } else {
-          this.findSwingStockCallback(stock, backtestResults.ml, backtestResults);
+          await this.findSwingStockCallback(stock, backtestResults.ml, backtestResults);
         }
       }
       counter--;

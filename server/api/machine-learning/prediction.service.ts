@@ -86,11 +86,15 @@ export default class PredictionService {
 
     dataSetObj.input = [];
 
-    featureUse.forEach((value, idx) => {
-      if (value === '1' || value === 1) {
-        dataSetObj.input.push(input[idx]);
-      }
-    });
+    if (featureUse) {
+      featureUse.forEach((value, idx) => {
+        if (value === '1' || value === 1) {
+          dataSetObj.input.push(input[idx]);
+        }
+      });
+    } else {
+      dataSetObj.input = input;
+    }
 
     return dataSetObj;
   }

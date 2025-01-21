@@ -398,7 +398,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.lastCredentialCheck = moment();
           await this.backtestOneStock(true, false);
           if (!this.schedulerService.executeTask()) {
-            this.padOrders(this.autopilotService.sessionStart, this.autopilotService.sessionEnd);
+            this.padOrders();
           }
         } else if (moment().isAfter(moment(this.autopilotService.sessionEnd).subtract(7, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionEnd))) {
@@ -433,7 +433,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.backtestOneStock(false, false);
           if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 3) {
             this.startFindingTrades();
-            this.padOrders(this.autopilotService.sessionStart, this.autopilotService.sessionEnd);
+            this.padOrders();
           }
         }
       });
@@ -1400,13 +1400,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.autopilotService.getNewTrades(findPuts, null, this.currentHoldings);
   }
 
-  async padOrders(startTime, endTime) {
-    if (moment().isAfter(moment(endTime).add(3, 'hours')) ||
-      moment().isBefore(moment(startTime).subtract(1, 'hours'))) {
-      if (!this.autopilotService.hasReachedBuyLimit(this.autopilotService.addedOrdersCount)) {
-        this.changeStrategy();
-        this.developStrategy();
-      }
+  async padOrders() {
+    if (!this.autopilotService.hasReachedBuyLimit(this.autopilotService.addedOrdersCount)) {
+      this.changeStrategy();
+      this.developStrategy();
     }
   }
 
