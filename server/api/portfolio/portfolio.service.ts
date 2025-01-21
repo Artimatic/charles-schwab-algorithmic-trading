@@ -92,7 +92,7 @@ class PortfolioService {
       .catch((e) => {
         if (e.toJSON) {
           const error = e.toJSON();
-          console.log('error:', JSON.stringify(error));
+          console.log('Auth error:', JSON.stringify(error));
           reply.status(error.status).send(error);
         } else {
           reply.status(500).send(e);
@@ -188,7 +188,7 @@ class PortfolioService {
       console.log('Found access token ', diffMinutes, new Date().toString());
 
       if (diffMinutes < 30) {
-        return Promise.resolve();
+        return Promise.resolve({message: 'Found token'});
       } else {
         console.log('Access token expired.');
       }
@@ -197,7 +197,7 @@ class PortfolioService {
     }
     return this.sendPositionRequest(accountId).then(pos => {
       console.log('Added new token');
-      return Promise.resolve();
+      return Promise.resolve({message: 'Added new token'});
     })
       .catch(error => {
         console.log('Potential token error: ', error);
@@ -205,15 +205,15 @@ class PortfolioService {
 
         if (!diffMinutes || diffMinutes >= 30) {
           console.log('Last token request: ', moment(this.lastTokenRequest).format());
-          if (this.access_token[accountId] && (this.lastTokenRequest === null || moment().diff(moment(this.lastTokenRequest), 'minutes') > 29)) {
+          if (this.access_token[accountId] && (this.lastTokenRequest === null || moment().diff(moment(this.lastTokenRequest), 'minutes') > 15)) {
             this.lastTokenRequest = moment().valueOf();
             console.log('Requesting new token');
             return this.refreshAccessToken(accountId);
           } else {
-            const tooRecentErrMsg = 'Last token request was too recent';
+            const tooRecentErrMsg = 'Token request too soon';
             console.log(tooRecentErrMsg);
             if (reply) {
-              reply.status(500).send({ error: tooRecentErrMsg });
+              reply.status(408).send({ error: tooRecentErrMsg });
               reply.end();
             }
             return Promise.reject(new Error('Last token request was too recent'));

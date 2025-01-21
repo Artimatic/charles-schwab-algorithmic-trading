@@ -41,7 +41,7 @@ class BearPredictionService extends PredictionService {
         const input = [
             (openingPrice > currentSignal.close) ? 0 : 1,
         ]
-            .concat(InputHelperService.checkMacd(currentSignal.macd, currentSignal.macdPrevious))
+            //.concat(InputHelperService.checkMacd(currentSignal.macd, currentSignal.macdPrevious))
             .concat(InputHelperService.convertMfiToInput(currentSignal.mfiLeft))
             .concat(InputHelperService.convertBBandToInput(currentSignal.close, currentSignal.bband80))
             //.concat(InputHelperService.convertRsiToInput(currentSignal.rsi))
@@ -50,8 +50,7 @@ class BearPredictionService extends PredictionService {
             // .concat(this.comparePrices(currentSignal.vwma, currentSignal.close))
             // .concat(this.comparePrices(currentSignal.vwma, currentSignal.high))
             // .concat(this.comparePrices(currentSignal.vwma, currentSignal.low))
-            .concat(this.convertRecommendations(currentSignal))
-            .concat(this.convertRecommendationsForBearish(currentSignal));
+            .concat(this.convertRecommendations(currentSignal));
 
         dataSetObj.input = [];
 
@@ -67,11 +66,11 @@ class BearPredictionService extends PredictionService {
         return dataSetObj;
     }
 
-    train(symbol, startDate, endDate, trainingSize) {
+    train(symbol, startDate, endDate, trainingSize, features) {
         let dataSet1 = null;
         return BacktestService.initDailyStrategy(symbol, moment(endDate).valueOf(), moment(startDate).valueOf(), { minQuotes: 80 })
             .then((result: BacktestResults) => {
-                dataSet1 = this.processBacktestResults(result, null);
+                dataSet1 = this.processBacktestResults(result, features);
                 const finalTrainingSet = dataSet1.map((val, idx) => {
                     return {
                         date: val.date,

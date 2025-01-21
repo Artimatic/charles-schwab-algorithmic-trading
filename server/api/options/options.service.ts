@@ -95,7 +95,7 @@ class OptionService {
         const move = _.round(strategyCost / goal, 3);
         const movePrice = _.round(move * goal, 2);
 
-        this.saveImpliedMove(symbol, move);
+        // this.saveImpliedMove(symbol, move);
         return {
           move,
           upperPrice: _.round(goal + movePrice, 2),
@@ -107,14 +107,14 @@ class OptionService {
       });
   }
 
-  private saveImpliedMove(symbol: string, move: number) {
-    if (move) {
-      axios.post(`${dataServiceUrl}backtest/update-implied-move`, {
-        symbol,
-        impliedMove: move
-      });
-    }
-  }
+  // private saveImpliedMove(symbol: string, move: number) {
+  //   if (move) {
+  //     axios.post(`${dataServiceUrl}backtest/update-implied-move`, {
+  //       symbol,
+  //       impliedMove: move
+  //     });
+  //   }
+  // }
 }
 
 export default new OptionService();

@@ -109,11 +109,15 @@ class IntradayPredicationService extends PredictionService {
       featureUse = input.map(val => 1);
     }
 
-    featureUse.forEach((value, idx) => {
-      if ((value === '1' || value === 1) && input[idx] !== undefined) {
-        dataSetObj.input.push(input[idx]);
-      }
-    });
+    if (featureUse) {
+      featureUse.forEach((value, idx) => {
+        if ((value === '1' || value === 1) && input[idx] !== undefined) {
+          dataSetObj.input.push(input[idx]);
+        }
+      });
+    } else {
+      dataSetObj.input = input;
+    }
     return dataSetObj;
   }
 }

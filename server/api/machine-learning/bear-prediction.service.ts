@@ -92,12 +92,12 @@ class BearPredictionService extends PredictionService {
         return dataSetObj;
     }
 
-    train(symbol, startDate, endDate, trainingSize) {
+    train(symbol, startDate, endDate, trainingSize, features) {
         let dataSet1 = null;
         let dataSet2 = null;
         return BacktestService.initDailyStrategy(symbol, moment(endDate).valueOf(), moment(startDate).valueOf(), { minQuotes: 80 })
             .then((result: BacktestResults) => {
-                dataSet1 = this.processBacktestResults(result, null);
+                dataSet1 = this.processBacktestResults(result, features);
                 return BacktestService.initDailyStrategy('VXX', moment(endDate).valueOf(), moment(startDate).valueOf(), { minQuotes: 80 });
             })
             .then((result: BacktestResults) => {
