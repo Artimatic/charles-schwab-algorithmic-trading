@@ -70,19 +70,29 @@ export class LoginComponent implements OnInit {
 
   signIn() {
     this.loading = true;
+    document.cookie = `accountId=${this.tdaForm.value.accountId};SameSite=None;Secure`;
     if (this.tdaForm.value.saveToCookie) {
-      document.cookie = `accountId=${this.tdaForm.value.accountId};SameSite=None;Secure`;
       document.cookie = `appKey=${this.tdaForm.value.appKey};SameSite=None;Secure`;
       document.cookie = `secret=${this.tdaForm.value.secret};SameSite=None;Secure`;
       document.cookie = `callbackUrl=${this.tdaForm.value.callbackUrl};SameSite=None;Secure`;
+    } else {
+      document.cookie = 'appKey=;SameSite=None;Secure';
+      document.cookie = 'secret=;SameSite=None;Secure';
+      document.cookie = 'callbackUrl=;SameSite=None;Secure';
     }
-    
+
     sessionStorage.setItem('accountId', this.tdaForm.value.accountId);
 
-    this.authenticationService.signIn(this.tdaForm.value.accountId,
+    this.authenticationService.login(this.tdaForm.value.accountId,
       this.tdaForm.value.appKey,
       this.tdaForm.value.secret,
-      this.tdaForm.value.callbackUrl);
+      this.tdaForm.value.callbackUrl)
+      .subscribe(() => {
+        this.authenticationService.signIn(this.tdaForm.value.accountId,
+          this.tdaForm.value.appKey,
+          this.tdaForm.value.secret,
+          this.tdaForm.value.callbackUrl);
+      });
   }
 
   selectAccount(account) {

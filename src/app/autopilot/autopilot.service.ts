@@ -285,6 +285,48 @@ export class AutopilotService {
     }
   }
 
+  async findTopBuy() {
+    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
+    let backtestResults = [];
+    if (savedBacktest) {
+      for (const saved in savedBacktest) {
+        const backtestObj = savedBacktest[saved];
+        backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
+        backtestResults.push(backtestObj);
+      }
+      let minMl = 1;
+      while(minMl > 0.1 && backtestResults.length) {
+        backtestResults = backtestResults?.filter(backtestData => backtestData?.ml && backtestData.ml > minMl);
+        backtestResults?.sort((a, b) => (a.pnl || 0) - (b.pnl || 0));
+        minMl-= 0.05;
+      }
+      if (backtestResults.length) {
+        await this.addBuy(backtestResults.pop().stock, null, 'Buy top stock');
+      }
+    }
+  }
+
+  async findTopNotSell() {
+    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
+    let backtestResults = [];
+    if (savedBacktest) {
+      for (const saved in savedBacktest) {
+        const backtestObj = savedBacktest[saved];
+        backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
+        backtestResults.push(backtestObj);
+      }
+      let minMl = 0;
+      while(minMl < 0.5 && backtestResults.length) {
+        backtestResults = backtestResults?.filter(backtestData => backtestData.sellMl !== undefined && backtestData.sellMl > minMl);
+        backtestResults?.sort((a, b) => (a.pnl || 0) - (b.pnl || 0));
+        minMl+= 0.05;
+      }
+      if (backtestResults.length) {
+        await this.addBuy(backtestResults.pop().stock, null, 'Buy top not sell stock');
+      }
+    }
+  }
+
   async buyUpro(reason: string = 'Buy UPRO', allocation = null) {
     if (!allocation) {
       const backtestData = await this.strategyBuilderService.getBacktestData('SPY');

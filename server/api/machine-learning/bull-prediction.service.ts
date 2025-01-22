@@ -52,29 +52,24 @@ class BearPredictionService extends PredictionService {
             // .concat(this.comparePrices(currentSignal.vwma, currentSignal.low))
             .concat(this.convertRecommendations(currentSignal));
 
-        dataSetObj.input = [];
-
-        if (!featureUse) {
-            featureUse = input.map(val => 1);
-        }
-        featureUse.forEach((value, idx) => {
-            if (value === '1' || value === 1) {
-                dataSetObj.input.push(input[idx]);
-            }
-        });
-
+        dataSetObj.input = this.selectFeatures(input, featureUse);
         return dataSetObj;
     }
 
     train(symbol, startDate, endDate, trainingSize, features) {
         let dataSet1 = null;
+        let dataSet2 = null;
         return BacktestService.initDailyStrategy(symbol, moment(endDate).valueOf(), moment(startDate).valueOf(), { minQuotes: 80 })
             .then((result: BacktestResults) => {
                 dataSet1 = this.processBacktestResults(result, features);
+                return BacktestService.initDailyStrategy('VXX', moment(endDate).valueOf(), moment(startDate).valueOf(), { minQuotes: 80 });
+            })
+            .then((result: BacktestResults) => {
+                dataSet2 = this.processBacktestResults(result, null);
                 const finalTrainingSet = dataSet1.map((val, idx) => {
                     return {
                         date: val.date,
-                        input: dataSet1[idx].input,
+                        input: dataSet1[idx].input.concat(dataSet2[idx].input),
                         output: [val.output[0] === 1 ? 1 : 0]
                     };
                 });

@@ -57,4 +57,6 @@ export interface Stock {
   optionsChainLength?: number;
   daytradeIndicators?: any;
   net?: number;
+  score?: number;
+  sellMlScore?: number;
 }
