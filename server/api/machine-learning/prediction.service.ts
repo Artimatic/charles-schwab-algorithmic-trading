@@ -25,11 +25,29 @@ export default class PredictionService {
 
     const finalDataSet = [];
     signals.forEach((signal, idx) => {
-        finalDataSet.push(this.buildFeatureSet(signals, signal, idx, featureUse));
-      
+      finalDataSet.push(this.buildFeatureSet(signals, signal, idx, featureUse));
+
     });
     console.log('Data set size: ', finalDataSet.length);
     return finalDataSet;
+  }
+
+  selectFeatures(input, featureUse) {
+    if (!featureUse || !featureUse.length) {
+      return input;
+    }
+    return input.map((val, idx) => {
+      if (idx < featureUse.length) {
+        if (featureUse[idx] === '1' || featureUse[idx] === 1) {
+          if (input[idx] === null) {
+            return 0;
+          } else {
+            return val;
+          }
+        }
+      }
+      return val;
+    });
   }
 
   buildFeatureSet(signals, currentSignal, currentIndex, featureUse) {
@@ -84,17 +102,7 @@ export default class PredictionService {
       .concat([_.round(currentSignal.mfiLeft, 0)])
       .concat([_.round(currentSignal.rsi, 0)]);
 
-    dataSetObj.input = [];
-
-    if (featureUse) {
-      featureUse.forEach((value, idx) => {
-        if (value === '1' || value === 1) {
-          dataSetObj.input.push(input[idx]);
-        }
-      });
-    } else {
-      dataSetObj.input = input;
-    }
+    dataSetObj.input = this.selectFeatures(input, featureUse);
 
     return dataSetObj;
   }

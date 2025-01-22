@@ -330,8 +330,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
               const backtestObj = savedBacktest[saved];
               backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
               backtestResults.push(backtestObj);
-              backtestResults?.sort((a, b) => a.pnl - b.pnl);
             }
+            backtestResults?.sort((a, b) => a.pnl - b.pnl);
           }
           const list = backtestResults?.filter(backtestData => backtestData?.ml > 0.5);
           console.log('list', list);
@@ -349,19 +349,34 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test ml',
         command: async () => {
-          const endDate = moment().format('YYYY-MM-DD');
-          const list = ['AMD', 'META', 'CRWD', 'GOOG'];
-          for (const sym1 of list) {
-            const result3 = await this.machineLearningService.trainBuy(sym1, endDate,
-              moment().subtract({ day: 1000 }).format('YYYY-MM-DD'), 0.8, null, 10, 0.03).toPromise();
-            console.log(sym1, 'BUY', result3[0].score, result3[0].predictionHistory.filter(r => r.prediction > 0.6));
-            const result2 = await this.machineLearningService.trainSellOff(sym1, endDate,
-              moment().subtract({ day: 1000 }).format('YYYY-MM-DD'), 0.8, null, 10, -0.03).toPromise();
-            console.log(sym1, 'SELL', result2[0].score, result2[0].predictionHistory.filter(r => r.prediction > 0.6));
-            const result1 = await this.machineLearningService.trainMfiBuy(sym1, endDate,
-              moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.8, 10, 0.05).toPromise();
-            console.log(sym1, 'MFI', result1[0].score, result1[0].predictionHistory.filter(r => r.prediction > 0.6));
+          const buyFeatures = Array(44).fill(1);
+
+          const featuresToTry = [];
+          for (let i = 0; i < buyFeatures.length; i++) {
+            featuresToTry.push(buyFeatures.slice(0, i).concat([0]).concat(buyFeatures.slice(i + 1)));
           }
+          console.log('buyFeatures', buyFeatures);
+          console.log('featuresToTry', featuresToTry);
+          const endDate = moment().format('YYYY-MM-DD');
+          const list = ['AMD', 'GOOG', 'CRWD', 'TSLA'];
+          const allScores = [];
+
+          for (const f of featuresToTry) {
+            for (const sym1 of list) {
+              const result3 = await this.machineLearningService.trainBuy(sym1, endDate,
+                moment().subtract({ day: 1000 }).format('YYYY-MM-DD'), 0.8, f, 10, 0.03).toPromise();
+              allScores.push({ score: result3[0].score, features: f.join(), symbol: sym1 });
+              console.log(sym1, 'BUY', result3[0].score, result3[0].predictionHistory.filter(r => r.prediction > 0.6));
+              // const result2 = await this.machineLearningService.trainSellOff(sym1, endDate,
+              //   moment().subtract({ day: 1000 }).format('YYYY-MM-DD'), 0.8, null, 10, -0.03).toPromise();
+              // console.log(sym1, 'SELL', result2[0].score, result2[0].predictionHistory.filter(r => r.prediction > 0.6));
+              // const result1 = await this.machineLearningService.trainMfiBuy(sym1, endDate,
+              //   moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.8, 10, 0.05).toPromise();
+              // console.log(sym1, 'MFI', result1[0].score, result1[0].predictionHistory.filter(r => r.prediction > 0.6));
+            }
+          }
+
+          console.log(allScores.sort((a, b) => b.score - a.score));
         }
       }
     ];
@@ -1222,6 +1237,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.autopilotService.buyUpro();
         break;
       default: {
+        await this.autopilotService.findTopBuy();
+        await this.autopilotService.findTopNotSell();
         await this.createTradingPairs();
         await this.addInverseDispersionTrade();
         break;

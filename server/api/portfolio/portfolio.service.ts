@@ -43,32 +43,49 @@ class PortfolioService {
           reply.redirect(e.request._redirectable._options.href);
         } else {
           console.log('authorize error:', e.response.status, e.response.statusText);
-          reply.status(e.response.status).send({ message: e.response.statusText});
+          reply.status(e.response.status).send({ message: e.response.statusText });
         }
       });
   }
 
-  useCookie(cookie) {
-    const cookieObj = cookie.split(';')
-    .map(v => v.split('='))
-    .reduce((acc, v) => {
-      acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim());
-      return acc;
-    }, {});
-    if (cookieObj.accountId) {
-      this.accountStore[cookieObj.accountId] = {
-        appKey: cookieObj.appKey,
-        secret: cookieObj.secret,
-        callbackUrl: cookieObj.callbackUrl
+  useCookieOrEnvironmentVariable(cookie) {
+    const cookieObj = cookie?.split(';')
+      .map(v => v.split('='))
+      .reduce((acc, v) => {
+        acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim());
+        return acc;
+      }, {});
+
+
+    if (cookieObj?.accountId && cookieObj.appKey && cookieObj.secret && cookieObj.callbackUrl) {
+      if (!this.accountStore[cookieObj.accountId]) {
+        this.accountStore[cookieObj.accountId] = {
+          appKey: cookieObj.appKey,
+          secret: cookieObj.secret,
+          callbackUrl: cookieObj.callbackUrl
+        };
+      }
+    } else if (configurations.charles.accountId && configurations.charles.appKey && configurations.charles.secret && configurations.charles.callbackUrl) {
+      if (!this.accountStore[configurations.charles.accountId]) {
+
+        this.accountStore[configurations.charles.accountId] = {
+          appKey: configurations.charles.appKey,
+          secret: configurations.charles.secret,
+          callbackUrl: configurations.charles.callbackUrl
+        }
+        if (configurations.charles.accountIdHash) {
+          this.accountIdToHash[configurations.charles.accountId] = configurations.charles.accountIdHash;
+        }
       }
     }
   }
 
   getAccessToken(accountId, code, reply, cookie) {
-    this.useCookie(cookie);
+    this.useCookieOrEnvironmentVariable(cookie);
     const appKey = this.accountStore[accountId].appKey;
     const secret = this.accountStore[accountId].secret;
     const callbackUrl = this.accountStore[accountId].callbackUrl;
+    console.log('sending: ', appKey, secret, 'authorization_code', code, callbackUrl);
     return charlesSchwabApi.getAccessToken(appKey, secret, 'authorization_code', code, callbackUrl)
       .then((response) => {
         const data = (response as any).data;
@@ -124,7 +141,7 @@ class PortfolioService {
         timestamp: moment().valueOf(),
         token: data?.access_token || null
       }
-      return Promise.resolve({ accountId: accountId});
+      return Promise.resolve({ accountId: accountId });
     })
       .catch(e => {
         if (e.toJSON) {
@@ -188,7 +205,7 @@ class PortfolioService {
       console.log('Found access token ', diffMinutes, new Date().toString());
 
       if (diffMinutes < 30) {
-        return Promise.resolve({message: 'Found token'});
+        return Promise.resolve({ message: 'Found token' });
       } else {
         console.log('Access token expired.');
       }
@@ -197,7 +214,7 @@ class PortfolioService {
     }
     return this.sendPositionRequest(accountId).then(pos => {
       console.log('Added new token');
-      return Promise.resolve({message: 'Added new token'});
+      return Promise.resolve({ message: 'Added new token' });
     })
       .catch(error => {
         console.log('Potential token error: ', error);
@@ -282,7 +299,7 @@ class PortfolioService {
     }
 
     console.log('Using account id ', accountId);
-    return accountId;
+    return accountId ? accountId : configurations.charles.accountId;
   }
 
   getIntradayPriceHistoryV2(symbol, period, frequencyType, frequency) {
@@ -454,29 +471,29 @@ class PortfolioService {
   sendMultiOrderSell(primaryArr,
     secondaryArr,
     price, accountId, response) {
-      const orderLegCollection = [];
-      primaryArr.forEach((order) => {
-        const newOrder = {
-          instruction: 'SELL_TO_CLOSE',
-          quantity: order.quantity,
-          instrument: {
-            symbol: order.symbol,
-            assetType: order.putCallInd ? 'OPTION' : 'EQUITY'
-          }
-        };
-        orderLegCollection.push(newOrder)
-      });
-      secondaryArr.forEach((order) => {
-        const newOrder = {
-          instruction: 'SELL_TO_CLOSE',
-          quantity: order.quantity,
-          instrument: {
-            symbol: order.symbol,
-            assetType: order.putCallInd ? 'OPTION' : 'EQUITY'
-          }
-        };
-        orderLegCollection.push(newOrder)
-      });
+    const orderLegCollection = [];
+    primaryArr.forEach((order) => {
+      const newOrder = {
+        instruction: 'SELL_TO_CLOSE',
+        quantity: order.quantity,
+        instrument: {
+          symbol: order.symbol,
+          assetType: order.putCallInd ? 'OPTION' : 'EQUITY'
+        }
+      };
+      orderLegCollection.push(newOrder)
+    });
+    secondaryArr.forEach((order) => {
+      const newOrder = {
+        instruction: 'SELL_TO_CLOSE',
+        quantity: order.quantity,
+        instrument: {
+          symbol: order.symbol,
+          assetType: order.putCallInd ? 'OPTION' : 'EQUITY'
+        }
+      };
+      orderLegCollection.push(newOrder)
+    });
     return this.renewAuth(accountId, response)
       .then(() => {
         const headers = {
@@ -486,7 +503,7 @@ class PortfolioService {
           'Authorization': `Bearer ${this.access_token[accountId].token}`,
           'Content-Type': 'application/json',
         };
-    
+
         const options = {
           uri: charlesSchwabTraderUrl + `accounts/${this.accountIdToHash[accountId]}/orders`,
           headers: headers,
@@ -502,7 +519,7 @@ class PortfolioService {
             orderLegCollection
           }
         };
-    
+
         return request.post(options);
       });
   }
@@ -631,24 +648,24 @@ class PortfolioService {
       headers: headers,
       json: true,
       gzip: true,
-      body: { 
-        "complexOrderStrategyType": "NONE", 
-        "orderType": "LIMIT", 
-        "session": "NORMAL", 
-        "price": price, 
-        "duration": "DAY", 
-        "orderStrategyType": "SINGLE", 
-        "orderLegCollection": [ 
-         { 
-          "instruction": "BUY_TO_OPEN", 
-          "quantity": quantity, 
-          "instrument": { 
-           "symbol": symbol, 
-           "assetType": "OPTION" 
-          } 
-         } 
-        ] 
-      }      
+      body: {
+        "complexOrderStrategyType": "NONE",
+        "orderType": "LIMIT",
+        "session": "NORMAL",
+        "price": price,
+        "duration": "DAY",
+        "orderStrategyType": "SINGLE",
+        "orderLegCollection": [
+          {
+            "instruction": "BUY_TO_OPEN",
+            "quantity": quantity,
+            "instrument": {
+              "symbol": symbol,
+              "assetType": "OPTION"
+            }
+          }
+        ]
+      }
     };
 
     return this.renewAuth(accountId, response)
@@ -674,24 +691,24 @@ class PortfolioService {
       headers: headers,
       json: true,
       gzip: true,
-      body: { 
-        "complexOrderStrategyType": "NONE", 
-        "orderType": "LIMIT", 
-        "session": "NORMAL", 
-        "price": price, 
-        "duration": "DAY", 
-        "orderStrategyType": "SINGLE", 
-        "orderLegCollection": [ 
-         { 
-          "instruction": "SELL_TO_CLOSE", 
-          "quantity": quantity, 
-          "instrument": { 
-           "symbol": symbol, 
-           "assetType": "OPTION" 
-          } 
-         } 
-        ] 
-      }   
+      body: {
+        "complexOrderStrategyType": "NONE",
+        "orderType": "LIMIT",
+        "session": "NORMAL",
+        "price": price,
+        "duration": "DAY",
+        "orderStrategyType": "SINGLE",
+        "orderLegCollection": [
+          {
+            "instruction": "SELL_TO_CLOSE",
+            "quantity": quantity,
+            "instrument": {
+              "symbol": symbol,
+              "assetType": "OPTION"
+            }
+          }
+        ]
+      }
     };
 
     return this.renewAuth(accountId, response)
@@ -805,8 +822,8 @@ class PortfolioService {
   }
 
   isSet(accountId, response, cookie) {
-    this.useCookie(cookie);
-    if (configurations.charles.refresh_token) {
+    this.useCookieOrEnvironmentVariable(cookie);
+    if (!this.refreshTokensHash[accountId] && configurations.charles.refresh_token) {
       this.refreshTokensHash[accountId] = configurations.charles.refresh_token;
     }
     this.lastTokenRequest = null;

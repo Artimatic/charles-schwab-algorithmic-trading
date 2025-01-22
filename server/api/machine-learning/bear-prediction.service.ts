@@ -78,16 +78,7 @@ class BearPredictionService extends PredictionService {
         // .concat([_.round(currentSignal.mfiLeft, 0)])
         // .concat([_.round(currentSignal.rsi, 0)]);
 
-        dataSetObj.input = [];
-
-        if (!featureUse) {
-            featureUse = input.map(val => 1);
-        }
-        featureUse.forEach((value, idx) => {
-            if (value === '1' || value === 1) {
-                dataSetObj.input.push(input[idx]);
-            }
-        });
+        dataSetObj.input = this.selectFeatures(input, featureUse);
 
         return dataSetObj;
     }

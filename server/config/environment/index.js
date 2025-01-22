@@ -36,8 +36,12 @@ module.exports = {
     key: _.get(credentials, 'default.iex.key', _.get(credentials, 'iex.key', null)),
   },
   charles: {
-    accountId: _.get(credentials, 'default.accountId', _.get(credentials, 'accountId', null)),
-    refresh_token: _.get(credentials, 'default.refreshToken', _.get(credentials, 'refreshToken', null))
+    accountId: _.get(credentials, 'default.accountId', _.get(credentials, 'accountId', process.env.accountId)),
+    refresh_token: _.get(credentials, 'default.refreshToken', _.get(credentials, 'refreshToken', process.env.refreshToken)),
+    appKey: _.get(credentials, 'default.appKey', _.get(credentials, 'appKey', process.env.appKey)),
+    secret: _.get(credentials, 'default.secret', _.get(credentials, 'secret', process.env.secret)),
+    callbackUrl: _.get(credentials, 'default.callbackUrl', _.get(credentials, 'callbackUrl', process.env.callbackUrl)),
+    accountIdHash: _.get(credentials, 'default.accountIdHash', _.get(credentials, 'accountIdHash', process.env.accountIdHash))
   },
   apps: {
     goliath: _.get(credentials, 'default.goliathUrl', _.get(credentials, 'goliathUrl', 'http://localhost:8100/')),
