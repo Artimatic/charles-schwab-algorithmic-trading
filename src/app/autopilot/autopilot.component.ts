@@ -1241,6 +1241,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.autopilotService.findTopNotSell();
         await this.createTradingPairs();
         await this.addInverseDispersionTrade();
+        const cash = await this.getMinMaxCashForOptions();
+        await this.autopilotService.findAnyPair(this.currentHoldings, cash.minCash, cash.maxCash);
         break;
       }
     }

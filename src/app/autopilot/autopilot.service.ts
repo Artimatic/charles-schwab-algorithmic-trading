@@ -285,6 +285,31 @@ export class AutopilotService {
     }
   }
 
+  async findAnyPair(currentHoldings, minCashAllocation: number, maxCashAllocation: number) {
+    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
+    let buys = [];
+    let sells = [];
+    if (savedBacktest) {
+      for (const saved in savedBacktest) {
+        const backtestObj = savedBacktest[saved];
+        backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
+        buys.push(backtestObj);
+        sells.push(backtestObj);
+      }
+      let minMl = 1;
+      while (minMl > 0.1 && buys.length) {
+        buys = buys?.filter(backtestData => backtestData?.ml && backtestData.ml > minMl);
+        buys?.sort((a, b) => (a.pnl || 0) - (b.pnl || 0));
+        sells = sells?.filter(backtestData => backtestData?.sellMl && backtestData.sellMl > minMl);
+        sells?.sort((a, b) => (b.pnl || 0) - (a.pnl || 0));
+        minMl -= 0.05;
+      }
+      if (buys.length && sells.length) {
+        await this.optionsOrderBuilderService.balanceTrades(currentHoldings, [buys.pop()], [sells.pop()], minCashAllocation, maxCashAllocation, 'Find any pair');
+      }
+    }
+  }
+
   async findTopBuy() {
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     let backtestResults = [];
@@ -295,10 +320,10 @@ export class AutopilotService {
         backtestResults.push(backtestObj);
       }
       let minMl = 1;
-      while(minMl > 0.1 && backtestResults.length) {
+      while (minMl > 0.1 && backtestResults.length) {
         backtestResults = backtestResults?.filter(backtestData => backtestData?.ml && backtestData.ml > minMl);
         backtestResults?.sort((a, b) => (a.pnl || 0) - (b.pnl || 0));
-        minMl-= 0.05;
+        minMl -= 0.05;
       }
       if (backtestResults.length) {
         await this.addBuy(backtestResults.pop().stock, null, 'Buy top stock');
@@ -316,10 +341,10 @@ export class AutopilotService {
         backtestResults.push(backtestObj);
       }
       let minMl = 0;
-      while(minMl < 0.5 && backtestResults.length) {
+      while (minMl < 0.5 && backtestResults.length) {
         backtestResults = backtestResults?.filter(backtestData => backtestData.sellMl !== undefined && backtestData.sellMl > minMl);
         backtestResults?.sort((a, b) => (a.pnl || 0) - (b.pnl || 0));
-        minMl+= 0.05;
+        minMl += 0.05;
       }
       if (backtestResults.length) {
         await this.addBuy(backtestResults.pop().stock, null, 'Buy top not sell stock');
@@ -425,13 +450,15 @@ export class AutopilotService {
   async balanceCallPutRatio(holdings: PortfolioInfoHolding[]) {
     const results = this.priceTargetService.getCallPutBalance(holdings);
     this.reportingService.addAuditLog(null, `Calls: ${results.call}, Puts: ${results.put}, ratio: ${results.call / results.put}`);
-    if (results.put + (results.put * this.getLastSpyMl() * (this.riskToleranceList[this.riskCounter] * 3) * (1 - this.volatility)) > results.call) {
-      const targetBalance = Number(results.put - results.call);
-      console.log('SPY', targetBalance, `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${targetBalance}`);
-      this.optionsOrderBuilderService.addOptionByBalance('SPY', targetBalance, 'Balance call put ratio', true);
-    } else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
-      this.sellLoser(holdings);
-      console.log('Sell loser', results.call / results.put, `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${(1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])}`);
+    if (results.put > 0 && results.call === 0) {
+      if (results.put + (results.put * this.getLastSpyMl() * (this.riskToleranceList[this.riskCounter] * 3) * (1 - this.volatility)) > results.call) {
+        const targetBalance = Number(results.put - results.call);
+        console.log('SPY', targetBalance, `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${targetBalance}`);
+        this.optionsOrderBuilderService.addOptionByBalance('SPY', targetBalance, 'Balance call put ratio', true);
+      } else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
+        this.sellLoser(holdings);
+        console.log('Sell loser', results.call / results.put, `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${(1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])}`);
+      }
     }
   }
 
