@@ -22,7 +22,6 @@ const fullList = [
     'CSCO',
     'ANET',
     'HOOD',
-    'DE',
     'DIS',
     'MCD',
     'NKE',
@@ -151,7 +150,6 @@ const fullList = [
     'UNP',
     'CHTR',
     'DASH',
-    'HON',
     'NUE',
     'DELL'];
 
