@@ -107,6 +107,9 @@
                 {{leg.quantity}} x {{leg.description}}
               </li>
             </ul>
+            <div *ngIf="order.reason">
+              {{order.reason}}
+            </div>
             <p>
               <p-tag *ngIf="firstFormGroup.value.orderType=='Buy'" styleClass="p-mr-2" severity="success"
                 value="Buy"></p-tag>

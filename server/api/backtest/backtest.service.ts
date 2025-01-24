@@ -95,6 +95,11 @@ class BacktestService {
   getRsi(real, period) {
     return tulind.indicators.rsi.indicator([real], [period]);
   }
+  
+  getObv(close, volume) {
+    console.log('tulind', tulind.indicators.obv);
+    return tulind.indicators.obv.indicator([close], [volume]);
+  }
 
   getDemark9(close, high, low) {
     let perfectSell = true;
@@ -1263,11 +1268,15 @@ class BacktestService {
       })
       .then(mfiLow => {
         currentQuote.mfiLow = mfiLow;
+        console.log('current quote', currentQuote.close, currentQuote.volume);
+        return this.getObv(currentQuote.close, currentQuote.volume);
+      }).then(obv => {
+        currentQuote.obv = obv;
         return MfiService.getMfi(this.getSubArrayShift(indicators.highs, 14, -1),
-          this.getSubArrayShift(indicators.lows, 14, -1),
-          this.getSubArrayShift(indicators.reals, 14, -1),
-          this.getSubArrayShift(indicators.volumes, 14, -1),
-          14);
+        this.getSubArrayShift(indicators.lows, 14, -1),
+        this.getSubArrayShift(indicators.reals, 14, -1),
+        this.getSubArrayShift(indicators.volumes, 14, -1),
+        14);
       })
       .then((mfiPrevious) => {
         const len = mfiPrevious[0].length - 1;
