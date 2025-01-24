@@ -31,6 +31,12 @@ class InputHelperService {
         ];
     }
 
+    convertObvToInput(obv): number[] {
+        const arr = obv[0];
+        return [arr[arr.length - 2] > arr[arr.length - 4] ? 1 : 0,
+        arr[arr.length - 1] < arr[arr.length - 3] ? 1 : 0];
+    }
+
     convertRsiToInput(rsi): number[] {
         const arr = [];
         let counter = 0;
@@ -61,19 +67,19 @@ class InputHelperService {
         ];
     }
 
-  checkMacd(macd1, macdPrevious): number[] {
-    if (macd1 && macdPrevious) {
-      const macd = macd1[2];
-      const prevMacd = macdPrevious[2];
+    checkMacd(macd1, macdPrevious): number[] {
+        if (macd1 && macdPrevious) {
+            const macd = macd1[2];
+            const prevMacd = macdPrevious[2];
 
-      if (macd[macd.length - 1] >= prevMacd[prevMacd.length - 1]) {
-        return [1, 0];
-      } else if (macd[macd.length - 1] < prevMacd[prevMacd.length - 1]) {
-        return [0, 1];
-      }
+            if (macd[macd.length - 1] >= prevMacd[prevMacd.length - 1]) {
+                return [1, 0];
+            } else if (macd[macd.length - 1] < prevMacd[prevMacd.length - 1]) {
+                return [0, 1];
+            }
+        }
+        return [0, 0];
     }
-    return [0, 0];
-  }
 }
 
 export default new InputHelperService();

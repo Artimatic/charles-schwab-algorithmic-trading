@@ -8,7 +8,7 @@ import InputHelperService from './input-helper.service';
 import DecisionService from '../mean-reversion/reversion-decision.service';
 
 class BearPredictionService extends PredictionService {
-    modelName = 'bear_model2025-01-18';
+    modelName = 'bear_model2025-01-23';
     foundPatterns = [];
 
     constructor() {
@@ -60,6 +60,7 @@ class BearPredictionService extends PredictionService {
             .concat(InputHelperService.convertRsiToInput(currentSignal.rsi))
             .concat(InputHelperService.convertVwmaToInput(currentSignal.vwma, currentSignal.close))
             .concat(InputHelperService.roc(currentSignal.roc10, currentSignal.roc10Previous))
+            .concat(InputHelperService.convertObvToInput(currentSignal.obv))
             .concat(InputHelperService.checkMacd(currentSignal.macd, currentSignal.macdPrevious));
         //         .concat(this.comparePrices(currentSignal.vwma, currentSignal.close))
         //         .concat(this.comparePrices(currentSignal.high, currentSignal.close))
