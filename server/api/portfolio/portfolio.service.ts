@@ -23,6 +23,10 @@ class PortfolioService {
   lastTokenRequest = null;
   lastPositionCheck = null;
 
+  constructor() {
+    this.useCookieOrEnvironmentVariable(null)
+  }
+
   postLogin(accountId, appKey, secret, callbackUrl, response) {
     this.accountStore[accountId] = {
       appKey,
@@ -49,23 +53,29 @@ class PortfolioService {
   }
 
   useCookieOrEnvironmentVariable(cookie) {
-    const cookieObj = cookie?.split(';')
-      .map(v => v.split('='))
-      .reduce((acc, v) => {
-        acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim());
-        return acc;
-      }, {});
+    if (cookie) {
+      // Parse the cookie string into an object
+      const cookieObj = cookie?.split(';')
+        .map(v => v.split('='))
+        .reduce((acc, v) => {
+          acc[decodeURIComponent(v[0].trim())] = decodeURIComponent(v[1].trim());
+          return acc;
+        }, {});
 
-
-    if (cookieObj?.accountId && cookieObj.appKey && cookieObj.secret && cookieObj.callbackUrl) {
-      if (!this.accountStore[cookieObj.accountId]) {
-        this.accountStore[cookieObj.accountId] = {
-          appKey: cookieObj.appKey,
-          secret: cookieObj.secret,
-          callbackUrl: cookieObj.callbackUrl
-        };
+      if (cookieObj?.accountId && cookieObj.appKey && cookieObj.secret && cookieObj.callbackUrl) {
+        if (!this.accountStore[cookieObj.accountId]) {
+          this.accountStore[cookieObj.accountId] = {
+            appKey: cookieObj.appKey,
+            secret: cookieObj.secret,
+            callbackUrl: cookieObj.callbackUrl
+          };
+          return;
+        }
       }
-    } else if (configurations.charles.accountId && configurations.charles.appKey && configurations.charles.secret && configurations.charles.callbackUrl) {
+    }
+
+
+    if (configurations.charles.accountId && configurations.charles.appKey && configurations.charles.secret && configurations.charles.callbackUrl) {
       if (!this.accountStore[configurations.charles.accountId]) {
 
         this.accountStore[configurations.charles.accountId] = {
@@ -75,6 +85,9 @@ class PortfolioService {
         }
         if (configurations.charles.accountIdHash) {
           this.accountIdToHash[configurations.charles.accountId] = configurations.charles.accountIdHash;
+        }
+        if (!this.refreshTokensHash[configurations.charles.accountId] && configurations.charles.refresh_token) {
+          this.refreshTokensHash[configurations.charles.accountId] = configurations.charles.refresh_token;
         }
       }
     }
@@ -822,10 +835,8 @@ class PortfolioService {
   }
 
   isSet(accountId, response, cookie) {
+    accountId = accountId || this.getAccountId();
     this.useCookieOrEnvironmentVariable(cookie);
-    if (!this.refreshTokensHash[accountId] && configurations.charles.refresh_token) {
-      this.refreshTokensHash[accountId] = configurations.charles.refresh_token;
-    }
     this.lastTokenRequest = null;
     this.refreshAccessToken(accountId)
       .then(res => {

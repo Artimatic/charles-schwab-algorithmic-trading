@@ -31,6 +31,8 @@ export enum OrderType {
 }
 
 export interface Indicators {
+    volume: number;
+    obv: number;
     vwma: number;
     mfiLeft: number;
     bband80: any[];

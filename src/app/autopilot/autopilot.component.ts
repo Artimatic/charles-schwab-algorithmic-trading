@@ -323,6 +323,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test backtest',
         command: async () => {
+          await this.backtestOneStock(true, false);
+        }
+      },
+      {
+        label: 'Test filter',
+        command: async () => {
           const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
           const backtestResults = [];
           if (savedBacktest) {
@@ -364,9 +370,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           for (const f of featuresToTry) {
             for (const sym1 of list) {
               const result3 = await this.machineLearningService.trainBuy(sym1, endDate,
-                moment().subtract({ day: 1000 }).format('YYYY-MM-DD'), 0.8, f, 10, 0.03).toPromise();
+                moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.8, f, 10, 0.03).toPromise();
               allScores.push({ score: result3[0].score, features: f.join(), symbol: sym1 });
-              console.log(sym1, 'BUY', result3[0].score, result3[0].predictionHistory.filter(r => r.prediction > 0.6));
+              console.log(sym1, 'BUY', f, result3[0].score, result3[0].predictionHistory.filter(r => r.prediction > 0.6));
               // const result2 = await this.machineLearningService.trainSellOff(sym1, endDate,
               //   moment().subtract({ day: 1000 }).format('YYYY-MM-DD'), 0.8, null, 10, -0.03).toPromise();
               // console.log(sym1, 'SELL', result2[0].score, result2[0].predictionHistory.filter(r => r.prediction > 0.6));
