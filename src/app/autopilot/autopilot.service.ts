@@ -49,6 +49,7 @@ export class AutopilotService {
     RiskTolerance.Neutral
   ];
   isOpened = false;
+  maxHoldings = 100;
 
   constructor(private cartService: CartService,
     private optionsOrderBuilderService: OptionsOrderBuilderService,
@@ -97,13 +98,13 @@ export class AutopilotService {
         const backtestObj = savedBacktest[saved];
         const key = Math.round(savedBacktest[saved].impliedMovement * 100);
         const symbol = backtestObj.stock
-        if (backtestObj.ml > 0.6) {
+        if (backtestObj.ml > 0.5 && backtestObj.recommendation.toLowerCase() === 'strongbuy') {
           if (MlBuys[key]) {
             MlBuys[key].push(symbol);
           } else {
             MlBuys[key] = [symbol];
           }
-        } else if (backtestObj.sellMl !== null && backtestObj.sellMl > 0.6) {
+        } else if (backtestObj.sellMl !== null && backtestObj.sellMl > 0.5 && backtestObj.recommendation.toLowerCase() === 'strongsell') {
           if (MlSells[key]) {
             MlSells[key].push(symbol);
           } else {
@@ -126,13 +127,13 @@ export class AutopilotService {
         const buySignalStr = savedBacktest[saved]?.buySignals?.sort()?.join();
         const key = (sellSignalStr || '') + '-' + (buySignalStr || '') + Math.round(savedBacktest[saved].impliedMovement * 100);
         const symbol = backtestObj.stock
-        if (backtestObj.ml > 0.5 && this.priceTargetService.isProfitable(backtestObj.invested, backtestObj.net)) {
+        if (backtestObj.ml > 0.5 && this.priceTargetService.isProfitable(backtestObj.invested, backtestObj.net) && backtestObj.recommendation.toLowerCase() === 'strongbuy') {
           if (MlBuys[key]) {
             MlBuys[key].push(symbol);
           } else {
             MlBuys[key] = [symbol];
           }
-        } else if (backtestObj?.sellMl > 0.6 && this.priceTargetService.notProfitable(backtestObj.invested, backtestObj.net)) {
+        } else if (backtestObj?.sellMl > 0.5 && this.priceTargetService.notProfitable(backtestObj.invested, backtestObj.net) && backtestObj.recommendation.toLowerCase() === 'strongsell') {
           if (MlSells[key]) {
             MlSells[key].push(symbol);
           } else {
@@ -156,13 +157,13 @@ export class AutopilotService {
           const key = signals?.sort()?.join();
           const symbol = backtestObj.stock;
           if (key) {
-            if (backtestObj.ml > 0.6) {
+            if (backtestObj.ml > 0.6 && backtestObj.recommendation === 'STRONGBUY') {
               if (MlBuys[key]) {
                 MlBuys[key].push(symbol);
               } else {
                 MlBuys[key] = [symbol];
               }
-            } else if (backtestObj?.sellMl > 0.6) {
+            } else if (backtestObj?.sellMl > 0.6 && backtestObj.recommendation === 'STRONGSELL') {
               if (MlSells[key]) {
                 MlSells[key].push(symbol);
               } else {
@@ -298,9 +299,9 @@ export class AutopilotService {
       }
       let minMl = 1;
       while (minMl > 0.1 && buys.length) {
-        buys = buys?.filter(backtestData => backtestData?.ml && backtestData.ml > minMl);
+        buys = buys?.filter(backtestData => backtestData?.ml && backtestData.ml > minMl && backtestData.recommendation === 'STRONGBUY');
         buys?.sort((a, b) => (a.pnl || 0) - (b.pnl || 0));
-        sells = sells?.filter(backtestData => backtestData?.sellMl && backtestData.sellMl > minMl);
+        sells = sells?.filter(backtestData => backtestData?.sellMl && backtestData.sellMl > minMl && backtestData.recommendation === 'STRONGSELL');
         sells?.sort((a, b) => (b.pnl || 0) - (a.pnl || 0));
         minMl -= 0.05;
       }
@@ -310,7 +311,7 @@ export class AutopilotService {
     }
   }
 
-  async findTopBuy() {
+  async findTopBuy(count = 1) {
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     let backtestResults = [];
     if (savedBacktest) {
@@ -321,12 +322,16 @@ export class AutopilotService {
       }
       let minMl = 1;
       while (minMl > 0.1 && backtestResults.length) {
-        backtestResults = backtestResults?.filter(backtestData => backtestData?.ml && backtestData.ml > minMl);
+        backtestResults = backtestResults?.filter(backtestData => backtestData?.ml && backtestData.ml > minMl && backtestData.recommendation === 'STRONGBUY');
         backtestResults?.sort((a, b) => (a.pnl || 0) - (b.pnl || 0));
         minMl -= 0.05;
       }
       if (backtestResults.length) {
-        await this.addBuy(backtestResults.pop().stock, null, 'Buy top stock');
+        let counter = 0;
+        while (counter < count && backtestResults.length) {
+          counter++;
+          await this.addBuy(backtestResults.pop().stock, null, 'Buy top stock');
+        }
       }
     }
   }
@@ -427,23 +432,23 @@ export class AutopilotService {
     this.cartService.addSingleLegOptionOrder(holding.name, [holding.primaryLegs[0]], estPrice, holding.primaryLegs[0].quantity, orderType, 'Sell', reason);
   }
 
-  sellLoser(currentHoldings: PortfolioInfoHolding[]) {
+  sellLoser(currentHoldings: PortfolioInfoHolding[], reason = 'Selling loser') {
     currentHoldings.sort((a, b) => a.pl - b.pl);
     const toBeSold = currentHoldings.slice(0, 1);
     toBeSold.forEach(async (holdingInfo) => {
       if (this.cartService.isStrangle(holdingInfo)) {
         this.optionsOrderBuilderService.sellStrangle(holdingInfo);
       } else if (holdingInfo.shares) {
-        await this.cartService.portfolioSell(holdingInfo, 'Selling loser');
+        await this.cartService.portfolioSell(holdingInfo, reason);
       } else if (holdingInfo.primaryLegs) {
         await this.sellOptionsHolding(holdingInfo, 'Selling loser');
       }
     });
   }
 
-  async checkIfTooManyHoldings(currentHoldings: any[], maxHoldings = this.maxTradeCount) {
+  async checkIfTooManyHoldings(currentHoldings: any[], maxHoldings = this.maxHoldings) {
     if (currentHoldings.length > maxHoldings) {
-      this.sellLoser(currentHoldings);
+      this.sellLoser(currentHoldings, 'Too many holdings');
     }
   }
 
@@ -456,7 +461,7 @@ export class AutopilotService {
         console.log('SPY', targetBalance, `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${targetBalance}`);
         this.optionsOrderBuilderService.addOptionByBalance('SPY', targetBalance, 'Balance call put ratio', true);
       } else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
-        this.sellLoser(holdings);
+        this.sellLoser(holdings, 'Balancing call put ratio');
         console.log('Sell loser', results.call / results.put, `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${(1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])}`);
       }
     }

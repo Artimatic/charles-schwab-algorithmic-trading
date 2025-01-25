@@ -590,6 +590,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (this.manualStart) {
       return;
     }
+    const vol = await this.machineLearningService.trainVolatility(moment().format('YYYY-MM-DD'),
+      moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.6, 5, 0).toPromise();
+    if (vol[0].nextOutput < 0.3) {
+      await this.autopilotService.findTopBuy(this.maxTradeCount);
+    }
     this.developedStrategy = true;
 
     this.boughtAtClose = false;
@@ -600,7 +605,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     await this.modifyCurrentHoldings();
     await this.checkPersonalLists();
-    await this.hedge();
     const balance = await this.machineDaytradingService.getPortfolioBalance().toPromise();
     if (balance.liquidationValue < 26000) {
       await this.autopilotService.getNewTrades(null, null, this.currentHoldings);
@@ -1183,9 +1187,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.buyCallsOrPuts('calls');
         break;
       case Strategy.BuySnP:
-        const balance = await this.portfolioService.getTdBalance().toPromise();
-        const maxCash = round(this.autopilotService.riskToleranceList[0] * balance.cashBalance);
-        await this.strategyBuilderService.buySnP(maxCash, balance.cashBalance);
+        await this.autopilotService.buyUpro();
+
+        // const balance = await this.portfolioService.getTdBalance().toPromise();
+        // const maxCash = round(this.autopilotService.riskToleranceList[0] * balance.cashBalance);
+        // await this.strategyBuilderService.buySnP(maxCash, balance.cashBalance);
         await this.autopilotService.getNewTrades(null, null, this.currentHoldings);
         break;
       case Strategy.InverseDispersion:
@@ -1428,7 +1434,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async padOrders() {
     if (!this.autopilotService.hasReachedBuyLimit(this.autopilotService.addedOrdersCount)) {
       this.changeStrategy();
-      this.developStrategy();
+      await this.developStrategy();
     }
   }
 
@@ -1463,6 +1469,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.checkIfOverBalance(balance);
           await this.autopilotService.balanceCallPutRatio(this.currentHoldings);
           await this.autopilotService.checkIntradayStrategies();
+          this.hedge();
         } else {
           this.executeOrderList();
           if (this.strategyList[this.strategyCounter] === Strategy.Daytrade &&
