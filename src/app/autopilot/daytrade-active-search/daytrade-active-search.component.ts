@@ -179,7 +179,7 @@ export class DaytradeActiveSearchComponent implements OnInit, OnDestroy {
       for (const backtestDataKey in savedBacktestData) {
         const backtestData = savedBacktestData[backtestDataKey];
         if (backtestData) {
-          if (backtestData.ml > 0.5) {
+          if (backtestData.ml > 0.5 && backtestData.recommendation === 'STONGBUY') {
             this.currentCycleList.push({ stock: backtestData.stock, daytradeIndicators: null });
           }
         }

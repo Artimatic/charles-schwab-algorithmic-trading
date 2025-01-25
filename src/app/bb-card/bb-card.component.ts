@@ -358,7 +358,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     if (this.sub) {
       this.sub.unsubscribe();
     }
-    this.subscriptions.forEach(sub => {
+    this.subscriptions?.forEach(sub => {
       if (sub) {
         sub.unsubscribe();
       }
@@ -1097,7 +1097,11 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       }
     } else {
       const totalPrice = primaryLegPrice * this.order.primaryLegs[0].quantity;
-      this.reportingService.addAuditLog(this.order.holding.symbol, `Option price ${totalPrice}, balance: ${cashBalance}`);
+      if (totalPrice) {
+        this.reportingService.addAuditLog(this.order.holding.symbol, `Option price: ${totalPrice}, balance: ${cashBalance}`);
+      } else {
+        this.reportingService.addAuditLog(this.order.holding.symbol, `price: ${primaryLegPrice}, quantity: ${this.order.primaryLegs[0].quantity}, balance: ${cashBalance}`);
+      }
 
       if (totalPrice < cashBalance) {
         if (this.incrementBuy()) {
