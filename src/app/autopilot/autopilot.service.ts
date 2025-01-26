@@ -36,7 +36,7 @@ export enum RiskTolerance {
 export class AutopilotService {
   riskCounter = 0;
   addedOrdersCount = 0;
-  maxTradeCount = 10;
+  maxTradeCount = 8;
   lastSpyMl = 0;
   volatility = 0;
   lastMarketHourCheck = null;
@@ -332,6 +332,24 @@ export class AutopilotService {
           counter++;
           await this.addBuy(backtestResults.pop().stock, null, 'Buy top stock');
         }
+      }
+    }
+  }
+
+  async buyOnRecommendation() {
+    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
+    let backtestResults = [];
+    if (savedBacktest) {
+      for (const saved in savedBacktest) {
+        const backtestObj = savedBacktest[saved];
+        backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
+        backtestResults.push(backtestObj);
+      }
+      backtestResults = backtestResults?.filter(backtestData => backtestData.recommendation === 'STRONGBUY');
+      backtestResults?.sort((a, b) => (a.pnl || 0) - (b.pnl || 0));
+
+      if (backtestResults.length) {
+        await this.addBuy(backtestResults.pop().stock, null, 'Buy on recommendation');
       }
     }
   }

@@ -123,7 +123,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   destroy$ = new Subject();
   currentHoldings: PortfolioInfoHolding[] = [];
   strategyCounter = null;
-  maxTradeCount = 10;
   maxHoldings = 100;
   addedOrdersCount = 0;
   developedStrategy = false;
@@ -339,7 +338,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             }
             backtestResults?.sort((a, b) => a.pnl - b.pnl);
           }
-          const list = backtestResults?.filter(backtestData => backtestData?.ml > 0.5);
+          const list = backtestResults?.filter(backtestData => backtestData?.ml > 0.5 || backtestData.recommendation === 'STRONGBUY');
           console.log('list', list);
         }
       },
@@ -622,7 +621,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const vol = await this.machineLearningService.trainVolatility(moment().format('YYYY-MM-DD'),
       moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.6, 5, 0).toPromise();
     if (vol[0].nextOutput < 0.3) {
-      await this.autopilotService.findTopBuy(this.maxTradeCount);
+      await this.autopilotService.findTopBuy(this.autopilotService.maxTradeCount);
     }
     this.developedStrategy = true;
 
@@ -733,7 +732,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async addDaytrade(stock: string) {
-    if ((this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.maxTradeCount) {
+    if ((this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.autopilotService.maxTradeCount) {
       const currentDate = moment().format('YYYY-MM-DD');
       const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
       try {
@@ -1462,6 +1461,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async padOrders() {
     if (!this.autopilotService.hasReachedBuyLimit(this.autopilotService.addedOrdersCount)) {
+      this.autopilotService.buyOnRecommendation();
       this.changeStrategy();
       await this.developStrategy();
     }
@@ -1479,7 +1479,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   hasTradeCapacity() {
-    return this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length < this.maxTradeCount;
+    return this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length < this.autopilotService.maxTradeCount;
   }
 
   async handleIntraday() {
@@ -1502,7 +1502,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else {
           this.executeOrderList();
           if (this.strategyList[this.strategyCounter] === Strategy.Daytrade &&
-            (this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
+            (this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.autopilotService.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
             this.triggerDaytradeRefresh();
           }
         }
