@@ -110,7 +110,7 @@ export class StrategyBuilderService {
       let latestMlResult = null;
       let mlScore = null;
       try {
-        const buyMl = await this.machineLearningService.activateBuy(symbol, moment().format('YYYY-MM-DD'),
+        const buyMl = await this.machineLearningService.trainBuy(symbol, moment().format('YYYY-MM-DD'),
           moment().subtract({ day: 700 }).format('YYYY-MM-DD'), 0.9, null, 4, 0.03).toPromise();
         if (buyMl[0].nextOutput) {
           latestMlResult = buyMl[0].nextOutput[0];
@@ -122,7 +122,7 @@ export class StrategyBuilderService {
       let sellMlNextOutput = null;
       let sellMlScore = null;
       try {
-        const trainingResult = await this.machineLearningService.activateSell(symbol, moment().format('YYYY-MM-DD'),
+        const trainingResult = await this.machineLearningService.trainSellOff(symbol, moment().format('YYYY-MM-DD'),
           moment().subtract({ day: 700 }).format('YYYY-MM-DD'), 0.9, null, 4, -0.03).toPromise();
         if (trainingResult[0].nextOutput) {
           sellMlNextOutput = trainingResult[0].nextOutput[0];
