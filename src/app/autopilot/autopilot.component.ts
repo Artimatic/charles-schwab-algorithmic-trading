@@ -347,7 +347,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         label: 'Test vol',
         command: async () => {
           this.machineLearningService.trainVolatility(moment().format('YYYY-MM-DD'),
-            moment().subtract({ day: 500 }).format('YYYY-MM-DD'), 0.6, 5, 0).subscribe((result) => {
+            moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.6, 5, 0).subscribe((result) => {
               console.log(result[0].predictionHistory.filter(r => r.prediction >= 0.5));
             });
         }
@@ -355,34 +355,54 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test ml',
         command: async () => {
-          const buyFeatures = Array(44).fill(1);
+          const buyFeatures = Array(66).fill(1);
 
-          const featuresToTry = [];
-          for (let i = 0; i < buyFeatures.length; i++) {
-            featuresToTry.push(buyFeatures.slice(0, i).concat([0]).concat(buyFeatures.slice(i + 1)));
-          }
+          const featuresToTry = [buyFeatures];
+          // for (let i = 0; i < buyFeatures.length; i++) {
+          //   featuresToTry.push(buyFeatures.slice(0, i).concat([0]).concat(buyFeatures.slice(i + 1)));
+          // }
           console.log('buyFeatures', buyFeatures);
           console.log('featuresToTry', featuresToTry);
           const endDate = moment().format('YYYY-MM-DD');
-          const list = ['AMD', 'GOOG', 'CRWD', 'TSLA'];
+          const list = ['AMD', 'GOOG', 'CRWD', 'DELL', 'META', 'NVDA'];
           const allScores = [];
+          const parameters = [
+            { days: 700, range: 4, limit: 0.08, trainingSize: 0.9 },
+            { days: 700, range: 4, limit: 0.045, trainingSize: 0.9 },
+            { days: 700, range: 4, limit: 0.06, trainingSize: 0.9 },
+            { days: 700, range: 4, limit: 0.055, trainingSize: 0.9 },
+            { days: 700, range: 4, limit: 0.04, trainingSize: 0.9 },
+            { days: 700, range: 4, limit: 0.03, trainingSize: 0.9 },
+            { days: 700, range: 4, limit: 0.035, trainingSize: 0.9 }
+          ];
+          for (const p of parameters) {
+            for (const f of featuresToTry) {
+              for (const sym1 of list) {
+                const train = await this.machineLearningService.trainBuy(sym1, endDate,
+                  moment().subtract({ day: p.days }).format('YYYY-MM-DD'), p.trainingSize, f, p.range, p.limit).toPromise();
+                allScores.push({ days: p.days, score: train[0].score, features: f.join(), symbol: sym1, range: p.range, limit: p.limit });
+                console.log(sym1, 'Train', f, train[0].score, train[0].predictionHistory.filter(r => r.prediction > 0.5).map((val) => {
+                  return { date: val.date, prediction: val.prediction, actual: val.actual[0] };
+                }));
 
-          for (const f of featuresToTry) {
-            for (const sym1 of list) {
-              const result3 = await this.machineLearningService.trainBuy(sym1, endDate,
-                moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.8, f, 10, 0.03).toPromise();
-              allScores.push({ score: result3[0].score, features: f.join(), symbol: sym1 });
-              console.log(sym1, 'BUY', f, result3[0].score, result3[0].predictionHistory.filter(r => r.prediction > 0.6));
-              // const result2 = await this.machineLearningService.trainSellOff(sym1, endDate,
-              //   moment().subtract({ day: 1000 }).format('YYYY-MM-DD'), 0.8, null, 10, -0.03).toPromise();
-              // console.log(sym1, 'SELL', result2[0].score, result2[0].predictionHistory.filter(r => r.prediction > 0.6));
-              // const result1 = await this.machineLearningService.trainMfiBuy(sym1, endDate,
-              //   moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.8, 10, 0.05).toPromise();
-              // console.log(sym1, 'MFI', result1[0].score, result1[0].predictionHistory.filter(r => r.prediction > 0.6));
+                const activate = await this.machineLearningService.activateBuy(sym1, endDate,
+                  moment().subtract({ day: p.days }).format('YYYY-MM-DD'), p.trainingSize, f, p.range, p.limit).toPromise();
+                allScores.push({ days: p.days, score: activate[0].score, features: f.join(), symbol: sym1, range: p.range, limit: p.limit });
+                console.log(sym1, 'Activate', f, activate[0].score, activate[0].predictionHistory.filter(r => r.prediction > 0.5).map((val) => {
+                  return { date: val.date, prediction: val.prediction, actual: val.actual[0] };
+                }));
+
+                // const result2 = await this.machineLearningService.trainSellOff(sym1, endDate,
+                //   moment().subtract({ day: 1000 }).format('YYYY-MM-DD'), 0.8, null, 10, -0.03).toPromise();
+                // console.log(sym1, 'SELL', result2[0].score, result2[0].predictionHistory.filter(r => r.prediction > 0.6));
+                // const result1 = await this.machineLearningService.trainMfiBuy(sym1, endDate,
+                //   moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.8, 10, 0.05).toPromise();
+                // console.log(sym1, 'MFI', result1[0].score, result1[0].predictionHistory.filter(r => r.prediction > 0.6));
+              }
             }
           }
-
-          console.log(allScores.sort((a, b) => b.score - a.score));
+          console.log(allScores.sort((a, b) => b.score - a.score).filter((a) => a.score > 0.5));
+          //console.log(allScores.filter((a) => a.score > 0.4));
         }
       }
     ];

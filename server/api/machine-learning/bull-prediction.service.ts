@@ -7,7 +7,7 @@ import PredictionService, { FeatureSet } from './prediction.service';
 import InputHelperService from './input-helper.service';
 import DecisionService from '../mean-reversion/reversion-decision.service';
 
-class BearPredictionService extends PredictionService {
+class BullPredictionService extends PredictionService {
     modelName = 'bull_model2025-01-23';
     foundPatterns = [];
 
@@ -55,7 +55,7 @@ class BearPredictionService extends PredictionService {
         return dataSetObj;
     }
 
-    train(symbol, startDate, endDate, trainingSize, features) {
+    getTrainingData(symbol, startDate, endDate, features) {
         let dataSet1 = null;
         let dataSet2 = null;
         return BacktestService.initDailyStrategy(symbol, moment(endDate).valueOf(), moment(startDate).valueOf(), { minQuotes: 80 })
@@ -65,28 +65,46 @@ class BearPredictionService extends PredictionService {
             })
             .then((result: BacktestResults) => {
                 dataSet2 = this.processBacktestResults(result, null);
-                const finalTrainingSet = dataSet1.map((val, idx) => {
+                return dataSet1.map((val, idx) => {
                     return {
                         date: val.date,
                         input: dataSet1[idx].input.concat(dataSet2[idx].input),
                         output: [val.output[0] === 1 ? 1 : 0]
                     };
                 });
+            });
+    }
 
-                return BacktestService.trainTensorModel(symbol, this.getModelName(),
-                    finalTrainingSet, trainingSize,
+    train(symbol, startDate, endDate, trainingSize, features) {
+        return this.getTrainingData(symbol, startDate, endDate, features).then((finalTrainingSet) => {
+            return BacktestService.trainTensorModel(symbol, this.getModelName(),
+                finalTrainingSet, trainingSize,
+                moment().format('YYYY-MM-DD'));
+
+            // return BacktestService.trainCustomModel(symbol, this.getModelName(),
+            //     finalTrainingSet, trainingSize, moment().format('YYYY-MM-DD')).then((model) => {
+            //         model.push(finalTrainingSet);
+            //         return model;
+            //     });
+
+            // const finalDataSet = this.processBacktestResults(results, featureUse);
+            // return BacktestService.trainCustomModel(symbol, this.getModelName(), finalDataSet, trainingSize, moment().format('YYYY-MM-DD'));
+        });
+    }
+
+    activate(symbol, startDate, endDate, trainingSize, features) {
+        return this.getTrainingData(symbol,
+            moment().subtract(85, 'days').format('YYYY-MM-DD'),
+            moment().format('YYYY-MM-DD'),
+            features).then((finalTrainingSet) => {
+                return BacktestService.activateTensorModel(symbol, this.getModelName(),
+                    finalTrainingSet,
                     moment().format('YYYY-MM-DD'));
-
-                // return BacktestService.trainCustomModel(symbol, this.getModelName(),
-                //     finalTrainingSet, trainingSize, moment().format('YYYY-MM-DD')).then((model) => {
-                //         model.push(finalTrainingSet);
-                //         return model;
-                //     });
-
-                // const finalDataSet = this.processBacktestResults(results, featureUse);
-                // return BacktestService.trainCustomModel(symbol, this.getModelName(), finalDataSet, trainingSize, moment().format('YYYY-MM-DD'));
+            })
+            .catch(() => {
+                return this.train(symbol, startDate, endDate, trainingSize, features);
             });
     }
 }
 
-export default new BearPredictionService();
+export default new BullPredictionService();
