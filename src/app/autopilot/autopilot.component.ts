@@ -682,23 +682,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.autopilotService.getNewTrades(buyStrangleCb, null, this.currentHoldings);
   }
 
-  createHoldingObj(name: string) {
-    return {
-      name,
-      symbol: name,
-      pl: 0,
-      netLiq: 0,
-      shares: 0,
-      alloc: 0,
-      recommendation: 'None',
-      buyReasons: '',
-      sellReasons: '',
-      buyConfidence: 0,
-      sellConfidence: 0,
-      prediction: null
-    };
-  }
-
   isBuyPrediction(prediction: { label: string, value: AiPicksPredictionData[] }) {
     if (prediction) {
       let predictionSum = 0;
@@ -803,7 +786,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.cartService.portfolioSell(holding, 'Backtest indicates sell');
         } else if (backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.7 && (backtestResults.recommendation === 'STRONGBUY' || backtestResults.recommendation === 'BUY')) {
           console.log('Backtest indicates buying', backtestResults);
-          await this.autopilotService.addBuy(this.createHoldingObj(holding.name), RiskTolerance.Zero, 'Backtest indicates buying');
+          await this.autopilotService.addBuy(this.autopilotService.createHoldingObj(holding.name), RiskTolerance.Zero, 'Backtest indicates buying');
         }
       } catch (error) {
         console.log('Backtest error', error);

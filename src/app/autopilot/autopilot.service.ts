@@ -248,6 +248,9 @@ export class AutopilotService {
   }
 
   async addBuy(holding: PortfolioInfoHolding, allocation, reason) {
+    if (!holding.name) {
+      throw Error('Ticker is missing')
+    }
     if ((this.addedOrdersCount + this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.maxTradeCount) {
       this.addedOrdersCount++;
       const currentDate = moment().format('YYYY-MM-DD');
@@ -267,6 +270,23 @@ export class AutopilotService {
     }
   }
 
+    createHoldingObj(name: string) {
+      return {
+        name,
+        symbol: name,
+        pl: 0,
+        netLiq: 0,
+        shares: 0,
+        alloc: 0,
+        recommendation: 'None',
+        buyReasons: '',
+        sellReasons: '',
+        buyConfidence: 0,
+        sellConfidence: 0,
+        prediction: null
+      };
+    }
+  
   async findSwingStockCallback(symbol: string, prediction: number, backtestData: any) {
     if ((prediction > 0.7 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
       const stock: PortfolioInfoHolding = {
@@ -330,7 +350,12 @@ export class AutopilotService {
         let counter = 0;
         while (counter < count && backtestResults.length) {
           counter++;
-          await this.addBuy(backtestResults.pop().stock, null, 'Buy top stock');
+          const candidate = backtestResults.pop();
+          if (!candidate.stock) {
+            console.log('candidate', candidate);
+            throw Error('Invalid stock');
+          }
+          await this.addBuy(this.createHoldingObj(candidate.stock), null, 'Buy top stock');
         }
       }
     }
@@ -349,7 +374,12 @@ export class AutopilotService {
       backtestResults?.sort((a, b) => (a.pnl || 0) - (b.pnl || 0));
 
       if (backtestResults.length) {
-        await this.addBuy(backtestResults.pop().stock, null, 'Buy on recommendation');
+        const candidate = backtestResults.pop();
+        if (!candidate.stock) {
+          console.log('candidate', candidate);
+          throw Error('Invalid stock');
+        }
+        await this.addBuy(this.createHoldingObj(candidate.stock), null, 'Buy on recommendation');
       }
     }
   }
@@ -370,7 +400,12 @@ export class AutopilotService {
         minMl += 0.05;
       }
       if (backtestResults.length) {
-        await this.addBuy(backtestResults.pop().stock, null, 'Buy top not sell stock');
+        const candidate = backtestResults.pop();
+        if (!candidate.stock) {
+          console.log('candidate', candidate);
+          throw Error('Invalid stock');
+        }
+        await this.addBuy(this.createHoldingObj(candidate.stock), null, 'Buy top not sell stock');
       }
     }
   }
@@ -380,20 +415,8 @@ export class AutopilotService {
       const backtestData = await this.strategyBuilderService.getBacktestData('SPY');
       allocation = backtestData.ml > 0 ? backtestData.ml : 0.01;
     }
-    const stock: PortfolioInfoHolding = {
-      name: 'UPRO',
-      pl: 0,
-      netLiq: 0,
-      shares: 0,
-      alloc: 0,
-      recommendation: 'None',
-      buyReasons: '',
-      sellReasons: '',
-      buyConfidence: 0,
-      sellConfidence: 0,
-      prediction: null
-    };
-    await this.addBuy(stock, allocation, reason);
+
+    await this.addBuy(this.createHoldingObj('UPRO'), allocation, reason);
   }
 
   async getNewTrades(cb = null, list = null, currentHoldings) {
