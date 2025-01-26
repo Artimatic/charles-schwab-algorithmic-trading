@@ -110,8 +110,8 @@ export class StrategyBuilderService {
       let latestMlResult = null;
       let mlScore = null;
       try {
-        const buyMl = await this.machineLearningService.trainBuy(symbol, moment().format('YYYY-MM-DD'),
-          moment().subtract({ day: 1000 }).format('YYYY-MM-DD'), 0.8, null, 3, 0.03).toPromise();
+        const buyMl = await this.machineLearningService.activateBuy(symbol, moment().format('YYYY-MM-DD'),
+          moment().subtract({ day: 700 }).format('YYYY-MM-DD'), 0.9, null, 4, 0.03).toPromise();
         if (buyMl[0].nextOutput) {
           latestMlResult = buyMl[0].nextOutput[0];
           mlScore = buyMl[0].score;
@@ -122,8 +122,8 @@ export class StrategyBuilderService {
       let sellMlNextOutput = null;
       let sellMlScore = null;
       try {
-        const trainingResult = await this.machineLearningService.trainSellOff(symbol, moment().format('YYYY-MM-DD'),
-          moment().subtract({ day: 1000 }).format('YYYY-MM-DD'), 0.8, null, 1, -0.03).toPromise();
+        const trainingResult = await this.machineLearningService.activateSell(symbol, moment().format('YYYY-MM-DD'),
+          moment().subtract({ day: 700 }).format('YYYY-MM-DD'), 0.9, null, 4, -0.03).toPromise();
         if (trainingResult[0].nextOutput) {
           sellMlNextOutput = trainingResult[0].nextOutput[0];
           sellMlScore = trainingResult[0].score;
@@ -400,7 +400,7 @@ export class StrategyBuilderService {
     const backtestData = this.getStorage('backtest');
     const newBacktestData = {};
     for (const b in backtestData) {
-      if (!backtestData[b].backtestDate || moment().diff(moment(backtestData[b].backtestDate), 'days') < 4) {
+      if (!backtestData[b].ml || !backtestData[b].recommendation || !backtestData[b].backtestDate || moment().diff(moment(backtestData[b].backtestDate), 'days') < 4) {
         newBacktestData[b] = backtestData[b];
         this.findPair(backtestData[b].stock);
       }

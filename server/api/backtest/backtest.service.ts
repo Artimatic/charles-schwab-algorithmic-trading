@@ -1857,7 +1857,7 @@ class BacktestService {
     return RequestPromise(options);
   }
 
-  activateTensorModel(symbol, modelName, trainingData, trainingSize, date) {
+  activateTensorModel(symbol, modelName, trainingData, date) {
     const URI = `${mlServiceUrl}api/tensor/train-model`;
 
     const options = {
@@ -1867,7 +1867,6 @@ class BacktestService {
         symbol,
         modelName,
         trainingData,
-        trainingSize,
         to: date,
         scoreOnly: true
       },

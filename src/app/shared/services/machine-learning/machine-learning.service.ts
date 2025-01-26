@@ -281,6 +281,56 @@ export class MachineLearningService {
     return this.http.get(`${BASE_URL}api/machine-learning/train/buy-model`,
       options);
   }
+  
+  activateBuy(symbol: string,
+    endDate: string = null,
+    startDate: string = null,
+    trainingSize: number,
+    features: number[] = [],
+    range: number,
+    limit: number): Observable<any> {
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const options = {
+      headers: headers,
+      params: {
+        symbol,
+        startDate,
+        endDate,
+        trainingSize: String(trainingSize),
+        features: features ? String(features) : null,
+        range: String(range),
+        limit: String(limit)
+      }
+    };
+
+    return this.http.get(`${BASE_URL}api/machine-learning/activate/buy-model`,
+      options);
+  }
+  
+  activateSell(symbol: string,
+    endDate: string = null,
+    startDate: string = null,
+    trainingSize: number,
+    features: number[] = [],
+    range: number,
+    limit: number): Observable<any> {
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const options = {
+      headers: headers,
+      params: {
+        symbol,
+        startDate,
+        endDate,
+        trainingSize: String(trainingSize),
+        features: features ? String(features) : null,
+        range: String(range),
+        limit: String(limit)
+      }
+    };
+
+    return this.http.get(`${BASE_URL}api/machine-learning/activate/sell-model`,
+      options);
+  }
 
   trainVolatility(endDate: string = null,
     startDate: string = null,

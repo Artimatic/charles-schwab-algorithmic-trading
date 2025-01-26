@@ -181,6 +181,34 @@ class MachineLearningController extends BaseController {
       .catch((err) => BaseController.requestErrorHandler(response, err));
   }
 
+  activateDailyBull(request, response) {
+    const features = request.query.features && request.query.features !== 'null' ? request.query.features.split(',') : null;
+
+    BullPredictionService.setOutputLimit(Number(request.query.limit));
+    BullPredictionService.setOutputRange(Number(request.query.range));
+    BullPredictionService.activate(request.query.symbol,
+      request.query.startDate,
+      request.query.endDate,
+      request.query.trainingSize,
+      features)
+      .then((data) => BaseController.requestGetSuccessHandler(response, data))
+      .catch((err) => BaseController.requestErrorHandler(response, err));
+  }
+
+  activateDailyBear(request, response) {
+    const features = request.query.features && request.query.features !== 'null' ? request.query.features.split(',') : null;
+
+    BearPredictionService.setOutputLimit(Number(request.query.limit));
+    BearPredictionService.setOutputRange(Number(request.query.range));
+    BearPredictionService.activate(request.query.symbol,
+      request.query.startDate,
+      request.query.endDate,
+      request.query.trainingSize,
+      features)
+      .then((data) => BaseController.requestGetSuccessHandler(response, data))
+      .catch((err) => BaseController.requestErrorHandler(response, err));
+  }
+
   trainVolitility(request, response) {
     VolatilityPredictionService.setOutputLimit(Number(request.query.limit));
     VolatilityPredictionService.setOutputRange(Number(request.query.range));

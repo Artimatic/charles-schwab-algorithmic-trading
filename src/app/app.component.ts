@@ -8,7 +8,7 @@ import { BacktestService, AuthenticationService, ReportingService } from './shar
 import { ServiceStatus } from './shared/models/service-status';
 import { GlobalSettingsService } from './settings/global-settings.service';
 import { GlobalTaskQueueService } from '@shared/services/global-task-queue.service';
-import { MenuItem } from 'primeng/api';
+import { MenuItem, MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-root',
@@ -26,7 +26,8 @@ export class AppComponent implements OnInit, AfterViewInit {
     private authenticationService: AuthenticationService,
     private globalSettingsService: GlobalSettingsService,
     private reportingService: ReportingService,
-    private globalTaskQueueService: GlobalTaskQueueService) { }
+    private globalTaskQueueService: GlobalTaskQueueService,
+    private messageService: MessageService) { }
 
   ngOnInit() {
     this.checkStatus();
@@ -120,6 +121,7 @@ export class AppComponent implements OnInit, AfterViewInit {
             default:
               this.mlStatus = false;
               this.mlText = 'OFFLINE';
+              this.messageService.add({ severity: 'error', summary: 'Machine learning service is not start', sticky: true });
               break;
           }
         }
