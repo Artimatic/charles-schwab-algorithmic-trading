@@ -6,6 +6,7 @@ import BaseController from '../templates/base.controller';
 import BacktestService from './backtest.service';
 import MfiService from './mfi.service';
 import BacktestAggregationService from './backtest-aggregation.service';
+import supportResistanceService from './support-resistance.service';
 
 class BacktestController extends BaseController {
 
@@ -289,6 +290,11 @@ class BacktestController extends BaseController {
 
   getProbabilityOfProfit(request, response) {
     const data = BacktestAggregationService.getProbabilityOfProfit(request.body.bullishActiveIndicators, request.body.bearishActiveIndicators, request.body.signals);
+    BaseController.requestGetSuccessHandler(response, data);
+  }
+
+  getSupportResistance(request, response) {
+    const data = supportResistanceService.calculateSupportResistance(request.body.data, request.body.windowSize, request.body.tolerance, request.body.levelsToReturn);
     BaseController.requestGetSuccessHandler(response, data);
   }
 }

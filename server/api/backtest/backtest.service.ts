@@ -14,6 +14,7 @@ import BBandBreakoutService from './bband-breakout.service';
 import MfiService from './mfi.service';
 import DaytradeRecommendations from './daytrade-recommendations';
 import { Recommendation, DaytradeRecommendation, OrderType, Indicators } from './backtest.constants';
+import supportResistanceService from './support-resistance.service';
 
 const dataServiceUrl = configurations.apps.goliath;
 const mlServiceUrl = configurations.apps.armadillo;
@@ -1158,7 +1159,7 @@ class BacktestService {
       }
     });
 
-    return { reals, highs, lows, volumes, timeline };
+    return { reals, highs, lows, volumes, timeline, quotes: quotes };
   }
 
   initStrategy(quotes) {
@@ -1172,6 +1173,9 @@ class BacktestService {
 
   getIndicators(indicators, bbandPeriod, returnObject) {
     const currentQuote: Indicators = returnObject;
+    const levels = supportResistanceService.calculateSupportResistance(indicators.quotes)
+    currentQuote.support = levels.support;
+    currentQuote.resistance = levels.resistance;
     return this.getBBands(indicators.reals, bbandPeriod, 2)
       .then((bband80) => {
         currentQuote.bband80 = bband80;
