@@ -111,7 +111,7 @@ export class StrategyBuilderService {
       let mlScore = null;
       try {
         const buyMl = await this.machineLearningService.trainBuy(symbol, moment().format('YYYY-MM-DD'),
-          moment().subtract({ day: 700 }).format('YYYY-MM-DD'), 0.9, null, 4, 0.03).toPromise();
+          moment().subtract({ day: 700 }).format('YYYY-MM-DD'), 0.9, null, 4, 0.04).toPromise();
         if (buyMl[0].nextOutput) {
           latestMlResult = buyMl[0].nextOutput[0];
           mlScore = buyMl[0].score;
