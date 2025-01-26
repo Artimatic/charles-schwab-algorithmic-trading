@@ -353,6 +353,15 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       },
       {
+        label: 'Test api',
+        command: async () => {
+          this.machineLearningService.trainVolatility(moment().format('YYYY-MM-DD'),
+            moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.6, 5, 0).subscribe((result) => {
+              console.log(result[0].predictionHistory.filter(r => r.prediction >= 0.5));
+            });
+        }
+      },
+      {
         label: 'Test ml',
         command: async () => {
           const buyFeatures = Array(66).fill(1);
@@ -367,13 +376,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           const list = ['AMD', 'GOOG', 'CRWD', 'DELL', 'META', 'NVDA'];
           const allScores = [];
           const parameters = [
-            { days: 700, range: 4, limit: 0.08, trainingSize: 0.9 },
-            { days: 700, range: 4, limit: 0.045, trainingSize: 0.9 },
-            { days: 700, range: 4, limit: 0.06, trainingSize: 0.9 },
-            { days: 700, range: 4, limit: 0.055, trainingSize: 0.9 },
+            // { days: 700, range: 4, limit: 0.08, trainingSize: 0.9 },
+            // { days: 700, range: 4, limit: 0.045, trainingSize: 0.9 },
+            // { days: 700, range: 4, limit: 0.06, trainingSize: 0.9 },
+            // { days: 700, range: 4, limit: 0.055, trainingSize: 0.9 },
             { days: 700, range: 4, limit: 0.04, trainingSize: 0.9 },
-            { days: 700, range: 4, limit: 0.03, trainingSize: 0.9 },
-            { days: 700, range: 4, limit: 0.035, trainingSize: 0.9 }
+            // { days: 700, range: 4, limit: 0.03, trainingSize: 0.9 },
+            // { days: 700, range: 4, limit: 0.035, trainingSize: 0.9 }
           ];
           for (const p of parameters) {
             for (const f of featuresToTry) {

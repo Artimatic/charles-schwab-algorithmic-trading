@@ -55,4 +55,6 @@ export interface Indicators {
     macdPrevious?: any;
     bbandBreakout?: boolean;
     rsi?: number;
+    support: number[];
+    resistance: number[];
 }

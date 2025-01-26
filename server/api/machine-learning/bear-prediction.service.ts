@@ -61,6 +61,8 @@ class BearPredictionService extends PredictionService {
             .concat(InputHelperService.convertVwmaToInput(currentSignal.vwma, currentSignal.close))
             .concat(InputHelperService.roc(currentSignal.roc10, currentSignal.roc10Previous))
             .concat(InputHelperService.convertObvToInput(currentSignal.obv))
+            .concat(this.comparePrices(currentSignal.close, currentSignal.resistance.sort((a, b) => Math.abs(a - currentSignal.close) - Math.abs(b - currentSignal.close))))
+            .concat(this.comparePrices(currentSignal.close, currentSignal.support.sort((a, b) => Math.abs(a - currentSignal.close) - Math.abs(b - currentSignal.close))))
             .concat(InputHelperService.checkMacd(currentSignal.macd, currentSignal.macdPrevious));
         //         .concat(this.comparePrices(currentSignal.vwma, currentSignal.close))
         //         .concat(this.comparePrices(currentSignal.high, currentSignal.close))
