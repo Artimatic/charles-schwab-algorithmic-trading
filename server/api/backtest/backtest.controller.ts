@@ -7,6 +7,7 @@ import BacktestService from './backtest.service';
 import MfiService from './mfi.service';
 import BacktestAggregationService from './backtest-aggregation.service';
 import supportResistanceService from './support-resistance.service';
+import backtestDataService from './backtest-data.service';
 
 class BacktestController extends BaseController {
 
@@ -293,9 +294,12 @@ class BacktestController extends BaseController {
     BaseController.requestGetSuccessHandler(response, data);
   }
 
-  getSupportResistance(request, response) {
-    const data = supportResistanceService.calculateSupportResistance(request.body.data, request.body.windowSize, request.body.tolerance, request.body.levelsToReturn);
-    BaseController.requestGetSuccessHandler(response, data);
+  getBacktestData(request, response) {
+    backtestDataService.getDefaultData(request.query.symbol,
+      request.query.startDate,
+      request.query.endDate)
+      .then((data) => BaseController.requestGetSuccessHandler(response, data))
+      .catch((err) => BaseController.requestErrorHandler(response, err));
   }
 }
 

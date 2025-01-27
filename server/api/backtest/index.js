@@ -32,6 +32,6 @@ router.post('/daytrade-calibrate', BacktestController.calibrateDaytrade);
 router.post('/score-signals', BacktestController.scoreSignals);
 router.post('/pop', BacktestController.getProbabilityOfProfit);
 router.post('/recommendation-fn', BacktestController.getCurrentDaytradeRecommendation);
-router.post('/support-resistance', BacktestController.getSupportResistance);
+router.get('/backtest-data', BacktestController.getBacktestData);
 
 module.exports = router;

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import crc from 'crc';
 import * as moment from 'moment-timezone';
-import { BacktestService, CartService, MachineLearningService, PortfolioInfoHolding, ReportingService } from '@shared/services';
+import { BacktestService, CartService, PortfolioInfoHolding, ReportingService } from '@shared/services';
 import { StrategyBuilderService } from './backtest-table/strategy-builder.service';
 import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
 import { OptionsDataService } from '@shared/options-data.service';
@@ -32,12 +32,7 @@ export class OptionsOrderBuilderService {
     private backtestService: BacktestService,
     private reportingService: ReportingService,
     private orderHandlingService: OrderHandlingService,
-    private machineLearningService: MachineLearningService
   ) { }
-
-  resetCurrentTradeIdeas() {
-    this.currentTradeIdeas = { calls: [], puts: [] };
-  }
 
   private protectivePutCount(holding: PortfolioInfoHolding): number {
     if (holding.shares) {

@@ -13,6 +13,19 @@ import { map } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 
+export enum SwingtradeAlgorithms {
+  demark9 = 'demark',
+  macd = 'macd',
+  mfi = 'mfi',
+  mfiDivergence = 'mfiDivergence',
+  mfiDivergence2 = 'mfiDivergence2',
+  mfiLow = 'mfiLow',
+  mfiTrade = 'mfiTrade',
+  roc = 'roc',
+  vwma = 'vwma',
+  bband = 'bband'
+}
+
 export enum RiskTolerance {
   Zero = 0.005,
   One = 0.01,
@@ -43,6 +56,7 @@ export class AutopilotService {
   sessionStart = null;
   sessionEnd = null;
   riskToleranceList = [
+    RiskTolerance.One,
     RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,
@@ -327,82 +341,104 @@ export class AutopilotService {
     }
   }
 
+  getBuyList(filter = (data) => 
+    {
+      console.log('data', data);
+      return data.recommendation === 'STRONGBUY';
+    }) {
+    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
+    let backtestResults = [];
+    let newList = [];
+
+    if (savedBacktest) {
+      for (const saved in savedBacktest) {
+        const backtestObj = savedBacktest[saved];
+        backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
+        backtestResults.push(backtestObj);
+      }
+      let minMl = 1;
+      while (minMl > 0 && !newList.length) {
+        newList = backtestResults?.filter(backtestData => filter(backtestData) && backtestData?.ml && backtestData.ml > minMl && backtestData.recommendation === 'STRONGBUY');
+        minMl -= 0.1;
+      }
+    }
+
+    return newList;
+  }
+
+  getSellList(filter = (data) => data.recommendation === 'STRONGSELL') {
+    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
+    let backtestResults = [];
+    let newList = [];
+
+    if (savedBacktest) {
+      for (const saved in savedBacktest) {
+        const backtestObj = savedBacktest[saved];
+        backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
+        backtestResults.push(backtestObj);
+      }
+      let minMl = 1;
+      while (minMl > 0 && !newList.length) {
+        newList = backtestResults?.filter(backtestData => filter(backtestData) && backtestData?.sellMl && backtestData.sellMl > minMl);
+        minMl -= 0.1;
+      }
+    }
+
+    return newList;
+  }
+
+  async getAnyBuy() {
+    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
+    let backtestResults = [];
+
+    if (savedBacktest) {
+      for (const saved in savedBacktest) {
+        const backtestObj = savedBacktest[saved];
+        backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
+        backtestResults.push(backtestObj);
+      }
+      const count = Math.floor(backtestResults.length / 2) > this.maxTradeCount ? this.maxTradeCount : Math.floor(backtestResults.length / 2);
+      backtestResults = backtestResults?.sort((a, b) => b.ml - a.ml).slice(0, count);
+    }
+
+    console.log(backtestResults);
+    for (const b of backtestResults) {
+      await this.addBuy(this.createHoldingObj(b.stock), null, 'Buy top stock');
+    }
+  }
+
   async findAnyPair(currentHoldings, minCashAllocation: number, maxCashAllocation: number) {
-    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
-    let buys = [];
-    let sells = [];
-    if (savedBacktest) {
-      for (const saved in savedBacktest) {
-        const backtestObj = savedBacktest[saved];
-        backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
-        buys.push(backtestObj);
-        sells.push(backtestObj);
-      }
-      let minMl = 1;
-      while (minMl > 0.1 && buys.length) {
-        buys = buys?.filter(backtestData => backtestData?.ml && backtestData.ml > minMl && backtestData.recommendation === 'STRONGBUY');
-        buys?.sort((a, b) => (a.pnl || 0) - (b.pnl || 0));
-        sells = sells?.filter(backtestData => backtestData?.sellMl && backtestData.sellMl > minMl && backtestData.recommendation === 'STRONGSELL');
-        sells?.sort((a, b) => (b.pnl || 0) - (a.pnl || 0));
-        minMl -= 0.05;
-      }
-      if (buys.length && sells.length) {
-        await this.optionsOrderBuilderService.balanceTrades(currentHoldings, [buys.pop()], [sells.pop()], minCashAllocation, maxCashAllocation, 'Find any pair');
-      }
+    const buys = this.getBuyList()
+    const sells = this.getSellList();
+    await this.optionsOrderBuilderService.balanceTrades(currentHoldings, [buys.pop().stock], [sells.pop().stock], minCashAllocation, maxCashAllocation, 'Find any pair');
+  }
+
+  async findTopBuy() {
+    const buys = this.getBuyList()
+    for (const b of buys) {
+      await this.addBuy(this.createHoldingObj(b.stock), null, 'Buy top stock');
     }
   }
 
-  async findTopBuy(count = 1) {
-    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
-    let backtestResults = [];
-    if (savedBacktest) {
-      for (const saved in savedBacktest) {
-        const backtestObj = savedBacktest[saved];
-        backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
-        backtestResults.push(backtestObj);
-      }
-      let minMl = 1;
-      while (minMl > 0.1 && backtestResults.length) {
-        backtestResults = backtestResults?.filter(backtestData => backtestData?.ml && backtestData.ml > minMl && backtestData.recommendation === 'STRONGBUY');
-        backtestResults?.sort((a, b) => (a.pnl || 0) - (b.pnl || 0));
-        minMl -= 0.05;
-      }
-      if (backtestResults.length) {
-        let counter = 0;
-        while (counter < count && backtestResults.length) {
-          counter++;
-          const candidate = backtestResults.pop();
-          if (!candidate.stock) {
-            console.log('candidate', candidate);
-            throw Error('Invalid stock');
-          }
-          await this.addBuy(this.createHoldingObj(candidate.stock), null, 'Buy top stock');
-        }
-      }
+  addPairOnSignal(currentHoldings, indicator: SwingtradeAlgorithms, direction: 'buy' | 'sell') {
+    let filterFn = null;
+    if (direction === 'buy') {
+      filterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator);
+    } else {
+      filterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator);
     }
-  }
 
-  async buyOnRecommendation() {
-    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
-    let backtestResults = [];
-    if (savedBacktest) {
-      for (const saved in savedBacktest) {
-        const backtestObj = savedBacktest[saved];
-        backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
-        backtestResults.push(backtestObj);
-      }
-      backtestResults = backtestResults?.filter(backtestData => backtestData.recommendation === 'STRONGBUY');
-      backtestResults?.sort((a, b) => (a.pnl || 0) - (b.pnl || 0));
-
-      if (backtestResults.length) {
-        const candidate = backtestResults.pop();
-        if (!candidate.stock) {
-          console.log('candidate', candidate);
-          throw Error('Invalid stock');
-        }
-        await this.addBuy(this.createHoldingObj(candidate.stock), null, 'Buy on recommendation');
-      }
-    }
+    const buys = this.getBuyList(filterFn);
+    const sells = this.getSellList(filterFn);
+    console.log('buys', buys);
+    console.log('sells', sells);
+    this.portfolioService.getTdBalance().subscribe(balance => {
+      const maxCash = round(this.riskToleranceList[this.riskCounter] * balance.cashBalance, 2);
+      const minCash = maxCash - 1100;
+      this.optionsOrderBuilderService.balanceTrades(currentHoldings,
+        buys, sells,
+        minCash, maxCash, `${direction} ${indicator}`);
+    });
   }
 
   async findTopNotSell() {
@@ -415,7 +451,7 @@ export class AutopilotService {
         backtestResults.push(backtestObj);
       }
       let minMl = 0;
-      while (minMl < 0.5 && backtestResults.length) {
+      while (minMl < 0.5 && !backtestResults.length) {
         backtestResults = backtestResults?.filter(backtestData => backtestData.sellMl !== undefined && backtestData.sellMl > minMl);
         backtestResults?.sort((a, b) => (a.pnl || 0) - (b.pnl || 0));
         minMl += 0.05;
@@ -455,7 +491,7 @@ export class AutopilotService {
       do {
         stock = this.machineDaytradingService.getNextStock();
       } while (found(stock))
-      const backtestResults = await this.strategyBuilderService.getBacktestData(stock);
+      const backtestResults = this.strategyBuilderService.getRecentBacktest(stock);
       if (backtestResults) {
         if (cb) {
           await cb(stock, backtestResults.ml, backtestResults, backtestResults.sellMl);

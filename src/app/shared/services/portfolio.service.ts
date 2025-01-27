@@ -306,9 +306,7 @@ export class PortfolioService {
 
   getTdBalance(): Observable<any> {
     const accountId = this.getAccountId();
-    if (!accountId) {
-      return of(null);
-    }
+
     const options = {
       params: {
         accountId

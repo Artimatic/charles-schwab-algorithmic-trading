@@ -57,10 +57,11 @@ export interface Indicators {
   rsi?: number;
   data?: { indicator: Indicators };
 }
+export type RecommendationStr = 'INDETERMINANT' | 'STRONGSELL' | 'STRONGBUY' | 'BUY' | 'SELL';
 
 export interface StockBacktest {  
   algo: string;
-  recommendation?: string;
+  recommendation: RecommendationStr;
   orderHistory: any[];
   net: number;
   total: number;
@@ -74,5 +75,11 @@ export interface StockBacktest {
   lowerResistance?: number;
   profitableTrades?: any;
   stock: string;
-  averageMove?: number;
+  averageMove: number;
+  backtestDate: string;
+  buySignals: string[];
+  impliedMovement: number;
+  sellSignals: string[];
+  symbol: string;
+  ml: number;
 }

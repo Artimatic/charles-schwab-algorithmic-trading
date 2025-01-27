@@ -12,9 +12,9 @@ export class BaseStrategiesService {
 
   modifyRecommendations(currentStates: any[], analysis: StockBacktest | Recommendation): StockBacktest | Recommendation {
     if (this.isBuy(currentStates)) {
-      analysis.recommendation = 'Sell';
+      analysis.recommendation = 'SELL';
     } else if (this.isSell(currentStates)) {
-      analysis.recommendation = 'Buy';
+      analysis.recommendation = 'BUY';
     }
     return analysis;
   }

@@ -10,7 +10,7 @@ import * as moment from 'moment-timezone';
 import { environment } from '../../../environments/environment';
 import { AuthenticationService } from './authentication.service';
 import { delay } from 'rxjs/operators';
-import { Recommendation } from '@shared/stock-backtest.interface';
+import { Recommendation, StockBacktest } from '@shared/stock-backtest.interface';
 
 const BASE_URL = environment.appUrl;
 
@@ -142,6 +142,20 @@ export class BacktestService {
     }
 
     return this.http.post(`${BASE_URL}api/backtest`, data, {});
+  }
+
+  getBacktestData(symbol: string, startDate: string, endDate: string): Observable<any> {
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const options = {
+      headers: headers,
+      params: {
+        symbol,
+        startDate,
+        endDate
+      }
+    };
+
+    return this.http.get(`${BASE_URL}api/backtest/backtest-data`, options);
   }
 
   getLastPriceTiingo(data: any): Observable<any> {

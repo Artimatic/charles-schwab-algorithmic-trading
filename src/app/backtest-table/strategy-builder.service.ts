@@ -74,90 +74,36 @@ export class StrategyBuilderService {
       return Promise.resolve(recentBacktest);
     }
     const current = moment().format('YYYY-MM-DD');
-    const start = moment().subtract(200, 'days').format('YYYY-MM-DD');
-
+    const start = moment().subtract(700, 'days').format('YYYY-MM-DD');
     try {
-      const results = await this.backtestService.getBacktestEvaluation(symbol, start, current, 'daily-indicators').toPromise();
+      const results = await this.backtestService.getBacktestData(symbol, start, current).toPromise();
       this.backtestAggregatorService.analyseBacktest(results);
-      const indicatorResults = this.swingtradeStrategiesService.processSignals(results);
-      this.addToOrderHistoryStorage(symbol, indicatorResults.orderHistory);
-      indicatorResults.stock = symbol;
-      if (!indicatorResults.signals || !indicatorResults.signals.length) {
-        return null;
-      }
-      let counter = indicatorResults.signals.length - 1;
-      let { buySignals, sellSignals } = this.getBuySellSignals(indicatorResults.signals[counter]);
+      console.log('results', results);
+      this.addToOrderHistoryStorage(symbol, results.orderHistory);
 
-      while (counter > indicatorResults.signals.length - 6) {
-        const currentSignalRecommendations = this.getBuySellSignals(indicatorResults.signals[counter]);
-        buySignals = buySignals.concat(currentSignalRecommendations.buySignals.filter(indicator => !buySignals.find(sig => sig === indicator)));
-        sellSignals = sellSignals.concat(currentSignalRecommendations.sellSignals.filter(indicator => !sellSignals.find(sig => sig === indicator)));
-        counter--;
-      }
-
-      this.sumNet += indicatorResults.net;
-      this.countNet++;
-      const averageNet = (this.sumNet / this.countNet);
-      const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
-      let optionsVolume = null;
-      if (optionsData.optionsChain.monthlyStrategyList) {
-        const callsCount = optionsData.optionsChain.monthlyStrategyList[0].optionStrategyList[0].secondaryLeg.totalVolume;
-        const putsCount = optionsData.optionsChain.monthlyStrategyList[0].optionStrategyList[0].primaryLeg.totalVolume;
-        optionsVolume = Number(callsCount) + Number(putsCount);
-      }
-      const instruments = await this.portfolioService.getInstrument(symbol).toPromise();
-
-      let latestMlResult = null;
-      let mlScore = null;
-      try {
-        const buyMl = await this.machineLearningService.trainBuy(symbol, moment().format('YYYY-MM-DD'),
-          moment().subtract({ day: 700 }).format('YYYY-MM-DD'), 0.9, null, 4, 0.04).toPromise();
-        if (buyMl[0].nextOutput) {
-          latestMlResult = buyMl[0].nextOutput[0];
-          mlScore = buyMl[0].score;
-        }
-      } catch (error) {
-        console.log('Error training', symbol, error);
-      }
-      let sellMlNextOutput = null;
-      let sellMlScore = null;
-      try {
-        const trainingResult = await this.machineLearningService.trainSellOff(symbol, moment().format('YYYY-MM-DD'),
-          moment().subtract({ day: 700 }).format('YYYY-MM-DD'), 0.9, null, 4, -0.03).toPromise();
-        if (trainingResult[0].nextOutput) {
-          sellMlNextOutput = trainingResult[0].nextOutput[0];
-          sellMlScore = trainingResult[0].score;
-        }
-      } catch (error) {
-        console.log('Error training sell ml', symbol, error);
-      }
-      this.aiPicksService.mlNeutralResults.next(latestMlResult);
+      this.aiPicksService.mlNeutralResults.next(results.ml);
       const tableObj = {
-        recommendation: indicatorResults.recommendation,
-        stock: indicatorResults.stock,
-        net: indicatorResults.net,
-        averageNet: averageNet,
-        returns: indicatorResults.returns,
-        total: indicatorResults.total,
-        invested: indicatorResults.invested,
-        averageMove: indicatorResults.averageMove,
-        profitableTrades: indicatorResults.profitableTrades,
-        totalTrades: indicatorResults.totalTrades,
-        ml: latestMlResult ? latestMlResult : null,
-        mlScore: mlScore,
-        sellMl: sellMlNextOutput ? sellMlNextOutput : null,
-        sellMlScore: sellMlScore ? sellMlScore : null,
-        impliedMovement: optionsData.move,
-        optionsVolume: optionsVolume,
-        marketCap: instruments[symbol] ? instruments[symbol]?.fundamental.marketCap : instruments[0]?.fundamental.marketCap,
-        buySignals: buySignals,
-        sellSignals: sellSignals,
-        high52: instruments[symbol] ? instruments[symbol]?.fundamental.high52 : instruments[0]?.fundamental.high52,
-        backtestDate: moment().format()
+        recommendation: results.recommendation,
+        stock: results.stock,
+        net: results.net,
+        returns: results.returns,
+        total: results.total,
+        invested: results.invested,
+        averageMove: results.averageMove,
+        profitableTrades: results.profitableTrades,
+        totalTrades: results.totalTrades,
+        ml: results.ml,
+        mlScore: results.mlScore,
+        sellMl: results.sellMl,
+        sellMlScore: results.sellMlScore,
+        impliedMovement: results.impliedMovement,
+        buySignals: results.buySignals,
+        sellSignals: results.sellSignals,
+        backtestDate: results.backtestDate
       };
 
       this.addToResultStorage(tableObj);
-      return tableObj;
+      return results;
     } catch (error) {
       console.log(`Backtest table error ${symbol}`, new Date().toString(), error);
       const lastBacktest = this.getRecentBacktest(symbol, 30);

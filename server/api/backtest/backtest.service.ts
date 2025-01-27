@@ -56,6 +56,9 @@ export interface BacktestResults {
   upperResistance?: number;
   lowerResistance?: number;
   profitableTrades?: any;
+  averageMove?: number;
+  buySignals?: string[];
+  sellSignals?: string[];
 }
 
 let startTime;
@@ -514,7 +517,7 @@ class BacktestService {
           const recommendation: Recommendation = recommendationFn(indicator.close,
             indicator,
             idx > 0 ? indicators[idx - 1] : null,
-            indicators.slice(idx - 20, idx));
+            indicators.slice(idx - 79, idx));
 
           orderType = recommendation.recommendation;
           indicator.recommendation = recommendation;
