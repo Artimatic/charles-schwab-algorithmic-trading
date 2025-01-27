@@ -317,23 +317,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test filter',
         command: async () => {
-          const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
-          let backtestResults = [];
-          if (savedBacktest) {
-            for (const saved in savedBacktest) {
-              const backtestObj = savedBacktest[saved];
-              backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
-              backtestResults.push(backtestObj);
-            }
-            let minMl = 1;
-            let newList = [];
-            while (minMl > 0 && !newList.length) {
-              newList = backtestResults?.filter(backtestData => backtestData?.ml && backtestData.ml > minMl && backtestData.recommendation === 'STRONGBUY');
-              newList?.sort((a, b) => (a.pnl || 0) - (b.pnl || 0));
-              minMl -= 0.05;
-            }
-            console.log('stocks', newList);
-          }
+          console.log(this.autopilotService.getBuyList());
+          console.log(this.autopilotService.getSellList());
         }
       },
       {
