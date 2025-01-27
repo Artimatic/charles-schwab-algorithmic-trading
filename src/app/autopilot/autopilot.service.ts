@@ -265,8 +265,8 @@ export class AutopilotService {
     }
   }
 
-  hasReachedBuyLimit(addedOrdersCount = this.addedOrdersCount) {
-    return (this.optionsOrderBuilderService.getTradingPairs().length + addedOrdersCount + this.cartService.buyOrders.length + this.cartService.otherOrders.length) > this.maxTradeCount;
+  hasReachedBuyLimit(addedOrdersCount = this.addedOrdersCount, limit = this.maxTradeCount) {
+    return (this.optionsOrderBuilderService.getTradingPairs().length + addedOrdersCount + this.cartService.buyOrders.length + this.cartService.otherOrders.length) > limit;
   }
 
   getTechnicalIndicators(stock: string, startDate: string, currentDate: string) {
