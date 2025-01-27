@@ -265,8 +265,8 @@ export class AutopilotService {
     }
   }
 
-  hasReachedBuyLimit(addedOrdersCount = this.addedOrdersCount) {
-    return (this.optionsOrderBuilderService.getTradingPairs().length + addedOrdersCount + this.cartService.buyOrders.length + this.cartService.otherOrders.length) > this.maxTradeCount;
+  hasReachedBuyLimit(addedOrdersCount = this.addedOrdersCount, limit = this.maxTradeCount) {
+    return (this.optionsOrderBuilderService.getTradingPairs().length + addedOrdersCount + this.cartService.buyOrders.length + this.cartService.otherOrders.length) > limit;
   }
 
   getTechnicalIndicators(stock: string, startDate: string, currentDate: string) {
@@ -341,11 +341,7 @@ export class AutopilotService {
     }
   }
 
-  getBuyList(filter = (data) => 
-    {
-      console.log('data', data);
-      return data.recommendation === 'STRONGBUY';
-    }) {
+  getBuyList(filter = (data) => data.recommendation === 'STRONGBUY') {
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     let backtestResults = [];
     let newList = [];
@@ -363,7 +359,7 @@ export class AutopilotService {
       }
     }
 
-    return newList;
+    return newList.map(s => s.stock);
   }
 
   getSellList(filter = (data) => data.recommendation === 'STRONGSELL') {
@@ -397,7 +393,7 @@ export class AutopilotService {
         backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
         backtestResults.push(backtestObj);
       }
-      const count = Math.floor(backtestResults.length / 2) > this.maxTradeCount ? this.maxTradeCount : Math.floor(backtestResults.length / 2);
+      const count = backtestResults.length > this.maxTradeCount ? this.maxTradeCount : backtestResults.length;
       backtestResults = backtestResults?.sort((a, b) => b.ml - a.ml).slice(0, count);
     }
 
@@ -410,7 +406,7 @@ export class AutopilotService {
   async findAnyPair(currentHoldings, minCashAllocation: number, maxCashAllocation: number) {
     const buys = this.getBuyList()
     const sells = this.getSellList();
-    await this.optionsOrderBuilderService.balanceTrades(currentHoldings, [buys.pop().stock], [sells.pop().stock], minCashAllocation, maxCashAllocation, 'Find any pair');
+    await this.optionsOrderBuilderService.balanceTrades(currentHoldings, buys, sells, minCashAllocation, maxCashAllocation, 'Find any pair');
   }
 
   async findTopBuy() {

@@ -82,6 +82,7 @@ export enum Strategy {
   SellMfiDiv = 'Buy by mfi divergence sell signal',
   BuyMfiDiv = 'Buy by mfi divergence buy signal',
   BuyMfi = 'Buy by mfi buy signal',
+  BuyMacd = 'Buy by macd buy signal',
   SellMfi = 'Buy by mfi sell signal',
   BuyBband = 'Buy by bband buy signal',
   SellBband = 'Buy by bband sell signal',
@@ -141,7 +142,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     Strategy.TradingPairs,
     Strategy.SellBband,
     Strategy.PerfectPair,
-    Strategy.AnyPair
+    Strategy.AnyPair,
+    Strategy.BuyMacd
     //Strategy.None
   ];
 
@@ -315,23 +317,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test filter',
         command: async () => {
-          const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
-          let backtestResults = [];
-          if (savedBacktest) {
-            for (const saved in savedBacktest) {
-              const backtestObj = savedBacktest[saved];
-              backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
-              backtestResults.push(backtestObj);
-            }
-            let minMl = 1;
-            let newList = [];
-            while (minMl > 0 && !newList.length) {
-              newList = backtestResults?.filter(backtestData => backtestData?.ml && backtestData.ml > minMl && backtestData.recommendation === 'STRONGBUY');
-              newList?.sort((a, b) => (a.pnl || 0) - (b.pnl || 0));
-              minMl -= 0.05;
-            }
-            console.log('stocks', newList);
-          }
+          console.log(this.autopilotService.getBuyList());
+          console.log(this.autopilotService.getSellList());
         }
       },
       {
@@ -1187,7 +1174,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.autopilotService.addAnyPair(this.currentHoldings);
         break;
       case Strategy.BuyML:
-
+        await this.autopilotService.getAnyBuy();
         break;
       case Strategy.MLPairs:
         await this.autopilotService.addMLPairs(this.currentHoldings);
@@ -1214,12 +1201,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       case Strategy.SellBband:
         await this.autopilotService.addPairOnSignal(this.currentHoldings, SwingtradeAlgorithms.bband, 'sell');
         break;
-        break;
       case Strategy.BuyMfi:
         await this.autopilotService.addPairOnSignal(this.currentHoldings, SwingtradeAlgorithms.mfi, 'buy');
         break;
       case Strategy.BuyBband:
         await this.autopilotService.addPairOnSignal(this.currentHoldings, SwingtradeAlgorithms.bband, 'buy');
+        break;
+      case Strategy.BuyMacd:
+        await this.autopilotService.addPairOnSignal(this.currentHoldings, SwingtradeAlgorithms.macd, 'buy');
         break;
       case Strategy.UPRO:
         await this.autopilotService.buyUpro();
@@ -1300,9 +1289,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async padOrders() {
-    if (!this.autopilotService.hasReachedBuyLimit(this.autopilotService.addedOrdersCount)) {
+    if (!this.autopilotService.hasReachedBuyLimit(this.autopilotService.addedOrdersCount, 3)) {
       this.changeStrategy();
-      await this.autopilotService.getAnyBuy();
       this.handleStrategy();
     }
   }
