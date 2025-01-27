@@ -116,6 +116,27 @@ export class AutopilotService {
     await this.addPairsFromHashMap(MlBuys, MlSells, currentHoldings, 'Volatility pairs');
   }
 
+  async bearPair(currentHoldings) {
+    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
+    const MlBuys = ['SPY'];
+    const MlSells = [];
+    if (savedBacktest) {
+      for (const saved in savedBacktest) {
+        const backtestObj = savedBacktest[saved];
+        const symbol = backtestObj.stock
+        if (backtestObj?.sellMl > 0.5 && backtestObj.recommendation.toLowerCase() === 'strongsell') {
+          MlSells.push(symbol);
+        }
+      }
+    }
+    const cash = await this.getMinMaxCashForOptions();
+    while (MlSells.length) {
+      await this.optionsOrderBuilderService.balanceTrades(currentHoldings,
+        MlBuys, [MlSells.pop()],
+        cash.minCash, cash.maxCash, 'Bear pair');
+    }
+  }
+
   async addPerfectPair(currentHoldings) {
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     const MlBuys = {};
@@ -270,23 +291,23 @@ export class AutopilotService {
     }
   }
 
-    createHoldingObj(name: string) {
-      return {
-        name,
-        symbol: name,
-        pl: 0,
-        netLiq: 0,
-        shares: 0,
-        alloc: 0,
-        recommendation: 'None',
-        buyReasons: '',
-        sellReasons: '',
-        buyConfidence: 0,
-        sellConfidence: 0,
-        prediction: null
-      };
-    }
-  
+  createHoldingObj(name: string) {
+    return {
+      name,
+      symbol: name,
+      pl: 0,
+      netLiq: 0,
+      shares: 0,
+      alloc: 0,
+      recommendation: 'None',
+      buyReasons: '',
+      sellReasons: '',
+      buyConfidence: 0,
+      sellConfidence: 0,
+      prediction: null
+    };
+  }
+
   async findSwingStockCallback(symbol: string, prediction: number, backtestData: any) {
     if ((prediction > 0.7 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
       const stock: PortfolioInfoHolding = {
@@ -437,7 +458,7 @@ export class AutopilotService {
       const backtestResults = await this.strategyBuilderService.getBacktestData(stock);
       if (backtestResults) {
         if (cb) {
-          await cb(stock, backtestResults.ml, backtestResults);
+          await cb(stock, backtestResults.ml, backtestResults, backtestResults.sellMl);
         } else {
           await this.findSwingStockCallback(stock, backtestResults.ml, backtestResults);
         }

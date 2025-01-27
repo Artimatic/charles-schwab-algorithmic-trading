@@ -154,31 +154,21 @@ class AlgoService {
 
   checkMfiTrade(indicators: Indicators[]): DaytradeRecommendation {
     return indicators.reduce((previous, current) => {
-      if (current.recommendation.mfiLow === DaytradeRecommendation.Bullish ||
-        current.recommendation.mfiLow === DaytradeRecommendation.Bearish) {
-        previous.mfiLow = current.recommendation.mfiLow;
-      }
-
-      if (current.recommendation.macd === DaytradeRecommendation.Bullish ||
-        current.recommendation.macd === DaytradeRecommendation.Bearish) {
-        previous.macd = current.recommendation.macd;
-      }
-
-      if (current.recommendation.bband === DaytradeRecommendation.Bullish ||
-        current.recommendation.bband === DaytradeRecommendation.Bearish) {
-        previous.bband = current.recommendation.bband;
-      }
-
-      if (previous.macd === DaytradeRecommendation.Bullish && (previous.mfiLow === DaytradeRecommendation.Bullish || previous.bband === DaytradeRecommendation.Bullish)) {
-        previous.recommendation = DaytradeRecommendation.Bullish;
-      } else if (previous.macd === DaytradeRecommendation.Bearish && (previous.mfiLow === DaytradeRecommendation.Bearish || previous.bband === DaytradeRecommendation.Bearish)) {
-        previous.recommendation = DaytradeRecommendation.Bearish;
+      if (current.recommendation.mfi === DaytradeRecommendation.Bearish) {
+        if (previous.lastMfiHighPrice < current.close) {
+          previous.recommendation = DaytradeRecommendation.Bearish;
+        }
+        previous.lastMfiHighPrice = current.close;
+      } else if (current.recommendation.mfi === DaytradeRecommendation.Bullish) {
+        if (previous.lastMfiLowPrice > current.close) {
+          previous.recommendation = DaytradeRecommendation.Bullish;
+        }
+        previous.lastMfiLowPrice = current.close;
       }
       return previous;
     }, {
-      mfiLow: DaytradeRecommendation.Neutral,
-      macd: DaytradeRecommendation.Neutral,
-      bband: DaytradeRecommendation.Neutral,
+      lastMfiLowPrice: 0,
+      lastMfiHighPrice: 0,
       recommendation: DaytradeRecommendation.Neutral
     }).recommendation;
   }
