@@ -164,6 +164,8 @@ class AlgoService {
           previous.recommendation = DaytradeRecommendation.Bullish;
         }
         previous.lastMfiLowPrice = current.close;
+      } else {
+        previous.recommendation = DaytradeRecommendation.Neutral;
       }
       return previous;
     }, {

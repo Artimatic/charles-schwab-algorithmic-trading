@@ -57,10 +57,20 @@ class BullPredictionService extends PredictionService {
         return dataSetObj;
     }
 
-    getTrainingData(symbol, startDate, endDate, features) {
+
+
+    getTrainingData(symbol, startDate, endDate, features, data = null) {
         let dataSet1 = null;
         let dataSet2 = null;
-        return BacktestService.initDailyStrategy(symbol, moment(endDate).valueOf(), moment(startDate).valueOf(), { minQuotes: 80 })
+        let initialPromise = null;
+        if (data) {
+            initialPromise = new Promise((resolve) => {
+                resolve(data);
+            });
+        } else {
+            initialPromise = BacktestService.initDailyStrategy(symbol, moment(endDate).valueOf(), moment(startDate).valueOf(), { minQuotes: 80 });
+        }
+        return initialPromise
             .then((result: BacktestResults) => {
                 dataSet1 = this.processBacktestResults(result, features);
                 return BacktestService.initDailyStrategy('VXX', moment(endDate).valueOf(), moment(startDate).valueOf(), { minQuotes: 80 });
