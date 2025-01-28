@@ -91,18 +91,16 @@ export class AutopilotService {
     };
   }
 
-  async addPairsFromHashMap(MlBuys, MlSells, currentHoldings, reason) {
+  async addPairsFromHashMap(MlBuys, MlSells, reason) {
+    console.log('addPairsFromHashMap', MlBuys, MlSells);
     for (const buyKey in MlBuys) {
-      if (MlSells[buyKey] && MlSells[buyKey].length) {
-        const cash = await this.getMinMaxCashForOptions();
-        await this.optionsOrderBuilderService.balanceTrades(currentHoldings,
-          MlBuys[buyKey], MlSells[buyKey],
-          cash.minCash, cash.maxCash, reason);
+      if (MlSells[buyKey].length && MlSells[buyKey].length) {
+        this.strategyBuilderService.createStrategy(`${reason} Pair trade`, reason, MlSells[buyKey], MlSells[buyKey]);
       }
     }
   }
 
-  async addVolatilityPairs(currentHoldings) {
+  async addVolatilityPairs() {
     console.log('Start addVolatilityPairs');
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     const MlBuys = {};
@@ -127,7 +125,7 @@ export class AutopilotService {
         }
       }
     }
-    await this.addPairsFromHashMap(MlBuys, MlSells, currentHoldings, 'Volatility pairs');
+    await this.addPairsFromHashMap(MlBuys, MlSells, 'Volatility pairs');
   }
 
   async bearPair(currentHoldings) {
@@ -177,10 +175,10 @@ export class AutopilotService {
         }
       }
     }
-    await this.addPairsFromHashMap(MlBuys, MlSells, currentHoldings, 'Perfect pair');
+    await this.addPairsFromHashMap(MlBuys, MlSells, 'Perfect pair');
   }
 
-  async addMLPairs(currentHoldings, useSellSignal = true) {
+  async addMLPairs(useSellSignal = true) {
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     const MlBuys = {};
     const MlSells = {};
@@ -192,13 +190,13 @@ export class AutopilotService {
           const key = signals?.sort()?.join();
           const symbol = backtestObj.stock;
           if (key) {
-            if (backtestObj.ml > 0.6 && backtestObj.recommendation === 'STRONGBUY') {
+            if (backtestObj.ml > 0.5 && backtestObj.recommendation === 'STRONGBUY') {
               if (MlBuys[key]) {
                 MlBuys[key].push(symbol);
               } else {
                 MlBuys[key] = [symbol];
               }
-            } else if (backtestObj?.sellMl > 0.6 && backtestObj.recommendation === 'STRONGSELL') {
+            } else if (backtestObj?.sellMl > 0.5 && backtestObj.recommendation === 'STRONGSELL') {
               if (MlSells[key]) {
                 MlSells[key].push(symbol);
               } else {
@@ -209,7 +207,7 @@ export class AutopilotService {
         }
       }
     }
-    await this.addPairsFromHashMap(MlBuys, MlSells, currentHoldings, 'ML pairs');
+    await this.addPairsFromHashMap(MlBuys, MlSells, 'ML pairs');
   }
 
   async addAnyPair(currentHoldings, buyList = null, sellList = null) {
@@ -224,13 +222,11 @@ export class AutopilotService {
 
       if (!buyList) {
         const buys = backtestResults.filter(backtestData => backtestData?.ml > 0.5 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY'));
-        buys?.sort((a, b) => a.pnl - b.pnl);
         buyList = buys.map(b => b.stock);
         this.reportingService.addAuditLog(null, `Buys: ${buyList.join(', ')}`);
       }
       if (!sellList) {
         const sells = sellList ? sellList : backtestResults.filter(backtestData => backtestData?.sellMl > 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'));
-        sells?.sort((a, b) => b.pnl - a.pnl);
         sellList = sells.map(b => b.stock);
         this.reportingService.addAuditLog(null, `Sells: ${sellList.join(', ')}`);
       }
@@ -341,7 +337,7 @@ export class AutopilotService {
     }
   }
 
-  getBuyList(filter = (data) => data.recommendation === 'STRONGBUY') {
+  getBuyList(filter = (data) => data.recommendation === 'STRONGBUY'): string[] {
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     let backtestResults = [];
     let newList = [];
@@ -354,15 +350,16 @@ export class AutopilotService {
       }
       let minMl = 1;
       while (minMl > 0 && !newList.length) {
-        newList = backtestResults?.filter(backtestData => filter(backtestData) && backtestData?.ml && backtestData.ml > minMl && backtestData.recommendation === 'STRONGBUY');
+        newList = backtestResults?.filter(backtestData => filter(backtestData) && backtestData?.ml && backtestData.ml > minMl);
         minMl -= 0.1;
       }
     }
+    newList?.sort((a, b) => b?.ml - a?.ml);
 
     return newList.map(s => s.stock);
   }
 
-  getSellList(filter = (data) => data.recommendation === 'STRONGSELL') {
+  getSellList(filter = (data) => data.recommendation === 'STRONGSELL'): string[] {
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     let backtestResults = [];
     let newList = [];
@@ -379,8 +376,9 @@ export class AutopilotService {
         minMl -= 0.1;
       }
     }
+    newList?.sort((a, b) => b?.sellMl - a?.sellMl);
 
-    return newList;
+    return newList.map(s => s.stock);
   }
 
   async getAnyBuy() {
@@ -403,20 +401,36 @@ export class AutopilotService {
     }
   }
 
-  async findAnyPair(currentHoldings, minCashAllocation: number, maxCashAllocation: number) {
+  async findAnyPair() {
     const buys = this.getBuyList()
     const sells = this.getSellList();
-    await this.optionsOrderBuilderService.balanceTrades(currentHoldings, buys, sells, minCashAllocation, maxCashAllocation, 'Find any pair');
-  }
-
-  async findTopBuy() {
-    const buys = this.getBuyList()
-    for (const b of buys) {
-      await this.addBuy(this.createHoldingObj(b.stock), null, 'Buy top stock');
+    let counter = 0;
+    while (counter < buys.length && counter < sells.length) {
+      this.strategyBuilderService.createStrategy(`${buys[counter]} Pair trade`, buys[counter], [buys[counter]], [sells[counter]]);
+      counter++;
+      counter++;
     }
   }
 
-  addPairOnSignal(currentHoldings, indicator: SwingtradeAlgorithms, direction: 'buy' | 'sell') {
+  async findMlOnlyPair() {
+    const buys = this.getBuyList(() => true)
+    const sells = this.getSellList(() => true);
+    let counter = 0;
+    while (counter < buys.length && counter < sells.length) {
+      this.strategyBuilderService.createStrategy(`${buys[counter]} Pair trade`, buys[counter], [buys[counter]], [sells[counter]]);
+      counter++;
+      counter++;
+    }
+  }
+
+  async findTopBuy() {
+    const buys = this.getBuyList();
+    for (const b of buys) {
+      await this.addBuy(this.createHoldingObj(b), null, 'Buy top stock');
+    }
+  }
+
+  addPairOnSignal(indicator: SwingtradeAlgorithms, direction: 'buy' | 'sell') {
     let filterFn = null;
     if (direction === 'buy') {
       filterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator);
@@ -428,13 +442,12 @@ export class AutopilotService {
     const sells = this.getSellList(filterFn);
     console.log('buys', buys);
     console.log('sells', sells);
-    this.portfolioService.getTdBalance().subscribe(balance => {
-      const maxCash = round(this.riskToleranceList[this.riskCounter] * balance.cashBalance, 2);
-      const minCash = maxCash - 1100;
-      this.optionsOrderBuilderService.balanceTrades(currentHoldings,
-        buys, sells,
-        minCash, maxCash, `${direction} ${indicator}`);
-    });
+    let counter = 0;
+    while (counter < buys.length && counter < sells.length) {
+      this.strategyBuilderService.createStrategy(`${buys[counter]} Pair trade`, buys[counter], [buys[counter]], [sells[counter]]);
+      counter++;
+      counter++;
+    }
   }
 
   async findTopNotSell() {
@@ -466,7 +479,7 @@ export class AutopilotService {
   async buyUpro(reason: string = 'Buy UPRO', allocation = null) {
     if (!allocation) {
       const backtestData = await this.strategyBuilderService.getBacktestData('SPY');
-      allocation = backtestData.ml > 0 ? backtestData.ml : 0.01;
+      allocation = backtestData?.ml > 0 && backtestData?.ml < 0.6 ? backtestData.ml : 0.01;
     }
 
     await this.addBuy(this.createHoldingObj('UPRO'), allocation, reason);

@@ -317,8 +317,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test filter',
         command: async () => {
-          console.log(this.autopilotService.getBuyList());
-          console.log(this.autopilotService.getSellList());
+          const filterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === 'mfi');
+          const sellSignalFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === 'mfi');
+          const buyList = this.autopilotService.getBuyList(filterFn);
+          const sellList = this.autopilotService.getSellList(sellSignalFn);
+          console.log('buy', buyList);
+          console.log('sell', sellList);
         }
       },
       {
@@ -352,13 +356,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test buy by mfi trade',
         command: async () => {
-          await this.autopilotService.addPairOnSignal(this.currentHoldings, SwingtradeAlgorithms.mfiTrade, 'buy');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'buy');
         }
       },
       {
-        label: 'Test any buy',
+        label: 'Test handle strategy',
         command: async () => {
-          await this.autopilotService.getAnyBuy();
+          await this.handleStrategy();
         }
       },
       {
@@ -1142,9 +1146,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async handleStrategy() {
+    await this.autopilotService.buyUpro();
+
     switch (this.strategyList[this.strategyCounter]) {
       case Strategy.TradingPairs:
         await this.createTradingPairs();
+        if (this.autopilotService.riskCounter < 2) {
+
+        }
         break;
       case Strategy.Swingtrade:
         await this.autopilotService.findTopBuy();
@@ -1157,9 +1166,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         break;
       case Strategy.BuyCalls:
         await this.autopilotService.addAnyPair(this.currentHoldings);
-        break;
-      case Strategy.BuySnP:
-        await this.autopilotService.buyUpro();
         break;
       case Strategy.InverseDispersion:
         await this.addInverseDispersionTrade();
@@ -1177,38 +1183,38 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.autopilotService.getAnyBuy();
         break;
       case Strategy.MLPairs:
-        await this.autopilotService.addMLPairs(this.currentHoldings);
-        await this.autopilotService.addMLPairs(this.currentHoldings, false);
+        await this.autopilotService.addMLPairs();
+        await this.autopilotService.addMLPairs(false);
         break;
       case Strategy.VolatilityPairs:
-        await this.autopilotService.addVolatilityPairs(this.currentHoldings);
+        await this.autopilotService.addVolatilityPairs();
         break;
       case Strategy.SellMfiTrade:
-        await this.autopilotService.addPairOnSignal(this.currentHoldings, SwingtradeAlgorithms.mfiTrade, 'sell');
+        await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'sell');
         break;
       case Strategy.SellMfiDiv:
-        await this.autopilotService.addPairOnSignal(this.currentHoldings, SwingtradeAlgorithms.mfiDivergence, 'sell');
+        await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
         break;
       case Strategy.BuyMfiTrade:
-        await this.autopilotService.addPairOnSignal(this.currentHoldings, SwingtradeAlgorithms.mfiTrade, 'buy');
+        await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'buy');
         break;
       case Strategy.BuyMfiDiv:
-        await this.autopilotService.addPairOnSignal(this.currentHoldings, SwingtradeAlgorithms.mfiDivergence, 'buy');
+        await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
         break;
       case Strategy.SellMfi:
-        await this.autopilotService.addPairOnSignal(this.currentHoldings, SwingtradeAlgorithms.mfi, 'sell');
+        await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfi, 'sell');
         break;
       case Strategy.SellBband:
-        await this.autopilotService.addPairOnSignal(this.currentHoldings, SwingtradeAlgorithms.bband, 'sell');
+        await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.bband, 'sell');
         break;
       case Strategy.BuyMfi:
-        await this.autopilotService.addPairOnSignal(this.currentHoldings, SwingtradeAlgorithms.mfi, 'buy');
+        await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfi, 'buy');
         break;
       case Strategy.BuyBband:
-        await this.autopilotService.addPairOnSignal(this.currentHoldings, SwingtradeAlgorithms.bband, 'buy');
+        await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.bband, 'buy');
         break;
       case Strategy.BuyMacd:
-        await this.autopilotService.addPairOnSignal(this.currentHoldings, SwingtradeAlgorithms.macd, 'buy');
+        await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.macd, 'buy');
         break;
       case Strategy.UPRO:
         await this.autopilotService.buyUpro();
@@ -1218,7 +1224,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.createTradingPairs();
         await this.addInverseDispersionTrade();
         const cash = await this.getMinMaxCashForOptions();
-        await this.autopilotService.findAnyPair(this.currentHoldings, cash.minCash, cash.maxCash);
+        await this.autopilotService.findAnyPair();
         break;
       }
     }
