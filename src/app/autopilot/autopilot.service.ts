@@ -487,7 +487,7 @@ export class AutopilotService {
       do {
         stock = this.machineDaytradingService.getNextStock();
       } while (found(stock))
-      const backtestResults = this.strategyBuilderService.getRecentBacktest(stock);
+      const backtestResults = this.strategyBuilderService.getRecentBacktest(stock, 5);
       if (backtestResults) {
         if (cb) {
           await cb(stock, backtestResults.ml, backtestResults, backtestResults.sellMl);

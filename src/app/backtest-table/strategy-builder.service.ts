@@ -84,7 +84,7 @@ export class StrategyBuilderService {
       this.aiPicksService.mlNeutralResults.next(results.ml);
       const tableObj = {
         recommendation: results.recommendation,
-        stock: results.stock,
+        stock: results.symbol,
         net: results.net,
         returns: results.returns,
         total: results.total,
