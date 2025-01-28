@@ -34,7 +34,7 @@
           <span *ngIf=element.kellyCriterion>{{element.kellyCriterion}}</span>
         </span>
         <span *ngSwitchDefault>
-          <div [ngClass]="{'bullish-title': element[col.field] === 'Buy', 'bearish-title': element[col.field] === 'Sell' }">
+          <div [ngClass]="{'bullish-title': element[col.field] === 'Buy' || element[col.field] === 'Strong buy', 'bearish-title': element[col.field] === 'Sell' || element[col.field] === 'Strong sell' }">
             {{element[col.field]}}
           </div>
         </span>
