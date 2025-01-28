@@ -235,6 +235,11 @@ export class StrategyBuilderService {
       this.addToStorage('backtest', result.stock, {
         backtestDate: moment().format(),
         ml: result.ml,
+        averageMove: result.averageMove,
+        net: result.net,
+        sellMl: result.sellMl,
+        sellSignals: result.sellSignals,
+        buySignals: result.buySignals,
         recommendation: result.recommendation,
         stock: result.stock,
         returns: result.returns,

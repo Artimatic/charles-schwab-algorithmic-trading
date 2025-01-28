@@ -485,12 +485,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
               this.autopilotService.setVolatilityMl(result[0].nextOutput);
             });
         } else {
-          await this.backtestOneStock(false, false);
           if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 3) {
             this.startFindingTrades();
             this.padOrders();
           }
         }
+        await this.backtestOneStock(false, false);
       });
   }
 
