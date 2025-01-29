@@ -38,7 +38,7 @@ class BacktestDataService {
         let counter = backtest.signals.length - 1;
         let { buySignals, sellSignals } = this.getBuySellSignals(backtest.signals[counter]);
   
-        while (counter > backtest.signals.length - 6) {
+        while (counter > backtest.signals.length - 3) {
           const currentSignalRecommendations = this.getBuySellSignals(backtest.signals[counter]);
           buySignals = buySignals.concat(currentSignalRecommendations.buySignals.filter(indicator => !buySignals.find(sig => sig === indicator)));
           sellSignals = sellSignals.concat(currentSignalRecommendations.sellSignals.filter(indicator => !sellSignals.find(sig => sig === indicator)));
