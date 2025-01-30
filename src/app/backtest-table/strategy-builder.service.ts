@@ -78,7 +78,6 @@ export class StrategyBuilderService {
     try {
       const results = await this.backtestService.getBacktestData(symbol, start, current).toPromise();
       this.backtestAggregatorService.analyseBacktest(results);
-      console.log('results', results);
       this.addToOrderHistoryStorage(symbol, results.orderHistory);
 
       this.aiPicksService.mlNeutralResults.next(results.ml);

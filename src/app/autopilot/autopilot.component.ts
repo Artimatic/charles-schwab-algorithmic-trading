@@ -1295,7 +1295,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async padOrders() {
-    if (!this.autopilotService.hasReachedBuyLimit(this.autopilotService.addedOrdersCount, 3)) {
+    if (!this.autopilotService.hasReachedBuyLimit(this.autopilotService.addedOrdersCount)) {
       this.changeStrategy();
       this.handleStrategy();
     }
