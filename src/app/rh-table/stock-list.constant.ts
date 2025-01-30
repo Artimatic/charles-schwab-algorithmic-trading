@@ -144,7 +144,6 @@ const fullList = [
     'BLD',
     'FIVE',
     'AXP',
-    'CRMT',
     'COST',
     'COKE',
     'UNP',
