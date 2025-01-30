@@ -142,7 +142,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     Strategy.TradingPairs,
     Strategy.SellBband,
     Strategy.PerfectPair,
-    Strategy.AnyPair,
     Strategy.BuyMacd
     //Strategy.None
   ];
@@ -1146,14 +1145,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async handleStrategy() {
-    await this.autopilotService.buyUpro();
-
     switch (this.strategyList[this.strategyCounter]) {
       case Strategy.TradingPairs:
         await this.createTradingPairs();
-        if (this.autopilotService.riskCounter < 2) {
-
-        }
         break;
       case Strategy.Swingtrade:
         await this.autopilotService.findTopBuy();
@@ -1165,7 +1159,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.addInverseDispersionTrade();
         break;
       case Strategy.BuyCalls:
-        await this.autopilotService.addAnyPair(this.currentHoldings);
+        await this.autopilotService.findAnyPair();
         break;
       case Strategy.InverseDispersion:
         await this.addInverseDispersionTrade();
@@ -1175,9 +1169,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         break;
       case Strategy.PerfectPair:
         await this.autopilotService.addPerfectPair(this.currentHoldings);
-        break;
-      case Strategy.AnyPair:
-        await this.autopilotService.addAnyPair(this.currentHoldings);
         break;
       case Strategy.BuyML:
         await this.autopilotService.getAnyBuy();
@@ -1223,8 +1214,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.autopilotService.findTopNotSell();
         await this.createTradingPairs();
         await this.addInverseDispersionTrade();
-        const cash = await this.getMinMaxCashForOptions();
-        await this.autopilotService.findAnyPair();
+        await this.autopilotService.buyUpro();
         break;
       }
     }

@@ -94,7 +94,7 @@ export class AutopilotService {
   async addPairsFromHashMap(MlBuys, MlSells, reason) {
     console.log('addPairsFromHashMap', MlBuys, MlSells);
     for (const buyKey in MlBuys) {
-      if (MlSells[buyKey].length && MlSells[buyKey].length) {
+      if (MlSells[buyKey]?.length && MlSells[buyKey]?.length) {
         this.strategyBuilderService.createStrategy(`${reason} Pair trade`, reason, MlSells[buyKey], MlSells[buyKey]);
       }
     }
@@ -210,40 +210,6 @@ export class AutopilotService {
     await this.addPairsFromHashMap(MlBuys, MlSells, 'ML pairs');
   }
 
-  async addAnyPair(currentHoldings, buyList = null, sellList = null) {
-    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
-    const backtestResults = [];
-    if (savedBacktest) {
-      for (const saved in savedBacktest) {
-        const backtestObj = savedBacktest[saved];
-        backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
-        backtestResults.push(backtestObj);
-      }
-
-      if (!buyList) {
-        const buys = backtestResults.filter(backtestData => backtestData?.ml > 0.5 && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY'));
-        buyList = buys.map(b => b.stock);
-        this.reportingService.addAuditLog(null, `Buys: ${buyList.join(', ')}`);
-      }
-      if (!sellList) {
-        const sells = sellList ? sellList : backtestResults.filter(backtestData => backtestData?.sellMl > 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL'));
-        sellList = sells.map(b => b.stock);
-        this.reportingService.addAuditLog(null, `Sells: ${sellList.join(', ')}`);
-      }
-      console.log('sorted', buyList, sellList);
-      const cash = await this.getMinMaxCashForOptions();
-
-      let initial = null;
-      while (buyList.length && sellList.length && !initial) {
-        initial = await this.optionsOrderBuilderService.balanceTrades(currentHoldings,
-          [buyList.pop()], [sellList.pop()],
-          cash.minCash, cash.maxCash, 'Any pair', true);
-      }
-      return initial;
-    }
-    return null;
-  }
-
   async checkIntradayStrategies() {
     const start = moment().tz('America/New_York').set({ hour: 10, minute: 15 });
     const end = moment().tz('America/New_York').set({ hour: 11, minute: 0 });
@@ -355,7 +321,7 @@ export class AutopilotService {
       }
     }
     newList?.sort((a, b) => b?.ml - a?.ml);
-
+    console.log('new list', newList);
     return newList.map(s => s.stock);
   }
 
@@ -404,29 +370,27 @@ export class AutopilotService {
   async findAnyPair() {
     const buys = this.getBuyList()
     const sells = this.getSellList();
-    let counter = 0;
-    while (counter < buys.length && counter < sells.length) {
-      this.strategyBuilderService.createStrategy(`${buys[counter]} Pair trade`, buys[counter], [buys[counter]], [sells[counter]]);
-      counter++;
-      counter++;
-    }
+    this.addPair(buys, sells);
   }
 
   async findMlOnlyPair() {
     const buys = this.getBuyList(() => true)
     const sells = this.getSellList(() => true);
-    let counter = 0;
-    while (counter < buys.length && counter < sells.length) {
-      this.strategyBuilderService.createStrategy(`${buys[counter]} Pair trade`, buys[counter], [buys[counter]], [sells[counter]]);
-      counter++;
-      counter++;
-    }
+    this.addPair(buys, sells);
   }
 
   async findTopBuy() {
     const buys = this.getBuyList();
     for (const b of buys) {
       await this.addBuy(this.createHoldingObj(b), null, 'Buy top stock');
+    }
+  }
+
+  addPair(buys: string[], sells: string[]) {
+    let counter = 0;
+    while (counter < buys.length && counter < sells.length) {
+      this.strategyBuilderService.createStrategy(`${buys[counter]} Pair trade`, buys[counter], [buys[counter]], [sells[counter]]);
+      counter++;
     }
   }
 
@@ -442,12 +406,7 @@ export class AutopilotService {
     const sells = this.getSellList(filterFn);
     console.log('buys', buys);
     console.log('sells', sells);
-    let counter = 0;
-    while (counter < buys.length && counter < sells.length) {
-      this.strategyBuilderService.createStrategy(`${buys[counter]} Pair trade`, buys[counter], [buys[counter]], [sells[counter]]);
-      counter++;
-      counter++;
-    }
+    this.addPair(buys, sells);
   }
 
   async findTopNotSell() {
