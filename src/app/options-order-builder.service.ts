@@ -7,6 +7,7 @@ import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
 import { OptionsDataService } from '@shared/options-data.service';
 import { Options } from '@shared/models/options';
 import { OrderHandlingService } from './order-handling/order-handling.service';
+import { PriceTargetService } from './autopilot/price-target.service';
 
 export interface TradingPair {
   put?: Options;
@@ -32,6 +33,7 @@ export class OptionsOrderBuilderService {
     private backtestService: BacktestService,
     private reportingService: ReportingService,
     private orderHandlingService: OrderHandlingService,
+    private priceTargetService: PriceTargetService
   ) { }
 
   private protectivePutCount(holding: PortfolioInfoHolding): number {
@@ -371,7 +373,7 @@ export class OptionsOrderBuilderService {
       backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
     }
     if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
-      if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.85)) {
+      if ((Math.abs(lastPrice - closePrice) < backtestResults.averageMove * 0.85) || (this.priceTargetService.getDiff(closePrice, lastPrice) < backtestResults.impliedMovement * 0.3)) {
         return true;
       }
     }
@@ -385,11 +387,8 @@ export class OptionsOrderBuilderService {
     const closePrice = price[symbol].quote.closePrice;
     const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
 
-    if (!backtestResults.averageMove) {
-      backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
-    }
-    if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
-      if (Math.abs(lastPrice - closePrice) < backtestResults.averageMove) {
+    if (backtestResults && backtestResults.ml !== null) {
+      if (Math.abs(lastPrice - closePrice) < backtestResults?.averageMove || (Math.abs(this.priceTargetService.getDiff(closePrice, lastPrice)) < backtestResults?.impliedMovement * 0.3)) {
         return true;
       }
     }
@@ -415,10 +414,10 @@ export class OptionsOrderBuilderService {
         if (isStrangle && Math.abs(lastPrice - closePrice) > (backtestResults.averageMove * 1.20)) {
           this.reportingService.addAuditLog(holding.name, `Selling strangle due to large move ${Math.abs(lastPrice - closePrice)}, Average: ${backtestResults.averageMove}`);
           return true;
-        } else if (putCallInd.toLowerCase() === 'c' && lastPrice - closePrice > (backtestResults.averageMove * 1.25)) {
+        } else if (putCallInd.toLowerCase() === 'c' && (lastPrice - closePrice > (backtestResults.averageMove * 1.25) || (this.priceTargetService.getDiff(closePrice, lastPrice) > backtestResults.impliedMovement * 0.9))) {
           this.reportingService.addAuditLog(holding.name, `Selling call due to large move ${lastPrice - closePrice}, Average: ${backtestResults.averageMove}`);
           return true;
-        } else if (putCallInd.toLowerCase() === 'p' && lastPrice - closePrice < (backtestResults.averageMove * -1.25)) {
+        } else if (putCallInd.toLowerCase() === 'p' && lastPrice - closePrice < (backtestResults.averageMove * -1.25) || (this.priceTargetService.getDiff(closePrice, lastPrice) < backtestResults.impliedMovement * 0.9)) {
           this.reportingService.addAuditLog(holding.name, `Selling put due to large move ${lastPrice - closePrice}, Average: ${backtestResults.averageMove}`);
           return true;
         }
@@ -508,16 +507,8 @@ export class OptionsOrderBuilderService {
     if (trade) {
       if (trade.length === 1) {
         if (trade[0].type === OrderTypes.strangle) {
-          const price = await this.backtestService.getLastPriceTiingo({ symbol: trade[0].holding.symbol }).toPromise();
-          const lastPrice = price[trade[0].holding.symbol].quote.lastPrice;
-          const closePrice = price[trade[0].holding.symbol].quote.closePrice;
-          const backtestResults = await this.strategyBuilderService.getBacktestData(trade[0].holding.symbol);
-
-          if (!backtestResults.averageMove) {
-            backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
-          }
-          if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
-            if (Math.abs(lastPrice - closePrice) < (backtestResults.averageMove * 0.80)) {
+          const shouldBuy = await this.shouldBuyOption(trade[0].holding.symbol);
+          if (shouldBuy) {
               const reason = trade[0].reason ? trade[0].reason : 'Low volatility';
               this.cartService.addToCart(trade[0], true, reason);
               this.removeTradingPair(trade[0].holding.symbol);

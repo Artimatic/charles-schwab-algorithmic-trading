@@ -8,6 +8,7 @@ export interface Stock {
   trending?: string;
   recommendation?: string;
   averageMove?: number;
+  invested?: number;
   algo ?: string;
   returns ?: number;
   strongbuySignals ?: string[];

@@ -7,7 +7,7 @@ import { OrderTypes } from '@shared/models/smart-order';
   providedIn: 'root'
 })
 export class PriceTargetService {
-  targetDiff = 0.015;
+  targetDiff = 0.018;
   portfolioPl = null;
   constructor(private backtestService: BacktestService,
     private portfolioService: PortfolioService,

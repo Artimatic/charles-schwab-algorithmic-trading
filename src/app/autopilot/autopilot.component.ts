@@ -307,6 +307,25 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       },
       {
+        label: 'Filter out stocks',
+        command: async () => {
+          const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
+          let backtestResults = [];
+      
+          if (savedBacktest) {
+            for (const saved in savedBacktest) {
+              const backtestObj = savedBacktest[saved];
+              backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
+              backtestResults.push(backtestObj);
+            }
+
+            backtestResults = backtestResults?.filter(data => data.impliedMovement > 0.1);
+
+          }
+          console.log(backtestResults.map(s => s.stock));
+        }
+      },
+      {
         label: 'Test filter',
         command: async () => {
           const filterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === 'mfi');
@@ -904,8 +923,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const lastProfitMsg = 'Last profit ' + profit;
         console.log(lastProfitMsg);
         this.reportingService.addAuditLog(this.strategyList[this.strategyCounter], lastProfitMsg);
+        const balance = await this.portfolioService.getTdBalance().toPromise();
 
-        const metTarget = await this.priceTargetService.checkProfitTarget(this.currentHoldings, -0.005);
+        const metTarget = (balance.longMarketValue / balance.liquidationValue) >  0.3 ? true : await this.priceTargetService.checkProfitTarget(this.currentHoldings, -0.005);
         console.log('Met target', metTarget);
         if (profit > 0) {
           this.increaseDayTradeRiskTolerance();
