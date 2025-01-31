@@ -236,6 +236,7 @@ export class StrategyBuilderService {
         ml: result.ml,
         averageMove: result.averageMove,
         net: result.net,
+        invested: result.invested,
         sellMl: result.sellMl,
         sellSignals: result.sellSignals,
         buySignals: result.buySignals,
