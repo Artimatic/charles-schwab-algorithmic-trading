@@ -923,13 +923,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const lastProfitMsg = 'Last profit ' + profit;
         console.log(lastProfitMsg);
         this.reportingService.addAuditLog(this.strategyList[this.strategyCounter], lastProfitMsg);
-        const balance = await this.portfolioService.getTdBalance().toPromise();
-
-        const metTarget = (balance.longMarketValue / balance.liquidationValue) >  0.3 ? true : await this.priceTargetService.checkProfitTarget(this.currentHoldings, -0.005);
-        console.log('Met target', metTarget);
         if (profit > 0) {
           this.increaseDayTradeRiskTolerance();
-        } else if (profit < 0 || !metTarget) {
+        } else if (profit < 0) {
           this.decreaseDayTradeRiskTolerance();
           this.increaseRiskTolerance();
         } else {
