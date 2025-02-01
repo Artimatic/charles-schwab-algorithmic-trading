@@ -373,7 +373,7 @@ export class OptionsOrderBuilderService {
       backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
     }
     if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
-      if ((Math.abs(lastPrice - closePrice) < backtestResults.averageMove * 0.85) || (this.priceTargetService.getDiff(closePrice, lastPrice) < backtestResults.impliedMovement * 0.3)) {
+      if ((Math.abs(lastPrice - closePrice) < backtestResults.averageMove * 0.85) || (Math.abs(this.priceTargetService.getDiff(closePrice, lastPrice)) < backtestResults.impliedMovement * 0.3)) {
         return true;
       }
     }
@@ -415,10 +415,10 @@ export class OptionsOrderBuilderService {
           this.reportingService.addAuditLog(holding.name, `Selling strangle due to large move ${Math.abs(lastPrice - closePrice)}, Average: ${backtestResults.averageMove}`);
           return true;
         } else if (putCallInd.toLowerCase() === 'c' && (lastPrice - closePrice > (backtestResults.averageMove * 1.25) || (this.priceTargetService.getDiff(closePrice, lastPrice) > backtestResults.impliedMovement * 0.9))) {
-          this.reportingService.addAuditLog(holding.name, `Selling call due to large move ${lastPrice - closePrice}, Average: ${backtestResults.averageMove}`);
+          this.reportingService.addAuditLog(holding.name, `Selling call due to large move ${closePrice - lastPrice}, Average: ${backtestResults.averageMove}`);
           return true;
-        } else if (putCallInd.toLowerCase() === 'p' && lastPrice - closePrice < (backtestResults.averageMove * -1.25) || (this.priceTargetService.getDiff(closePrice, lastPrice) < backtestResults.impliedMovement * 0.9)) {
-          this.reportingService.addAuditLog(holding.name, `Selling put due to large move ${lastPrice - closePrice}, Average: ${backtestResults.averageMove}`);
+        } else if (putCallInd.toLowerCase() === 'p' && lastPrice - closePrice < (backtestResults.averageMove * -1.25) || (this.priceTargetService.getDiff(closePrice, lastPrice) < backtestResults.impliedMovement * -0.9)) {
+          this.reportingService.addAuditLog(holding.name, `Selling put due to large move ${closePrice - lastPrice}, Average: ${backtestResults.averageMove}`);
           return true;
         }
       }
