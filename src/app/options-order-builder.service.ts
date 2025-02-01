@@ -509,25 +509,25 @@ export class OptionsOrderBuilderService {
         if (trade[0].type === OrderTypes.strangle) {
           const shouldBuy = await this.shouldBuyOption(trade[0].holding.symbol);
           if (shouldBuy) {
-              const reason = trade[0].reason ? trade[0].reason : 'Low volatility';
-              this.cartService.addToCart(trade[0], true, reason);
-              this.removeTradingPair(trade[0].holding.symbol);
-            }
-          }
-        } else {
-          const shouldBuy = await this.shouldBuyOption(trade[0].holding.symbol);
-          if (shouldBuy) {
-            this.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Low volatility');
+            const reason = trade[0].reason ? trade[0].reason : 'Low volatility';
+            this.cartService.addToCart(trade[0], true, reason);
+            this.removeTradingPair(trade[0].holding.symbol);
           }
         }
-      } else if (trade.length === 2 && trade[0] && trade[1]) {
-        const shouldBuyCall = await this.shouldBuyOption(trade[0].holding.symbol);
-        const shouldBuyPut = await this.shouldBuyOption(trade[1].holding.symbol);
-        if (shouldBuyCall && shouldBuyPut) {
+      } else {
+        const shouldBuy = await this.shouldBuyOption(trade[0].holding.symbol);
+        if (shouldBuy) {
           this.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Low volatility');
         }
       }
+    } else if (trade.length === 2 && trade[0] && trade[1]) {
+      const shouldBuyCall = await this.shouldBuyOption(trade[0].holding.symbol);
+      const shouldBuyPut = await this.shouldBuyOption(trade[1].holding.symbol);
+      if (shouldBuyCall && shouldBuyPut) {
+        this.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Low volatility');
+      }
     }
+
     this.tradingPairsCounter++;
   }
 }
