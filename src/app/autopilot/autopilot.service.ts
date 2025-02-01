@@ -149,7 +149,7 @@ export class AutopilotService {
     }
   }
 
-  async addPerfectPair(currentHoldings) {
+  async addPerfectPair() {
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     const MlBuys = {};
     const MlSells = {};

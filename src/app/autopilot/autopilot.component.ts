@@ -757,7 +757,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           } else if (!holding.secondaryLegs) {
             //this.optionsOrderBuilderService.hedgeTrade(holding.name, this.currentHoldings);
           }
-        } else if ((backtestResults && (backtestResults.net < 0 || backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL' || holding.name === 'TQQQ'))) {
+        } else if ((backtestResults && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL' || holding.name === 'TQQQ'))) {
           console.log('Backtest indicates sell', backtestResults);
           await this.cartService.portfolioSell(holding, 'Backtest indicates sell');
         } else if (backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.7 && (backtestResults.recommendation === 'STRONGBUY' || backtestResults.recommendation === 'BUY')) {
@@ -1181,7 +1181,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.buyWinners();
         break;
       case Strategy.PerfectPair:
-        await this.autopilotService.addPerfectPair(this.currentHoldings);
+        await this.autopilotService.addPerfectPair();
         break;
       case Strategy.BuyML:
         await this.autopilotService.getAnyBuy();
