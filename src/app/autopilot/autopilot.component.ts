@@ -500,8 +500,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             this.startFindingTrades();
             this.padOrders();
           }
+          await this.backtestOneStock(false, false);
         }
-        await this.backtestOneStock(false, false);
       });
   }
 
