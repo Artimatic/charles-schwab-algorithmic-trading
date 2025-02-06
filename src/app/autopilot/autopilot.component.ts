@@ -549,6 +549,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.lastOrderListIndex = 0;
     this.cartService.removeCompletedOrders();
     this.cartService.otherOrders = [];
+    this.cartService.buyOrders = [];
     this.developedStrategy = false;
   }
 
@@ -948,7 +949,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const averageOutput = (averageMLResult.sum / averageMLResult.counter);
     console.log('Average output', averageOutput);
 
-    if (averageOutput >= 0.5) {
+    if (averageOutput >= 0.3) {
       this.increaseDayTradeRiskTolerance();
       this.increaseRiskTolerance();
     } else {
