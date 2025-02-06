@@ -820,12 +820,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const isOptionOnly = holding.primaryLegs && !holding.shares;
     if (backtestResults.averageMove) {
       if (isOptionOnly) {
-        stopLoss = (backtestResults.averageMove / lastPrice) * -12;
+        stopLoss = (backtestResults.averageMove / lastPrice) * -15;
         this.reportingService.addAuditLog(holding.name, `Setting options stop loss to ${stopLoss}`);
-        profitTarget = (backtestResults.averageMove / lastPrice) * 15;
+        profitTarget = (backtestResults.averageMove / lastPrice) * 20;
         this.reportingService.addAuditLog(holding.name, `Setting options profit target to ${profitTarget}`);
       } else {
-        stopLoss = (backtestResults.averageMove / lastPrice) * -3;
+        stopLoss = (backtestResults.averageMove / lastPrice) * -3.5;
         this.reportingService.addAuditLog(holding.name, `Setting stock stop loss to ${stopLoss}`);
         profitTarget = (backtestResults.averageMove / lastPrice) * 5;
         this.reportingService.addAuditLog(holding.name, `Setting stock profit target to ${profitTarget}`);
