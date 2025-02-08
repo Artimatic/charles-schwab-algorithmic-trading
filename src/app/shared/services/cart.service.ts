@@ -383,7 +383,7 @@ export class CartService {
     primaryLegs: Options[], price: number,
     quantity: number, optionType,
     side = 'Buy', reason: string = '', executeImmediately = false) {
-      this.reportingService.addAuditLog(symbol, `Adding single leg option ${primaryLegs[0].symbol}`);
+      this.reportingService.addAuditLog(symbol, `${side} option ${primaryLegs[0].symbol}`);
 
     if (primaryLegs.find(leg => !leg.quantity)) {
       console.log('Legs missing quantity', primaryLegs);

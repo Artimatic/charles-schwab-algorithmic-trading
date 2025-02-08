@@ -93,10 +93,9 @@ export class AutopilotService {
   }
 
   async addPairsFromHashMap(MlBuys, MlSells, reason) {
-    console.log('addPairsFromHashMap', MlBuys, MlSells);
     for (const buyKey in MlBuys) {
       if (MlSells[buyKey]?.length && MlSells[buyKey]?.length) {
-        this.strategyBuilderService.createStrategy(`${reason} Pair trade`, reason, MlSells[buyKey], MlSells[buyKey]);
+        this.strategyBuilderService.createStrategy(`${reason} Pair trade`, reason, MlSells[buyKey], MlSells[buyKey], reason);
       }
     }
   }
@@ -371,13 +370,13 @@ export class AutopilotService {
   async findAnyPair() {
     const buys = this.getBuyList()
     const sells = this.getSellList();
-    this.addPair(buys, sells);
+    this.addPair(buys, sells, 'Any pair');
   }
 
   async findMlOnlyPair() {
     const buys = this.getBuyList(() => true)
     const sells = this.getSellList(() => true);
-    this.addPair(buys, sells);
+    this.addPair(buys, sells, 'ML pair');
   }
 
   async findTopBuy() {
@@ -387,10 +386,10 @@ export class AutopilotService {
     }
   }
 
-  addPair(buys: string[], sells: string[]) {
+  addPair(buys: string[], sells: string[], reason) {
     let counter = 0;
     while (counter < buys.length && counter < sells.length) {
-      this.strategyBuilderService.createStrategy(`${buys[counter]} Pair trade`, buys[counter], [buys[counter]], [sells[counter]]);
+      this.strategyBuilderService.createStrategy(`${buys[counter]} ${reason}`, buys[counter], [buys[counter]], [sells[counter]], reason);
       counter++;
     }
   }
@@ -405,9 +404,7 @@ export class AutopilotService {
 
     const buys = this.getBuyList(filterFn);
     const sells = this.getSellList(filterFn);
-    console.log('buys', buys);
-    console.log('sells', sells);
-    this.addPair(buys, sells);
+    this.addPair(buys, sells, `${direction} ${indicator}`);
   }
 
   async findTopNotSell() {

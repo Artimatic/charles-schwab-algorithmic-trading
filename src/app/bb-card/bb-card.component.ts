@@ -228,7 +228,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     this.setup();
   }
 
-  resetBuying () {
+  resetBuying() {
     this.sendingOrder = false;
   }
 
@@ -676,7 +676,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       }
     } else if (this.order.type === OrderTypes.strangle && this.order.side.toLowerCase() == 'sell') {
       await this.orderHandlingService.sellStrangle(this.order, analysis);
-    } else if (analysis.recommendation.toLowerCase() === 'buy') {
+    } else if (analysis.recommendation.toLowerCase() === 'buy' || (this.lastMlResult && this.lastMlResult.nextOutput > 0.6)) {
       if (daytradeType === 'buy' || this.isDayTrading()) {
         this.machineDaytradingService.getPortfolioBalance().subscribe((balance) => {
           const currentBalance = this.isDayTrading() ? balance.availableFunds : balance.cashBalance;
@@ -696,27 +696,17 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             orderQuantity = Math.floor((currentBalance * this.order.allocation) / quote);
             const mlLog = `Ml next output: ${this.lastMlResult ? this.lastMlResult.nextOutput : ''}`;
             this.reportingService.addAuditLog(this.order.holding.symbol, mlLog);
-            if ((this.lastMlResult && this.lastMlResult.nextOutput > 0.4) || !this.lastMlResult) {
-              if (!this.priceLowerBound || (this.priceLowerBound && Number(quote) > Number(this.priceLowerBound))) {
-                this.daytradeBuy(quote, orderQuantity, timestamp, analysis);
-              } else {
-                const log = 'Price too low ' + Number(quote) + ' vs ' + Number(this.priceLowerBound);
-                this.reportingService.addAuditLog(this.order.holding.symbol, log);
-              }
+            if (!this.priceLowerBound || (this.priceLowerBound && Number(quote) > Number(this.priceLowerBound))) {
+              this.daytradeBuy(quote, orderQuantity, timestamp, analysis);
             } else {
-              this.priceLowerBound = quote;
-              this.messageService.add({
-                severity: 'success',
-                summary: this.order.holding.symbol,
-                detail: `Buy recommendation at ${moment().format('hh:mm')}`,
-                life: 300000
-              });
+              const log = 'Price too low ' + Number(quote) + ' vs ' + Number(this.priceLowerBound);
+              this.reportingService.addAuditLog(this.order.holding.symbol, log);
             }
             //}
           }
         });
       }
-    } else if ((analysis.recommendation.toLowerCase() === 'sell' || this.order.forImmediateExecution) && (daytradeType === 'sell' || this.isDayTrading())) {
+    } else if (((this.lastMlResult && this.lastMlResult.nextOutput < 0.2) || analysis.recommendation.toLowerCase() === 'sell' || this.order.forImmediateExecution) && (daytradeType === 'sell' || this.isDayTrading())) {
       // console.log('Received sell recommendation: ', analysis, this.order.holding.symbol);
       if (this.order.buyCount >= this.order.sellCount || daytradeType === 'sell') {
         let orderQuantity = 0;
@@ -741,9 +731,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
           const mlLog = `Ml next output: ${this.lastMlResult ? this.lastMlResult.nextOutput : ''}`;
           this.reportingService.addAuditLog(this.order.holding.symbol, mlLog);
-          if ((this.lastMlResult && this.lastMlResult.nextOutput < 0.5) || !this.lastMlResult) {
             this.sendStopLoss(sellOrder);
-          }
         }
       }
     }
