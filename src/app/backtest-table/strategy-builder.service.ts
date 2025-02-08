@@ -360,7 +360,7 @@ export class StrategyBuilderService {
     return newBacktestData;
   }
 
-  createStrategy(tradeName: string, key: string, buyList: string[], sellList: string[], reason = 'create trading pair') {
+  createStrategy(tradeName: string, key: string, buyList: string[], sellList: string[], reason) {
     const trade = {
       name: tradeName,
       date: moment().format(),
@@ -386,7 +386,7 @@ export class StrategyBuilderService {
           for (const pairVal of pairs) {
             if (pairVal !== null && backtests[pairVal.symbol] && backtests[pairVal.symbol].ml !== null && (!backtests[pairVal.symbol].optionsChainLength || backtests[pairVal.symbol].optionsChainLength > 10)) {
               if (backtests[pairVal.symbol]?.sellMl > 0.5 && (backtests[pairVal.symbol].recommendation.toLowerCase() === 'strongsell')) {
-                this.createStrategy(`${bObj.stock} Pair trade`, bObj.stock, [bObj.stock], [pairVal.symbol]);
+                this.createStrategy(`${bObj.stock} Pair trade`, bObj.stock, [bObj.stock], [pairVal.symbol], 'Correlated pairs');
               }
             }
           }

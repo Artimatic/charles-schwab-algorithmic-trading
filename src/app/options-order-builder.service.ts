@@ -75,7 +75,7 @@ export class OptionsOrderBuilderService {
     return this.tradingPairs;
   }
 
-  addTradingPairs(orders: SmartOrder[]) {
+  addTradingPairs(orders: SmartOrder[], reason) {
     const hashValue = this.getTradeHashValue(orders);
     this.tradingPairDate[hashValue] = new Date().valueOf();
     this.tradingPairs.push(orders);
@@ -89,7 +89,7 @@ export class OptionsOrderBuilderService {
       }
     });
     if (calls.length && puts.length) {
-      this.strategyBuilderService.createStrategy('Pair', calls[0], calls, puts);
+      this.strategyBuilderService.createStrategy('Pair', calls[0], calls, puts, reason);
     }
   }
 
@@ -247,7 +247,7 @@ export class OptionsOrderBuilderService {
 
               if (addToList) {
                 this.reportingService.addAuditLog(null, `Trading pair ${option1.primaryLegs[0].symbol} ${option2.primaryLegs[0].symbol}. Reason: ${reason}`);
-                this.addTradingPairs([option1, option2]);
+                this.addTradingPairs([option1, option2], reason);
               }
 
               // const endDate = moment().format('YYYY-MM-DD');

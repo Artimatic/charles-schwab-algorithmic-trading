@@ -311,7 +311,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         command: async () => {
           const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
           let backtestResults = [];
-      
+
           if (savedBacktest) {
             for (const saved in savedBacktest) {
               const backtestObj = savedBacktest[saved];
@@ -488,6 +488,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.backtestOneStock(false, false);
         } else if (moment().isAfter(moment(this.autopilotService.sessionStart)) &&
           moment().isBefore(moment(this.autopilotService.sessionEnd))) {
+          if (!this.boughtAtClose) {
+            await this.buySellAtClose();
+            setTimeout(() => {
+              this.boughtAtClose = false;
+            }, 1200000);
+          }
           this.handleIntraday();
         } else if (moment().isAfter(moment(this.autopilotService.sessionStart).subtract(Math.floor(this.interval / 60000) * 2, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionStart))) {
@@ -842,9 +848,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else {
           await this.cartService.portfolioSell(holding, `Price target met ${pnl}`);
         }
-      } else if (pnl > -0.01 && pnl < profitTarget * 0.1) {
+      } else if (pnl > (stopLoss * 0.15) && pnl < (profitTarget * 0.2)) {
         if (!isOptionOnly) {
-          await this.autopilotService.addBuy(holding, null, 'Profit loss is positive');
+          await this.autopilotService.addBuy(holding, null, 'Adding to position');
         }
       }
     }
@@ -1155,12 +1161,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async handleStrategy() {
+    this.strategyBuilderService.sanitizeData();
+    await this.autopilotService.findTopBuy();
+
     switch (this.strategyList[this.strategyCounter]) {
       case Strategy.TradingPairs:
         await this.autopilotService.findAnyPair();
-        break;
-      case Strategy.Swingtrade:
-        await this.autopilotService.findTopBuy();
         break;
       case Strategy.TrimHoldings:
         await this.autopilotService.sellLoser(this.currentHoldings);
