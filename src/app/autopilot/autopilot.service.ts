@@ -403,6 +403,7 @@ export class AutopilotService {
 
     const buys = this.getBuyList(filterFn);
     const sells = this.getSellList(filterFn);
+    console.log(`${indicator} ${direction}`, buys, sells);
     this.addPair(buys, sells, `${direction} ${indicator}`);
   }
 
