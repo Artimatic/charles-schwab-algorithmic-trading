@@ -393,16 +393,19 @@ export class AutopilotService {
     }
   }
 
-  addPairOnSignal(indicator: SwingtradeAlgorithms, direction: 'buy' | 'sell') {
-    let filterFn = null;
+  addPairOnSignal(indicator: SwingtradeAlgorithms, direction: 'buy' | 'sell', printList = false) {
+    let buyFilterFn = null;
+    let sellFilterFn = null;
     if (direction === 'buy') {
-      filterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator);
+      buyFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator);
+      sellFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator);
     } else {
-      filterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator);
+      sellFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator);
+      buyFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator);
     }
 
-    const buys = this.getBuyList(filterFn);
-    const sells = this.getSellList(filterFn);
+    const buys = this.getBuyList(buyFilterFn);
+    const sells = this.getSellList(sellFilterFn);
     console.log(`${indicator} ${direction}`, buys, sells);
     this.addPair(buys, sells, `${direction} ${indicator}`);
   }
