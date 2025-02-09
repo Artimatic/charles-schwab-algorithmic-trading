@@ -31,15 +31,11 @@ export class StrategyBuilderService {
   defaultMinExpiration = 50;
 
   constructor(private backtestService: BacktestService,
-    private aiPicksService: AiPicksService,
     private optionsDataService: OptionsDataService,
     private portfolioService: PortfolioService,
     private messageService: MessageService,
-    private swingtradeStrategiesService: SwingtradeStrategiesService,
     private schedulerService: SchedulerService,
-    private cartService: CartService,
-    private backtestAggregatorService: BacktestAggregatorService,
-    private machineLearningService: MachineLearningService) { }
+    private cartService: CartService) { }
 
   getRecentBacktest(symbol: string = null, expiry = 1) {
     const backtestStorage = this.getStorage('backtest');
@@ -77,10 +73,9 @@ export class StrategyBuilderService {
     const start = moment().subtract(700, 'days').format('YYYY-MM-DD');
     try {
       const results = await this.backtestService.getBacktestData(symbol, start, current).toPromise();
-      this.backtestAggregatorService.analyseBacktest(results);
+      // this.backtestAggregatorService.analyseBacktest(results);
       this.addToOrderHistoryStorage(symbol, results.orderHistory);
 
-      this.aiPicksService.mlNeutralResults.next(results.ml);
       const tableObj = {
         recommendation: results.recommendation,
         stock: results.symbol,
@@ -150,8 +145,9 @@ export class StrategyBuilderService {
     while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 6) {
       expiration++;
       let strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
-      if (!strategyList) {
+      if (!strategyList || !strategyList.optionStrategyList) {
         console.log('Unable to find options chain for', optionsChain);
+        return;
       }
       potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
         if ((!prev.call || (Math.abs(Number(curr.strategyStrike) - goal) < Math.abs(Number(prev.call.strikePrice) - goal)))) {
@@ -193,8 +189,9 @@ export class StrategyBuilderService {
       expiration++;
       if (optionsChain.monthlyStrategyList) {
         const strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
-        if (!strategyList) {
-          console.log('Options list not found', symbol, optionsChain);
+        if (!strategyList || !strategyList.optionStrategyList) {
+          console.log('Unable to find options chain for', optionsChain);
+          return;
         }
         potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
           if ((!prev.call && curr.strategyStrike > goal) ||

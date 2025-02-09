@@ -6,7 +6,7 @@ import { Options } from '@shared/models/options';
 import { OrderTypes } from '@shared/models/smart-order';
 import { Trade } from '@shared/models/trade';
 import { BacktestService, CartService, DaytradeService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
-import { AiPicksPredictionData } from '@shared/services/ai-picks.service';
+import { AiPicksPredictionData, AiPicksService } from '@shared/services/ai-picks.service';
 import { ScoringIndex } from '@shared/services/score-keeper.service';
 import { divide, round } from 'lodash';
 import { MenuItem, MessageService } from 'primeng/api';
@@ -214,7 +214,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private schedulerService: SchedulerService,
     private algoEvaluationService: AlgoEvaluationService,
     public autopilotService: AutopilotService,
-    private backtestAggregatorService: BacktestAggregatorService
+    private backtestAggregatorService: BacktestAggregatorService,
+    private aiPicksService: AiPicksService
   ) { }
 
   ngOnInit(): void {
@@ -465,6 +466,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           if (!this.schedulerService.executeTask()) {
             this.padOrders();
           }
+          this.aiPicksService.mlNeutralResults.next(null);
         } else if (moment().isAfter(moment(this.autopilotService.sessionEnd).subtract(7, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionEnd))) {
           if (!this.boughtAtClose) {

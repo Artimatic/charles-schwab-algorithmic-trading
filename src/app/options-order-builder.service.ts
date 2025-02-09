@@ -246,7 +246,7 @@ export class OptionsOrderBuilderService {
                 'Buy', currentCall.quantity);
 
               if (addToList) {
-                this.reportingService.addAuditLog(null, `Trading pair ${option1.primaryLegs[0].symbol} ${option2.primaryLegs[0].symbol}. Reason: ${reason}`);
+                this.reportingService.addAuditLog(null, `Trading pair ${option1?.primaryLegs[0]?.symbol} ${option2?.primaryLegs[0]?.symbol}. Reason: ${reason}`);
                 this.addTradingPairs([option1, option2], reason);
               }
 
