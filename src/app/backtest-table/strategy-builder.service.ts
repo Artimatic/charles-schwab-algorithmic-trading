@@ -150,8 +150,9 @@ export class StrategyBuilderService {
     while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 6) {
       expiration++;
       let strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
-      if (!strategyList) {
+      if (!strategyList || !strategyList.optionStrategyList) {
         console.log('Unable to find options chain for', optionsChain);
+        return;
       }
       potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
         if ((!prev.call || (Math.abs(Number(curr.strategyStrike) - goal) < Math.abs(Number(prev.call.strikePrice) - goal)))) {
@@ -193,8 +194,9 @@ export class StrategyBuilderService {
       expiration++;
       if (optionsChain.monthlyStrategyList) {
         const strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
-        if (!strategyList) {
-          console.log('Options list not found', symbol, optionsChain);
+        if (!strategyList || !strategyList.optionStrategyList) {
+          console.log('Unable to find options chain for', optionsChain);
+          return;
         }
         potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
           if ((!prev.call && curr.strategyStrike > goal) ||
