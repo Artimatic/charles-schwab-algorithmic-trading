@@ -14,7 +14,7 @@ import { of } from 'rxjs';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 
 export enum SwingtradeAlgorithms {
-  demark9 = 'demark',
+  demark9 = 'demark9',
   macd = 'macd',
   mfi = 'mfi',
   mfiDivergence = 'mfiDivergence',
