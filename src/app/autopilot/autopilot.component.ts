@@ -89,7 +89,7 @@ export enum Strategy {
   InverseDispersion = 'Inverse dispersion trade',
   PerfectPair = 'Perfect Pair',
   AnyPair = 'Any Pair',
-  UPRO = 'Buy UPRO',
+  BuyDemark = 'Buy demark',
   None = 'None'
 }
 
@@ -116,33 +116,33 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   tradingPairsCounter = 0;
   strategyList = [
     Strategy.Default,
-    Strategy.Swingtrade,
     Strategy.InverseDispersion,
+    Strategy.BuyMfiTrade,
     // Strategy.SellMfiTrade,
     // Strategy.SingleStockPick,
     // Strategy.StateMachine,
     // Strategy.InverseSwingtrade,
     //Strategy.DaytradeShort,
-    Strategy.BuyML,
-    Strategy.MLPairs,
-    Strategy.SellMfi,
-    Strategy.BuyCalls,
-    Strategy.BuyBband,
     // Strategy.Daytrade,
     Strategy.BuyMfiDiv,
-    Strategy.TrimHoldings,
-    Strategy.VolatilityPairs,
-    Strategy.BuySnP,
-    Strategy.BuyWinners,
-    Strategy.BuyMfiTrade,
     // Strategy.DaytradeFullList,
     // Strategy.SellMfiDiv,
     Strategy.BuyMfi,
-    Strategy.Short,
-    Strategy.TradingPairs,
-    Strategy.SellBband,
     Strategy.PerfectPair,
-    Strategy.BuyMacd
+    Strategy.BuyCalls,
+    Strategy.BuyMacd,
+    Strategy.BuyBband,
+    Strategy.Short,
+    Strategy.SellMfi,
+    Strategy.BuyML,
+    Strategy.SellBband,
+    Strategy.BuySnP,
+    Strategy.MLPairs,
+    Strategy.TradingPairs,
+    Strategy.BuyDemark,
+    Strategy.VolatilityPairs,
+    Strategy.BuyWinners,
+    Strategy.TrimHoldings
     //Strategy.None
   ];
 
@@ -1172,7 +1172,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.autopilotService.sellLoser(this.currentHoldings);
         break;
       case Strategy.Short:
-        await this.addInverseDispersionTrade();
+        const sells = this.autopilotService.getSellList()
+        if (sells.length) {
+          const targetBalance = (await this.getMinMaxCashForOptions()).maxCash;
+          this.optionsOrderBuilderService.addOptionByBalance(sells.pop(), targetBalance, 'Buy put', false);
+        }
         break;
       case Strategy.BuyCalls:
         const buys = this.autopilotService.getBuyList()
@@ -1186,6 +1190,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         break;
       case Strategy.BuyWinners:
         await this.buyWinners();
+        break;
+      case Strategy.BuySnP:
+        await this.autopilotService.buyUpro();
         break;
       case Strategy.PerfectPair:
         await this.autopilotService.addPerfectPair();
@@ -1212,6 +1219,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       case Strategy.BuyMfiDiv:
         await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
         break;
+      case Strategy.BuyDemark:
+        await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.demark9, 'buy');
+        break;
       case Strategy.SellMfi:
         await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfi, 'sell');
         break;
@@ -1227,12 +1237,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       case Strategy.BuyMacd:
         await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.macd, 'buy');
         break;
-      case Strategy.UPRO:
-        await this.autopilotService.buyUpro();
-        break;
       default: {
         await this.autopilotService.findTopNotSell();
-        await this.createTradingPairs();
         await this.addInverseDispersionTrade();
         await this.autopilotService.buyUpro();
         break;

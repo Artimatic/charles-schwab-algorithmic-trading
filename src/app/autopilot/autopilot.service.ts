@@ -101,7 +101,6 @@ export class AutopilotService {
   }
 
   async addVolatilityPairs() {
-    console.log('Start addVolatilityPairs');
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     const MlBuys = {};
     const MlSells = {};
