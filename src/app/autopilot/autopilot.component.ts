@@ -479,7 +479,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             }, 600000);
 
             setTimeout(async () => {
-              await this.modifyStrategy();
+              await this.modifyRisk();
               this.scoreKeeperService.resetTotal();
               this.resetCart();
               this.boughtAtClose = false;
@@ -490,12 +490,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.backtestOneStock(false, false);
         } else if (moment().isAfter(moment(this.autopilotService.sessionStart)) &&
           moment().isBefore(moment(this.autopilotService.sessionStart).add(3, 'minutes'))) {
-          if (!this.boughtAtClose) {
-            await this.buySellAtCloseOrOpen();
-            setTimeout(() => {
-              this.boughtAtClose = false;
-            }, 300000);
-          }
           this.handleIntraday();
         } else if (moment().isAfter(moment(this.autopilotService.sessionStart).subtract(Math.floor(this.interval / 60000) * 2, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionStart))) {
@@ -929,7 +923,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     });
   }
 
-  async modifyStrategy() {
+  async modifyRisk() {
     const backtestResults = await this.strategyBuilderService.getBacktestData('SPY');
 
     if (backtestResults && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL')) {
@@ -948,6 +942,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else if (profit < 0) {
           this.decreaseDayTradeRiskTolerance();
           this.increaseRiskTolerance();
+        } else {
+          const metTarget = await this.priceTargetService.checkProfitTarget(this.currentHoldings);
+          if (!metTarget) {
+            this.increaseRiskTolerance();
+          }
         }
       }
     }
