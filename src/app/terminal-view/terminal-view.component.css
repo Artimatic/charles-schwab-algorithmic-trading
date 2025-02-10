@@ -41,9 +41,9 @@
     list-style: none;
     background: #141414;
     color: #45D40C;
-    font: 0.8em 'Andale Mono', Consolas, 'Courier New';
+    font: 2em 'Andale Mono', Consolas, 'Courier New';
     line-height: 1.6em;
-  
+
     -webkit-border-bottom-right-radius: 3px;
     -webkit-border-bottom-left-radius: 3px;
     -moz-border-radius-bottomright: 3px;
