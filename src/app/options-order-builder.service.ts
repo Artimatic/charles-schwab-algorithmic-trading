@@ -59,7 +59,6 @@ export class OptionsOrderBuilderService {
   getTradeHashValue(arr: SmartOrder[]) {
     const str = arr.reduce((acc: string, val: SmartOrder) => {
       if (!val || !val.holding) {
-        console.log('Data missing from', val);
         return acc;
       }
       return acc + val.holding.symbol;

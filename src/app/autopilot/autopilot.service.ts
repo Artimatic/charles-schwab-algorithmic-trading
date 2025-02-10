@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { AuthenticationService, BacktestService, CartService, PortfolioInfoHolding, PortfolioService, ReportingService } from '@shared/services';
+import { AuthenticationService, BacktestService, CartService, DaytradeService, PortfolioInfoHolding, PortfolioService, ReportingService } from '@shared/services';
 import { round } from 'lodash';
 import * as moment from 'moment-timezone';
 import { OptionsOrderBuilderService } from '../options-order-builder.service';
@@ -64,6 +64,7 @@ export class AutopilotService {
   ];
   isOpened = false;
   maxHoldings = 100;
+  lastBuyList = [];
 
   constructor(private cartService: CartService,
     private optionsOrderBuilderService: OptionsOrderBuilderService,
@@ -75,7 +76,8 @@ export class AutopilotService {
     private reportingService: ReportingService,
     private portfolioService: PortfolioService,
     private globalSettingsService: GlobalSettingsService,
-    private authenticationService: AuthenticationService
+    private authenticationService: AuthenticationService,
+    private daytradeService: DaytradeService
   ) {
     const globalStartStop = this.globalSettingsService.getStartStopTime();
     this.sessionStart = globalStartStop.startDateTime;
@@ -434,6 +436,43 @@ export class AutopilotService {
         await this.addBuy(this.createHoldingObj(candidate.stock), null, 'Buy top not sell stock');
       }
     }
+  }
+
+  async handleBalanceUtilization(currentHoldings) {
+    const balance = await this.portfolioService.getTdBalance().toPromise();
+    const isOverBalance = Boolean(Number(balance.cashBalance) < 0);
+    if (isOverBalance) {
+      currentHoldings = await this.cartService.findCurrentPositions();
+      await this.checkIfTooManyHoldings(currentHoldings, 10);
+    } else {
+      const spyPrediction = this.getLastSpyMl() || 0;
+      const underUtilized = (1 - (balance.cashBalance / balance.liquidationValue)) < Number(new Date().getDate() * 0.005) + spyPrediction;
+      if (underUtilized) {
+        if (this.lastBuyList.length) {
+          const buySym = this.lastBuyList.pop();
+          const backtestData = await this.strategyBuilderService.getBacktestData(buySym);
+          this.buyRightAway(buySym, backtestData.ml);
+        } else {
+          this.lastBuyList = this.getBuyList();
+        }
+      }
+    }
+    return isOverBalance;
+  }
+
+  async buyRightAway(buySymbol, ml) {
+    const price = await this.portfolioService.getPrice(buySymbol).toPromise();
+    const balance = await this.portfolioService.getTdBalance().toPromise();
+    const allocation = ml > 0 && ml <= 1 ? ml : 0.01;
+    const cash = (balance.cashBalance < balance.availableFunds * 0.01) ?
+      balance.cashBalance :
+      (balance.cashBalance * this.riskToleranceList[this.riskCounter] * allocation);
+    const quantity = this.strategyBuilderService.getQuantity(price, 1, cash);
+    const order = this.cartService.buildOrderWithAllocation(buySymbol, quantity, price, 'Buy',
+      1, null, null,
+      null, 1);
+
+    this.daytradeService.sendBuy(order, 'limit', () => { }, () => { });
   }
 
   async buyUpro(reason: string = 'Buy UPRO', allocation = null) {
