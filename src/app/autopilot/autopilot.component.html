@@ -6,18 +6,25 @@
                     <table>
                         <tr *ngFor="let buy of strategy">
                             <td>
-                                <div *ngFor="let leg of buy.primaryLegs">
-                                    <p-tag *ngIf="leg.putCallInd==='C'" styleClass="p-mr-2" severity="success"
-                                        [value]="leg.description" [rounded]="true"></p-tag>
-                                    <p-tag *ngIf="leg.putCallInd==='P'" styleClass="p-mr-2" severity="danger"
-                                        [value]="leg.description" [rounded]="true"></p-tag>
+                                <div *ngIf="buy && buy.primaryLegs">
+                                    <div *ngFor="let leg of buy.primaryLegs">
+                                        <p-tag *ngIf="leg.putCallInd==='C'" styleClass="p-mr-2" severity="success"
+                                            [value]="leg.description" [rounded]="true"></p-tag>
+                                        <p-tag *ngIf="leg.putCallInd==='P'" styleClass="p-mr-2" severity="danger"
+                                            [value]="leg.description" [rounded]="true"></p-tag>
+                                    </div>
                                 </div>
                             </td>
                             <td>
-                                {{buy.quantity}}
+                                <div *ngIf="buy && buy.primaryLegs">
+                                    {{buy.quantity}}
+                                </div>
+
                             </td>
                             <td>
-                                {{buy.price | currency}}
+                                <div *ngIf="buy && buy.primaryLegs">
+                                    {{buy.price | currency}}
+                                </div>
                             </td>
                         </tr>
                     </table>
@@ -70,8 +77,8 @@
     </span>
     <p-tag [value]="dayTradingRiskToleranceList[dayTradeRiskCounter] * 100 +'%'" severity="warning"
         pTooltip="Day trade allocation - percentage of total bp"></p-tag>
-    <p-tag pTooltip="Swing trade allocation - percentage of cash balance" [value]="autopilotService.riskToleranceList[autopilotService.riskCounter] * 100 +'%'"
-        severity="danger"></p-tag>
+    <p-tag pTooltip="Swing trade allocation - percentage of cash balance"
+        [value]="autopilotService.riskToleranceList[autopilotService.riskCounter] * 100 +'%'" severity="danger"></p-tag>
     <label for="daytrade-switch">Daytrade mode</label>
     <p-inputSwitch inputId="daytrade-switch" (onChange)="handleDaytrade()" [(ngModel)]="daytradeMode"></p-inputSwitch>
 

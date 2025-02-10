@@ -470,7 +470,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else if (moment().isAfter(moment(this.autopilotService.sessionEnd).subtract(7, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionEnd))) {
           if (!this.boughtAtClose) {
-            await this.buySellAtClose();
+            await this.buySellAtCloseOrOpen();
             setTimeout(async () => {
               const profitLog = `Profit ${this.scoreKeeperService.total}`;
               this.reportingService.addAuditLog(null, profitLog);
@@ -489,12 +489,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.boughtAtClose = true;
           await this.backtestOneStock(false, false);
         } else if (moment().isAfter(moment(this.autopilotService.sessionStart)) &&
-          moment().isBefore(moment(this.autopilotService.sessionEnd))) {
+          moment().isBefore(moment(this.autopilotService.sessionStart).add(3, 'minutes'))) {
           if (!this.boughtAtClose) {
-            await this.buySellAtClose();
+            await this.buySellAtCloseOrOpen();
             setTimeout(() => {
               this.boughtAtClose = false;
-            }, 1200000);
+            }, 300000);
           }
           this.handleIntraday();
         } else if (moment().isAfter(moment(this.autopilotService.sessionStart).subtract(Math.floor(this.interval / 60000) * 2, 'minutes')) &&
@@ -822,14 +822,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async checkStopLoss(holding: PortfolioInfoHolding, stopLoss = -0.045, profitTarget = 0.01) {
     const pnl = holding.pnlPercentage;
     const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
-    const price = await this.backtestService.getLastPriceTiingo({ symbol: holding.name }).toPromise();
-    const lastPrice = price[holding.name].quote.lastPrice;
 
     const isOptionOnly = holding.primaryLegs && !holding.shares;
     let impliedMove;
     if (backtestResults.impliedMovement) {
       impliedMove = backtestResults.impliedMovement;
     } else {
+      const price = await this.backtestService.getLastPriceTiingo({ symbol: holding.name }).toPromise();
+      const lastPrice = price[holding.name].quote.lastPrice;
       impliedMove = (backtestResults.averageMove / lastPrice) * 3;
     }
     if (backtestResults.averageMove) {
@@ -948,11 +948,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else if (profit < 0) {
           this.decreaseDayTradeRiskTolerance();
           this.increaseRiskTolerance();
-        } else {
-          this.adjustRiskTolerance();
         }
-      } else {
-        this.adjustRiskTolerance();
       }
     }
   }
@@ -977,18 +973,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
   }
 
-  async checkIfOverBalance(balance = null) {
-    if (!balance) {
-      balance = await this.portfolioService.getTdBalance().toPromise();
-    }
-    const isOverBalance = Boolean(Number(balance.cashBalance) < 0);
-    if (isOverBalance) {
-      this.currentHoldings = await this.cartService.findCurrentPositions();
-      await this.autopilotService.checkIfTooManyHoldings(this.currentHoldings, 10);
-    }
-    return isOverBalance;
-  }
-
   cleanUpOrders() {
     this.cartService.removeCompletedOrders();
     this.cartService.otherOrders.forEach(order => {
@@ -1000,8 +984,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     });
   }
 
-  async buySellAtClose() {
-    const overBalance = await this.checkIfOverBalance();
+  async buySellAtCloseOrOpen() {
+    const overBalance = await this.autopilotService.handleBalanceUtilization(this.currentHoldings);
     if (this.boughtAtClose || this.manualStart || overBalance) {
       return;
     }
@@ -1012,18 +996,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     const buySymbol = 'UPRO';
 
-    const price = await this.portfolioService.getPrice(buySymbol).toPromise();
-    const balance = await this.portfolioService.getTdBalance().toPromise();
-    const allocation = backtestData.ml > 0 ? backtestData.ml : 0.01;
     this.autopilotService.setLastSpyMl(backtestData.ml);
-    const cash = (balance.cashBalance < balance.availableFunds * 0.01) ? balance.cashBalance : (balance.cashBalance * this.autopilotService.riskToleranceList[this.autopilotService.riskCounter] * allocation);
-    const quantity = this.strategyBuilderService.getQuantity(price, 1, cash);
-    const order = this.cartService.buildOrderWithAllocation(buySymbol, quantity, price, 'Buy',
-      1, null, null,
-      null, 1);
-    console.log('Sending buy', order, 'ml result:', backtestData?.ml);
-
-    this.daytradeService.sendBuy(order, 'limit', () => { }, () => { });
+    await this.autopilotService.buyRightAway(buySymbol, backtestData.ml);
   }
 
   updateStockList() {
@@ -1350,17 +1324,18 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async handleIntraday() {
     this.autopilotService.isMarketOpened().subscribe(async (isOpen) => {
       if (isOpen) {
-        if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 15) {
+        if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 16) {
           this.lastOptionsCheckCheck = moment();
-          const balance = await this.portfolioService.getTdBalance().toPromise();
-
           this.currentHoldings = await this.cartService.findCurrentPositions();
           await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
           const metTarget = await this.priceTargetService.checkProfitTarget(this.currentHoldings);
           if (metTarget) {
             this.decreaseRiskTolerance();
           }
-          await this.checkIfOverBalance(balance);
+          for (const holding of this.currentHoldings) {
+            await this.checkStopLoss(holding);
+          }
+          await this.autopilotService.handleBalanceUtilization(this.currentHoldings);
           await this.autopilotService.balanceCallPutRatio(this.currentHoldings);
           await this.autopilotService.checkIntradayStrategies();
           this.hedge();
