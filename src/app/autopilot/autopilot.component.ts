@@ -828,25 +828,25 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const isOptionOnly = holding.primaryLegs && !holding.shares;
     let impliedMove;
     if (backtestResults.impliedMovement) {
-      impliedMove = backtestResults.impliedMovement * 0.3;
+      impliedMove = backtestResults.impliedMovement;
     } else {
-      impliedMove = backtestResults.averageMove / lastPrice;
+      impliedMove = (backtestResults.averageMove / lastPrice) * 3;
     }
     if (backtestResults.averageMove) {
       if (isOptionOnly) {
-        stopLoss = impliedMove * -15;
+        stopLoss = impliedMove * -3;
         this.reportingService.addAuditLog(holding.name, `Setting options stop loss to ${stopLoss}`);
-        profitTarget = impliedMove * 21;
+        profitTarget = impliedMove * 6;
         this.reportingService.addAuditLog(holding.name, `Setting options profit target to ${profitTarget}`);
       } else if (holding.assetType === 'collective_investment') {
-        stopLoss = impliedMove * -6;
+        stopLoss = impliedMove * -2;
         this.reportingService.addAuditLog(holding.name, `Setting stock stop loss to ${stopLoss}`);
-        profitTarget = impliedMove * 10;
+        profitTarget = impliedMove * 3;
         this.reportingService.addAuditLog(holding.name, `Setting stock profit target to ${profitTarget}`);
       } else {
-        stopLoss = impliedMove * -3;
+        stopLoss = impliedMove * -1;
         this.reportingService.addAuditLog(holding.name, `Setting stock stop loss to ${stopLoss}`);
-        profitTarget = impliedMove * 4;
+        profitTarget = impliedMove * 2;
         this.reportingService.addAuditLog(holding.name, `Setting stock profit target to ${profitTarget}`);
       }
       if (pnl < stopLoss) {
