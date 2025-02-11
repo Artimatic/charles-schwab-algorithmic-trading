@@ -9,9 +9,11 @@ import { CurrentStockList } from '../rh-table/stock-list.constant';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { OrderTypes } from '@shared/models/smart-order';
-import { map } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { map, take } from 'rxjs/operators';
+import { of, Subscription } from 'rxjs';
 import { GlobalSettingsService } from '../settings/global-settings.service';
+import { TimerObservable } from 'rxjs-compat/observable/TimerObservable';
+import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
 
 export enum SwingtradeAlgorithms {
   demark9 = 'demark9',
@@ -43,6 +45,43 @@ export enum RiskTolerance {
   XXXXLGreed = 1
 }
 
+export enum Strategy {
+  Default = 'Default',
+  DaytradeShort = 'DaytradeShort',
+  Daytrade = 'Daytrade',
+  Swingtrade = 'Swingtrade',
+  InverseSwingtrade = 'InverseSwingtrade',
+  Short = 'Short',
+  TrimHoldings = 'TrimHoldings',
+  DaytradeFullList = 'DaytradeFullList',
+  StateMachine = 'StateMachine',
+  SingleStockPick = 'SingleStockPick',
+  MLSpy = 'MLSpy',
+  OptionsStrangle = 'OptionsStrangle',
+  TradingPairs = 'TradingPairs',
+  BuyCalls = 'BuyCalls',
+  BuyPuts = 'BuyPuts',
+  BuySnP = 'Buy S&P500',
+  BuyWinners = 'Buy Winners',
+  BuyML = 'Buy by ML signal',
+  MLPairs = 'ML trade pairs',
+  VolatilityPairs = 'Implied Movement trade pairs',
+  SellMfiTrade = 'Buy by mfi trade sell signal',
+  BuyMfiTrade = 'Buy by mfi trade buy signal',
+  SellMfiDiv = 'Buy by mfi divergence sell signal',
+  BuyMfiDiv = 'Buy by mfi divergence buy signal',
+  BuyMfi = 'Buy by mfi buy signal',
+  BuyMacd = 'Buy by macd buy signal',
+  SellMfi = 'Buy by mfi sell signal',
+  BuyBband = 'Buy by bband buy signal',
+  SellBband = 'Buy by bband sell signal',
+  InverseDispersion = 'Inverse dispersion trade',
+  PerfectPair = 'Perfect Pair',
+  AnyPair = 'Any Pair',
+  BuyDemark = 'Buy demark',
+  None = 'None'
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -65,6 +104,35 @@ export class AutopilotService {
   isOpened = false;
   maxHoldings = 100;
   lastBuyList = [];
+  lastOptionsCheckCheck = null;
+  currentHoldings: PortfolioInfoHolding[] = [];
+  lastOrderListIndex = 0;
+  orderListTimer: Subscription;
+  strategyList = [
+    Strategy.Default,
+    Strategy.InverseDispersion,
+    Strategy.BuyMfiTrade,
+    Strategy.BuyMfiDiv,
+    Strategy.BuyMfi,
+    Strategy.PerfectPair,
+    Strategy.BuyCalls,
+    Strategy.BuyMacd,
+    Strategy.BuyBband,
+    Strategy.Short,
+    Strategy.SellMfi,
+    Strategy.BuyML,
+    Strategy.SellBband,
+    Strategy.BuySnP,
+    Strategy.MLPairs,
+    Strategy.TradingPairs,
+    Strategy.BuyDemark,
+    Strategy.VolatilityPairs,
+    Strategy.BuyWinners,
+    Strategy.TrimHoldings
+    //Strategy.None
+  ];
+
+  strategyCounter = 0;
 
   constructor(private cartService: CartService,
     private optionsOrderBuilderService: OptionsOrderBuilderService,
@@ -77,7 +145,8 @@ export class AutopilotService {
     private portfolioService: PortfolioService,
     private globalSettingsService: GlobalSettingsService,
     private authenticationService: AuthenticationService,
-    private daytradeService: DaytradeService
+    private daytradeService: DaytradeService,
+    private daytradeStrategiesService: DaytradeStrategiesService
   ) {
     const globalStartStop = this.globalSettingsService.getStartStopTime();
     this.sessionStart = globalStartStop.startDateTime;
@@ -364,7 +433,7 @@ export class AutopilotService {
 
     console.log(backtestResults);
     for (const b of backtestResults) {
-      await this.addBuy(this.createHoldingObj(b.stock), null, 'Buy top stock');
+      await this.addBuy(this.createHoldingObj(b.stock), null, 'Buy any stock');
     }
   }
 
@@ -577,17 +646,21 @@ export class AutopilotService {
     return marketHour && marketHour.equity && marketHour.equity.EQ && Boolean(marketHour.equity.EQ.isOpen);
   }
 
+  checkCredentials() {
+    const accountId = sessionStorage.getItem('accountId');
+    if (accountId) {
+      this.authenticationService.checkCredentials(accountId).subscribe();
+    }
+  }
+
   isMarketOpened() {
     if (this.lastMarketHourCheck && Math.abs(this.lastMarketHourCheck.diff(moment(), 'minutes')) < 20) {
-      return of(false);
+      return of(this.isOpened);
     }
     return this.portfolioService.getEquityMarketHours(moment().format('YYYY-MM-DD')).pipe(
       map((marketHour: any) => {
-        if (marketHour.accountId) {
-          const accountId = sessionStorage.getItem('accountId');
-          if (accountId) {
-            this.authenticationService.checkCredentials(accountId);
-          }
+        if (!marketHour.equity) {
+          this.checkCredentials();
           return this.isOpened;
         }
         this.isOpened = this.marketHourCheck(marketHour);
@@ -607,5 +680,103 @@ export class AutopilotService {
         return this.isOpened;
       })
     );
+  }
+
+  async checkStopLoss(holding: PortfolioInfoHolding, stopLoss = -0.045, profitTarget = 0.01) {
+    const pnl = holding.pnlPercentage;
+    const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
+
+    const isOptionOnly = holding.primaryLegs && !holding.shares;
+    let impliedMove;
+    if (backtestResults.impliedMovement) {
+      impliedMove = backtestResults.impliedMovement;
+    } else {
+      const price = await this.backtestService.getLastPriceTiingo({ symbol: holding.name }).toPromise();
+      const lastPrice = price[holding.name].quote.lastPrice;
+      impliedMove = (backtestResults.averageMove / lastPrice) * 3;
+    }
+    if (backtestResults.averageMove) {
+      if (isOptionOnly) {
+        stopLoss = impliedMove * -3;
+        this.reportingService.addAuditLog(holding.name, `Setting options stop loss to ${stopLoss}`);
+        profitTarget = impliedMove * 6;
+        this.reportingService.addAuditLog(holding.name, `Setting options profit target to ${profitTarget}`);
+      } else if (holding.assetType === 'collective_investment') {
+        stopLoss = impliedMove * -2;
+        this.reportingService.addAuditLog(holding.name, `Setting stock stop loss to ${stopLoss}`);
+        profitTarget = impliedMove * 3;
+        this.reportingService.addAuditLog(holding.name, `Setting stock profit target to ${profitTarget}`);
+      } else {
+        stopLoss = impliedMove * -1;
+        this.reportingService.addAuditLog(holding.name, `Setting stock stop loss to ${stopLoss}`);
+        profitTarget = impliedMove * 2;
+        this.reportingService.addAuditLog(holding.name, `Setting stock profit target to ${profitTarget}`);
+      }
+      if (pnl < stopLoss) {
+        if (isOptionOnly) {
+          await this.sellOptionsHolding(holding, `Options stop loss reached ${pnl}`);
+        } else {
+          await this.cartService.portfolioSell(holding, `Stop loss met ${pnl}`);
+        }
+      } else if (pnl > profitTarget) {
+        if (isOptionOnly) {
+          await this.sellOptionsHolding(holding, `Options price target reached ${pnl}`);
+        } else {
+          await this.cartService.portfolioSell(holding, `Price target met ${pnl}`);
+        }
+      } else if (pnl > (stopLoss * 0.15) && pnl < (profitTarget * 0.2)) {
+        if (!isOptionOnly) {
+          await this.addBuy(holding, null, 'Adding to position');
+        }
+      }
+    }
+  }
+
+  executeOrderList() {
+    if (this.orderListTimer) {
+      this.orderListTimer.unsubscribe();
+    }
+    const buyAndSellList = this.cartService.sellOrders.concat(this.cartService.buyOrders);
+    const orders = buyAndSellList.concat(this.cartService.otherOrders);
+
+    this.orderListTimer = TimerObservable.create(100, 1500)
+      .pipe(take(orders.length))
+      .subscribe(async () => {
+        if (this.lastOrderListIndex >= orders.length) {
+          this.lastOrderListIndex = 0;
+        }
+        const symbol = orders[this.lastOrderListIndex].holding.symbol;
+        if (!this.daytradeStrategiesService.shouldSkip(symbol)) {
+          await this.orderHandlingService.intradayStep(symbol);
+        }
+
+        this.lastOrderListIndex++;
+      });
+  }
+
+  handleIntraday() {
+    if (moment().isAfter(moment(this.sessionStart)) &&
+      moment().isBefore(moment(this.sessionEnd).subtract(3, 'minutes'))) {
+      this.isMarketOpened().subscribe(async (isOpen) => {
+        if (isOpen) {
+          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 16) {
+            this.lastOptionsCheckCheck = moment();
+            this.currentHoldings = await this.cartService.findCurrentPositions();
+            await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
+
+            for (const holding of this.currentHoldings) {
+              await this.checkStopLoss(holding);
+            }
+            await this.handleBalanceUtilization(this.currentHoldings);
+            await this.balanceCallPutRatio(this.currentHoldings);
+            await this.checkIntradayStrategies();
+          } else {
+            this.executeOrderList();
+          }
+        }
+      });
+    } else {
+      return false;
+    }
   }
 }

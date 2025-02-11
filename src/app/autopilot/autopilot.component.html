@@ -81,5 +81,7 @@
         [value]="autopilotService.riskToleranceList[autopilotService.riskCounter] * 100 +'%'" severity="danger"></p-tag>
     <label for="daytrade-switch">Daytrade mode</label>
     <p-inputSwitch inputId="daytrade-switch" (onChange)="handleDaytrade()" [(ngModel)]="daytradeMode"></p-inputSwitch>
+    <label for="trading-switch">Trading is active</label>
+    <p-inputSwitch inputId="trading-switch" [(ngModel)]="autopilotService.isOpened" [readonly]="true"></p-inputSwitch>
 
 </ng-template>

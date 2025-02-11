@@ -5,7 +5,7 @@ import * as moment from 'moment';
 
 import * as configurations from '../../config/environment';
 import QuoteService from '../quote/quote.service';
-import PortfolioDbService from '../mongodb/portfolio-db.service';
+import DatabaseService from '../mongodb/database.service';
 
 const charlesSchwabTraderUrl = 'https://api.schwabapi.com/trader/v1/';
 const charlesSchwabMarketDataUrl = 'https://api.schwabapi.com/marketdata/v1/';
@@ -794,7 +794,7 @@ class PortfolioService {
       .then((pos) => {
         if (process.env.reportUrl && (!this.lastPositionCheck || moment().diff(moment(this.lastPositionCheck), 'hours') > 12)) {
           this.lastPositionCheck = moment();
-          PortfolioDbService.write(pos.securitiesAccount.positions);
+          DatabaseService.update(pos.securitiesAccount.positions, 'stock_portfolio', 'portfolio',  { name: '1' });
         }
         return pos.securitiesAccount.positions;
       });

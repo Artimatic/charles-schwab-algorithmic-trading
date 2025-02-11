@@ -15,25 +15,39 @@ const client = new MongoClient(uri, {
     }
 });
 
-class StrategyDatabaseService {
-    dbName = 'stock_portfolio';
-    collectionName = 'strategy';
+class DatabaseService {
+
     constructor() { }
 
-    async write(data) {
+    async update(data, dbName, collectionName, findOneQuery) {
         try {
             // Connect the client to the server	(optional starting in v4.7)
             await client.connect();
 
             // Create references to the database and collection in order to run
             // operations on them.
-            const database = client.db(this.dbName);
-            const collection = database.collection(this.collectionName);
+            const database = client.db(dbName);
+            const collection = database.collection(collectionName);
 
-            const document = { $set: { createdAt: new Date(), positions: data } };
+            const updateDoc = {
+                $set: {
+                    createdAt: new Date(),
+                    date: new Date().toString(),
+                    positions: data
+                }
+            };
+
+            // The following updateOptions document specifies that we want the *updated*
+            // document to be returned. By default, we get the document as it was *before*
+            // the update.
+            const updateOptions = { upsert: true };
 
             try {
-                await collection.insertOne(document); // Insert the document
+                await collection.findOneAndUpdate(
+                    findOneQuery,
+                    updateDoc,
+                    updateOptions,
+                );
             } catch (err) {
                 console.error(`Something went wrong trying to update one document: ${err}\n`);
             }
@@ -44,11 +58,11 @@ class StrategyDatabaseService {
         }
     }
 
-    async deleteOldRecords() {
+    async deleteOldRecords(dbName, collectionName) {
         try {
             await client.connect();
-            const db = client.db(this.dbName);
-            const collection = db.collection(this.collectionName);
+            const db = client.db(dbName);
+            const collection = db.collection(collectionName);
 
             const twoDaysAgo = new Date();
             twoDaysAgo.setDate(twoDaysAgo.getDate() - 2); // Calculate the date 2 days ago
@@ -71,28 +85,28 @@ class StrategyDatabaseService {
         }
     }
 
-    async getRecords(filter = {}, projection = {}) { // Added filter and projection parameters
+    async getRecords(dbName, collectionName, filter = {}, projection = {}) { // Added filter and projection parameters
         try {
-            await client.connect();
-            const db = client.db(this.dbName);
-            const collection = db.collection(this.collectionName);
-
-            const cursor = collection.find(filter, { projection }); // Use find() with filter and projection
-
-            const records = await cursor.toArray(); // Convert the cursor to an array of documents
-
-            console.log(`Found ${records.length} records.`);
-            return records;
-
+          await client.connect();
+          const db = client.db(dbName);
+          const collection = db.collection(collectionName);
+      
+          const cursor = collection.find(filter, { projection }); // Use find() with filter and projection
+      
+          const records = await cursor.toArray(); // Convert the cursor to an array of documents
+      
+          console.log(`Found ${records.length} records.`);
+          return records;
+      
         } catch (error) {
-            console.error("Error getting records:", error);
-            throw error;
+          console.error("Error getting records:", error);
+          throw error;
         } finally {
-            await client.close();
-            console.log("Connection closed.");
+          await client.close();
+          console.log("Connection closed.");
         }
-    }
-
+      }
+      
 }
 
-export default new StrategyDatabaseService();
+export default new DatabaseService();
