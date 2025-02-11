@@ -12,6 +12,7 @@ module.exports = function(app) {
   app.use('/api/bonds', require('./api/bonds'));
   app.use('/api/sms', require('./api/sms'));
   app.use('/api/stock-info', require('./api/stock-info'));
+  app.use('/api/strategy', require('./api/strategy'));
   app.route('/*')
     .get(function(req, res) {
       res.sendfile('dist/public/index.html');
