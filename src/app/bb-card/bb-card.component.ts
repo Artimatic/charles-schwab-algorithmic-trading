@@ -1001,7 +1001,6 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
   async sellOptions() {
     const symbol = this.order.primaryLegs[0].symbol;
-    console.log(`Sell option ${symbol}`);
     this.incrementSell();
     this.daytradeService.estimateSellProfitLoss(symbol)
       .subscribe(pl => {

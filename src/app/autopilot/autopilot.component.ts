@@ -5,7 +5,7 @@ import { SmartOrder } from '@shared/index';
 import { Options } from '@shared/models/options';
 import { OrderTypes } from '@shared/models/smart-order';
 import { Trade } from '@shared/models/trade';
-import { BacktestService, CartService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
+import { CartService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
 import { AiPicksPredictionData, AiPicksService } from '@shared/services/ai-picks.service';
 import { ScoringIndex } from '@shared/services/score-keeper.service';
 import { divide, round } from 'lodash';
@@ -24,7 +24,6 @@ import { PricingService } from '../pricing/pricing.service';
 import { PersonalBearishPicks } from '../rh-table/backtest-stocks.constant';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { StockListDialogComponent } from '../stock-list-dialog/stock-list-dialog.component';
-import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
 import { FindPatternService } from '../strategies/find-pattern.service';
 import { AddOptionsTradeComponent } from './add-options-trade/add-options-trade.component';
 import { FindDaytradeService } from './find-daytrade.service';
@@ -111,7 +110,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   constructor(
     private portfolioService: PortfolioService,
-    private backtestService: BacktestService,
     private strategyBuilderService: StrategyBuilderService,
     private cartService: CartService,
     private dailyBacktestService: DailyBacktestService,
@@ -125,7 +123,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     public dialogService: DialogService,
     private findDaytradeService: FindDaytradeService,
     private pricingService: PricingService,
-    private daytradeStrategiesService: DaytradeStrategiesService,
     private orderHandlingService: OrderHandlingService,
     private optionsOrderBuilderService: OptionsOrderBuilderService,
     private portfolioMgmtService: PortfolioMgmtService,
@@ -284,10 +281,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test api',
         command: async () => {
-          this.machineLearningService.trainVolatility(moment().format('YYYY-MM-DD'),
-            moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.6, 5, 0).subscribe((result) => {
-              console.log(result[0].predictionHistory.filter(r => r.prediction >= 0.5));
-            });
+          await this.globalSettingsService.globalModifier();
         }
       },
       {
@@ -429,6 +423,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.6, 5, 0).subscribe((result) => {
               this.autopilotService.setVolatilityMl(result[0].nextOutput);
             });
+          this.priceTargetService.setTargetDiff();
         } else {
           if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 3) {
             this.startFindingTrades();
@@ -656,7 +651,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async modifyCurrentHoldings() {
     this.autopilotService.currentHoldings.forEach(async (holding) => {
-      await this.autopilotService.checkStopLoss(holding);
       try {
         const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
         if (holding.primaryLegs) {

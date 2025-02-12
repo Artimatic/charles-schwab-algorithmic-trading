@@ -28,7 +28,7 @@ export class CartService {
 
 
   createOrderLog(order: SmartOrder, reason: string) {
-    let log = `Adding order ${order.side} ${order.quantity} ${order.holding.symbol} ${reason} ${order?.reason}`;
+    let log = `Adding order ${order.side} ${order.quantity} ${order.holding.symbol}. Reason: ${reason} ${order?.reason}`;
     if (order.primaryLeg) {
       log += `Primary leg: ${order.side} ${order.primaryLeg.quantity} ${order.primaryLeg.symbol} `;
     }
@@ -383,7 +383,7 @@ export class CartService {
     primaryLegs: Options[], price: number,
     quantity: number, optionType,
     side = 'Buy', reason: string = '', executeImmediately = false) {
-      this.reportingService.addAuditLog(symbol, `${side} option ${primaryLegs[0].symbol}`);
+      this.reportingService.addAuditLog(symbol, `${side} option ${primaryLegs[0].symbol}. Reason ${reason}`);
 
     if (primaryLegs.find(leg => !leg.quantity)) {
       console.log('Legs missing quantity', primaryLegs);

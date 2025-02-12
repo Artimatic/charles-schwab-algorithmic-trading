@@ -380,14 +380,25 @@ export class OptionsOrderBuilderService {
     return false;
   }
 
+  async getImpliedMove(symbol, backtestResults) {
+    if (backtestResults.impliedMovement) {
+      return backtestResults.impliedMovement;
+    } else {
+      const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
+      const lastPrice = price[symbol].quote.lastPrice;
+      return (backtestResults.averageMove / lastPrice) * 3;
+    }
+  }
   async shouldBuyOption(symbol: string) {
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
     const lastPrice = price[symbol].quote.lastPrice;
     const closePrice = price[symbol].quote.closePrice;
     const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
 
+    const impliedMove = await this.getImpliedMove(symbol, backtestResults)
+    const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
     if (backtestResults && backtestResults.ml !== null) {
-      if (Math.abs(lastPrice - closePrice) < backtestResults?.averageMove || (Math.abs(this.priceTargetService.getDiff(closePrice, lastPrice)) < backtestResults?.impliedMovement * 0.3)) {
+      if (currentDiff < impliedMove * 0.23) {
         return true;
       }
     }
@@ -401,22 +412,20 @@ export class OptionsOrderBuilderService {
       this.reportingService.addAuditLog(holding.name, log);
       return true;
     } else if (!this.getTradingPairs().find(tradeArr => tradeArr.find(t => t.holding.symbol === holding.name))) {
+      const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
       const price = await this.backtestService.getLastPriceTiingo({ symbol: holding.name }).toPromise();
       const lastPrice = price[holding.name].quote.lastPrice;
       const closePrice = price[holding.name].quote.closePrice;
-      const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
-
-      if (!backtestResults.averageMove) {
-        backtestResults.averageMove = backtestResults.impliedMovement * lastPrice;
-      }
+      const impliedMove = await this.getImpliedMove(holding.name, backtestResults)
+      const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
       if (backtestResults && backtestResults.ml !== null && backtestResults.averageMove) {
-        if (isStrangle && Math.abs(lastPrice - closePrice) > (backtestResults.averageMove * 1.20)) {
+        if (isStrangle && Math.abs(currentDiff) > impliedMove) {
           this.reportingService.addAuditLog(holding.name, `Selling strangle due to large move ${Math.abs(lastPrice - closePrice)}, Average: ${backtestResults.averageMove}`);
           return true;
-        } else if (putCallInd.toLowerCase() === 'c' && (lastPrice - closePrice > (backtestResults.averageMove * 1.25) || (this.priceTargetService.getDiff(closePrice, lastPrice) > backtestResults.impliedMovement * 0.9))) {
+        } else if (putCallInd.toLowerCase() === 'c' && currentDiff > impliedMove) {
           this.reportingService.addAuditLog(holding.name, `Selling call due to large move ${closePrice - lastPrice}, Average: ${backtestResults.averageMove}`);
           return true;
-        } else if (putCallInd.toLowerCase() === 'p' && lastPrice - closePrice < (backtestResults.averageMove * -1.25) || (this.priceTargetService.getDiff(closePrice, lastPrice) < backtestResults.impliedMovement * -0.9)) {
+        } else if (putCallInd.toLowerCase() === 'p' && currentDiff < (impliedMove * -1)) {
           this.reportingService.addAuditLog(holding.name, `Selling put due to large move ${closePrice - lastPrice}, Average: ${backtestResults.averageMove}`);
           return true;
         }
