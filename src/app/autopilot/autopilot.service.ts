@@ -687,14 +687,7 @@ export class AutopilotService {
     const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
 
     const isOptionOnly = holding.primaryLegs && !holding.shares;
-    let impliedMove;
-    if (backtestResults.impliedMovement) {
-      impliedMove = backtestResults.impliedMovement;
-    } else {
-      const price = await this.backtestService.getLastPriceTiingo({ symbol: holding.name }).toPromise();
-      const lastPrice = price[holding.name].quote.lastPrice;
-      impliedMove = (backtestResults.averageMove / lastPrice) * 3;
-    }
+    const impliedMove = await this.optionsOrderBuilderService.getImpliedMove(holding.name, backtestResults);
     if (backtestResults.averageMove) {
       if (isOptionOnly) {
         stopLoss = impliedMove * -3;

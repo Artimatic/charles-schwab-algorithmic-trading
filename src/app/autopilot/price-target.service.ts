@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { BacktestService, CartService, PortfolioInfoHolding, PortfolioService, ReportingService } from '@shared/services';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { OrderTypes } from '@shared/models/smart-order';
+import { GlobalSettingsService } from '../settings/global-settings.service';
 
 @Injectable({
   providedIn: 'root'
@@ -13,8 +14,15 @@ export class PriceTargetService {
     private portfolioService: PortfolioService,
     private cartService: CartService,
     private orderHandlingService: OrderHandlingService,
-    private reportingService: ReportingService
+    private reportingService: ReportingService,
+    private globalSettingsService: GlobalSettingsService
   ) { }
+
+  async setTargetDiff() {
+    const tenYrYield = await this.globalSettingsService.get10YearYield();
+    this.targetDiff = tenYrYield || this.targetDiff;
+    this.reportingService.addAuditLog(null, `Target set to ${this.targetDiff}`);
+  }
 
   isProfitable(invested: number, pl: number, target = 0.05) {
     return this.getDiff(invested, invested + pl) > target;

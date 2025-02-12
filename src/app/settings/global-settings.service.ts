@@ -31,14 +31,9 @@ export class GlobalSettingsService {
 
   constructor(private http: HttpClient) { }
 
-  async globalModifier() {
+  async get10YearYield() {
     const spreadData = await this.get10y2ySpread().toPromise();
-    const changePercent = Number(spreadData.QuickQuoteResult.QuickQuote.change_pct);
-    if (changePercent < 0) {
-      return 0.5;
-    } else {
-      return 1;
-    }
+    return Number(spreadData.QuickQuoteResult.QuickQuote[0].FundamentalData.yrhiprice);
   }
 
   get10y2ySpread(): Observable<any> {
