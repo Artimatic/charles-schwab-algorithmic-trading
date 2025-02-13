@@ -387,26 +387,28 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           }
           this.aiPicksService.mlNeutralResults.next(null);
         } else if (moment().isAfter(moment(this.autopilotService.sessionEnd).subtract(25, 'minutes')) &&
-          moment().isBefore(moment(this.autopilotService.sessionEnd))) {
+          moment().isBefore(moment(this.autopilotService.sessionEnd).subtract(20, 'minutes'))) {
           if (!this.boughtAtClose) {
             await this.buySellAtCloseOrOpen();
-            setTimeout(async () => {
-              const profitLog = `Profit ${this.scoreKeeperService.total}`;
-              this.reportingService.addAuditLog(null, profitLog);
-              this.reportingService.exportAuditHistory();
-              this.setProfitLoss();
-            }, 2700000);
+          }
+
+          this.boughtAtClose = true;
+          await this.backtestOneStock(false, false);
+        } else if (moment().isAfter(moment(this.autopilotService.sessionEnd)) &&
+          moment().isBefore(moment(this.autopilotService.sessionEnd).add(5, 'minute'))) {
+          if (this.reportingService.logs.length) {
+            const profitLog = `Profit ${this.scoreKeeperService.total}`;
+            this.reportingService.addAuditLog(null, profitLog);
+            this.reportingService.exportAuditHistory();
+            this.setProfitLoss();
 
             setTimeout(async () => {
               await this.modifyRisk();
               this.scoreKeeperService.resetTotal();
               this.resetCart();
               this.boughtAtClose = false;
-            }, 3600000);
+            }, 31000);
           }
-
-          this.boughtAtClose = true;
-          await this.backtestOneStock(false, false);
         } else if (this.autopilotService.handleIntraday()) {
           const metTarget = await this.priceTargetService.checkProfitTarget(this.autopilotService.currentHoldings);
           if (metTarget) {
