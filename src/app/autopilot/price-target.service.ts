@@ -63,8 +63,9 @@ export class PriceTargetService {
       const portfolioPl = await this.todaysPortfolioPl();
       const priceTarget = this.getDiff(price[symbol].quote.closePrice, price[symbol].quote.lastPrice) + target;
       this.portfolioPl = portfolioPl;
+      this.reportingService.addAuditLog(null, `Portfolio PnL: ${portfolioPl}. target: ${priceTarget}`);
       if (portfolioPl && portfolioPl > priceTarget) {
-        this.reportingService.addAuditLog(null, `Profit target met. Portfolio PnL: ${portfolioPl}. target: ${priceTarget}`);
+        this.reportingService.addAuditLog(null, `Profit target met.`);
         return true;
       }
       return false;
