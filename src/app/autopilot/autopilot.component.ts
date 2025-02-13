@@ -281,7 +281,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test api',
         command: async () => {
-          await this.globalSettingsService.globalModifier();
+          await this.globalSettingsService.get10YearYield();
         }
       },
       {
