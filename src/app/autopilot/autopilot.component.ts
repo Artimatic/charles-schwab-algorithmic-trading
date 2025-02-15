@@ -297,7 +297,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.lastCredentialCheck = moment();
           await this.backtestOneStock(true, false);
           this.padOrders();
-          this.aiPicksService.mlNeutralResults.next(null);
         } else if (moment().isAfter(moment(this.autopilotService.sessionEnd).subtract(25, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionEnd).subtract(20, 'minutes'))) {
           console.log('Buy on close');
@@ -341,9 +340,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             });
           this.priceTargetService.setTargetDiff();
         } else {
-          if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 3) {
-            this.startFindingTrades();
-            this.padOrders();
+          if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 50) {
+            this.aiPicksService.mlNeutralResults.next(null);
           }
           await this.backtestOneStock(false, false);
         }
@@ -920,7 +918,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async handleStrategy() {
     switch (this.autopilotService.strategyList[this.autopilotService.strategyCounter]) {
       case Strategy.TradingPairs:
-        await this.autopilotService.findAnyPair();
+        this.startFindingTrades();
         break;
       case Strategy.TrimHoldings:
         await this.autopilotService.sellLoser(this.autopilotService.currentHoldings);
@@ -994,7 +992,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       default: {
         await this.autopilotService.findTopNotSell();
         await this.addInverseDispersionTrade();
-        await this.autopilotService.buyUpro();
+        await this.autopilotService.findAnyPair();
         break;
       }
     }

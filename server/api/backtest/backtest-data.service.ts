@@ -82,8 +82,14 @@ class BacktestDataService {
                 }
                 finalData.backtestDate = moment().format();
                 delete finalData.signals;
+                finalData.orderHistory = finalData.orderHistory.map(history => {
+                  return {
+                    action: history.action,
+                    date: history.date
+                  };
+                });
                 return finalData;
-            })
+            });
     }
 }
 

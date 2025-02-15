@@ -9,10 +9,9 @@ import { CurrentStockList } from '../rh-table/stock-list.constant';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { OrderTypes } from '@shared/models/smart-order';
-import { map, take } from 'rxjs/operators';
-import { of, Subscription } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { GlobalSettingsService } from '../settings/global-settings.service';
-import { TimerObservable } from 'rxjs-compat/observable/TimerObservable';
 import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
 
 export enum SwingtradeAlgorithms {
@@ -518,7 +517,10 @@ export class AutopilotService {
       await this.checkIfTooManyHoldings(currentHoldings, 10);
     } else {
       const spyPrediction = this.getLastSpyMl() || 0;
-      const underUtilized = (1 - (balance.cashBalance / balance.liquidationValue)) < Number(new Date().getDate() * 0.005) + spyPrediction;
+      const targetUtilization = Number(new Date().getDate() * 0.005) + spyPrediction;
+      const actualUtilization = (1 - (balance.cashBalance / balance.liquidationValue));
+      const underUtilized = actualUtilization < targetUtilization;
+      this.reportingService.addAuditLog(null, `Underutilized: ${underUtilized}, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
       if (underUtilized) {
         if (this.lastBuyList.length) {
           const buySym = this.lastBuyList.pop();
@@ -780,7 +782,7 @@ export class AutopilotService {
       moment().isBefore(moment(this.sessionEnd).subtract(5, 'minutes'))) {
       this.isMarketOpened().subscribe(async (isOpen) => {
         if (isOpen) {
-          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 16) {
+          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 9) {
             this.lastOptionsCheckCheck = moment();
             await this.intradayProcess();
           } else {
