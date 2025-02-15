@@ -8,11 +8,10 @@ import PredictionService from './prediction.service';
 import InputHelperService from './input-helper.service';
 
 class MfiPredictionService extends PredictionService {
-    modelName = 'mfi_model2025-01-20';
     foundPatterns = [];
 
     constructor() {
-        super(10, 0.001);
+        super(10, 0.001, 'mfi_model2025-01-20');
     }
 
     setOutputRange(range: number) {

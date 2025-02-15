@@ -15,11 +15,10 @@ import InputHelperService from './input-helper.service';
 const mlServiceUrl = configurations.apps.armadillo;
 
 class VariableDailyPredicationService extends PredictionService {
-  modelName = 'dailymodel2025-01-04';
   foundPatterns = [];
 
   constructor() {
-    super(3, 0.001);
+    super(3, 0.001, 'dailymodel2025-01-04');
   }
 
   setOutputRange(range: number) {

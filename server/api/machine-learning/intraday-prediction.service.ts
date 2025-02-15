@@ -8,10 +8,8 @@ import PredictionService from './prediction.service';
 
 class IntradayPredicationService extends PredictionService {
 
-  modelName = 'intradaymodel2024-03-06';
-
   constructor() {
-    super(15, 0);
+    super(16, 0, 'intradaymodel2025-02-14');
   }
 
   train(symbol, startDate, endDate, trainingSize, featureUse) {
@@ -28,8 +26,7 @@ class IntradayPredicationService extends PredictionService {
         const finalDataSet = this.processBacktestResults(results, featureUse);
         const modelName = this.modelName;
         console.log('Training for', this.modelName);
-        // return BacktestService.trainTensorModel(symbol, modelName, finalDataSet, trainingSize, moment().format('YYYY-MM-DD'));
-        return BacktestService.trainCustomModel(symbol, modelName, finalDataSet, trainingSize, moment().format('YYYY-MM-DD'));
+        return BacktestService.trainTensorModel(symbol, this.getModelName(), finalDataSet, trainingSize, moment().format('YYYY-MM-DD'));
       });
   }
 
@@ -75,7 +72,9 @@ class IntradayPredicationService extends PredictionService {
     const inputData = this.buildInputSet(signal, featureUse);
     const modelName = this.modelName;
     console.log('Activate model for', this.modelName);
-    return BacktestService.activateCustomModel(symbol, modelName, inputData.input, moment().format('YYYY-MM-DD'));
+    return BacktestService.activateTensorModel(symbol, this.getModelName(),
+      inputData,
+      moment().format('YYYY-MM-DD'));
   }
 
   processBacktestResults(results: BacktestResults, featureUse): any[] {

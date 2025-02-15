@@ -10,8 +10,7 @@ import {
   DaytradeService,
   ReportingService,
   ScoreKeeperService,
-  PortfolioService,
-  MachineLearningService
+  PortfolioService
 } from '../shared';
 import { OrderTypes, SmartOrder } from '../shared/models/smart-order';
 import { Subscription } from 'rxjs/Subscription';
@@ -24,7 +23,7 @@ import { OrderingService } from '@shared/services/ordering.service';
 import { GlobalTaskQueueService } from '@shared/services/global-task-queue.service';
 import { ClientSmsService } from '@shared/services/client-sms.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
-import { MenuItem, MessageService, SelectItem } from 'primeng/api';
+import { MenuItem, SelectItem } from 'primeng/api';
 import { DaytradeAlgorithms } from '@shared/enums/daytrade-algorithms.enum';
 import { DialogService } from 'primeng/dynamicdialog';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
@@ -101,13 +100,11 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     public cartService: CartService,
     private globalSettingsService: GlobalSettingsService,
     private tradeService: TradeService,
-    private machineLearningService: MachineLearningService,
     private orderingService: OrderingService,
     private globalTaskQueueService: GlobalTaskQueueService,
     private clientSmsService: ClientSmsService,
     private dialogService: DialogService,
     private machineDaytradingService: MachineDaytradingService,
-    private messageService: MessageService,
     private scoreKeeperService: ScoreKeeperService,
     private strategyBuilderService: StrategyBuilderService,
     private daytradeStrategiesService: DaytradeStrategiesService,
@@ -286,17 +283,6 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             if (queueItem.ml || queueItem.analysis) {
               this.lastMlResult = queueItem.ml;
               this.runStrategy(1 * lastPrice, queueItem.analysis);
-            } else {
-              this.machineLearningService
-                .trainDaytrade(this.order.holding.symbol.toUpperCase(),
-                  moment().add({ days: 1 }).format('YYYY-MM-DD'),
-                  moment().format('YYYY-MM-DD'),
-                  1,
-                  this.globalSettingsService.daytradeAlgo
-                ).subscribe((mlResult: TrainingResults[]) => {
-                  this.lastMlResult = mlResult && mlResult[0] ? mlResult[0] : null;
-                  this.runStrategy(1 * lastPrice, queueItem.analysis);
-                });
             }
           }
         });

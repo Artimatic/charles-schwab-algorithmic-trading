@@ -8,11 +8,10 @@ import PredictionService from './prediction.service';
 import * as configurations from '../../config/environment';
 
 class PairTradingPredicationService extends PredictionService {
-  modelName = 'pair_trading_model2025-01-14';
   foundPatterns = [];
 
   constructor() {
-    super(10, 0.001);
+    super(10, 0.001, 'pair_trading_model2025-01-14');
   }
 
   setOutputRange(range: number) {

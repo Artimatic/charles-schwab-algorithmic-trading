@@ -7,11 +7,10 @@ import PredictionService from './prediction.service';
 import InputHelperService from './input-helper.service';
 
 class VolatilityPredictionService extends PredictionService {
-    modelName = 'volatility_model2025-01-19';
     foundPatterns = [];
 
     constructor() {
-        super(3, 0.001);
+        super(3, 0.001, 'volatility_model2025-01-19');
     }
 
     setOutputRange(range: number) {

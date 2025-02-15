@@ -88,7 +88,7 @@ export enum Strategy {
 export class AutopilotService {
   riskCounter = 0;
   addedOrdersCount = 0;
-  maxTradeCount = 8;
+  maxTradeCount = 10;
   lastSpyMl = 0;
   volatility = 0;
   lastMarketHourCheck = null;
@@ -133,6 +133,8 @@ export class AutopilotService {
   ];
 
   strategyCounter = 0;
+
+  intradayProcessCounter = 0;
 
   constructor(private cartService: CartService,
     private optionsOrderBuilderService: OptionsOrderBuilderService,
@@ -322,12 +324,14 @@ export class AutopilotService {
       this.addedOrdersCount++;
       const currentDate = moment().format('YYYY-MM-DD');
       const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
+      const backtestData = await this.strategyBuilderService.getBacktestData(holding.name);
+
       try {
         const allIndicators = await this.getTechnicalIndicators(holding.name, startDate, currentDate).toPromise();
         const indicators = allIndicators.signals[allIndicators.signals.length - 1];
         const thresholds = this.getStopLoss(indicators.low, indicators.high);
         await this.cartService.portfolioBuy(holding,
-          allocation || this.riskToleranceList[this.riskCounter],
+          allocation || ((1 - backtestData.impliedMovement) / 10),
           thresholds.profitTakingThreshold,
           thresholds.stopLoss, reason);
         await this.orderHandlingService.intradayStep(holding.name);
@@ -630,10 +634,10 @@ export class AutopilotService {
   async balanceCallPutRatio(holdings: PortfolioInfoHolding[]) {
     const results = this.priceTargetService.getCallPutBalance(holdings);
     this.reportingService.addAuditLog(null, `Calls: ${results.call}, Puts: ${results.put}, ratio: ${results.call / results.put}`);
-    if (results.put > 0 && results.call === 0) {
+    if (results.put > 0 && results.call > 0) {
       if (results.put + (results.put * this.getLastSpyMl() * (this.riskToleranceList[this.riskCounter] * 3) * (1 - this.volatility)) > results.call) {
         const targetBalance = Number(results.put - results.call);
-        console.log('SPY', targetBalance, `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${targetBalance}`);
+        this.reportingService.addAuditLog(null, `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${targetBalance}`);
         this.optionsOrderBuilderService.addOptionByBalance('SPY', targetBalance, 'Balance call put ratio', true);
       } else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
         this.sellLoser(holdings, 'Balancing call put ratio');
@@ -747,6 +751,39 @@ export class AutopilotService {
       });
   }
 
+  private async intradayProcess() {
+    if (this.intradayProcessCounter > 4) {
+      this.intradayProcessCounter = 0;
+    }
+    this.currentHoldings = await this.cartService.findCurrentPositions();
+
+    switch (this.intradayProcessCounter) {
+      case 0: {
+        await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
+        break;
+      }
+      case 1: {
+        for (const holding of this.currentHoldings) {
+          await this.checkStopLoss(holding);
+        }
+        break;
+      }
+      case 2: {
+        await this.balanceCallPutRatio(this.currentHoldings);
+        break;
+      }
+      case 3: {
+        await this.checkIntradayStrategies();
+        break;
+      }
+      case 4: {
+        await this.handleBalanceUtilization(this.currentHoldings);
+        break;
+      }
+    }
+    this.intradayProcessCounter++;
+  }
+
   handleIntraday() {
     if (moment().isAfter(moment(this.sessionStart)) &&
       moment().isBefore(moment(this.sessionEnd).subtract(3, 'minutes'))) {
@@ -754,20 +791,13 @@ export class AutopilotService {
         if (isOpen) {
           if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 16) {
             this.lastOptionsCheckCheck = moment();
-            this.currentHoldings = await this.cartService.findCurrentPositions();
-            await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
-
-            for (const holding of this.currentHoldings) {
-              await this.checkStopLoss(holding);
-            }
-            await this.handleBalanceUtilization(this.currentHoldings);
-            await this.balanceCallPutRatio(this.currentHoldings);
-            await this.checkIntradayStrategies();
+            await this.intradayProcess();
           } else {
             this.executeOrderList();
           }
         }
       });
+      return true;
     } else {
       return false;
     }

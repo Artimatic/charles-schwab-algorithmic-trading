@@ -129,7 +129,6 @@ export class OrderHandlingService {
                   }
                 } catch (error) {
                   console.log(error);
-                  this.trainIntradayModel(analysis, symbol);
                 }
               }
               const queueItem: AlgoQueueItem = {
