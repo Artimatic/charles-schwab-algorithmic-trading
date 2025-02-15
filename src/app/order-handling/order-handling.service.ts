@@ -108,19 +108,10 @@ export class OrderHandlingService {
             const hasSellPotential = this.daytradeStrategiesService.isPotentialSell(analysis);
             if (hasBuyPotential || hasSellPotential) {
               const startTime = new Date().valueOf();
-              let mlResult = {
-                nextOutput: hasBuyPotential ? 1 : 0,
-                guesses: 0,
-                correct: 0,
-                score: 0
-              };
               if (!this.skipMl || symbol === 'SPY' || symbol === 'QQQ') {
                 try {
-                  mlResult = await this.machineLearningService.activate(symbol,
-                    this.globalSettingsService.daytradeAlgo).toPromise();
-                  if (!mlResult || !mlResult.nextOutput) {
-                    this.trainIntradayModel(analysis, symbol);
-                  }
+                  await this.trainIntradayModel(analysis, symbol);
+
                   const currentMil = new Date().valueOf();
                   if (currentMil - startTime > 180000) {
                     this.skipMl = true;
@@ -135,7 +126,7 @@ export class OrderHandlingService {
                 symbol: symbol,
                 reset: false,
                 analysis: analysis,
-                ml: mlResult
+                ml: null
               };
               this.tradeService.algoQueue.next(queueItem);
             }
@@ -149,7 +140,7 @@ export class OrderHandlingService {
       .trainDaytrade(symbol.toUpperCase(),
         moment().add({ days: 1 }).format('YYYY-MM-DD'),
         moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
-        1,
+        0.8,
         this.globalSettingsService.daytradeAlgo
       ).toPromise()[0];
 
@@ -157,7 +148,7 @@ export class OrderHandlingService {
       symbol: symbol,
       reset: false,
       analysis: analysis,
-      ml: ml
+      ml: ml.nextOutput[0]
     };
     this.tradeService.algoQueue.next(queueItem);
   }

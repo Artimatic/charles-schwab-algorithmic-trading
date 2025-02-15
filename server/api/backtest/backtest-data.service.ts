@@ -81,6 +81,7 @@ class BacktestDataService {
                     finalData.sellMlScore = sellMl[0].score;
                 }
                 finalData.backtestDate = moment().format();
+                delete finalData.signals;
                 return finalData;
             })
     }

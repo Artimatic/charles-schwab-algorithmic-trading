@@ -107,7 +107,6 @@ export class AutopilotService {
   lastOptionsCheckCheck = null;
   currentHoldings: PortfolioInfoHolding[] = [];
   lastOrderListIndex = 0;
-  orderListTimer: Subscription;
   strategyList = [
     Strategy.Default,
     Strategy.InverseDispersion,
@@ -729,26 +728,18 @@ export class AutopilotService {
     }
   }
 
-  executeOrderList() {
-    if (this.orderListTimer) {
-      this.orderListTimer.unsubscribe();
-    }
+  async executeOrderList() {
     const buyAndSellList = this.cartService.sellOrders.concat(this.cartService.buyOrders);
     const orders = buyAndSellList.concat(this.cartService.otherOrders);
+    if (this.lastOrderListIndex >= orders.length) {
+      this.lastOrderListIndex = 0;
+    }
+    const symbol = orders[this.lastOrderListIndex].holding.symbol;
+    if (!this.daytradeStrategiesService.shouldSkip(symbol)) {
+      await this.orderHandlingService.intradayStep(symbol);
+    }
 
-    this.orderListTimer = TimerObservable.create(100, 1500)
-      .pipe(take(orders.length))
-      .subscribe(async () => {
-        if (this.lastOrderListIndex >= orders.length) {
-          this.lastOrderListIndex = 0;
-        }
-        const symbol = orders[this.lastOrderListIndex].holding.symbol;
-        if (!this.daytradeStrategiesService.shouldSkip(symbol)) {
-          await this.orderHandlingService.intradayStep(symbol);
-        }
-
-        this.lastOrderListIndex++;
-      });
+    this.lastOrderListIndex++;
   }
 
   private async intradayProcess() {
@@ -759,13 +750,13 @@ export class AutopilotService {
 
     switch (this.intradayProcessCounter) {
       case 0: {
-        await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
-        break;
-      }
-      case 1: {
         for (const holding of this.currentHoldings) {
           await this.checkStopLoss(holding);
         }
+        break;
+      }
+      case 1: {
+        await this.checkIntradayStrategies();
         break;
       }
       case 2: {
@@ -773,11 +764,11 @@ export class AutopilotService {
         break;
       }
       case 3: {
-        await this.checkIntradayStrategies();
+        await this.handleBalanceUtilization(this.currentHoldings);
         break;
       }
-      case 4: {
-        await this.handleBalanceUtilization(this.currentHoldings);
+      default: {
+        await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
         break;
       }
     }
@@ -786,14 +777,14 @@ export class AutopilotService {
 
   handleIntraday() {
     if (moment().isAfter(moment(this.sessionStart)) &&
-      moment().isBefore(moment(this.sessionEnd).subtract(3, 'minutes'))) {
+      moment().isBefore(moment(this.sessionEnd).subtract(5, 'minutes'))) {
       this.isMarketOpened().subscribe(async (isOpen) => {
         if (isOpen) {
           if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 16) {
             this.lastOptionsCheckCheck = moment();
             await this.intradayProcess();
           } else {
-            this.executeOrderList();
+            await this.executeOrderList();
           }
         }
       });

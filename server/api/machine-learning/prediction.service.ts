@@ -18,7 +18,7 @@ export default class PredictionService {
   constructor(range, limit, modelName) {
     this.outputRange = range;
     this.outputLimit = limit;
-    this.modelName = limit;
+    this.modelName = modelName;
   }
 
   getModelName(name = '') {

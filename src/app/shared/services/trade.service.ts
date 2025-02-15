@@ -11,7 +11,7 @@ export interface AlgoQueueItem  {
   triggerMlBuySell?: boolean;
   delay?: number;
   analysis?: Recommendation;
-  ml?: TrainingResults;
+  ml?: number;
 }
 
 @Injectable()

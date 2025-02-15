@@ -1,6 +1,5 @@
 
 import * as _ from 'lodash';
-import axios from 'axios';
 
 import PortfolioService from '../portfolio/portfolio.service';
 import portfolioController from '../portfolio/portfolio.controller';
@@ -107,6 +106,39 @@ class OptionService {
       });
   }
 
+  findPriceDivergence(
+    price: number,
+    options: Option[]
+  ): { option: Option; divergence: number; type: 'positive' | 'negative' }[] {
+
+    const divergences: { option: Option; divergence: number; type: 'positive' | 'negative' }[] = [];
+
+    for (const option of options) {
+      // Basic divergence calculation (you'll likely want to refine this)
+      let expectedOptionPrice: number;
+
+      // A very simplified option pricing model.  Real-world pricing is much more complex.
+      // This is just an example and needs significant improvement for production use.
+      if (option.putCallInd === 'C') {
+        expectedOptionPrice = Math.max(0, price - option.strikePrice); // Intrinsic value only - very basic
+      } else { // PUT
+        expectedOptionPrice = Math.max(0, option.strikePrice - price); // Intrinsic value only - very basic
+      }
+
+      const divergence = price - expectedOptionPrice;
+
+      if (divergence !== 0) { // Only record if there is a divergence
+        divergences.push({
+          option,
+          divergence,
+          type: divergence > 0 ? 'positive' : 'negative',
+        });
+      }
+
+    }
+
+    return divergences;
+  }
   // private saveImpliedMove(symbol: string, move: number) {
   //   if (move) {
   //     axios.post(`${dataServiceUrl}backtest/update-implied-move`, {
