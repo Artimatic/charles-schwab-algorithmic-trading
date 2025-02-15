@@ -48,10 +48,6 @@ class PortfolioController extends BaseController {
       .catch((err) => BaseController.requestErrorHandler(response, err));
   }
 
-  midPrice(ask, bid) {
-    return _.round(_.multiply(_.add(_.divide(_.subtract(_.divide(ask, bid), 1), 2), 1), bid), 2);
-  }
-
   getQuote(request, response) {
     PortfolioService.getQuote(request.query.symbol, request.query.accountId, response)
       .then((priceData) => {

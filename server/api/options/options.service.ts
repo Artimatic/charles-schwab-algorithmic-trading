@@ -2,7 +2,6 @@
 import * as _ from 'lodash';
 
 import PortfolioService from '../portfolio/portfolio.service';
-import portfolioController from '../portfolio/portfolio.controller';
 
 import * as configurations from '../../config/environment';
 
@@ -69,6 +68,11 @@ export interface ImpliedMove {
 }
 
 class OptionService {
+
+  getMidPrice(ask, bid) {
+    return _.round(_.multiply(_.add(_.divide(_.subtract(_.divide(ask, bid), 1), 2), 1), bid), 2);
+  }
+
   calculateImpliedMove(accountId, symbol, strikeCount, optionType, minExpiration = 29, response) {
     return PortfolioService.getOptionsStrangle(accountId, symbol, strikeCount, optionType, response)
       .then((strangleOptionsChain: OptionsChain) => {
@@ -90,7 +94,7 @@ class OptionService {
           return (Math.abs(Number(curr.strategyStrike) - goal) < Math.abs(Number(prev.strategyStrike) - goal) ? curr : prev);
         });
 
-        const strategyCost = portfolioController.midPrice(closestStrikeStrangle.strategyAsk, closestStrikeStrangle.strategyBid);
+        const strategyCost = this.getMidPrice(closestStrikeStrangle.strategyAsk, closestStrikeStrangle.strategyBid);
         const move = _.round(strategyCost / goal, 3);
         const movePrice = _.round(move * goal, 2);
 
