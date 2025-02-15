@@ -45,19 +45,7 @@ export class AlgoEvaluationComponent implements OnInit {
       } else if ((stock.ml === 0 || stock?.sellMl > 0.5) && (stock.recommendation.toLowerCase() === 'sell' || stock.recommendation.toLowerCase() === 'strongsell')) {
         stock.recommendation = 'Strong sell';
         return true;
-      } else if (stock?.ml > 0.5) {
-        stock.recommendation = 'Buy';
-        return true;
-      } else if (stock?.sellMl > 0.5) {
-        stock.recommendation = 'Sell';
-        return true;
-      } else if (stock.recommendation.toLowerCase() === 'buy' || stock.recommendation.toLowerCase() === 'strongbuy') {
-        stock.recommendation = 'Buy';
-        return true;
-      } else if (stock.recommendation.toLowerCase() === 'sell' || stock.recommendation.toLowerCase() === 'strongsell') {
-        stock.recommendation = 'Sell';
-        return true;
-      } 
+      }
       return false;
     });
   }

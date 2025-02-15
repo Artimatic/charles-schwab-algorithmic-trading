@@ -246,12 +246,7 @@ export class StrategyBuilderService {
   }
 
   addToOrderHistoryStorage(symbol: string, tradingHistory: any[]) {
-    this.orderHistory[symbol] = tradingHistory.map(history => {
-      return {
-        action: history.action,
-        date: history.date
-      };
-    });
+    this.orderHistory[symbol] = tradingHistory;
   }
 
   addPair(symbol: string, newPairValue: any) {
