@@ -6,7 +6,6 @@ import BaseController from '../templates/base.controller';
 import BacktestService from './backtest.service';
 import MfiService from './mfi.service';
 import BacktestAggregationService from './backtest-aggregation.service';
-import supportResistanceService from './support-resistance.service';
 import backtestDataService from './backtest-data.service';
 
 class BacktestController extends BaseController {

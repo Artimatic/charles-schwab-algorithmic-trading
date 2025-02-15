@@ -6,11 +6,10 @@ import { BacktestResults } from '../backtest/backtest.service';
 import PredictionService from './prediction.service';
 
 class AllocationPredictionService extends PredictionService {
-    modelName = 'pair_trading_model2025-01-14';
     foundPatterns = [];
 
     constructor() {
-        super(10, 0.001);
+        super(10, 0.001, 'pair_trading_model2025-01-14');
     }
 
     setOutputRange(range: number) {

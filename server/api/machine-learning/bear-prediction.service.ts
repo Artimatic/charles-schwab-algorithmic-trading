@@ -8,11 +8,10 @@ import InputHelperService from './input-helper.service';
 import DecisionService from '../mean-reversion/reversion-decision.service';
 
 class BearPredictionService extends PredictionService {
-    modelName = 'bear_model2025-01-23';
     foundPatterns = [];
 
     constructor() {
-        super(5, -0.01);
+        super(5, -0.01, 'bear_model2025-01-23');
     }
 
     setOutputRange(range: number) {

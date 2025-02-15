@@ -63,7 +63,7 @@ export interface ProfitLossRecord {
 export class AutopilotComponent implements OnInit, OnDestroy {
   display = false;
   isLoading = true;
-  defaultInterval = 120000;
+  defaultInterval = 121000;
   interval = 120000;
   oneDayInterval;
   timer: Subscription;
@@ -127,7 +127,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private optionsOrderBuilderService: OptionsOrderBuilderService,
     private portfolioMgmtService: PortfolioMgmtService,
     private priceTargetService: PriceTargetService,
-    private schedulerService: SchedulerService,
     private algoEvaluationService: AlgoEvaluationService,
     public autopilotService: AutopilotService,
     private backtestAggregatorService: BacktestAggregatorService,
@@ -169,105 +168,15 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     this.multibuttonOptions = [
       {
-        label: 'Backtest',
-        command: () => {
-          this.algoEvaluationService.openDialog();
-        }
-      },
-      {
-        label: 'Add strangle',
-        command: () => {
-          this.addOptions();
-        }
-      },
-      {
         label: 'Sell All',
         command: async () => {
           await this.sellAll();
         }
       },
       {
-        label: 'Sell All Options',
-        command: async () => {
-          await this.sellAllOptions();
-        }
-      },
-      {
-        label: 'Sell all strangles',
-        command: () => {
-          this.sellAllStrangle();
-        }
-      },
-      {
-        label: 'Get User Preferences',
-        command: () => {
-          this.getPreferences();
-        }
-      },
-      {
-        label: 'Add inverse dispersion trade',
-        command: async () => {
-          await this.placeInverseDispersionOrders();
-        }
-      },
-      {
-        label: 'Test profit target',
-        command: async () => {
-          await this.priceTargetService.checkProfitTarget(this.autopilotService.currentHoldings);
-        }
-      },
-      {
         label: 'Set credentials',
         command: async () => {
           this.autopilotService.checkCredentials();
-        }
-      },
-      {
-        label: 'Test backtest',
-        command: async () => {
-          const nvo = await this.strategyBuilderService.getBacktestData('NVO', true);
-          console.log(nvo.signals.filter((n) => n.recommendation.mfi === 'Bullish'));
-        }
-      },
-      {
-        label: 'Filter out stocks',
-        command: async () => {
-          const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
-          let backtestResults = [];
-
-          if (savedBacktest) {
-            for (const saved in savedBacktest) {
-              const backtestObj = savedBacktest[saved];
-              backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
-              backtestResults.push(backtestObj);
-            }
-
-            backtestResults = backtestResults?.filter(data => data.impliedMovement > 0.1);
-
-          }
-          console.log(backtestResults.map(s => s.stock));
-        }
-      },
-      {
-        label: 'Test filter',
-        command: async () => {
-          const filterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === 'mfi');
-          const sellSignalFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === 'mfi');
-          const buyList = this.autopilotService.getBuyList(filterFn);
-          const sellList = this.autopilotService.getSellList(sellSignalFn);
-          console.log('buy', buyList);
-          console.log('sell', sellList);
-        }
-      },
-      {
-        label: 'Test vol',
-        command: async () => {
-          this.machineLearningService.trainVolatility(moment().format('YYYY-MM-DD'),
-            moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.6, 5, 0).subscribe((result) => {
-              console.log(result[0].predictionHistory.filter(r => r.prediction >= 0.5));
-            });
-          const vxx = await this.strategyBuilderService.getBacktestData('VXX', true);
-          console.log(vxx);
         }
       },
       {
@@ -279,15 +188,20 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       },
       {
-        label: 'Test api',
+        label: 'Test intraday ml',
         command: async () => {
-          await this.globalSettingsService.get10YearYield();
-        }
-      },
-      {
-        label: 'Test buy by mfi trade',
-        command: async () => {
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'buy');
+          this.machineLearningService
+            .trainDaytrade('APP',
+              moment().add({ days: 1 }).format('YYYY-MM-DD'),
+              moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
+              0.8,
+              this.globalSettingsService.daytradeAlgo
+            ).subscribe(async (result) => {
+              console.log(result);
+              const activationResult = await this.machineLearningService.activate('APP',
+                this.globalSettingsService.daytradeAlgo).toPromise();
+              console.log(activationResult);
+            });
         }
       },
       {
@@ -382,20 +296,21 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.autopilotService.isMarketOpened().toPromise();
           this.lastCredentialCheck = moment();
           await this.backtestOneStock(true, false);
-          if (!this.schedulerService.executeTask()) {
-            this.padOrders();
-          }
+          this.padOrders();
           this.aiPicksService.mlNeutralResults.next(null);
         } else if (moment().isAfter(moment(this.autopilotService.sessionEnd).subtract(25, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionEnd).subtract(20, 'minutes'))) {
+          console.log('Buy on close');
           if (!this.boughtAtClose) {
             await this.buySellAtCloseOrOpen();
           }
 
           this.boughtAtClose = true;
-          await this.backtestOneStock(false, false);
+          this.hedge();
         } else if (moment().isAfter(moment(this.autopilotService.sessionEnd)) &&
-          moment().isBefore(moment(this.autopilotService.sessionEnd).add(5, 'minute'))) {
+          moment().isBefore(moment(this.autopilotService.sessionEnd).add(15, 'minute'))) {
+          console.log('Print report', this.reportingService.logs.length);
+
           if (this.reportingService.logs.length) {
             const profitLog = `Profit ${this.scoreKeeperService.total}`;
             this.reportingService.addAuditLog(null, profitLog);
@@ -414,11 +329,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           if (metTarget) {
             this.decreaseRiskTolerance();
           }
-          this.hedge();
-          if (this.autopilotService.strategyList[this.autopilotService.strategyCounter] === Strategy.Daytrade &&
-            (this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.autopilotService.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
-            this.triggerDaytradeRefresh();
-          }
+          // if (this.autopilotService.strategyList[this.autopilotService.strategyCounter] === Strategy.Daytrade &&
+          //   (this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.autopilotService.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
+          //   this.triggerDaytradeRefresh();
+          // }
         } else if (moment().isAfter(moment(this.autopilotService.sessionStart).subtract(Math.floor(this.interval / 60000) * 2, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionStart))) {
           this.machineLearningService.trainVolatility(moment().format('YYYY-MM-DD'),
@@ -482,6 +396,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.cartService.otherOrders = [];
     this.cartService.buyOrders = [];
     this.developedStrategy = false;
+    this.strategyBuilderService.sanitizeData();
   }
 
   decreaseRiskTolerance() {
@@ -1003,9 +918,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async handleStrategy() {
-    this.strategyBuilderService.sanitizeData();
-    await this.autopilotService.findTopBuy();
-
     switch (this.autopilotService.strategyList[this.autopilotService.strategyCounter]) {
       case Strategy.TradingPairs:
         await this.autopilotService.findAnyPair();
@@ -1088,6 +1000,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
 
     await this.createTradingPairs();
+    await this.autopilotService.findTopBuy();
   }
 
   async buyWinners() {
@@ -1157,7 +1070,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async padOrders() {
     if (!this.autopilotService.hasReachedBuyLimit(this.autopilotService.addedOrdersCount)) {
       this.changeStrategy();
-      this.handleStrategy();
+      await this.handleStrategy();
     }
   }
 

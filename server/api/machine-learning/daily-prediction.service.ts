@@ -7,11 +7,8 @@ import PredictionService from './prediction.service';
 import TrainingService from './training.service';
 
 class DailyPredicationService extends PredictionService {
-
-  modelName = 'model2020-04-02';
-
   constructor() {
-    super(3, 0.001);
+    super(3, 0.001, 'model2020-04-02');
   }
 
   getModelName(featureUse) {

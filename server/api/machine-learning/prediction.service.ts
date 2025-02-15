@@ -13,10 +13,16 @@ export interface FeatureSet {
 export default class PredictionService {
   outputRange: number;
   outputLimit: number;
+  modelName = 'prediction';
 
-  constructor(range, limit) {
+  constructor(range, limit, modelName) {
     this.outputRange = range;
     this.outputLimit = limit;
+    this.modelName = modelName;
+  }
+
+  getModelName(name = '') {
+    return name + this.modelName + '_' + this.outputRange + '_' + this.outputLimit;
   }
 
   processBacktestResults(results: BacktestResults, featureUse): FeatureSet[] {

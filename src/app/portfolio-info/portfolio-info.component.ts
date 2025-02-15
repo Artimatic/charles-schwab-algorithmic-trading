@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { PortfolioService, BacktestService, PortfolioInfoHolding, AiPicksService, AuthenticationService, ScoreKeeperService } from '@shared/services';
+import { PortfolioService, BacktestService, PortfolioInfoHolding, AiPicksService, ScoreKeeperService } from '@shared/services';
 import { BacktestResponse } from '../rh-table';
 import { DailyBacktestService } from '@shared/daily-backtest.service';
 import * as moment from 'moment';
@@ -11,7 +11,6 @@ import { SchedulerService } from '@shared/service/scheduler.service';
 import { Subject } from 'rxjs';
 import { TimerObservable } from 'rxjs-compat/observable/TimerObservable';
 import { GlobalSettingsService } from '../settings/global-settings.service';
-import { DaytradeManagerService } from '@shared/services/daytrade-manager.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
 
 // bearishMidTermProfitLoss: 0
@@ -57,9 +56,7 @@ export class PortfolioInfoComponent implements OnInit, OnDestroy {
     private cartService: CartService,
     private aiPicksService: AiPicksService,
     private schedulerService: SchedulerService,
-    private authenticationService: AuthenticationService,
     private globalSettingsService: GlobalSettingsService,
-    private daytradeManagerService: DaytradeManagerService,
     private scoreKeeperService: ScoreKeeperService,
     private machineDaytradingService: MachineDaytradingService) { }
 
@@ -334,11 +331,6 @@ export class PortfolioInfoComponent implements OnInit, OnDestroy {
       .subscribe(() => {
         if (this.interval !== this.defaultInterval) {
           this.interval = this.defaultInterval;
-        }
-
-        if (moment().isAfter(moment(this.globalSettingsService.startTime)) &&
-          moment().isBefore(moment(this.globalSettingsService.stopTime))) {
-          this.daytradeManagerService.executeDaytrade();
         }
 
         if (moment().isAfter(moment(this.globalSettingsService.stopTime)) &&

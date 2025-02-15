@@ -10,8 +10,7 @@ import {
   DaytradeService,
   ReportingService,
   ScoreKeeperService,
-  PortfolioService,
-  MachineLearningService
+  PortfolioService
 } from '../shared';
 import { OrderTypes, SmartOrder } from '../shared/models/smart-order';
 import { Subscription } from 'rxjs/Subscription';
@@ -24,7 +23,7 @@ import { OrderingService } from '@shared/services/ordering.service';
 import { GlobalTaskQueueService } from '@shared/services/global-task-queue.service';
 import { ClientSmsService } from '@shared/services/client-sms.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
-import { MenuItem, MessageService, SelectItem } from 'primeng/api';
+import { MenuItem, SelectItem } from 'primeng/api';
 import { DaytradeAlgorithms } from '@shared/enums/daytrade-algorithms.enum';
 import { DialogService } from 'primeng/dynamicdialog';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
@@ -89,7 +88,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   settingsVisible = false;
   startingPrice = null;
 
-  lastMlResult: TrainingResults = null;
+  lastMlResult: number = null;
 
   sendingOrder = false;
 
@@ -101,13 +100,11 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     public cartService: CartService,
     private globalSettingsService: GlobalSettingsService,
     private tradeService: TradeService,
-    private machineLearningService: MachineLearningService,
     private orderingService: OrderingService,
     private globalTaskQueueService: GlobalTaskQueueService,
     private clientSmsService: ClientSmsService,
     private dialogService: DialogService,
     private machineDaytradingService: MachineDaytradingService,
-    private messageService: MessageService,
     private scoreKeeperService: ScoreKeeperService,
     private strategyBuilderService: StrategyBuilderService,
     private daytradeStrategiesService: DaytradeStrategiesService,
@@ -286,17 +283,6 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             if (queueItem.ml || queueItem.analysis) {
               this.lastMlResult = queueItem.ml;
               this.runStrategy(1 * lastPrice, queueItem.analysis);
-            } else {
-              this.machineLearningService
-                .trainDaytrade(this.order.holding.symbol.toUpperCase(),
-                  moment().add({ days: 1 }).format('YYYY-MM-DD'),
-                  moment().format('YYYY-MM-DD'),
-                  1,
-                  this.globalSettingsService.daytradeAlgo
-                ).subscribe((mlResult: TrainingResults[]) => {
-                  this.lastMlResult = mlResult && mlResult[0] ? mlResult[0] : null;
-                  this.runStrategy(1 * lastPrice, queueItem.analysis);
-                });
             }
           }
         });
@@ -676,7 +662,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       }
     } else if (this.order.type === OrderTypes.strangle && this.order.side.toLowerCase() == 'sell') {
       await this.orderHandlingService.sellStrangle(this.order, analysis);
-    } else if (analysis.recommendation.toLowerCase() === 'buy' || (this.lastMlResult && this.lastMlResult.nextOutput > 0.6)) {
+    } else if (analysis.recommendation.toLowerCase() === 'buy' || (this.lastMlResult && this.lastMlResult > 0.6)) {
       if (daytradeType === 'buy' || this.isDayTrading()) {
         this.machineDaytradingService.getPortfolioBalance().subscribe((balance) => {
           const currentBalance = this.isDayTrading() ? balance.availableFunds : balance.cashBalance;
@@ -694,7 +680,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             this.reportingService.addAuditLog(this.order.holding.symbol, quantityLog);
             //if (tradeCost > currentBalance) {
             orderQuantity = Math.floor((currentBalance * this.order.allocation) / quote);
-            const mlLog = `Ml next output: ${this.lastMlResult ? this.lastMlResult.nextOutput : ''}`;
+            const mlLog = `Ml next output: ${this.lastMlResult ? this.lastMlResult : ''}`;
             this.reportingService.addAuditLog(this.order.holding.symbol, mlLog);
             if (!this.priceLowerBound || (this.priceLowerBound && Number(quote) > Number(this.priceLowerBound))) {
               this.daytradeBuy(quote, orderQuantity, timestamp, analysis);
@@ -706,7 +692,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           }
         });
       }
-    } else if (((this.lastMlResult && this.lastMlResult.nextOutput < 0.2) || analysis.recommendation.toLowerCase() === 'sell' || this.order.forImmediateExecution) && (daytradeType === 'sell' || this.isDayTrading())) {
+    } else if (((this.lastMlResult && this.lastMlResult < 0.2) || analysis.recommendation.toLowerCase() === 'sell' || this.order.forImmediateExecution) && (daytradeType === 'sell' || this.isDayTrading())) {
       // console.log('Received sell recommendation: ', analysis, this.order.holding.symbol);
       if (this.order.buyCount >= this.order.sellCount || daytradeType === 'sell') {
         let orderQuantity = 0;
@@ -729,7 +715,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             timestamp,
             analysis);
 
-          const mlLog = `Ml next output: ${this.lastMlResult ? this.lastMlResult.nextOutput : ''}`;
+          const mlLog = `Ml next output: ${this.lastMlResult ? this.lastMlResult : ''}`;
           this.reportingService.addAuditLog(this.order.holding.symbol, mlLog);
             this.sendStopLoss(sellOrder);
         }

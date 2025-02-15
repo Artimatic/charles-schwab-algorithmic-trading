@@ -381,7 +381,7 @@ export class OptionsOrderBuilderService {
   }
 
   async getImpliedMove(symbol, backtestResults) {
-    if (backtestResults.impliedMovement) {
+    if (backtestResults?.impliedMovement) {
       return backtestResults.impliedMovement;
     } else {
       const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();

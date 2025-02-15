@@ -5,14 +5,12 @@ import BacktestService from '../backtest/backtest.service';
 import { BacktestResults } from '../backtest/backtest.service';
 import PredictionService, { FeatureSet } from './prediction.service';
 import InputHelperService from './input-helper.service';
-import DecisionService from '../mean-reversion/reversion-decision.service';
 
 class BullPredictionService extends PredictionService {
-    modelName = 'bull_model2025-01-23';
     foundPatterns = [];
 
     constructor() {
-        super(10, 0.01);
+        super(10, 0.01, 'bull_model2025-01-23');
     }
 
     setOutputRange(range: number) {
@@ -21,10 +19,6 @@ class BullPredictionService extends PredictionService {
 
     setOutputLimit(limit: number) {
         this.outputLimit = limit;
-    }
-
-    getModelName() {
-        return this.modelName + '_' + this.outputRange + '_' + this.outputLimit;
     }
 
     buildInputSet(openingPrice, currentSignal, featureUse) {
