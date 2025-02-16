@@ -101,37 +101,33 @@ export class OrderHandlingService {
 
   async intradayStep(symbol: string) {
     if (!this.daytradeStrategiesService.shouldSkip(symbol)) {
-      this.backtestService.getDaytradeRecommendation(symbol.toUpperCase(), null, null, { minQuotes: 81 })
-        .subscribe(
-          async (analysis) => {
-            const hasBuyPotential = this.daytradeStrategiesService.isPotentialBuy(analysis);
-            const hasSellPotential = this.daytradeStrategiesService.isPotentialSell(analysis);
-            if (hasBuyPotential || hasSellPotential) {
-              const startTime = new Date().valueOf();
-              if (!this.skipMl || symbol === 'SPY' || symbol === 'QQQ') {
-                try {
-                  await this.trainIntradayModel(analysis, symbol);
+      const analysis = await this.backtestService.getDaytradeRecommendation(symbol.toUpperCase(), null, null, { minQuotes: 81 }).toPromise();
+      const hasBuyPotential = this.daytradeStrategiesService.isPotentialBuy(analysis);
+      const hasSellPotential = this.daytradeStrategiesService.isPotentialSell(analysis);
+      if (hasBuyPotential || hasSellPotential) {
+        const startTime = new Date().valueOf();
+        if (!this.skipMl || symbol === 'SPY' || symbol === 'QQQ') {
+          try {
+            await this.trainIntradayModel(analysis, symbol);
 
-                  const currentMil = new Date().valueOf();
-                  if (currentMil - startTime > 180000) {
-                    this.skipMl = true;
-                  } else {
-                    this.skipMl = false;
-                  }
-                } catch (error) {
-                  console.log(error);
-                }
-              }
-              const queueItem: AlgoQueueItem = {
-                symbol: symbol,
-                reset: false,
-                analysis: analysis,
-                ml: null
-              };
-              this.tradeService.algoQueue.next(queueItem);
+            const currentMil = new Date().valueOf();
+            if (currentMil - startTime > 180000) {
+              this.skipMl = true;
+            } else {
+              this.skipMl = false;
             }
+          } catch (error) {
+            console.log(error);
           }
-        );
+        }
+        const queueItem: AlgoQueueItem = {
+          symbol: symbol,
+          reset: false,
+          analysis: analysis,
+          ml: null
+        };
+        this.tradeService.algoQueue.next(queueItem);
+      }
     }
   }
 
@@ -165,7 +161,7 @@ export class OrderHandlingService {
     }
   }
 
-  async buyOption(symbol: string, quantity: number, estimatedPrice = null, cb = () => {}) {
+  async buyOption(symbol: string, quantity: number, estimatedPrice = null, cb = () => { }) {
     const estPrice = estimatedPrice ? estimatedPrice : await this.getEstimatedPrice(symbol);
     this.portfolioService.sendOptionBuy(symbol, quantity, estPrice, false).subscribe(data => {
       console.log('Bought option', symbol, data);
