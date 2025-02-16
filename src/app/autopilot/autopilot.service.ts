@@ -105,7 +105,6 @@ export class AutopilotService {
   lastBuyList = [];
   lastOptionsCheckCheck = null;
   currentHoldings: PortfolioInfoHolding[] = [];
-  lastOrderListIndex = 0;
   strategyList = [
     Strategy.Default,
     Strategy.InverseDispersion,
@@ -733,15 +732,12 @@ export class AutopilotService {
   async executeOrderList() {
     const buyAndSellList = this.cartService.sellOrders.concat(this.cartService.buyOrders);
     const orders = buyAndSellList.concat(this.cartService.otherOrders);
-    if (this.lastOrderListIndex >= orders.length) {
-      this.lastOrderListIndex = 0;
+    for (let i = 0; i < orders.length; i++) {
+      const symbol = orders[i].holding.symbol;
+      if (!this.daytradeStrategiesService.shouldSkip(symbol)) {
+        await this.orderHandlingService.intradayStep(symbol);
+      }
     }
-    const symbol = orders[this.lastOrderListIndex].holding.symbol;
-    if (!this.daytradeStrategiesService.shouldSkip(symbol)) {
-      await this.orderHandlingService.intradayStep(symbol);
-    }
-
-    this.lastOrderListIndex++;
   }
 
   private async intradayProcess() {

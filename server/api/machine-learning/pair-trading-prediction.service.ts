@@ -5,8 +5,6 @@ import BacktestService from '../backtest/backtest.service';
 import { BacktestResults } from '../backtest/backtest.service';
 import PredictionService from './prediction.service';
 
-import * as configurations from '../../config/environment';
-
 class PairTradingPredicationService extends PredictionService {
   foundPatterns = [];
 

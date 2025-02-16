@@ -786,8 +786,6 @@ class BacktestService {
   evaluateBband(symbol, currentDate, startDate) {
     const minQuotes = 81;
     const getIndicatorQuotes = [];
-    console.log('Start');
-
     return QuoteService.queryForIntraday(symbol, startDate, currentDate)
       .then(quotes => {
         console.log('quotes: ', quotes.length);
