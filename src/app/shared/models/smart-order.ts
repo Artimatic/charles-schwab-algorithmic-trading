@@ -38,4 +38,6 @@ export interface SmartOrder extends Order {
     createdTime?: string;
     forImmediateExecution?: boolean;
     reason?: string;
+    id?: string;
+    targetQuantity?: number
 }

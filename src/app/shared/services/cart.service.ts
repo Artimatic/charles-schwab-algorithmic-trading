@@ -50,6 +50,7 @@ export class CartService {
 
   addToCart(order: SmartOrder, replaceAnyExistingOrders = false, reason = '') {
     order.createdTime = moment().format();
+    order.id = `${order.holding.symbol}-${order.side}-${order.createdTime}`;
     const indices = this.searchAllLists(order);
     let noDup = true;
     for (const idx of indices) {

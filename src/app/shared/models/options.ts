@@ -7,6 +7,7 @@ export interface Options {
     symbol: string;
     totalVolume?: number;
     quantity: number;
+    targetQuantity?: number;
     assetType?: string;
     cusip?: string; // "0INTC.TG40030000"
     description?: string; //"INTEL CORP 08/16/2024 $30 Put"

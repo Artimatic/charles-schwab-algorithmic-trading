@@ -465,7 +465,7 @@ export class AutopilotService {
     }
   }
 
-  addPairOnSignal(indicator: SwingtradeAlgorithms, direction: 'buy' | 'sell', printList = false) {
+  addPairOnSignal(indicator: SwingtradeAlgorithms, direction: 'buy' | 'sell') {
     let buyFilterFn = null;
     let sellFilterFn = null;
     if (direction === 'buy') {
@@ -480,6 +480,22 @@ export class AutopilotService {
     const sells = this.getSellList(sellFilterFn);
     console.log(`${indicator} ${direction}`, buys, sells);
     this.addPair(buys, sells, `${direction} ${indicator}`);
+  }
+
+  async buyOnSignal(indicator: SwingtradeAlgorithms, direction: 'buy' | 'sell') {
+    let buyFilterFn = null;
+    if (direction === 'buy') {
+      buyFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator);
+    } else {
+      buyFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator);
+    }
+
+    const buys = this.getBuyList(buyFilterFn);
+    console.log(`${indicator} ${direction}`, buys);
+    if (buys.length) {
+      const candidate = buys.pop();
+      await this.addBuy(this.createHoldingObj(candidate), null, `${direction} ${indicator}`);
+    }
   }
 
   async findTopNotSell() {
