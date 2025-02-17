@@ -170,6 +170,7 @@ export class DaytradeService {
         this.closePosition(sellOrder, 'limit', resolve, reject, handleNotFound);
       });
   }
+  
   sendTdSell(sellOrder: SmartOrder, type: string, resolve: Function, reject: Function, handleNotFound: Function): SmartOrder {
     this.portfolioService.getTdPortfolio()
       .subscribe(result => {
