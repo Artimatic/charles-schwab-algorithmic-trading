@@ -183,7 +183,7 @@ export class DetermineHedgeComponent implements OnInit {
 
   portfolioSell(stock: string, desiredLongMarketValue: number, actualAllocation: number) {
     const sellValue = actualAllocation - desiredLongMarketValue;
-    this.portfolioService.getPrice(stock).subscribe((price) => {
+    this.portfolioService.getPrice(stock, false).subscribe((price) => {
       const sellShareAmt = _.floor(sellValue / price);
 
       const order = this.buildOrder(stock, sellShareAmt, price, 'Sell');

@@ -54,4 +54,5 @@ export interface Order {
     createdTime?: string;
     forImmediateExecution?: boolean;
     reason?: string;
+    paidPrice?: number;
 }

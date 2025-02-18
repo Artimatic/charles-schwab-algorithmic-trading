@@ -195,7 +195,7 @@ export class PortfolioService {
     })
   }
 
-  getPrice(symbol: string): Observable<number> {
+  getPrice(symbol: string, lastPrice = true): Observable<number> {
     const options: any = {
       params: {
         symbol
@@ -208,7 +208,7 @@ export class PortfolioService {
     return this.http.get('/api/portfolio/quote', options)
       .pipe(
         map((quote) => {
-          return _.round(quote[symbol].quote.askPrice, 2);
+          return lastPrice ? _.round(quote[symbol].quote.lastPrice, 2) : _.round(quote[symbol].quote.askPrice, 2);
         })
       );
   }

@@ -254,6 +254,7 @@ export class CartService {
       },
       quantity,
       price,
+      positionCount: side.toLowerCase() === 'sell' ? quantity : 0,
       submitted: false,
       pending: false,
       orderSize: quantity || 1,
@@ -269,9 +270,15 @@ export class CartService {
     };
   }
 
-  buildOrderWithAllocation(symbol: string, quantity = 0, price = 0,
-    side = 'DayTrade', orderSizePct = 0.5, lossThreshold = -0.004,
-    profitTarget = 0.008, trailingStop = -0.003, allocation = null,
+  buildOrderWithAllocation(symbol: string, 
+    quantity = 0, 
+    price = 0,
+    side = 'DayTrade', 
+    orderSizePct = 0.5, 
+    lossThreshold = -0.004,
+    profitTarget = 0.008, 
+    trailingStop = -0.003, 
+    allocation = null,
     executeImmediately = false): SmartOrder {
     return {
       holding: {
@@ -282,6 +289,7 @@ export class CartService {
       price,
       submitted: false,
       pending: false,
+      positionCount: side.toLowerCase() === 'sell' ? quantity : 0,
       orderSize: side.toLowerCase() === 'sell' ? quantity : Math.floor(quantity * orderSizePct) || quantity,
       side,
       lossThreshold: lossThreshold,
@@ -307,6 +315,7 @@ export class CartService {
         instrument: null,
         symbol,
       },
+      positionCount: quantity,
       quantity: quantity,
       price,
       submitted: false,
@@ -361,6 +370,7 @@ export class CartService {
         submitted: false,
         pending: false,
         orderSize: side.toLowerCase() === 'sell' ? quantity : (!orderSize ? (Math.floor(quantity / 2) || 1) : orderSize),
+        positionCount: side.toLowerCase() === 'sell' ? quantity : 0,
         side: side,
         lossThreshold: -0.05,
         profitTarget: 0.1,
@@ -590,7 +600,7 @@ export class CartService {
   }
 
   async portfolioSell(holding: PortfolioInfoHolding, reason = '', executeImmediately = false) {
-    const price = await this.portfolioService.getPrice(holding.name).toPromise();
+    const price = await this.portfolioService.getPrice(holding.name, false).toPromise();
     const orderSizePct = 0.5;
     const order = this.buildOrderWithAllocation(holding.name, holding.shares, price, 'Sell',
       orderSizePct, null, null, null, executeImmediately);

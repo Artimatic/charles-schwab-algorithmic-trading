@@ -270,11 +270,22 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             if (holding.shares) {
               const price = await this.portfolioService.getPrice(holding.name).toPromise();
               const orderSizePct = 0.5;
-              const order = this.cartService.buildOrderWithAllocation(holding.name, holding.shares, price, 'Sell',
-                orderSizePct, null, null, null, false);
+              const order = this.cartService.buildOrderWithAllocation(holding.name, 
+                holding.shares, 
+                price, 
+                'Sell',
+                orderSizePct, -0.005, 0.01, -0.003, null, true);
               const result = await this.orderingService.getRecommendationAndProcess(order).toPromise();
-              console.log('Result', result);
+              console.log('sell result', result);
             }
+          }
+          const buys = this.autopilotService.getBuyList()
+          for (const buy of buys) {
+            const price = await this.portfolioService.getPrice(buy).toPromise();
+            const order = this.cartService.buildOrderWithAllocation(buy, 1, price, 'Buy',
+              0.5, -0.005, 0.01, -0.003, null, true);
+            const result = await this.orderingService.getRecommendationAndProcess(order).toPromise();
+            console.log('buy result', result);
           }
         }
       },
