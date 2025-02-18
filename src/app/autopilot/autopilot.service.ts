@@ -326,13 +326,12 @@ export class AutopilotService {
 
       try {
         const allIndicators = await this.getTechnicalIndicators(holding.name, startDate, currentDate).toPromise();
-        const indicators = allIndicators.signals[allIndicators.signals.length - 1];
-        const thresholds = this.getStopLoss(indicators.low, indicators.high);
+        const indicator = allIndicators.signals[allIndicators.signals.length - 1];
+        const thresholds = this.getStopLoss(indicator.low, indicator.high);
         await this.cartService.portfolioBuy(holding,
           allocation || ((1 - backtestData.impliedMovement) / 10),
           thresholds.profitTakingThreshold,
           thresholds.stopLoss, reason);
-        await this.orderHandlingService.intradayStep(holding.name);
       } catch (error) {
         console.log('Error getting backtest data for ', holding.name, error);
       }
