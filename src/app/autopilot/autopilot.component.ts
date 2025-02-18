@@ -333,10 +333,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.boughtAtClose = true;
           this.hedge();
         } else if (moment().isAfter(moment(this.autopilotService.sessionEnd)) &&
-          moment().isBefore(moment(this.autopilotService.sessionEnd).add(15, 'minute'))) {
-          console.log('Print report', this.reportingService.logs.length);
-
-          if (this.reportingService.logs.length) {
+          moment().isBefore(moment(this.autopilotService.sessionEnd).add(5, 'minute'))) {
+          if (this.reportingService.logs.length > 5) {
             const profitLog = `Profit ${this.scoreKeeperService.total}`;
             this.reportingService.addAuditLog(null, profitLog);
             this.reportingService.exportAuditHistory();

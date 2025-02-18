@@ -476,6 +476,8 @@ export class OptionsOrderBuilderService {
   }
 
   async checkCurrentOptions(currentHoldings: PortfolioInfoHolding[]) {
+    this.reportingService.addAuditLog(null, 'Check current options');
+
     currentHoldings.forEach(async (holding) => {
       if (holding.primaryLegs) {
         const callPutInd = holding.primaryLegs[0].putCallInd.toLowerCase();

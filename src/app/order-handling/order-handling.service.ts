@@ -105,21 +105,21 @@ export class OrderHandlingService {
       const hasBuyPotential = this.daytradeStrategiesService.isPotentialBuy(analysis);
       const hasSellPotential = this.daytradeStrategiesService.isPotentialSell(analysis);
       if (hasBuyPotential || hasSellPotential) {
-        const startTime = new Date().valueOf();
-        if (!this.skipMl || symbol === 'SPY' || symbol === 'QQQ') {
-          try {
-            await this.trainIntradayModel(analysis, symbol);
+        // const startTime = new Date().valueOf();
+        // if (!this.skipMl || symbol === 'SPY' || symbol === 'QQQ') {
+        //   try {
+        //     await this.trainIntradayModel(analysis, symbol);
 
-            const currentMil = new Date().valueOf();
-            if (currentMil - startTime > 180000) {
-              this.skipMl = true;
-            } else {
-              this.skipMl = false;
-            }
-          } catch (error) {
-            console.log(error);
-          }
-        }
+        //     const currentMil = new Date().valueOf();
+        //     if (currentMil - startTime > 180000) {
+        //       this.skipMl = true;
+        //     } else {
+        //       this.skipMl = false;
+        //     }
+        //   } catch (error) {
+        //     console.log(error);
+        //   }
+        // }
         const queueItem: AlgoQueueItem = {
           symbol: symbol,
           reset: false,

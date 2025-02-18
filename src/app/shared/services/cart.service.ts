@@ -279,7 +279,8 @@ export class CartService {
     profitTarget = 0.008, 
     trailingStop = -0.003, 
     allocation = null,
-    executeImmediately = false): SmartOrder {
+    executeImmediately = false,
+    reason = ''): SmartOrder {
     return {
       holding: {
         instrument: null,
@@ -301,7 +302,8 @@ export class CartService {
       sellAtClose: (side.toLowerCase() === 'sell' || side.toLowerCase() === 'daytrade') ? true : false,
       // sellAtClose: false,
       allocation,
-      forImmediateExecution: executeImmediately
+      forImmediateExecution: executeImmediately,
+      reason
     };
   }
 
@@ -588,22 +590,26 @@ export class CartService {
   async buildBuyOrder(holding: PortfolioInfoHolding,
     allocation: number,
     profitThreshold: number = null,
-    stopLossThreshold: number = null) {
+    stopLossThreshold: number = null,
+    reason) {
     const price = await this.portfolioService.getPrice(holding.name).toPromise();
     const cash = await this.getAvailableFunds(false);
     const quantity = this.getQuantity(price, allocation, cash);
     const orderSizePct = 0.1;
     const order = this.buildOrderWithAllocation(holding.name, quantity, price, 'Buy',
       orderSizePct, stopLossThreshold, profitThreshold,
-      stopLossThreshold, allocation);
+      stopLossThreshold, allocation, false, reason);
     return order;
   }
 
   async portfolioSell(holding: PortfolioInfoHolding, reason = '', executeImmediately = false) {
     const price = await this.portfolioService.getPrice(holding.name, false).toPromise();
     const orderSizePct = 0.5;
-    const order = this.buildOrderWithAllocation(holding.name, holding.shares, price, 'Sell',
-      orderSizePct, null, null, null, executeImmediately);
+    const order = this.buildOrderWithAllocation(holding.name, 
+      holding.shares, 
+      price, 
+      'Sell',
+      orderSizePct, -0.005, 0.01, -0.003, null, executeImmediately, reason);
     this.addToCart(order, true, reason);
     this.initializeOrder(order);
   }
@@ -613,7 +619,7 @@ export class CartService {
     profitThreshold: number = null,
     stopLossThreshold: number = null, reason: string) {
     console.log('Portfolio buy', holding, allocation, profitThreshold, stopLossThreshold);
-    const order = await this.buildBuyOrder(holding, allocation, profitThreshold, stopLossThreshold);
+    const order = await this.buildBuyOrder(holding, allocation, profitThreshold, stopLossThreshold, reason);
     if (order.quantity) {
       this.addToCart(order, false, reason);
       this.initializeOrder(order);
