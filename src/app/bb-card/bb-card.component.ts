@@ -682,7 +682,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             orderQuantity = Math.floor((currentBalance * this.order.allocation) / quote);
             const mlLog = `Ml next output: ${this.lastMlResult ? this.lastMlResult : ''}`;
             this.reportingService.addAuditLog(this.order.holding.symbol, mlLog);
-            if (!this.priceLowerBound || (this.priceLowerBound && Number(quote) > Number(this.priceLowerBound))) {
+            if (this.order.side.toLowerCase() === 'buy' || !this.priceLowerBound || (this.priceLowerBound && Number(quote) >= Number(this.priceLowerBound))) {
               this.daytradeBuy(quote, orderQuantity, timestamp, analysis);
             } else {
               const log = 'Price too low ' + Number(quote) + ' vs ' + Number(this.priceLowerBound);

@@ -286,6 +286,7 @@ export class AutopilotService {
       moment().isBefore(moment(end))) {
       const isDown = await this.priceTargetService.isDownDay();
       if (isDown) {
+        this.reportingService.addAuditLog(null, 'Down day, buy the dip');
         const spy = 'SPY';
         const callOption = await this.strategyBuilderService.getCallStrangleTrade(spy);
         const estimatedPrice = this.strategyBuilderService.findOptionsPrice(callOption.call.bid, callOption.call.ask);
@@ -528,6 +529,8 @@ export class AutopilotService {
     const balance = await this.portfolioService.getTdBalance().toPromise();
     const isOverBalance = Boolean(Number(balance.cashBalance) < 0);
     if (isOverBalance) {
+      this.reportingService.addAuditLog(null, 'Over balance');
+
       currentHoldings = await this.cartService.findCurrentPositions();
       await this.checkIfTooManyHoldings(currentHoldings, 10);
     } else {
@@ -535,11 +538,12 @@ export class AutopilotService {
       const targetUtilization = Number(new Date().getDate() * 0.005) + spyPrediction;
       const actualUtilization = (1 - (balance.cashBalance / balance.liquidationValue));
       const underUtilized = actualUtilization < targetUtilization;
-      this.reportingService.addAuditLog(null, `Underutilized: ${underUtilized}, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
       if (underUtilized) {
         if (this.lastBuyList.length) {
           const buySym = this.lastBuyList.pop();
           const backtestData = await this.strategyBuilderService.getBacktestData(buySym);
+          this.reportingService.addAuditLog(null, `Underutilized: ${underUtilized}, Target: ${targetUtilization}, Actual: ${actualUtilization}, Buying: ${buySym}`);
+
           this.buyRightAway(buySym, backtestData.ml);
         } else {
           this.lastBuyList = this.getBuyList();
@@ -558,8 +562,8 @@ export class AutopilotService {
       (balance.cashBalance * this.riskToleranceList[this.riskCounter] * allocation);
     const quantity = this.strategyBuilderService.getQuantity(price, 1, cash);
     const order = this.cartService.buildOrderWithAllocation(buySymbol, quantity, price, 'Buy',
-      1, null, null,
-      null, 1);
+      1, -0.005, 0.01,
+      -0.003, 1, false, 'Buy right away');
 
     this.daytradeService.sendBuy(order, 'limit', () => { }, () => { });
   }
@@ -653,11 +657,11 @@ export class AutopilotService {
     if (results.put > 0 && results.call > 0) {
       if (results.put + (results.put * this.getLastSpyMl() * (this.riskToleranceList[this.riskCounter] * 3) * (1 - this.volatility)) > results.call) {
         const targetBalance = Number(results.put - results.call);
-        this.reportingService.addAuditLog(null, `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${targetBalance}`);
+        this.reportingService.addAuditLog(null, `Add calls Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${targetBalance}`);
         this.optionsOrderBuilderService.addOptionByBalance('SPY', targetBalance, 'Balance call put ratio', true);
       } else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
         this.sellLoser(holdings, 'Balancing call put ratio');
-        console.log('Sell loser', results.call / results.put, `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${(1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])}`);
+        this.reportingService.addAuditLog(null, 'Sell loser' + results.call / results.put + `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${(1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])}`);
       }
     }
   }
@@ -790,11 +794,11 @@ export class AutopilotService {
   }
 
   handleIntraday() {
-    if (moment().isAfter(moment(this.sessionStart)) &&
+    if (moment().isAfter(moment(this.sessionStart).add(25, 'minutes')) &&
       moment().isBefore(moment(this.sessionEnd).subtract(5, 'minutes'))) {
       this.isMarketOpened().subscribe(async (isOpen) => {
         if (isOpen) {
-          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 9) {
+          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 5) {
             this.lastOptionsCheckCheck = moment();
             await this.intradayProcess();
           } else {
