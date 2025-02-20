@@ -57,4 +57,6 @@ export interface Indicators {
     rsi?: number;
     support: number[];
     resistance: number[];
+    sma10: number;
+    sma50: number;
 }

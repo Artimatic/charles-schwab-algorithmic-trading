@@ -99,7 +99,7 @@ class BacktestService {
   getRsi(real, period) {
     return tulind.indicators.rsi.indicator([real], [period]);
   }
-  
+
   getObv(close, volume) {
     return tulind.indicators.obv.indicator([close, volume], []);
   }
@@ -1220,6 +1220,14 @@ class BacktestService {
       .then(vwma => {
         const vwmaLen = vwma[0].length - 1;
         currentQuote.vwma = _.round(vwma[0][vwmaLen], 3);
+        return this.getSMA(indicators.reals, 10);
+      })
+      .then((sma10) => {
+        currentQuote.sma10 = sma10[0][sma10[0].length - 1];
+        return this.getSMA(indicators.reals, 50);
+      })
+      .then((sma50) => {
+        currentQuote.sma50 = sma50[0][sma50[0].length - 1];
         return this.getMacd(indicators.reals, 12, 26, 9);
       })
       .then(macd => {
@@ -1276,10 +1284,10 @@ class BacktestService {
       }).then(obv => {
         currentQuote.obv = obv;
         return MfiService.getMfi(this.getSubArrayShift(indicators.highs, 14, -1),
-        this.getSubArrayShift(indicators.lows, 14, -1),
-        this.getSubArrayShift(indicators.reals, 14, -1),
-        this.getSubArrayShift(indicators.volumes, 14, -1),
-        14);
+          this.getSubArrayShift(indicators.lows, 14, -1),
+          this.getSubArrayShift(indicators.reals, 14, -1),
+          this.getSubArrayShift(indicators.volumes, 14, -1),
+          14);
       })
       .then((mfiPrevious) => {
         const len = mfiPrevious[0].length - 1;

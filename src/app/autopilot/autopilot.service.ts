@@ -111,16 +111,19 @@ export class AutopilotService {
     Strategy.BuyMfiTrade,
     Strategy.BuyMfiDiv,
     Strategy.BuyMfi,
+    Strategy.TrimHoldings,
     Strategy.PerfectPair,
     Strategy.BuyCalls,
     Strategy.BuyMacd,
     Strategy.BuyBband,
+    Strategy.TrimHoldings,
     Strategy.Short,
     Strategy.SellMfi,
     Strategy.BuyML,
     Strategy.SellBband,
     Strategy.BuySnP,
     Strategy.MLPairs,
+    Strategy.TrimHoldings,
     Strategy.TradingPairs,
     Strategy.BuyDemark,
     Strategy.VolatilityPairs,
@@ -531,19 +534,16 @@ export class AutopilotService {
       this.reportingService.addAuditLog(null, 'Over balance');
 
       currentHoldings = await this.cartService.findCurrentPositions();
-      await this.checkIfTooManyHoldings(currentHoldings, 10);
+      this.sellLoser(currentHoldings, 'Over balance');
     } else {
       const spyPrediction = this.getLastSpyMl() || 0;
       const targetUtilization = Number(new Date().getDate() * 0.005) + spyPrediction;
       const actualUtilization = (1 - (balance.cashBalance / balance.liquidationValue));
-      const underUtilized = actualUtilization < targetUtilization;
-      if (underUtilized) {
+      if (actualUtilization < targetUtilization) {
         if (this.lastBuyList.length) {
           const buySym = this.lastBuyList.pop();
-          const backtestData = await this.strategyBuilderService.getBacktestData(buySym);
-          this.reportingService.addAuditLog(null, `Underutilized: ${underUtilized}, Target: ${targetUtilization}, Actual: ${actualUtilization}, Buying: ${buySym}`);
-
-          this.buyRightAway(buySym, backtestData.ml);
+          this.reportingService.addAuditLog(null, `Underutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}, Buying: ${buySym}`);
+          this.buyRightAway(buySym, this.riskToleranceList[0]);
         } else {
           this.lastBuyList = this.getBuyList();
         }
@@ -644,12 +644,6 @@ export class AutopilotService {
     });
   }
 
-  async checkIfTooManyHoldings(currentHoldings: any[], maxHoldings = this.maxHoldings) {
-    if (currentHoldings.length > maxHoldings) {
-      this.sellLoser(currentHoldings, 'Too many holdings');
-    }
-  }
-
   async balanceCallPutRatio(holdings: PortfolioInfoHolding[]) {
     const results = this.priceTargetService.getCallPutBalance(holdings);
     this.reportingService.addAuditLog(null, `Calls: ${results.call}, Puts: ${results.put}, ratio: ${results.call / results.put}`);
@@ -723,9 +717,9 @@ export class AutopilotService {
         profitTarget = impliedMove * 3;
         this.reportingService.addAuditLog(holding.name, `Setting stock profit target to ${profitTarget}`);
       } else {
-        stopLoss = impliedMove * -1;
+        stopLoss = impliedMove * -0.6;
         this.reportingService.addAuditLog(holding.name, `Setting stock stop loss to ${stopLoss}`);
-        profitTarget = impliedMove * 2;
+        profitTarget = impliedMove * 1.2;
         this.reportingService.addAuditLog(holding.name, `Setting stock profit target to ${profitTarget}`);
       }
       if (pnl < stopLoss) {
@@ -740,7 +734,7 @@ export class AutopilotService {
         } else {
           await this.cartService.portfolioSell(holding, `Price target met ${pnl}`);
         }
-      } else if (pnl > (stopLoss * 0.15) && pnl < (profitTarget * 0.2)) {
+      } else if (pnl > 0 && pnl < (profitTarget * 0.2)) {
         if (!isOptionOnly) {
           await this.addBuy(holding, null, 'Adding to position');
         }
@@ -797,7 +791,7 @@ export class AutopilotService {
       moment().isBefore(moment(this.sessionEnd).subtract(5, 'minutes'))) {
       this.isMarketOpened().subscribe(async (isOpen) => {
         if (isOpen) {
-          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 5) {
+          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 15) {
             this.lastOptionsCheckCheck = moment();
             await this.intradayProcess();
           } else {
