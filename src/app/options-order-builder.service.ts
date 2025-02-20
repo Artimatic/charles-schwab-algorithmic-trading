@@ -245,7 +245,8 @@ export class OptionsOrderBuilderService {
                 'Buy', currentCall.quantity);
 
               if (addToList) {
-                this.reportingService.addAuditLog(null, `Trading pair ${option1?.primaryLegs[0]?.symbol} ${option2?.primaryLegs[0]?.symbol}. Reason: ${reason}`);
+                this.reportingService.addAuditLog(null, 
+                  `Trading pair ${option1?.primaryLegs[0]?.symbol} ${option2?.primaryLegs[0]?.symbol}. Reason: ${reason}, Min cash: ${minCashAllocation}, Max cash: ${maxCashAllocation}`);
                 this.addTradingPairs([option1, option2], reason);
               }
 
@@ -398,7 +399,7 @@ export class OptionsOrderBuilderService {
     const impliedMove = await this.getImpliedMove(symbol, backtestResults)
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
     if (backtestResults && backtestResults.ml !== null) {
-      if (currentDiff < impliedMove * 0.23) {
+      if (currentDiff < impliedMove * 0.18) {
         return true;
       }
     }
