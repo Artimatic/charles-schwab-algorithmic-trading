@@ -503,11 +503,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (this.manualStart) {
       return;
     }
-    const vol = await this.machineLearningService.trainVolatility(moment().format('YYYY-MM-DD'),
-      moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.6, 5, 0).toPromise();
-    if (vol[0].nextOutput < 0.3) {
-      await this.autopilotService.getAnyBuy();
-    }
+
     this.developedStrategy = true;
 
     this.boughtAtClose = false;
@@ -517,7 +513,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.autopilotService.currentHoldings = await this.cartService.findCurrentPositions();
 
     await this.modifyCurrentHoldings();
-    await this.checkPersonalLists();
     const balance = await this.machineDaytradingService.getPortfolioBalance().toPromise();
     if (balance.liquidationValue < 26000) {
       await this.autopilotService.findTopBuy();
@@ -847,55 +842,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     });
   }
 
-  async checkPersonalLists() {
-    this.strategyBuilderService.getBuyList().forEach(async (stock) => {
-      const name = stock.ticker;
-      try {
-        const backtestResults = await this.strategyBuilderService.getBacktestData(name);
-        const stock: PortfolioInfoHolding = {
-          name: name,
-          pl: 0,
-          netLiq: 0,
-          shares: 0,
-          alloc: 0,
-          recommendation: 'None',
-          buyReasons: '',
-          sellReasons: '',
-          buyConfidence: 0,
-          sellConfidence: 0,
-          prediction: null
-        };
-        if (backtestResults && backtestResults.ml !== null && (backtestResults.ml > 0.5 && (backtestResults.recommendation === 'STRONGBUY' || backtestResults.recommendation === 'BUY'))) {
-          const msg = `Buy ${name}, date: ${moment().format()}`;
-          this.messageService.add({ severity: 'success', summary: 'Buy alert', detail: msg, life: 21600000 });
-          console.log(msg);
-          await this.autopilotService.addBuy(stock, null, 'Personal list buy');
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    });
-
-    PersonalBearishPicks.forEach(async (stock) => {
-      const name = stock.ticker;
-      try {
-        const backtestResults = await this.strategyBuilderService.getBacktestData(name);
-        if (backtestResults && backtestResults.sellMl !== null && (backtestResults.sellMl > 0.6 && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL'))) {
-          const msg = `Sell ${name}, date: ${moment().format()}`;
-          this.messageService.add({ severity: 'error', summary: 'Sell alert', detail: msg, life: 21600000 });
-          console.log(msg);
-          const cash = await this.getMinMaxCashForOptions();
-
-          this.optionsOrderBuilderService.balanceTrades(this.autopilotService.currentHoldings, ['SPY'], [name], cash.minCash, cash.maxCash, 'Bearish pick');
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    });
-  }
-
   async hedge() {
-    await this.portfolioMgmtService.hedge(this.autopilotService.currentHoldings, this.optionsOrderBuilderService.getTradingPairs(), this.autopilotService.riskToleranceList[1], this.autopilotService.riskToleranceList[this.autopilotService.riskCounter]);
+    await this.portfolioMgmtService.hedge(this.autopilotService.currentHoldings, this.optionsOrderBuilderService.getTradingPairs(), this.autopilotService.riskToleranceList[0], this.autopilotService.riskToleranceList[this.autopilotService.riskCounter]);
   }
 
   async sellAll() {
@@ -967,9 +915,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         break;
       case Strategy.PerfectPair:
         await this.autopilotService.addPerfectPair();
-        break;
-      case Strategy.BuyML:
-        await this.autopilotService.getAnyBuy();
         break;
       case Strategy.MLPairs:
         await this.autopilotService.addMLPairs();
@@ -1050,13 +995,15 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         break;
       default: {
         await this.autopilotService.findTopNotSell();
-        await this.addInverseDispersionTrade();
         await this.autopilotService.findAnyPair();
         break;
       }
     }
 
     await this.createTradingPairs();
+    if (this.autopilotService.getVolatilityMl() > 0.3) {
+      await this.autopilotService.sellLoser(this.autopilotService.currentHoldings);
+    }
     await this.autopilotService.findTopBuy();
   }
 

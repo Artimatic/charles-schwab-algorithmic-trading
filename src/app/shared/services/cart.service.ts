@@ -274,7 +274,7 @@ export class CartService {
     quantity = 0, 
     price = 0,
     side = 'DayTrade', 
-    orderSizePct = 0.5, 
+    orderSizePct = 0.3, 
     lossThreshold = -0.004,
     profitTarget = 0.008, 
     trailingStop = -0.003, 
@@ -591,7 +591,7 @@ export class CartService {
     allocation: number,
     profitThreshold: number = null,
     stopLossThreshold: number = null,
-    reason) {
+    reason: string) {
     const price = await this.portfolioService.getPrice(holding.name).toPromise();
     const cash = await this.getAvailableFunds(false);
     const quantity = this.getQuantity(price, allocation, cash);

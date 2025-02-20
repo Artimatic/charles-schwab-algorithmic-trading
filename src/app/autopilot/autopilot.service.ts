@@ -421,26 +421,6 @@ export class AutopilotService {
     return newList.map(s => s.stock);
   }
 
-  async getAnyBuy() {
-    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
-    let backtestResults = [];
-
-    if (savedBacktest) {
-      for (const saved in savedBacktest) {
-        const backtestObj = savedBacktest[saved];
-        backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
-        backtestResults.push(backtestObj);
-      }
-      const count = backtestResults.length > this.maxTradeCount ? this.maxTradeCount : backtestResults.length;
-      backtestResults = backtestResults?.sort((a, b) => b.ml - a.ml).slice(0, count);
-    }
-
-    console.log(backtestResults);
-    for (const b of backtestResults) {
-      await this.addBuy(this.createHoldingObj(b.stock), null, 'Buy any stock');
-    }
-  }
-
   async findAnyPair() {
     const buys = this.getBuyList()
     const sells = this.getSellList();
@@ -497,7 +477,7 @@ export class AutopilotService {
     console.log(`${indicator} ${direction}`, buys);
     if (buys.length) {
       const candidate = buys.pop();
-      await this.addBuy(this.createHoldingObj(candidate), null, `${direction} ${indicator}`);
+      await this.addBuy(this.createHoldingObj(candidate), this.riskToleranceList[this.riskCounter], `${direction} ${indicator}`);
     }
   }
 
@@ -736,7 +716,7 @@ export class AutopilotService {
         }
       } else if (pnl > 0 && pnl < (profitTarget * 0.2)) {
         if (!isOptionOnly) {
-          await this.addBuy(holding, null, 'Adding to position');
+          await this.addBuy(holding, this.riskToleranceList[0], 'Adding to position');
         }
       }
     }
