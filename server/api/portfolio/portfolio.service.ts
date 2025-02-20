@@ -811,6 +811,9 @@ class PortfolioService {
   }
 
   sendPositionRequest(accountId) {
+    if (!accountId) {
+      accountId = this.getAccountId();
+    }
     const query = `${charlesSchwabTraderUrl}accounts/${this.accountIdToHash[accountId]}`;
     const options = {
       uri: query,
