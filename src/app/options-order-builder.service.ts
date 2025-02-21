@@ -234,7 +234,7 @@ export class OptionsOrderBuilderService {
               }
             }
 
-            if (currentPut && currentCall) {
+            if (currentPut && currentCall && (currentCall.price * currentCall.quantity) + (currentPut.price * currentPut.quantity) <= maxCashAllocation) {
               const option1 = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call],
                 currentCall.price, currentCall.quantity,
                 OrderTypes.call, reason,
@@ -273,9 +273,15 @@ export class OptionsOrderBuilderService {
     return null;
   }
 
-  getCallPutQuantities(callPrice, callQuantity, putPrice, putQuantity, multiple = 1, minCashAllocation: number, maxCashAllocation: number) {
-    while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > 500 &&
-      callQuantity + putQuantity < 20) {
+  getCallPutQuantities(callPrice, 
+    callQuantity, 
+    putPrice, 
+    putQuantity, 
+    multiple = 1, 
+    minCashAllocation: number, 
+    maxCashAllocation: number) {
+    while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > 600 &&
+      Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) <= maxCashAllocation ) {
       if (callPrice > putPrice) {
         callQuantity++;
         putQuantity *= multiple;
@@ -291,8 +297,12 @@ export class OptionsOrderBuilderService {
       commonMaximum++;
     }
 
-    callPrice *= commonMaximum;
-    putPrice *= commonMaximum;
+    callQuantity *= commonMaximum;
+    putQuantity *= commonMaximum;
+    if ((callPrice * callQuantity) + (putPrice * putQuantity) > maxCashAllocation) {
+      callQuantity = 0;
+      putQuantity = 0;
+    }
 
     return { callQuantity, putQuantity };
   }
