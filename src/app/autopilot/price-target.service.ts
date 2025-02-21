@@ -20,7 +20,7 @@ export class PriceTargetService {
 
   async setTargetDiff() {
     const tenYrYield = await this.globalSettingsService.get10YearYield();
-    this.targetDiff = tenYrYield || this.targetDiff;
+    this.targetDiff = (tenYrYield * 0.01) || this.targetDiff;
     this.reportingService.addAuditLog(null, `Target set to ${this.targetDiff}`);
   }
 

@@ -599,6 +599,10 @@ export class AutopilotService {
     return this.volatility;
   }
 
+  isVolatilityHigh() {
+    return this.volatility > 0.28;
+  }
+
   async sellOptionsHolding(holding: PortfolioInfoHolding, reason: string) {
     let orderType = null;
     if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
@@ -624,6 +628,14 @@ export class AutopilotService {
     });
   }
 
+  async addShort(balance = 0) {
+    const sells = this.getSellList()
+    if (sells.length) {
+      const targetBalance = balance ? balance : (await this.getMinMaxCashForOptions()).maxCash;
+      this.optionsOrderBuilderService.addOptionByBalance(sells.pop(), targetBalance, 'Buy put', false);
+    }
+  }
+  
   async balanceCallPutRatio(holdings: PortfolioInfoHolding[]) {
     const results = this.priceTargetService.getCallPutBalance(holdings);
     this.reportingService.addAuditLog(null, `Calls: ${results.call}, Puts: ${results.put}, ratio: ${results.call / results.put}`);
@@ -633,8 +645,8 @@ export class AutopilotService {
         this.reportingService.addAuditLog(null, `Add calls Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${targetBalance}`);
         this.optionsOrderBuilderService.addOptionByBalance('SPY', targetBalance, 'Balance call put ratio', true);
       } else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
-        this.sellLoser(holdings, 'Balancing call put ratio');
-        this.reportingService.addAuditLog(null, 'Sell loser' + results.call / results.put + `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${(1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])}`);
+        this.addShort(results.put - results.call);
+        this.reportingService.addAuditLog(null, 'Add put' + results.call / results.put + `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${(1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])}`);
       }
     }
   }
@@ -740,12 +752,6 @@ export class AutopilotService {
     this.currentHoldings = await this.cartService.findCurrentPositions();
 
     switch (this.intradayProcessCounter) {
-      case 0: {
-        for (const holding of this.currentHoldings) {
-          await this.checkStopLoss(holding);
-        }
-        break;
-      }
       case 1: {
         await this.checkIntradayStrategies();
         break;
