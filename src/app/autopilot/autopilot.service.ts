@@ -517,7 +517,7 @@ export class AutopilotService {
       this.sellLoser(currentHoldings, 'Over balance');
     } else {
       const spyPrediction = this.getLastSpyMl() || 0;
-      const targetUtilization = Number(new Date().getDate() * 0.005) + spyPrediction;
+      const targetUtilization = Number(new Date().getDate() * 0.005) + spyPrediction - this.getVolatilityMl();
       const actualUtilization = (1 - (balance.cashBalance / balance.liquidationValue));
       if (actualUtilization < targetUtilization) {
         if (this.lastBuyList.length) {
