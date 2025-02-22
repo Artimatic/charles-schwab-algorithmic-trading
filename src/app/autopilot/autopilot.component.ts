@@ -499,6 +499,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async developStrategy() {
     console.log('developing strategy', moment().format('HH:mm YYYY-MM-DD'));
     console.log(this.backtestAggregatorService.getTimeLine());
+    this.machineLearningService.trainVolatility(moment().format('YYYY-MM-DD'),
+    moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.6, 5, 0).subscribe((result) => {
+      this.autopilotService.setVolatilityMl(result[0].nextOutput);
+    });
     this.backtestAggregatorService.clearTimeLine();
     if (this.manualStart) {
       return;

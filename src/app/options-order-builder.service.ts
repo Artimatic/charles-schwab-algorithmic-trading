@@ -189,15 +189,17 @@ export class OptionsOrderBuilderService {
             underlying: buy
           };
           let currentPut = null;
-          if (callPrice > 200 && callPrice < 8000 &&
+          if (callPrice > 200 && callPrice < 3500 &&
             callPrice >= (minCashAllocation / 100) &&
-            callPrice <= maxCashAllocation) {
+            callPrice <= (maxCashAllocation/2)) {
             for (const sell of sellList) {
               if (!currentHoldings || !currentHoldings.find(holding => holding.name === sell)) {
                 const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
                 if (bearishStrangle && bearishStrangle.put) {
                   const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
-                  if (putPrice > 200 && putPrice < 8000) {
+                  if (putPrice > 200 && putPrice < 3500 &&
+                    putPrice >= (minCashAllocation / 100) &&
+                    putPrice <= (maxCashAllocation/2)) {
                     const sellOptionsData = await this.optionsDataService.getImpliedMove(sell).toPromise();
                     if (sellOptionsData && sellOptionsData.move && sellOptionsData.move < this.maxImpliedMovement) {
                       const multiple = (callPrice > putPrice) ? Math.round(callPrice / putPrice) : Math.round(putPrice / callPrice);
@@ -409,7 +411,7 @@ export class OptionsOrderBuilderService {
     const impliedMove = await this.getImpliedMove(symbol, backtestResults)
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
     if (backtestResults && backtestResults.ml !== null) {
-      if (currentDiff < impliedMove * 0.18) {
+      if (currentDiff < (((1/(impliedMove + 0.01)) * 0.01))) {
         return true;
       }
     }
