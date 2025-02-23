@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { AuthenticationService, BacktestService, CartService, DaytradeService, PortfolioInfoHolding, PortfolioService, ReportingService } from '@shared/services';
+import { AuthenticationService, BacktestService, CartService, DaytradeService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService } from '@shared/services';
 import { round } from 'lodash';
 import * as moment from 'moment-timezone';
 import { OptionsOrderBuilderService } from '../options-order-builder.service';
@@ -148,7 +148,8 @@ export class AutopilotService {
     private globalSettingsService: GlobalSettingsService,
     private authenticationService: AuthenticationService,
     private daytradeService: DaytradeService,
-    private daytradeStrategiesService: DaytradeStrategiesService
+    private daytradeStrategiesService: DaytradeStrategiesService,
+    private machineLearningService: MachineLearningService
   ) {
     const globalStartStop = this.globalSettingsService.getStartStopTime();
     this.sessionStart = globalStartStop.startDateTime;
@@ -635,7 +636,7 @@ export class AutopilotService {
       this.optionsOrderBuilderService.addOptionByBalance(sells.pop(), targetBalance, 'Buy put', false);
     }
   }
-  
+
   async balanceCallPutRatio(holdings: PortfolioInfoHolding[]) {
     const results = this.priceTargetService.getCallPutBalance(holdings);
     this.reportingService.addAuditLog(null, `Calls: ${results.call}, Puts: ${results.put}, ratio: ${results.call / results.put}`);
@@ -689,6 +690,13 @@ export class AutopilotService {
         return this.isOpened;
       })
     );
+  }
+
+  updateVolatility() {
+    this.machineLearningService.trainVolatility(moment().format('YYYY-MM-DD'),
+      moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.6, 5, 0).subscribe((result) => {
+        this.setVolatilityMl(result[0].nextOutput);
+      });
   }
 
   async checkStopLoss(holding: PortfolioInfoHolding, stopLoss = -0.045, profitTarget = 0.01) {

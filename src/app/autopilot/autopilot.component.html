@@ -70,11 +70,20 @@
 <ng-template #header>
     <h3>Auto Manage</h3>
     <span *ngIf="autopilotService.strategyList[autopilotService.strategyCounter] === 'Daytrade'">
-        <p-tag [value]="autopilotService.strategyList[autopilotService.strategyCounter]" pTooltip="Current strategy" severity="warning"></p-tag>
+        <p-tag [value]="autopilotService.strategyList[autopilotService.strategyCounter]" pTooltip="Current strategy"
+            severity="warning"></p-tag>
     </span>
     <span *ngIf="autopilotService.strategyList[autopilotService.strategyCounter] !== 'Daytrade'">
-        <p-tag [value]="autopilotService.strategyList[autopilotService.strategyCounter]" pTooltip="Current strategy" severity="danger"></p-tag>
+        <p-tag [value]="autopilotService.strategyList[autopilotService.strategyCounter]" pTooltip="Current strategy"
+            severity="danger"></p-tag>
     </span>
+    <p-tag [value]="autopilotService.volatility" *ngIf="autopilotService.volatility >= 0.5" severity="danger"
+        pTooltip="Current volatility"></p-tag>
+    <p-tag [value]="autopilotService.volatility" *ngIf="autopilotService.volatility >= 0.28 && autopilotService.volatility < 0.5" severity="warning"
+        pTooltip="Current volatility"></p-tag>
+    <p-tag [value]="autopilotService.volatility" *ngIf="autopilotService.volatility < 0.28" severity="success"
+        pTooltip="Current volatility"></p-tag>
+
     <p-tag [value]="dayTradingRiskToleranceList[dayTradeRiskCounter] * 100 +'%'" severity="warning"
         pTooltip="Day trade allocation - percentage of total bp"></p-tag>
     <p-tag pTooltip="Swing trade allocation - percentage of cash balance"
