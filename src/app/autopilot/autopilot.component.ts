@@ -162,6 +162,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             severity: 'success',
             summary: 'Trading started'
           });
+          this.newStockFinderService.addOldList();
         }
       }
     ];
