@@ -20,8 +20,7 @@ export class DaytradeService {
     private portfolioService: PortfolioService,
     private indicatorsService: IndicatorsService,
     private cartService: CartService,
-    private orderHandlingService: OrderHandlingService,
-    private globalSettingsService: GlobalSettingsService) { }
+    private orderHandlingService: OrderHandlingService) { }
 
   getDefaultOrderSize(quantity) {
     return Math.ceil(quantity / 10);

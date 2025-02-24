@@ -410,12 +410,7 @@ export class CartService {
       optionType, reason, side,
       null, executeImmediately);
     if (order && order.primaryLegs) {
-      console.log('Adding option order for', symbol, primaryLegs, price, quantity, optionType, side, reason);
       this.addToCart(order, side.toLowerCase() === 'sell', reason);
-    } else {
-      const log = `Invalid option order ${symbol} ${JSON.stringify(primaryLegs)} ${price} ${quantity} ${optionType} ${side} ${JSON.stringify(order)} ${reason}`;
-      console.log(log);
-      this.reportingService.addAuditLog(symbol, log, reason);
     }
   }
 

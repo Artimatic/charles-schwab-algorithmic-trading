@@ -617,21 +617,21 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     if (analysis.recommendation.toLowerCase() === 'none' && !this.order.forImmediateExecution) {
       return;
     }
-    if (analysis.recommendation.toLowerCase() === 'sell' || analysis.recommendation.toLowerCase() === 'buy') {
-      let buys = '';
-      let sells = '';
-      for (const rec in analysis) {
-        if (analysis.hasOwnProperty(rec)) {
-          if (analysis[rec].toLowerCase && analysis[rec].toLowerCase() === 'bullish') {
-            buys += rec + ', ';
-          } else if (analysis[rec].toLowerCase && analysis[rec].toLowerCase() === 'bearish') {
-            sells += rec + ', ';
-          }
-        }
-      }
-      const log = `Recommendation: ${analysis.recommendation.toLowerCase()}, order type:${this.firstFormGroup.value.orderType} ${this.order.type} Buys(${buys}) Sells(${sells})`;
-      this.reportingService.addAuditLog(this.order.holding.symbol, log);
-    }
+    // if (analysis.recommendation.toLowerCase() === 'sell' || analysis.recommendation.toLowerCase() === 'buy') {
+    //   let buys = '';
+    //   let sells = '';
+    //   for (const rec in analysis) {
+    //     if (analysis.hasOwnProperty(rec)) {
+    //       if (analysis[rec].toLowerCase && analysis[rec].toLowerCase() === 'bullish') {
+    //         buys += rec + ', ';
+    //       } else if (analysis[rec].toLowerCase && analysis[rec].toLowerCase() === 'bearish') {
+    //         sells += rec + ', ';
+    //       }
+    //     }
+    //   }
+    //   const log = `Recommendation: ${analysis.recommendation.toLowerCase()}, order type:${this.firstFormGroup.value.orderType} ${this.order.type} Buys(${buys}) Sells(${sells})`;
+    //   this.reportingService.addAuditLog(this.order.holding.symbol, log);
+    // }
 
     const initialQuantity = this.multiplierPreference.value * this.firstFormGroup.value.quantity;
     if (this.hasReachedOrderLimit()) {

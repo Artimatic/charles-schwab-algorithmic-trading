@@ -302,6 +302,20 @@ export class StrategyBuilderService {
     }
   }
 
+  addToNewStocks(ticker: string) {
+    const newStocks = JSON.parse(localStorage.getItem('newStockList'));
+    if (newStocks) {
+      if (!newStocks[ticker]) {
+        newStocks[ticker] = true;
+        localStorage.setItem('newStockList', JSON.stringify(newStocks));
+      }
+    } else {
+      const newStorageObj = {};
+      newStorageObj[ticker] = true;
+      localStorage.setItem('newStockList', JSON.stringify(newStorageObj));
+    }
+  }
+
   findPair(symbol: string) {
     const orderHistory = this.orderHistory[symbol];
     if (orderHistory) {

@@ -9,7 +9,7 @@
 </div>
 <!-- <p-card header="Settings" [style]="{'margin': '1rem'}">
   <app-setting-controls></app-setting-controls>
-</p-card>
-<p-card header="Import Order">
-  <app-xls-import (onImport)="import($event)"></app-xls-import>
 </p-card> -->
+<p-card header="Import orders or stock list">
+  <app-xls-import (onImport)="importFile($event)"></app-xls-import>
+</p-card>
