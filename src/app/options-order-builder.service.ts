@@ -26,7 +26,7 @@ export class OptionsOrderBuilderService {
   tradingPairMaxLife = 432000000;
   tradingPairsCounter = 0;
   currentTradeIdeas = { calls: [], puts: [] };
-  maxImpliedMovement = 0.23;
+  maxImpliedMovement = 0.11;
   constructor(private strategyBuilderService: StrategyBuilderService,
     private cartService: CartService,
     private optionsDataService: OptionsDataService,
@@ -108,6 +108,10 @@ export class OptionsOrderBuilderService {
   }
 
   async addOptionByBalance(symbol: string, targetBalance: number, reason: string, isCall: boolean) {
+    const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
+    if (backtestResults?.impliedMovement > 0.1) {
+      return this.reportingService.addAuditLog(symbol, `Implied movement too high for ${symbol}: ${backtestResults.impliedMovement}`);
+    }
     const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade(symbol);
     const bid = isCall ? optionStrategy.call.bid : optionStrategy.put.bid;
     const ask = isCall ? optionStrategy.call.ask : optionStrategy.put.ask;

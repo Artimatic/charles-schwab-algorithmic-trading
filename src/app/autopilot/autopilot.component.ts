@@ -189,6 +189,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test intraday ml',
         command: async () => {
+          this.autopilotService.updateVolatility();
           this.machineLearningService
             .trainDaytrade('APP',
               moment().add({ days: 1 }).format('YYYY-MM-DD'),
@@ -270,9 +271,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             if (holding.shares) {
               const price = await this.portfolioService.getPrice(holding.name).toPromise();
               const orderSizePct = 0.5;
-              const order = this.cartService.buildOrderWithAllocation(holding.name, 
-                holding.shares, 
-                price, 
+              const order = this.cartService.buildOrderWithAllocation(holding.name,
+                holding.shares,
+                price,
                 'Sell',
                 orderSizePct, -0.005, 0.01, -0.003, null, true);
               const result = await this.orderingService.getRecommendationAndProcess(order).toPromise();
@@ -358,10 +359,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           // }
         } else if (moment().isAfter(moment(this.autopilotService.sessionStart).subtract(Math.floor(this.interval / 60000) * 2, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionStart))) {
-          this.machineLearningService.trainVolatility(moment().format('YYYY-MM-DD'),
-            moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.6, 5, 0).subscribe((result) => {
-              this.autopilotService.setVolatilityMl(result[0].nextOutput);
-            });
+          this.autopilotService.updateVolatility();
           this.priceTargetService.setTargetDiff();
         } else {
           if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 50) {
@@ -499,10 +497,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async developStrategy() {
     console.log('developing strategy', moment().format('HH:mm YYYY-MM-DD'));
     console.log(this.backtestAggregatorService.getTimeLine());
-    this.machineLearningService.trainVolatility(moment().format('YYYY-MM-DD'),
-    moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.6, 5, 0).subscribe((result) => {
-      this.autopilotService.setVolatilityMl(result[0].nextOutput);
-    });
+    this.autopilotService.updateVolatility();
     this.backtestAggregatorService.clearTimeLine();
     if (this.manualStart) {
       return;
@@ -589,7 +584,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async modifyCurrentHoldings() {
     this.autopilotService.currentHoldings.forEach(async (holding) => {
       await this.autopilotService.checkStopLoss(holding);
-      
+
       try {
         const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
         if (holding.primaryLegs) {
@@ -902,7 +897,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       case Strategy.BuyCalls:
         const buys = this.autopilotService.getBuyList()
         if (buys.length) {
-          const targetBalance = (await this.getMinMaxCashForOptions()).maxCash;
+          const buysSym = buys.pop();
+          const backtestResults = await this.strategyBuilderService.getBacktestData(buysSym);
+    
+          const targetBalance = (await this.getMinMaxCashForOptions(backtestResults.impliedMovement + 1)).minCash;
           this.optionsOrderBuilderService.addOptionByBalance(buys.pop(), targetBalance, 'Buy call', true);
         }
         break;
@@ -1029,10 +1027,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.autopilotService.getNewTrades(buyWinner, null, this.autopilotService.currentHoldings);
   }
 
-  async getMinMaxCashForOptions() {
+  async getMinMaxCashForOptions(modifier = 0) {
+    const minConstant = modifier ? modifier: 1000;
     const cash = await this.cartService.getAvailableFunds(false);
     const maxCash = round(this.autopilotService.riskToleranceList[this.autopilotService.riskCounter] * cash, 2);
-    const minCash = maxCash - 1000;
+    const minCash = maxCash - minConstant;
     return {
       maxCash,
       minCash
@@ -1047,7 +1046,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async addInverseDispersionTrade() {
     const findPuts = async (symbol: string, prediction: number, backtestData: any, sellMl: number) => {
       if (sellMl > 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
-        const cash = await this.getMinMaxCashForOptions();
+        const cash = await this.getMinMaxCashForOptions(backtestData.impliedMovement + 1);
         await this.optionsOrderBuilderService.balanceTrades(this.autopilotService.currentHoldings,
           ['SPY'], [symbol], cash.minCash, cash.maxCash, 'Inverse dispersion');
       } else if ((prediction > 0.8 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
