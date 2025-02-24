@@ -737,11 +737,22 @@ class PortfolioService {
     extendedHours = false, accountId, response) {
     return this.renewAuth(accountId, response)
       .then(() => {
-        return this.tdSell(symbol,
-          quantity,
-          price,
-          type,
-          extendedHours, accountId);
+        this.getPositions(accountId)
+          .then(pos => {
+            const foundPosition = pos.securitiesAccount.positions.find((position) => {
+              return position.instrument.symbol === symbol;
+            });
+            if (foundPosition) {
+              quantity = foundPosition.longQuantity <= quantity ? quantity : foundPosition.longQuantity;
+              return this.tdSell(symbol,
+                quantity,
+                price,
+                type,
+                extendedHours, accountId);
+            } else {
+              throw new Error('Position not found');
+            }
+          });
       });
   }
 
@@ -789,7 +800,7 @@ class PortfolioService {
     return request.post(options);
   }
 
-  async getPositions(accountId) {
+  getPositions(accountId) {
     return this.sendPositionRequest(accountId)
       .then((pos) => {
         if (process.env.reportUrl && (!this.lastPositionCheck || moment().diff(moment(this.lastPositionCheck), 'hours') > 12)) {

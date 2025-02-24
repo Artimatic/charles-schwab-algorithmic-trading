@@ -18,6 +18,8 @@ import { FormControl, Validators } from '@angular/forms';
 import { takeUntil, takeWhile } from 'rxjs/operators';
 import { Subject } from 'rxjs';
 import { MenuItem } from 'primeng/api';
+import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
+import { NewStockFinderService } from '../backtest-table/new-stock-finder.service';
 
 @Component({
   selector: 'app-shopping-list',
@@ -54,7 +56,9 @@ export class ShoppingListComponent implements OnInit, OnDestroy {
     public snackBar: MatSnackBar,
     private portfolioService: PortfolioService,
     public globalSettingsService: GlobalSettingsService,
-    private tradeService: TradeService) { }
+    private strategyBuilderService: StrategyBuilderService,
+    private tradeService: TradeService,
+    private newStockFinderService: NewStockFinderService) { }
 
   ngOnInit() {
     this.mlCards = [];
@@ -245,7 +249,23 @@ export class ShoppingListComponent implements OnInit, OnDestroy {
     this.cartService.deleteCart();
   }
 
-  import(file) {
+  handleStockListImport(file: any) {
+    file.forEach((row) => {
+      const ticker = row.__EMPTY;
+      if (ticker !== 'Ticker') {
+        const exists = this.strategyBuilderService.getRecentBacktest(ticker);
+        if (!exists) {
+          this.newStockFinderService.addStock(ticker);
+        }
+      }
+    });
+  }
+  
+  importFile(file) {
+    if (file.length && file[0]['Goldman Sachs Hedge Industry VIP ETF']) {
+      this.handleStockListImport(file);
+      return;
+    }
     file.forEach((row: OrderRow) => {
       this.portfolioService.getInstruments(row.symbol).subscribe((response) => {
         const instruments = response.results[0];

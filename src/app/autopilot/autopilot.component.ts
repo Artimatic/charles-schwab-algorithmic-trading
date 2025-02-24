@@ -21,7 +21,6 @@ import { OptionsOrderBuilderService } from '../options-order-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { PortfolioMgmtService } from '../portfolio-mgmt/portfolio-mgmt.service';
 import { PricingService } from '../pricing/pricing.service';
-import { PersonalBearishPicks } from '../rh-table/backtest-stocks.constant';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { StockListDialogComponent } from '../stock-list-dialog/stock-list-dialog.component';
 import { FindPatternService } from '../strategies/find-pattern.service';
@@ -31,6 +30,7 @@ import { PriceTargetService } from './price-target.service';
 import { AutopilotService, RiskTolerance, Strategy, SwingtradeAlgorithms } from './autopilot.service';
 import { BacktestAggregatorService } from '../backtest-table/backtest-aggregator.service';
 import { OrderingService } from '@shared/ordering.service';
+import { NewStockFinderService } from '../backtest-table/new-stock-finder.service';
 
 export interface PositionHoldings {
   name: string;
@@ -129,7 +129,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     public autopilotService: AutopilotService,
     private backtestAggregatorService: BacktestAggregatorService,
     private aiPicksService: AiPicksService,
-    private orderingService: OrderingService
+    private orderingService: OrderingService,
+    private newStockFinderService: NewStockFinderService
   ) { }
 
   ngOnInit(): void {
@@ -366,6 +367,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             this.aiPicksService.mlNeutralResults.next(null);
           }
           await this.backtestOneStock(false, false);
+          await this.newStockFinderService.processOneStock();
         }
       });
   }

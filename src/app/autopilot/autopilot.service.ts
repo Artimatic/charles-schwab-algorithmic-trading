@@ -534,10 +534,10 @@ export class AutopilotService {
     return isOverBalance;
   }
 
-  async buyRightAway(buySymbol, ml) {
+  async buyRightAway(buySymbol, alloc: number) {
     const price = await this.portfolioService.getPrice(buySymbol).toPromise();
     const balance = await this.portfolioService.getTdBalance().toPromise();
-    const allocation = ml > 0 && ml <= 1 ? ml : 0.01;
+    const allocation = alloc > 0 && alloc <= 1 ? alloc : 0.01;
     const cash = (balance.cashBalance < balance.availableFunds * 0.01) ?
       balance.cashBalance :
       (balance.cashBalance * this.riskToleranceList[this.riskCounter] * allocation);
@@ -547,6 +547,15 @@ export class AutopilotService {
       -0.003, 1, false, 'Buy right away');
 
     this.daytradeService.sendBuy(order, 'limit', () => { }, () => { });
+  }
+
+  async sellRightAway(symbol, quantity) {
+    const price = await this.portfolioService.getPrice(symbol).toPromise();
+    const order = this.cartService.buildOrderWithAllocation(symbol, quantity, price, 'Sell',
+      1, -0.005, 0.01,
+      -0.003, 1, false, 'Sell right away');
+
+    this.daytradeService.sendSell(order, 'market', () => { }, () => { }, () => {});
   }
 
   async buyUpro(reason: string = 'Buy UPRO', allocation = null) {
@@ -649,11 +658,17 @@ export class AutopilotService {
         const targetBalance = Number(results.put - results.call);
         this.reportingService.addAuditLog(null, `Add calls Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${targetBalance}`);
         this.optionsOrderBuilderService.addOptionByBalance('SPY', targetBalance, 'Balance call put ratio', true);
-        // await this.buyRightAway('TQQQ', this.riskToleranceList[0]);
+        const sqqqHolding = holdings.find(h => h.name.toUpperCase() === 'SQQQ');
+        await this.sellRightAway(sqqqHolding.name, sqqqHolding.shares);
+        await this.buyRightAway('TQQQ', this.riskToleranceList[0]);
       } else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
         this.addShort(results.put - results.call);
         this.reportingService.addAuditLog(null, 'Add put' + results.call / results.put + `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${(1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])}`);
-        // await this.buyRightAway('SQQQ', this.riskToleranceList[0]);
+        const tqqqHolding = holdings.find(h => h.name.toUpperCase() === 'TQQQ');
+        const uproHolding = holdings.find(h => h.name.toUpperCase() === 'UPRO');
+        await this.sellRightAway(tqqqHolding.name, tqqqHolding.shares);
+        await this.sellRightAway(uproHolding.name, uproHolding.shares);
+        await this.buyRightAway('SQQQ', this.riskToleranceList[0]);
       }
     }
   }
