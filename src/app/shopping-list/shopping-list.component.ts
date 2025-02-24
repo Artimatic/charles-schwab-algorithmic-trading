@@ -15,7 +15,7 @@ import { GlobalSettingsService } from '../settings/global-settings.service';
 import { TradeService, AlgoQueueItem } from '../shared/services/trade.service';
 import { OrderRow } from '../shared/models/order-row';
 import { FormControl, Validators } from '@angular/forms';
-import { takeUntil, takeWhile } from 'rxjs/operators';
+import { takeWhile } from 'rxjs/operators';
 import { Subject } from 'rxjs';
 import { MenuItem } from 'primeng/api';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
@@ -56,7 +56,6 @@ export class ShoppingListComponent implements OnInit, OnDestroy {
     public snackBar: MatSnackBar,
     private portfolioService: PortfolioService,
     public globalSettingsService: GlobalSettingsService,
-    private strategyBuilderService: StrategyBuilderService,
     private tradeService: TradeService,
     private newStockFinderService: NewStockFinderService) { }
 
@@ -253,10 +252,7 @@ export class ShoppingListComponent implements OnInit, OnDestroy {
     file.forEach((row) => {
       const ticker = row.__EMPTY;
       if (ticker !== 'Ticker') {
-        const exists = this.strategyBuilderService.getRecentBacktest(ticker);
-        if (!exists) {
-          this.newStockFinderService.addStock(ticker);
-        }
+        this.newStockFinderService.addStock(ticker);
       }
     });
   }

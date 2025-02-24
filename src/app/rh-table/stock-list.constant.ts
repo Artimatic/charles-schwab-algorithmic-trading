@@ -1,4 +1,7 @@
 const fullList = [
+    'TNL',
+    'VST',
+    'VRT',
     'RDDT',
     'AAPL',
     'MSFT',
@@ -47,7 +50,6 @@ const fullList = [
     'CYBR',
     'NVO',
     'GM',
-    'F',
     'UBER',
     'MRVL',
     'BOX',
