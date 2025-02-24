@@ -155,10 +155,11 @@ export class AutopilotService {
     this.sessionEnd = globalStartStop.endDateTime;
   }
 
-  async getMinMaxCashForOptions() {
+  async getMinMaxCashForOptions(modifier = 1) {
     const cash = await this.cartService.getAvailableFunds(false);
+    const minConstant = modifier ? (cash * RiskTolerance.Zero * modifier)  : 1000;
     const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
-    const minCash = maxCash - (cash * RiskTolerance.Zero);
+    const minCash = maxCash - minConstant;
     return {
       maxCash,
       minCash
@@ -631,8 +632,11 @@ export class AutopilotService {
   async addShort(balance = 0) {
     const sells = this.getSellList()
     if (sells.length) {
-      const targetBalance = balance ? balance : (await this.getMinMaxCashForOptions()).maxCash;
-      this.optionsOrderBuilderService.addOptionByBalance(sells.pop(), targetBalance, 'Buy put', false);
+      const sellSym = sells.pop();
+      const backtestResults = await this.strategyBuilderService.getBacktestData(sellSym);
+
+      const targetBalance = balance ? balance : (await this.getMinMaxCashForOptions(backtestResults.impliedMovement + 1)).maxCash;
+      this.optionsOrderBuilderService.addOptionByBalance(sellSym, targetBalance, 'Buy put', false);
     }
   }
   
@@ -644,9 +648,11 @@ export class AutopilotService {
         const targetBalance = Number(results.put - results.call);
         this.reportingService.addAuditLog(null, `Add calls Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${targetBalance}`);
         this.optionsOrderBuilderService.addOptionByBalance('SPY', targetBalance, 'Balance call put ratio', true);
+        // await this.buyRightAway('TQQQ', this.riskToleranceList[0]);
       } else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
         this.addShort(results.put - results.call);
         this.reportingService.addAuditLog(null, 'Add put' + results.call / results.put + `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${(1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])}`);
+        // await this.buyRightAway('SQQQ', this.riskToleranceList[0]);
       }
     }
   }
@@ -752,15 +758,15 @@ export class AutopilotService {
     this.currentHoldings = await this.cartService.findCurrentPositions();
 
     switch (this.intradayProcessCounter) {
-      case 1: {
+      case 0: {
         await this.checkIntradayStrategies();
         break;
       }
-      case 2: {
+      case 1: {
         await this.balanceCallPutRatio(this.currentHoldings);
         break;
       }
-      case 3: {
+      case 2: {
         await this.handleBalanceUtilization(this.currentHoldings);
         break;
       }
