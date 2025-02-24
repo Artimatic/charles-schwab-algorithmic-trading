@@ -17,7 +17,7 @@ export class NewStockFinderService {
   }
 
   addStock(stock: string) {
-    const exists = this.strategyBuilderService.getRecentBacktest(stock);
+    const exists = this.strategyBuilderService.getRecentBacktest(stock, 100);
     if (!exists) {
       console.log('Adding stock', stock);
       this.newStocks.push(stock);
