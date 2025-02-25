@@ -1,4 +1,8 @@
 const fullList = [
+    'GEV',
+    'ET',
+    'EQT',
+    'CPNG',
     'TNL',
     'VST',
     'VRT',
