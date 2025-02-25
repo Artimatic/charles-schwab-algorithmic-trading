@@ -646,7 +646,7 @@ export class AutopilotService {
       const backtestResults = await this.strategyBuilderService.getBacktestData(sellSym);
 
       const targetBalance = balance ? balance : (await this.getMinMaxCashForOptions(backtestResults.impliedMovement + 1)).maxCash;
-      this.optionsOrderBuilderService.addOptionByBalance(sellSym, targetBalance, 'Buy put', false);
+      this.optionsOrderBuilderService.addOptionByBalance(sellSym, targetBalance, 'Buy put', false, false);
     }
   }
 

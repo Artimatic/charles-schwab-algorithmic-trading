@@ -901,7 +901,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           const backtestResults = await this.strategyBuilderService.getBacktestData(buysSym);
 
           const targetBalance = (await this.getMinMaxCashForOptions(backtestResults.impliedMovement + 1)).minCash;
-          this.optionsOrderBuilderService.addOptionByBalance(buys.pop(), targetBalance, 'Buy call', true);
+          this.optionsOrderBuilderService.addOptionByBalance(buys.pop(), targetBalance, 'Buy call', true, false);
         }
         break;
       case Strategy.InverseDispersion:

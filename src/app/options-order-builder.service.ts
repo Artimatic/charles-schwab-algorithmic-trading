@@ -89,6 +89,10 @@ export class OptionsOrderBuilderService {
     });
     if (calls.length && puts.length) {
       this.strategyBuilderService.createStrategy('Pair', calls[0], calls, puts, reason);
+    } else if (calls.length) {
+      this.currentTradeIdeas.calls.push(calls[0]);
+    } else if (puts.length) {
+      this.currentTradeIdeas.puts.push(puts[0]);
     }
   }
 
@@ -107,7 +111,7 @@ export class OptionsOrderBuilderService {
     this.tradingPairs = [];
   }
 
-  async addOptionByBalance(symbol: string, targetBalance: number, reason: string, isCall: boolean) {
+  async addOptionByBalance(symbol: string, targetBalance: number, reason: string, isCall: boolean, addOrderRightAway = true) {
     const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
     if (backtestResults?.impliedMovement > 0.1) {
       return this.reportingService.addAuditLog(symbol, `Implied movement too high for ${symbol}: ${backtestResults.impliedMovement}`);
@@ -125,7 +129,17 @@ export class OptionsOrderBuilderService {
     };
 
     const option = isCall ? currentOption.call : currentOption.put;
-    this.cartService.addSingleLegOptionOrder(currentOption.underlying, [option], price, currentOption.quantity || 1, isCall ? OrderTypes.call : OrderTypes.put, 'Buy', reason);
+    if (addOrderRightAway) {
+      this.cartService.addSingleLegOptionOrder(currentOption.underlying, [option], price, currentOption.quantity || 1,
+        isCall ? OrderTypes.call : OrderTypes.put, 'Buy', reason);
+    } else {
+
+      let order = this.cartService.createOptionOrder(symbol, [option],
+        price, currentOption.quantity || 1,
+        isCall ? OrderTypes.call : OrderTypes.put, reason, 'Buy',
+        null, false);
+      this.addTradingPairs([order], reason);
+    }
   }
 
   async createProtectivePutOrder(holding: PortfolioInfoHolding) {
@@ -141,7 +155,7 @@ export class OptionsOrderBuilderService {
           return;
         }
 
-        this.addOptionByBalance(holding.name, estimatedPrice, 'Protective put', false);
+        this.addOptionByBalance(holding.name, estimatedPrice, 'Protective put', false, false);
       }
     }
   }
@@ -195,7 +209,7 @@ export class OptionsOrderBuilderService {
           let currentPut = null;
           if (callPrice > 200 && callPrice < 3500 &&
             callPrice >= (minCashAllocation / 100) &&
-            callPrice <= (maxCashAllocation/2)) {
+            callPrice <= (maxCashAllocation / 2)) {
             for (const sell of sellList) {
               if (!currentHoldings || !currentHoldings.find(holding => holding.name === sell)) {
                 const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
@@ -203,7 +217,7 @@ export class OptionsOrderBuilderService {
                   const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
                   if (putPrice > 200 && putPrice < 3500 &&
                     putPrice >= (minCashAllocation / 100) &&
-                    putPrice <= (maxCashAllocation/2)) {
+                    putPrice <= (maxCashAllocation / 2)) {
                     const sellOptionsData = await this.optionsDataService.getImpliedMove(sell).toPromise();
                     if (sellOptionsData && sellOptionsData.move && sellOptionsData.move < this.maxImpliedMovement) {
                       const multiple = (callPrice > putPrice) ? Math.round(callPrice / putPrice) : Math.round(putPrice / callPrice);
@@ -251,7 +265,7 @@ export class OptionsOrderBuilderService {
                 'Buy', currentCall.quantity);
 
               if (addToList) {
-                this.reportingService.addAuditLog(null, 
+                this.reportingService.addAuditLog(null,
                   `Trading pair ${option1?.primaryLegs[0]?.symbol} ${option2?.primaryLegs[0]?.symbol}. Reason: ${reason}, Min cash: ${minCashAllocation}, Max cash: ${maxCashAllocation}`);
                 this.addTradingPairs([option1, option2], reason);
               }
@@ -279,15 +293,15 @@ export class OptionsOrderBuilderService {
     return null;
   }
 
-  getCallPutQuantities(callPrice, 
-    callQuantity, 
-    putPrice, 
-    putQuantity, 
-    multiple = 1, 
-    minCashAllocation: number, 
+  getCallPutQuantities(callPrice,
+    callQuantity,
+    putPrice,
+    putQuantity,
+    multiple = 1,
+    minCashAllocation: number,
     maxCashAllocation: number) {
     while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > 600 &&
-      Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) <= maxCashAllocation ) {
+      Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) <= maxCashAllocation) {
       if (callPrice > putPrice) {
         callQuantity++;
         putQuantity *= multiple;
@@ -415,7 +429,7 @@ export class OptionsOrderBuilderService {
     const impliedMove = await this.getImpliedMove(symbol, backtestResults)
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
     if (backtestResults && backtestResults.ml !== null) {
-      if (currentDiff < (((1/(impliedMove + 0.01)) * 0.01))) {
+      if (currentDiff < (((1 / (impliedMove + 0.01)) * 0.01))) {
         return true;
       }
     }
@@ -533,13 +547,11 @@ export class OptionsOrderBuilderService {
     const trade = this.getTradingPairs()[this.tradingPairsCounter];
     if (trade) {
       if (trade.length === 1) {
-        if (trade[0].type === OrderTypes.strangle) {
-          const shouldBuy = await this.shouldBuyOption(trade[0].holding.symbol);
-          if (shouldBuy) {
-            const reason = trade[0].reason ? trade[0].reason : 'Low volatility';
-            this.cartService.addToCart(trade[0], true, reason);
-            this.removeTradingPair(trade[0].holding.symbol);
-          }
+        const shouldBuy = await this.shouldBuyOption(trade[0].holding.symbol);
+        if (shouldBuy) {
+          const reason = trade[0].reason ? trade[0].reason : 'Low volatility';
+          this.cartService.addToCart(trade[0], true, reason);
+          this.removeTradingPair(trade[0].holding.symbol);
         }
       } else {
         const shouldBuy = await this.shouldBuyOption(trade[0].holding.symbol);
