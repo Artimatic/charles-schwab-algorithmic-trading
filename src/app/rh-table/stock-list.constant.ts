@@ -1,4 +1,10 @@
 const fullList = [
+    'APO',
+    'BABA',
+    'GEV',
+    'ET',
+    'EQT',
+    'CPNG',
     'TNL',
     'VST',
     'VRT',

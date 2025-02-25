@@ -11,7 +11,7 @@ export class ReportingService {
   constructor(private excelService: ExcelService) { }
 
   addAuditLog(symbol, message, reason = '') {
-    const currentTime = moment().format('DD.MM.YYYY hh:mm');
+    const currentTime = moment().format('DD.MM.YYYY HH:MM:SS');
     const log = { time: currentTime, symbol: symbol, message: message, reason: reason };
     this.logs.push(log);
     return log;

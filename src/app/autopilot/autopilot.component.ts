@@ -317,11 +317,15 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (this.timer) {
       this.timer.unsubscribe();
     }
-    this.developStrategy();
+    this.setupStrategy();
     this.timer = TimerObservable.create(1000, this.interval)
       .pipe(takeUntil(this.destroy$))
       .subscribe(async () => {
         if (!this.lastCredentialCheck || Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 25) {
+          if (moment().isAfter(moment(this.autopilotService.sessionEnd).add(60, 'minutes')) &&
+            moment().isBefore(moment(this.autopilotService.sessionStart).add(65, 'minutes'))) {
+            await this.setupStrategy();
+          }
           await this.autopilotService.isMarketOpened().toPromise();
           this.lastCredentialCheck = moment();
           await this.backtestOneStock(true, false);
@@ -347,7 +351,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
               await this.modifyRisk();
               this.scoreKeeperService.resetTotal();
               this.resetCart();
-              this.boughtAtClose = false;
             }, 31000);
           }
         } else if (this.autopilotService.handleIntraday()) {
@@ -361,8 +364,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           // }
         } else if (moment().isAfter(moment(this.autopilotService.sessionStart).subtract(Math.floor(this.interval / 60000) * 2, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionStart))) {
-          this.autopilotService.updateVolatility();
-          this.priceTargetService.setTargetDiff();
+          await this.setupStrategy();
         } else {
           if (Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 50) {
             this.aiPicksService.mlNeutralResults.next(null);
@@ -497,14 +499,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
   }
 
-  async developStrategy() {
-    console.log('developing strategy', moment().format('HH:mm YYYY-MM-DD'));
-    console.log(this.backtestAggregatorService.getTimeLine());
+  async setupStrategy() {
     this.autopilotService.updateVolatility();
+    this.priceTargetService.setTargetDiff();
     this.backtestAggregatorService.clearTimeLine();
-    if (this.manualStart) {
-      return;
-    }
 
     this.developedStrategy = true;
 
@@ -515,12 +513,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.autopilotService.currentHoldings = await this.cartService.findCurrentPositions();
 
     await this.modifyCurrentHoldings();
-    const balance = await this.machineDaytradingService.getPortfolioBalance().toPromise();
-    if (balance.liquidationValue < 26000) {
-      await this.autopilotService.findTopBuy();
-      return;
-    }
-    await this.handleStrategy();
   }
 
   isBuyPrediction(prediction: { label: string, value: AiPicksPredictionData[] }) {
@@ -887,6 +879,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async handleStrategy() {
+    const balance = await this.machineDaytradingService.getPortfolioBalance().toPromise();
+    if (balance.liquidationValue < 26000) {
+      await this.autopilotService.findTopBuy();
+      return;
+    }
     switch (this.autopilotService.strategyList[this.autopilotService.strategyCounter]) {
       case Strategy.TradingPairs:
         this.startFindingTrades();
@@ -902,7 +899,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         if (buys.length) {
           const buysSym = buys.pop();
           const backtestResults = await this.strategyBuilderService.getBacktestData(buysSym);
-    
+
           const targetBalance = (await this.getMinMaxCashForOptions(backtestResults.impliedMovement + 1)).minCash;
           this.optionsOrderBuilderService.addOptionByBalance(buys.pop(), targetBalance, 'Buy call', true, false);
         }
@@ -1031,7 +1028,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async getMinMaxCashForOptions(modifier = 0) {
-    const minConstant = modifier ? modifier: 1000;
+    const minConstant = modifier ? modifier : 1000;
     const cash = await this.cartService.getAvailableFunds(false);
     const maxCash = round(this.autopilotService.riskToleranceList[this.autopilotService.riskCounter] * cash, 2);
     const minCash = maxCash - minConstant;
