@@ -30,7 +30,6 @@ import { StrategyBuilderService } from '../backtest-table/strategy-builder.servi
 import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { Recommendation } from '@shared/stock-backtest.interface';
-import { TrainingResults } from '../machine-learning/ask-model/ask-model.component';
 import { SimulationChartComponent } from '../simulation/simulation-chart/simulation-chart.component';
 
 @Component({
