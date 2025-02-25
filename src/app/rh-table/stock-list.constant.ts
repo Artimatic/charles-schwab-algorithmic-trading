@@ -1,4 +1,6 @@
 const fullList = [
+    'APO',
+    'BABA',
     'GEV',
     'ET',
     'EQT',

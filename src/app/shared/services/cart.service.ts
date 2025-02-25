@@ -28,7 +28,7 @@ export class CartService {
 
 
   createOrderLog(order: SmartOrder, reason: string) {
-    let log = `Adding order ${order.side} ${order.quantity} ${order.holding.symbol}. Reason: ${reason} ${order?.reason}`;
+    let log = `Adding order ${order.side} ${order.quantity} ${order.holding.symbol}. Reason: ${order?.reason ? order?.reason : reason}`;
     if (order.primaryLeg) {
       log += `Primary leg: ${order.side} ${order.primaryLeg.quantity} ${order.primaryLeg.symbol} `;
     }
