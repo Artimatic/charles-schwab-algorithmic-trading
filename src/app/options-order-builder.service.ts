@@ -26,7 +26,7 @@ export class OptionsOrderBuilderService {
   tradingPairMaxLife = 432000000;
   tradingPairsCounter = 0;
   currentTradeIdeas = { calls: [], puts: [] };
-  maxImpliedMovement = 0.11;
+  maxImpliedMovement = 0.14;
   constructor(private strategyBuilderService: StrategyBuilderService,
     private cartService: CartService,
     private optionsDataService: OptionsDataService,

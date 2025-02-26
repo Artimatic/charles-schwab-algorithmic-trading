@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { AutopilotComponent } from './autopilot.component';
+import { AutopilotComponent } from './autopilot.service';
 import { BacktestService, CartService, DaytradeService, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
 import { of, Subject } from 'rxjs';
 import { HttpClientTestingModule } from '@angular/common/http/testing';

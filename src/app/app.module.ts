@@ -83,7 +83,7 @@ import { InputTextareaModule } from 'primeng/inputtextarea';
 import { PickListModule } from 'primeng/picklist';
 import { TimelineModule } from 'primeng/timeline';
 import { DataViewModule } from 'primeng/dataview';
-import { AutopilotComponent } from './autopilot/autopilot.component';
+import { AutopilotComponent } from './autopilot/autopilot.service';
 import { RippleModule } from 'primeng/ripple';
 import { BacktestTableComponent } from './backtest-table/backtest-table.component';
 import { AddOptionsTradeComponent } from './autopilot/add-options-trade/add-options-trade.component';

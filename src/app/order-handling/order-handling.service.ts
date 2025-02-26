@@ -49,22 +49,6 @@ export class OrderHandlingService {
     this.cartService.updateOrder(order);
   }
 
-  async passMlCheck(symbol: string, predicate: (val: number) => boolean) {
-    const mlResult = await this.machineLearningService
-      .trainDaytrade(symbol.toUpperCase(),
-        moment().add({ days: 1 }).format('YYYY-MM-DD'),
-        moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
-        1,
-        this.globalSettingsService.daytradeAlgo
-      ).toPromise();
-    if (mlResult) {
-      if (!predicate(mlResult[0].nextOutput)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   async sendSellStrangle(order: SmartOrder, calls: Options[], puts: Options[], callsTotalPrice, putsTotalPrice) {
     const callsStrArr = calls.map(c => c.symbol);
     const putsStrArr = puts.map(c => c.symbol);
@@ -84,17 +68,11 @@ export class OrderHandlingService {
     this.reportingService.addAuditLog(order.holding.symbol, `Selling ${strangleOrderDescription}`);
     if (callsTotalPrice > putsTotalPrice) {
       if (analysis.recommendation.toLowerCase() === 'sell') {
-        const passed = await this.passMlCheck(order.holding.symbol, (val: number) => val < 0.5);
-        if (passed) {
-          this.sendSellStrangle(order, calls, puts, callsTotalPrice, putsTotalPrice);
-        }
+        this.sendSellStrangle(order, calls, puts, callsTotalPrice, putsTotalPrice);
       }
     } else {
       if (analysis.recommendation.toLowerCase() === 'buy') {
-        const passed = await this.passMlCheck(order.holding.symbol, (val: number) => val > 0.5);
-        if (passed) {
-          this.sendSellStrangle(order, calls, puts, callsTotalPrice, putsTotalPrice);
-        }
+        this.sendSellStrangle(order, calls, puts, callsTotalPrice, putsTotalPrice);
       }
     }
   }
