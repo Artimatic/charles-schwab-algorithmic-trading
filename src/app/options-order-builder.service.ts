@@ -203,7 +203,7 @@ export class OptionsOrderBuilderService {
             underlying: buy
           };
           let currentPut = null;
-          if (callPrice > 200 && callPrice < 3500 &&
+          if (callPrice > 150 && callPrice < 3500 &&
             callPrice >= (minCashAllocation / 100) &&
             callPrice <= (maxCashAllocation / 2)) {
             for (const sell of sellList) {
@@ -211,7 +211,7 @@ export class OptionsOrderBuilderService {
                 const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
                 if (bearishStrangle && bearishStrangle.put) {
                   const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
-                  if (putPrice > 200 && putPrice < 3500 &&
+                  if (putPrice > 150 && putPrice < 3500 &&
                     putPrice >= (minCashAllocation / 100) &&
                     putPrice <= (maxCashAllocation / 2)) {
                     const sellOptionsData = await this.optionsDataService.getImpliedMove(sell).toPromise();

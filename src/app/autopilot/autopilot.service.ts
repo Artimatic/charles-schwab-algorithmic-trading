@@ -443,10 +443,14 @@ export class AutopilotService {
   }
 
   addPair(buys: string[], sells: string[], reason) {
-    let counter = 0;
-    while (counter < buys.length && counter < sells.length) {
-      this.strategyBuilderService.createStrategy(`${buys[counter]} ${reason}`, buys[counter], [buys[counter]], [sells[counter]], reason);
-      counter++;
+    let buyCounter = 0;
+    let sellCounter = 0;
+    while (buyCounter < buys.length) {
+      while (sellCounter < sells.length) {
+        this.strategyBuilderService.createStrategy(`${buys[buyCounter]} ${reason}`, buys[buyCounter], [buys[buyCounter]], [sells[sellCounter]], reason);
+        sellCounter++;
+      }
+      buyCounter++;
     }
   }
 
