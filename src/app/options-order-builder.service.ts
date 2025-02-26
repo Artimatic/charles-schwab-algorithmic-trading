@@ -91,8 +91,16 @@ export class OptionsOrderBuilderService {
       this.strategyBuilderService.createStrategy('Pair', calls[0], calls, puts, reason);
     } else if (calls.length) {
       this.currentTradeIdeas.calls.push(calls[0]);
+      if (this.currentTradeIdeas.puts.length) {
+        this.strategyBuilderService.createStrategy('Pair', this.currentTradeIdeas.calls[0], this.currentTradeIdeas.calls, this.currentTradeIdeas.puts, reason);
+        this.clearCurrentTradeIdeas();
+      }
     } else if (puts.length) {
       this.currentTradeIdeas.puts.push(puts[0]);
+      if (this.currentTradeIdeas.calls.length) {
+        this.strategyBuilderService.createStrategy('Pair', this.currentTradeIdeas.calls[0], this.currentTradeIdeas.calls, this.currentTradeIdeas.puts, reason);
+        this.clearCurrentTradeIdeas();
+      }
     }
   }
 
@@ -168,20 +176,8 @@ export class OptionsOrderBuilderService {
     });
   }
 
-  private shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-  }
-
-  getBuyList() {
-    return this.shuffle(this.currentTradeIdeas.calls);
-  }
-
-  getSellList() {
-    return this.shuffle(this.currentTradeIdeas.puts);
+  clearCurrentTradeIdeas() {
+    this.currentTradeIdeas = { calls: [], puts: [] };
   }
 
   async balanceTrades(currentHoldings = null,
