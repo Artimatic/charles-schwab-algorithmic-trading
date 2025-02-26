@@ -358,10 +358,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           if (metTarget) {
             this.decreaseRiskTolerance();
           }
-          // if (this.autopilotService.strategyList[this.autopilotService.strategyCounter] === Strategy.Daytrade &&
-          //   (this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.autopilotService.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
-          //   this.triggerDaytradeRefresh();
-          // }
+          if (this.autopilotService.strategyList[this.autopilotService.strategyCounter] === Strategy.Daytrade &&
+            (this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.autopilotService.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
+            this.triggerDaytradeRefresh();
+          }
         } else if (moment().isAfter(moment(this.autopilotService.sessionStart).subtract(Math.floor(this.interval / 60000) * 2, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionStart))) {
           await this.setupStrategy();
@@ -720,7 +720,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const lastProfitMsg = 'Last profit ' + profit;
         console.log(lastProfitMsg);
         this.reportingService.addAuditLog(this.autopilotService.strategyList[this.autopilotService.strategyCounter], lastProfitMsg);
-        const metTarget = await this.priceTargetService.hasMetPriceTarget(-0.005);
+        const metTarget = await this.priceTargetService.hasMetPriceTarget(0);
         if (!metTarget) {
           this.decreaseDayTradeRiskTolerance();
           this.increaseRiskTolerance();

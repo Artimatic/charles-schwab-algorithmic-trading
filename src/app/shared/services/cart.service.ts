@@ -266,7 +266,9 @@ export class CartService {
       useTrailingStopLoss: false,
       useTakeProfit: false,
       sellAtClose: (side === 'DayTrade' || side === 'Sell') ? true : false,
-      id
+      id,
+      sellCount: 0,
+      buyCount: 0
     };
   }
 
@@ -303,7 +305,9 @@ export class CartService {
       // sellAtClose: false,
       allocation,
       forImmediateExecution: executeImmediately,
-      reason
+      reason,
+      sellCount: 0,
+      buyCount: 0
     };
   }
 
@@ -334,7 +338,9 @@ export class CartService {
       allocation: 0.05,
       primaryLegs,
       secondaryLegs,
-      type: OrderTypes.strangle
+      type: OrderTypes.strangle,
+      sellCount: 0,
+      buyCount: 0
     };
 
     this.addToCart(order);
@@ -385,7 +391,9 @@ export class CartService {
         primaryLegs,
         type: optionType,
         forImmediateExecution: executeImmediately,
-        reason
+        reason,
+        sellCount: 0,
+        buyCount: 0
       };
 
       return order;

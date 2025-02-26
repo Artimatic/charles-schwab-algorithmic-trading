@@ -485,11 +485,15 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
 
             const reject = (error) => {
               this.error = error._body;
+              this.stop();
+              this.reportingService.addAuditLog(this.order.holding.symbol, JSON.stringify(error._body));
             };
 
             const handleNotFound = () => {
-              this.removeOrder(sellOrder);
-              this.setWarning(`Trying to sell position that doesn\'t exists`);
+              const notFoundMsg = `Trying to sell position that doesn\'t exists ${this.order.holding.name}`;
+              this.removeOrder(this.order);
+              this.setWarning(notFoundMsg);
+              this.reportingService.addAuditLog(this.order.holding.symbol, notFoundMsg);
             };
 
             this.daytradeService.sendSell(sellOrder, 'limit', resolve, reject, handleNotFound);
@@ -535,13 +539,15 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
         const reject = (error) => {
           this.error = error._body;
           this.stop();
+          this.reportingService.addAuditLog(this.order.holding.symbol, JSON.stringify(error._body));
         };
 
         const handleNotFound = () => {
+          const notFoundMsg = `Trying to sell position that doesn\'t exists ${order.holding.name}`;
           this.removeOrder(order);
-          this.setWarning(`Trying to sell position that doesn\'t exists ${order.holding.name}`);
+          this.setWarning(notFoundMsg);
+          this.reportingService.addAuditLog(this.order.holding.symbol, notFoundMsg);
         };
-
 
         this.daytradeService.sendSell(order, 'market', resolve, reject, handleNotFound);
       } else {
@@ -608,7 +614,19 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     return this.processSpecialRules(quote, timestamp);
   }
 
-  async processAnalysis(daytradeType, analysis: Recommendation, quote, timestamp) {
+  async getOrderQuantityByAllocation() {
+    const data = await this.portfolioService.getTdPortfolio().toPromise();
+    for (const holding of data) {
+      const stock = holding.instrument.symbol;
+      if (holding.instrument.assetType.toLowerCase() === 'equity' &&
+        stock.toLowerCase() === this.order.holding.symbol.toLowerCase()) {
+        return holding.longQuantity;
+      }
+    }
+    return 0;
+  }
+
+  async processAnalysis(analysis: Recommendation, quote, timestamp) {
     if (!this.priceLowerBound) {
       this.priceLowerBound = quote;
     }
@@ -616,21 +634,21 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     if (analysis.recommendation.toLowerCase() === 'none' && !this.order.forImmediateExecution) {
       return;
     }
-    // if (analysis.recommendation.toLowerCase() === 'sell' || analysis.recommendation.toLowerCase() === 'buy') {
-    //   let buys = '';
-    //   let sells = '';
-    //   for (const rec in analysis) {
-    //     if (analysis.hasOwnProperty(rec)) {
-    //       if (analysis[rec].toLowerCase && analysis[rec].toLowerCase() === 'bullish') {
-    //         buys += rec + ', ';
-    //       } else if (analysis[rec].toLowerCase && analysis[rec].toLowerCase() === 'bearish') {
-    //         sells += rec + ', ';
-    //       }
-    //     }
-    //   }
-    //   const log = `Recommendation: ${analysis.recommendation.toLowerCase()}, order type:${this.firstFormGroup.value.orderType} ${this.order.type} Buys(${buys}) Sells(${sells})`;
-    //   this.reportingService.addAuditLog(this.order.holding.symbol, log);
-    // }
+    if (analysis.recommendation.toLowerCase() === 'sell' || analysis.recommendation.toLowerCase() === 'buy') {
+      let buys = '';
+      let sells = '';
+      for (const rec in analysis) {
+        if (analysis.hasOwnProperty(rec)) {
+          if (analysis[rec].toLowerCase && analysis[rec].toLowerCase() === 'bullish') {
+            buys += rec + ', ';
+          } else if (analysis[rec].toLowerCase && analysis[rec].toLowerCase() === 'bearish') {
+            sells += rec + ', ';
+          }
+        }
+      }
+      const log = `Recommendation: ${analysis.recommendation.toLowerCase()}, order type:${this.firstFormGroup.value.orderType} ${this.order.type} Buys(${buys}) Sells(${sells})`;
+      this.reportingService.addAuditLog(this.order.holding.symbol, log);
+    }
 
     const initialQuantity = this.multiplierPreference.value * this.firstFormGroup.value.quantity;
     if (this.hasReachedOrderLimit()) {
@@ -648,7 +666,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'sell' && (analysis.recommendation.toLowerCase() === 'buy' || this.order.forImmediateExecution)) {
         await this.sellOptions();
       }
-    } else if (this.order.type === OrderTypes.protectivePut && (analysis.recommendation.toLowerCase() === 'sell' || this.order.forImmediateExecution)) {
+    } else if (this.firstFormGroup.value.orderType.toLowerCase() === 'buy' && (this.order.type === OrderTypes.protectivePut && (analysis.recommendation.toLowerCase() === 'sell' || this.order.forImmediateExecution))) {
       if ((Math.abs(this.startingPrice - quote) / this.startingPrice) < 0.01) {
         this.machineDaytradingService.getPortfolioBalance().subscribe(async (balance) => {
           const currentBalance = balance.cashBalance;
@@ -662,7 +680,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     } else if (this.order.type === OrderTypes.strangle && this.order.side.toLowerCase() == 'sell') {
       await this.orderHandlingService.sellStrangle(this.order, analysis);
     } else if (analysis.recommendation.toLowerCase() === 'buy' || (this.lastMlResult && this.lastMlResult > 0.6)) {
-      if (daytradeType === 'buy' || this.isDayTrading()) {
+      if (this.order.side.toLowerCase() === 'buy' || this.isDayTrading()) {
         this.machineDaytradingService.getPortfolioBalance().subscribe((balance) => {
           const currentBalance = this.isDayTrading() ? balance.availableFunds : balance.cashBalance;
           const usage = (balance.liquidationValue - currentBalance) / balance.liquidationValue;
@@ -691,21 +709,14 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           }
         });
       }
-    } else if (((this.lastMlResult && this.lastMlResult < 0.2) || analysis.recommendation.toLowerCase() === 'sell' || this.order.forImmediateExecution) && (daytradeType === 'sell' || this.isDayTrading())) {
+    } else if ((this.order.side.toLowerCase() === 'sell' || this.isDayTrading()) && ((this.lastMlResult && this.lastMlResult < 0.2) || analysis.recommendation.toLowerCase() === 'sell' || this.order.forImmediateExecution)) {
       // console.log('Received sell recommendation: ', analysis, this.order.holding.symbol);
-      if (this.order.buyCount >= this.order.sellCount || daytradeType === 'sell') {
-        let orderQuantity = 0;
-        if (this.order.allocation) {
-          const data = await this.portfolioService.getTdPortfolio().toPromise();
-          for (const holding of data) {
-            const stock = holding.instrument.symbol;
-            if (holding.instrument.assetType.toLowerCase() === 'equity' &&
-              stock.toLowerCase() === this.order.holding.symbol.toLowerCase()) {
-              orderQuantity = holding.longQuantity;
-            }
-          }
-        } else {
-          orderQuantity = this.order.positionCount ? this.order.positionCount : this.firstFormGroup.value.orderSize;
+      const sellLog = 'Received sell recommendation';
+      this.reportingService.addAuditLog(this.order.holding.symbol, sellLog);
+      if (this.order.buyCount >= this.order.sellCount || this.order.side.toLowerCase() === 'sell') {
+        let orderQuantity = this.order.positionCount ? this.order.positionCount : this.firstFormGroup.value.orderSize;
+        if (this.order.allocation || !orderQuantity) {
+          orderQuantity = await this.getOrderQuantityByAllocation();
         }
 
         if (orderQuantity > 0) {
@@ -714,9 +725,9 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             timestamp,
             analysis);
 
-          const mlLog = `Ml next output: ${this.lastMlResult ? this.lastMlResult : ''}`;
-          this.reportingService.addAuditLog(this.order.holding.symbol, mlLog);
-            this.sendStopLoss(sellOrder);
+          this.sendStopLoss(sellOrder);
+        } else {
+          this.reportingService.addAuditLog(this.order.holding.symbol, 'Unable to sell, no position to sell');
         }
       }
     }
@@ -862,7 +873,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   isDayTrading(): boolean {
-    return this.firstFormGroup.value.orderType.toLowerCase() === 'daytrade';
+    return this.order.side.toLowerCase() === 'daytrade';
   }
 
   getStopLossSetting(): number {
@@ -874,7 +885,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   isSellOrder(): boolean {
-    return this.firstFormGroup.value.orderType.toLowerCase() === 'sell';
+    return this.order.side.toLowerCase() === 'sell';
   }
 
   removeOrder(oldOrder) {
@@ -906,15 +917,14 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     const orderProcessed = this.handleStoploss(lastPrice, moment().valueOf());
 
     if (!orderProcessed) {
-      const daytradeType = this.firstFormGroup.value.orderType.toLowerCase();
       const estimatedPrice = this.daytradeService.estimateAverageBuyOrderPrice(this.orders);
       if (analysis) {
-        await this.processAnalysis(daytradeType, this.daytradeStrategiesService.analyse(analysis) as Recommendation, lastPrice, moment().valueOf());
+        await this.processAnalysis(this.daytradeStrategiesService.analyse(analysis) as Recommendation, lastPrice, moment().valueOf());
       } else {
         this.backtestService.getDaytradeRecommendation(this.order.holding.symbol, lastPrice, estimatedPrice, { minQuotes: 81 })
           .subscribe(
             async (analysis) => {
-              await this.processAnalysis(daytradeType, this.daytradeStrategiesService.analyse(analysis) as Recommendation, lastPrice, moment().valueOf());
+              await this.processAnalysis(this.daytradeStrategiesService.analyse(analysis) as Recommendation, lastPrice, moment().valueOf());
             },
             error => {
               console.log('Error getting daytrade recommendations', error);
