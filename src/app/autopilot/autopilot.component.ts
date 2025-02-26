@@ -487,7 +487,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       summary: msg
     });
 
-    console.log(msg);
     this.reportingService.addAuditLog(null, msg);
 
     if (this.autopilotService.strategyList[this.autopilotService.strategyCounter] === 'Daytrade') {
