@@ -75,6 +75,10 @@ export class OptionsOrderBuilderService {
   }
 
   addTradingPairs(orders: SmartOrder[], reason) {
+    if (this.tradingPairs.find(pair => pair[0].holding.symbol === orders[0].holding.symbol)) {
+      console.log('Pair has already been added', orders[0]);
+      return;
+    }
     const hashValue = this.getTradeHashValue(orders);
     this.tradingPairDate[hashValue] = new Date().valueOf();
     this.tradingPairs.push(orders);
@@ -205,7 +209,7 @@ export class OptionsOrderBuilderService {
           let currentPut = null;
           if (callPrice > 100 && callPrice < 3500 &&
             callPrice >= (minCashAllocation / 100) &&
-            callPrice <= (maxCashAllocation / 2)) {
+            callPrice <= maxCashAllocation) {
             for (const sell of sellList) {
               if (!currentHoldings || !currentHoldings.find(holding => holding.name === sell)) {
                 const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
@@ -262,7 +266,7 @@ export class OptionsOrderBuilderService {
 
               if (addToList) {
                 this.reportingService.addAuditLog(null,
-                  `Trading pair ${option1?.primaryLegs[0]?.symbol} ${option2?.primaryLegs[0]?.symbol}. Reason: ${reason}, Min cash: ${minCashAllocation}, Max cash: ${maxCashAllocation}`);
+                  `Added trading pair ${option1?.primaryLegs[0]?.symbol} ${option2?.primaryLegs[0]?.symbol}. Reason: ${reason}, Min cash: ${minCashAllocation}, Max cash: ${maxCashAllocation}`);
                 this.addTradingPairs([option1, option2], reason);
               }
 
@@ -276,6 +280,8 @@ export class OptionsOrderBuilderService {
               return [option1, option2];
             }
           } else {
+            this.reportingService.addAuditLog(null,
+              `Unable to find trading pair. Buy: ${buyList.join(',')} Sell: ${sellList.join(',')}`);
             if (callPrice < minCashAllocation) {
               console.log('Call price too low', bullishStrangle.call, 'price:', callPrice, 'min:', minCashAllocation, 'max:', maxCashAllocation);
 
