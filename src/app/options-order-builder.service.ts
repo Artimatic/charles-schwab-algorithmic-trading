@@ -209,7 +209,7 @@ export class OptionsOrderBuilderService {
           let currentPut = null;
           if (callPrice > 100 && callPrice < 3500 &&
             callPrice >= (minCashAllocation / 100) &&
-            callPrice <= maxCashAllocation) {
+            callPrice <= (maxCashAllocation / 2)) {
             for (const sell of sellList) {
               if (!currentHoldings || !currentHoldings.find(holding => holding.name === sell)) {
                 const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
