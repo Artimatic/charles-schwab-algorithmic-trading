@@ -1,18 +1,16 @@
 import { Injectable } from '@angular/core';
 import { round } from 'lodash';
 import { OptionsDataService } from '@shared/options-data.service';
-import { AiPicksService, BacktestService, CartService, MachineLearningService, PortfolioService } from '@shared/services';
+import { BacktestService, CartService, PortfolioService, ReportingService } from '@shared/services';
 import { Stock } from '@shared/stock.interface';
 import { PotentialTrade } from './potential-trade.constant';
 import * as moment from 'moment-timezone';
 import { Strangle } from '@shared/models/options';
 import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
-import { SwingtradeStrategiesService } from '../strategies/swingtrade-strategies.service';
 import { Indicators } from '@shared/stock-backtest.interface';
 import { MessageService } from 'primeng/api';
 import { AlwaysBuy } from '../rh-table/backtest-stocks.constant';
 import { SchedulerService } from '@shared/service/scheduler.service';
-import { BacktestAggregatorService } from './backtest-aggregator.service';
 
 export interface ComplexStrategy {
   state: 'assembling' | 'assembled' | 'disassembling' | 'disassembled';
@@ -35,6 +33,7 @@ export class StrategyBuilderService {
     private portfolioService: PortfolioService,
     private messageService: MessageService,
     private schedulerService: SchedulerService,
+    private reportingService: ReportingService,
     private cartService: CartService) { }
 
   getRecentBacktest(symbol: string = null, expiry = 1) {
@@ -134,8 +133,13 @@ export class StrategyBuilderService {
     return (!prevObj || (currTotalVolume > prevObj.totalVolume)) && (currTotalVolume > 180 || openInterest > 500);
   }
 
-  async getCallStrangleTrade(symbol: string, minExpiration = this.defaultMinExpiration): Promise<Strangle> {
+  async getCallStrangleTrade(symbol: string, minExpiration = this.defaultMinExpiration, maxImpliedMove = 0.1): Promise<Strangle> {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
+    if (optionsData.move > maxImpliedMove) {
+      this.reportingService.addAuditLog(null,
+        `Implied movement is too high for ${optionsData.move} at ${optionsData.move}`);
+      return { call: null, put: null };
+    }
     const optionsChain = optionsData.optionsChain;
     const impliedMovement = optionsData.move;
     const goal = optionsChain?.underlyingPrice;
@@ -147,6 +151,8 @@ export class StrategyBuilderService {
       let strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
       if (!strategyList || !strategyList.optionStrategyList) {
         console.log('Unable to find options chain for', optionsChain);
+        this.reportingService.addAuditLog(null,
+          'Unable to find options chain for ' + symbol);
         return;
       }
       potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
@@ -171,13 +177,19 @@ export class StrategyBuilderService {
     }
 
     if (!potentialStrangle.call) {
-      console.log('Unable to find call for', symbol, optionsData);
+      this.reportingService.addAuditLog(null,
+        'Unable to find call for ' + symbol);
     }
     return potentialStrangle;
   }
 
-  async getPutStrangleTrade(symbol: string, minExpiration = this.defaultMinExpiration) {
+  async getPutStrangleTrade(symbol: string, minExpiration = this.defaultMinExpiration, maxImpliedMove = 0.1) {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
+    if (optionsData.move > maxImpliedMove) {
+      this.reportingService.addAuditLog(null,
+        `Implied movement is too high for ${optionsData.move} at ${optionsData.move}`);
+      return { call: null, put: null };
+    }
     const optionsChain = optionsData.optionsChain;
     const impliedMovement = optionsData.move;
     const goal = optionsChain?.underlyingPrice;
@@ -191,6 +203,8 @@ export class StrategyBuilderService {
         const strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
         if (!strategyList || !strategyList.optionStrategyList) {
           console.log('Unable to find options chain for', optionsChain);
+          this.reportingService.addAuditLog(null,
+            'Unable to find options chain for ' + symbol);
           return;
         }
         potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
@@ -214,7 +228,8 @@ export class StrategyBuilderService {
       }
     }
     if (!potentialStrangle.put) {
-      console.log('Unable to find put for', symbol, potentialStrangle, optionsData);
+      this.reportingService.addAuditLog(null,
+        'Unable to find put for ' + symbol);
     }
     return potentialStrangle;
   }
