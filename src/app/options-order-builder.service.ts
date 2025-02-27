@@ -5,7 +5,7 @@ import { BacktestService, CartService, PortfolioInfoHolding, ReportingService } 
 import { StrategyBuilderService } from './backtest-table/strategy-builder.service';
 import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
 import { OptionsDataService } from '@shared/options-data.service';
-import { Options } from '@shared/models/options';
+import { Options, Strangle } from '@shared/models/options';
 import { OrderHandlingService } from './order-handling/order-handling.service';
 import { PriceTargetService } from './autopilot/price-target.service';
 
@@ -54,6 +54,35 @@ export class OptionsOrderBuilderService {
 
   private getHashValue(value: string) {
     return crc.crc32(value).toString(16);
+  }
+
+  private createOrderAddToList(currentPut: TradingPair, currentCall: TradingPair, reason: string, minCashAllocation: number, maxCashAllocation: number) {
+    if (currentPut && currentCall && (currentCall.price * currentCall.quantity) + (currentPut.price * currentPut.quantity) <= maxCashAllocation) {
+      const option1 = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call],
+        currentCall.price, currentCall.quantity,
+        OrderTypes.call, reason,
+        'Buy', currentCall.quantity);
+      const option2 = this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put],
+        currentPut.price, currentPut.quantity,
+        OrderTypes.put, reason,
+        'Buy', currentCall.quantity);
+
+      this.reportingService.addAuditLog(null,
+        `Added trading pair ${option1?.primaryLegs[0]?.symbol} ${option2?.primaryLegs[0]?.symbol}. Reason: ${reason}, Min cash: ${minCashAllocation}, Max cash: ${maxCashAllocation}`);
+      this.addTradingPairs([option1, option2], reason);
+    }
+  }
+
+  private isIdealOption(price: number,
+    maxCashAllocation: number,
+    option: Options) {
+    if (price < 100 || price > 3500 ||
+      price > (maxCashAllocation / 2)) {
+      this.reportingService.addAuditLog(null,
+        `Unable to find usable call option. Stock: ${option.underlyingSymbol} Option: ${option.symbol} Price: ${price} Cash available: ${maxCashAllocation}`);
+      return false;
+    }
+    return true;
   }
 
   getTradeHashValue(arr: SmartOrder[]) {
@@ -189,110 +218,70 @@ export class OptionsOrderBuilderService {
     sellList: string[],
     minCashAllocation: number,
     maxCashAllocation: number,
-    reason: string,
-    addToList = true) {
+    reason: string) {
     if (minCashAllocation === maxCashAllocation) {
       minCashAllocation = 0;
     }
     for (const buy of buyList) {
-      const buyOptionsData = await this.optionsDataService.getImpliedMove(buy).toPromise();
-      if (buyOptionsData && buyOptionsData.move && buyOptionsData.move < this.maxImpliedMovement) {
-        const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(buy);
-        if (bullishStrangle && bullishStrangle.call) {
-          const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
-          let currentCall = {
-            call: bullishStrangle.call,
-            price: callPrice,
-            quantity: 0,
-            underlying: buy
-          };
-          let currentPut = null;
-          if (callPrice > 100 && callPrice < 3500 &&
-            callPrice >= (minCashAllocation / 100) &&
-            callPrice <= (maxCashAllocation / 2)) {
-            for (const sell of sellList) {
-              if (!currentHoldings || !currentHoldings.find(holding => holding.name === sell)) {
-                const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
-                if (bearishStrangle && bearishStrangle.put) {
-                  const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
-                  if (putPrice > 100 && putPrice < 3500 &&
-                    putPrice >= (minCashAllocation / 100) &&
-                    putPrice <= (maxCashAllocation / 2)) {
-                    const sellOptionsData = await this.optionsDataService.getImpliedMove(sell).toPromise();
-                    if (sellOptionsData && sellOptionsData.move && sellOptionsData.move < this.maxImpliedMovement) {
-                      const multiple = (callPrice > putPrice) ? Math.round(callPrice / putPrice) : Math.round(putPrice / callPrice);
-                      let initialCallQuantity = (callPrice > putPrice) ? 1 : multiple;
-                      let initialPutQuantity = (callPrice > putPrice) ? multiple : 1;
-                      const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple, minCashAllocation, maxCashAllocation);
-                      if (callQuantity + putQuantity < 25) {
-                        bullishStrangle.call.quantity = callQuantity;
-                        bearishStrangle.put.quantity = putQuantity;
-                        const availableFunds = await this.cartService.getAvailableFunds(true);
-                        if (availableFunds >= (callPrice * callQuantity + putPrice * putQuantity)) {
-                          if (!currentPut || (currentCall.quantity * currentCall.price +
-                            currentPut.quantity * currentPut.price) > (currentCall.quantity * currentCall.price + putQuantity * putPrice)) {
-                            currentCall.quantity = callQuantity;
-                            if (currentPut) {
-                              currentPut.put = bearishStrangle.put;
-                              currentPut.quantity = putQuantity;
-                              currentPut.price = putPrice;
-                              currentPut.underlying = sell;
-                            } else {
-                              currentPut = {
-                                put: bearishStrangle.put,
-                                price: putPrice,
-                                quantity: putQuantity,
-                                underlying: sell
-                              };
-                            }
-                          }
-                        }
-                      }
-                    }
+      const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(buy, null, this.maxImpliedMovement);
+      if (bullishStrangle && bullishStrangle.call) {
+        const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
+        let currentCall = {
+          call: bullishStrangle.call,
+          price: callPrice,
+          quantity: 0,
+          underlying: buy
+        };
+        let currentPut = null;
+        if (this.isIdealOption(callPrice, maxCashAllocation, bullishStrangle.call)) {
+          break;
+        }
+        for (const sell of sellList) {
+
+          const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell, null, this.maxImpliedMovement);
+          if (bearishStrangle && bearishStrangle.put) {
+            const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
+            if (this.isIdealOption(putPrice, maxCashAllocation, bearishStrangle.put)) {
+              break;
+            }
+            const multiple = (callPrice > putPrice) ? Math.round(callPrice / putPrice) : Math.round(putPrice / callPrice);
+            let initialCallQuantity = (callPrice > putPrice) ? 1 : multiple;
+            let initialPutQuantity = (callPrice > putPrice) ? multiple : 1;
+            const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple, minCashAllocation, maxCashAllocation);
+            if (callQuantity + putQuantity > 25) {
+              this.reportingService.addAuditLog(null,
+                `Options quantity too high ${buy} ${callQuantity} ${sell} ${putQuantity}`);
+                break;
+            }
+              bullishStrangle.call.quantity = callQuantity;
+              bearishStrangle.put.quantity = putQuantity;
+              const availableFunds = await this.cartService.getAvailableFunds(true);
+              if (availableFunds >= (callPrice * callQuantity + putPrice * putQuantity)) {
+                if (!currentPut || (currentCall.quantity * currentCall.price +
+                  currentPut.quantity * currentPut.price) > (currentCall.quantity * currentCall.price + putQuantity * putPrice)) {
+                  currentCall.quantity = callQuantity;
+                  if (currentPut) {
+                    currentPut.put = bearishStrangle.put;
+                    currentPut.quantity = putQuantity;
+                    currentPut.price = putPrice;
+                    currentPut.underlying = sell;
+                  } else {
+                    currentPut = {
+                      put: bearishStrangle.put,
+                      price: putPrice,
+                      quantity: putQuantity,
+                      underlying: sell
+                    };
                   }
                 }
               }
-            }
-
-            if (currentPut && currentCall && (currentCall.price * currentCall.quantity) + (currentPut.price * currentPut.quantity) <= maxCashAllocation) {
-              const option1 = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call],
-                currentCall.price, currentCall.quantity,
-                OrderTypes.call, reason,
-                'Buy', currentCall.quantity);
-              const option2 = this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put],
-                currentPut.price, currentPut.quantity,
-                OrderTypes.put, reason,
-                'Buy', currentCall.quantity);
-
-              if (addToList) {
-                this.reportingService.addAuditLog(null,
-                  `Added trading pair ${option1?.primaryLegs[0]?.symbol} ${option2?.primaryLegs[0]?.symbol}. Reason: ${reason}, Min cash: ${minCashAllocation}, Max cash: ${maxCashAllocation}`);
-                this.addTradingPairs([option1, option2], reason);
-              }
-
-              // const endDate = moment().format('YYYY-MM-DD');
-              // const startDate = moment().subtract({ day: 600 }).format('YYYY-MM-DD');
-
-              // const range = 10;
-              // const limit = 0.001;
-              // this.machineLearningService.trainTradingPair(currentCall.underlying,
-              //   currentPut.underlying, endDate, startDate, 0.8, null, range, limit).subscribe();
-              return [option1, option2];
-            }
-          } else {
-            this.reportingService.addAuditLog(null,
-              `Unable to find trading pair. Buy: ${buyList.join(',')} Sell: ${sellList.join(',')}`);
-            if (callPrice < minCashAllocation) {
-              console.log('Call price too low', bullishStrangle.call, 'price:', callPrice, 'min:', minCashAllocation, 'max:', maxCashAllocation);
-
-            } else if (callPrice > maxCashAllocation) {
-              console.log('Call price too high', bullishStrangle.call, 'price:', callPrice, 'min:', minCashAllocation, 'max:', maxCashAllocation);
-            }
+            
           }
+
         }
+        this.createOrderAddToList(currentPut, currentCall, reason, minCashAllocation, maxCashAllocation);
       }
     }
-    return null;
   }
 
   getCallPutQuantities(callPrice,
