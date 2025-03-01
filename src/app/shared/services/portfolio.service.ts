@@ -88,7 +88,22 @@ export class PortfolioService {
       lastStrategy,
       profit
     };
-    return this.http.post('/api/portfolio/resources', body);
+    return this.http.post('/api/portfolio/add-profit-loss', body);
+  }
+
+  addStrategy(date,
+    type,
+    key,
+    strategy,
+    reason): Observable<any> {
+    const body = {
+      date,
+      type,
+      key,
+      strategy,
+      reason
+    };
+    return this.http.post('/api/portfolio/add-strategy', body);
   }
 
   getTdPortfolio() {

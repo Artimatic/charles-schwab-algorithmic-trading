@@ -175,6 +175,15 @@ class PortfolioController extends BaseController {
       BaseController.requestGetSuccessHandler(response, { success: true })
   }
 
+  addStrategy(request, response) {
+    PortfolioService.addStrategy(request.body.date,
+      request.body.type,
+      request.body.key,
+      request.body.strategy,
+      request.body.reason)
+      BaseController.requestGetSuccessHandler(response, { success: true })
+  }
+
   checkForCredentials(request, response) {
     PortfolioService.isSet(request.body.accountId, response, request.headers.cookie);
   }

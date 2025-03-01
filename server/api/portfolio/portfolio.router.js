@@ -100,6 +100,10 @@ export const addProfitLoss = (request, response) => {
   PortfolioController.addProfitLoss(request, response);
 }
 
+export const addStrategy = (request, response) => {
+  PortfolioController.addStrategy(request, response);
+}
+
 export const deleteCredentials = (request, response) => {
   PortfolioController.deleteCredentials(request, response);
 }

@@ -400,6 +400,7 @@ export class StrategyBuilderService {
       },
       reason: reason
     };
+    this.portfolioService.addStrategy(trade.date, trade.type, trade.key, trade.strategy, trade.reason).subscribe();
     this.addTradingStrategy(trade);
   }
 
