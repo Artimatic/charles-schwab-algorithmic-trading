@@ -26,6 +26,7 @@ router.post('/v2/sell', handler.tdSell);
 router.post('/v3/set-account', handler.setAccount);
 router.post('/v3/check-account', handler.checkAccount);
 router.post('/v3/delete-cred', handler.checkAccount);
+router.post('/add-profit-loss', handler.addProfitLoss);
 router.get('/instrument', handler.getInstrument);
 
 module.exports = router;

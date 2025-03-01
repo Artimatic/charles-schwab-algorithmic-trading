@@ -26,7 +26,8 @@ export class StrategyBuilderService {
   correlationThreshold = 0.55;
   sumNet = 0;
   countNet = 0;
-  defaultMinExpiration = 50;
+  defaultMinExpiration = 45;
+  bullishStocks = [];
 
   constructor(private backtestService: BacktestService,
     private optionsDataService: OptionsDataService,
@@ -64,6 +65,9 @@ export class StrategyBuilderService {
   }
 
   async getBacktestData(symbol: string, overwrite = false) {
+    if (symbol === undefined) {
+      return null;
+    }
     const recentBacktest = this.getRecentBacktest(symbol);
     if (recentBacktest && !overwrite) {
       return Promise.resolve(recentBacktest);
@@ -129,22 +133,24 @@ export class StrategyBuilderService {
     return false;
   }
 
-  passesVolumeCheck(openInterest, currTotalVolume, prevObj) {
-    return (!prevObj || (currTotalVolume > prevObj.totalVolume)) && (currTotalVolume > 180 || openInterest > 500);
+  private passesVolumeCheck(openInterest, currTotalVolume, prevObj) {
+    return ((!prevObj && (openInterest > 500 || currTotalVolume > 200)) || prevObj && (openInterest > prevObj.openInterest));
   }
 
-  async getCallStrangleTrade(symbol: string, minExpiration = this.defaultMinExpiration, maxImpliedMove = 0.1): Promise<Strangle> {
+  async getCallStrangleTrade(symbol: string, minExpiration = this.defaultMinExpiration, maxImpliedMove = 0.14): Promise<Strangle> {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     if (optionsData.move > maxImpliedMove) {
       this.reportingService.addAuditLog(null,
-        `Implied movement is too high for ${optionsData.move} at ${optionsData.move}`);
-      return { call: null, put: null };
+        `Implied movement is too high for ${symbol} at ${optionsData.move}`);
+      this.bullishStocks.push(symbol);
+        return { call: null, put: null };
     }
     const optionsChain = optionsData.optionsChain;
     const impliedMovement = optionsData.move;
     const goal = optionsChain?.underlyingPrice;
     let potentialStrangle = { call: null, put: null };
-    let expiration = minExpiration;
+    minExpiration = minExpiration || this.defaultMinExpiration;
+    let expiration = minExpiration || this.defaultMinExpiration;
 
     while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 6) {
       expiration++;
@@ -157,19 +163,17 @@ export class StrategyBuilderService {
       }
       potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
         if ((!prev.call || (Math.abs(Number(curr.strategyStrike) - goal) < Math.abs(Number(prev.call.strikePrice) - goal)))) {
-          if (curr.secondaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.secondaryLeg.openInterest, curr.secondaryLeg.totalVolume, prev.call)) {
-            prev.call = JSON.parse(JSON.stringify(curr.secondaryLeg));
-          } else if (curr.primaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.primaryLeg.openInterest, curr.primaryLeg.totalVolume, prev.call)) {
-            prev.call = JSON.parse(JSON.stringify(curr.primaryLeg));
+          const currentCall = curr.secondaryLeg.putCallInd.toLowerCase() === 'c' ? curr.secondaryLeg : curr.primaryLeg;
+          if (this.passesVolumeCheck(currentCall.openInterest, currentCall.totalVolume, prev.call)) {
+            prev.call = JSON.parse(JSON.stringify(currentCall));
           }
         }
 
         if ((!prev.put && curr.strategyStrike < goal) ||
           (this.isPutHedge(goal, curr.strategyStrike, impliedMovement))) {
-          if (curr.primaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.primaryLeg.openInterest, curr.primaryLeg.totalVolume, prev.put)) {
-            prev.put = JSON.parse(JSON.stringify(curr.primaryLeg));
-          } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.secondaryLeg.openInterest, curr.secondaryLeg.totalVolume, prev.put)) {
-            prev.put = JSON.parse(JSON.stringify(curr.secondaryLeg));
+          const currentPut = curr.primaryLeg.putCallInd.toLowerCase() === 'p' ? curr.primaryLeg : curr.secondaryLeg;
+          if (this.passesVolumeCheck(currentPut.openInterest, currentPut.totalVolume, prev.call)) {
+            prev.put = JSON.parse(JSON.stringify(currentPut));
           }
         }
         return prev;
@@ -183,11 +187,11 @@ export class StrategyBuilderService {
     return potentialStrangle;
   }
 
-  async getPutStrangleTrade(symbol: string, minExpiration = this.defaultMinExpiration, maxImpliedMove = 0.1) {
+  async getPutStrangleTrade(symbol: string, minExpiration = this.defaultMinExpiration, maxImpliedMove = 0.14) {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     if (optionsData.move > maxImpliedMove) {
       this.reportingService.addAuditLog(null,
-        `Implied movement is too high for ${optionsData.move} at ${optionsData.move}`);
+        `Implied movement is too high for ${symbol} at ${optionsData.move}`);
       return { call: null, put: null };
     }
     const optionsChain = optionsData.optionsChain;
@@ -210,17 +214,15 @@ export class StrategyBuilderService {
         potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
           if ((!prev.call && curr.strategyStrike > goal) ||
             (this.isCallHedge(goal, curr.strategyStrike, impliedMovement))) {
-            if (curr.secondaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.secondaryLeg.openInterest, curr.secondaryLeg.totalVolume, prev.call)) {
-              prev.call = JSON.parse(JSON.stringify(curr.secondaryLeg));
-            } else if (curr.primaryLeg.putCallInd.toLowerCase() === 'c' && this.passesVolumeCheck(curr.primaryLeg.openInterest, curr.primaryLeg.totalVolume, prev.call)) {
-              prev.call = JSON.parse(JSON.stringify(curr.primaryLeg));
+            const currentCall = curr.primaryLeg.putCallInd.toLowerCase() === 'c' ? curr.primaryLeg : curr.secondaryLeg;
+            if (this.passesVolumeCheck(currentCall.openInterest, currentCall.totalVolume, prev.call)) {
+              prev.put = JSON.parse(JSON.stringify(currentCall));
             }
           }
           if (!prev.put || (Math.abs(curr.strategyStrike - goal) < Math.abs(Number(prev.put.strikePrice) - goal))) {
-            if (curr.primaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.primaryLeg.openInterest, curr.primaryLeg.totalVolume, prev.put)) {
-              prev.put = JSON.parse(JSON.stringify(curr.primaryLeg));
-            } else if (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' && this.passesVolumeCheck(curr.secondaryLeg.openInterest, curr.secondaryLeg.totalVolume, prev.put)) {
-              prev.put = JSON.parse(JSON.stringify(curr.secondaryLeg));
+            const currentPut = curr.primaryLeg.putCallInd.toLowerCase() === 'p' ? curr.primaryLeg : curr.secondaryLeg;
+            if (this.passesVolumeCheck(currentPut.openInterest, currentPut.totalVolume, prev.call)) {
+              prev.put = JSON.parse(JSON.stringify(currentPut));
             }
           }
           return prev;

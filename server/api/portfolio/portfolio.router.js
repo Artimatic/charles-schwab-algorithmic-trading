@@ -96,6 +96,10 @@ export const checkAccount = (request, response) => {
   PortfolioController.checkForCredentials(request, response);
 }
 
+export const addProfitLoss = (request, response) => {
+  PortfolioController.addProfitLoss(request, response);
+}
+
 export const deleteCredentials = (request, response) => {
   PortfolioController.deleteCredentials(request, response);
 }
