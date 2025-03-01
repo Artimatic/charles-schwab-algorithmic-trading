@@ -474,7 +474,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.portfolioService.updatePortfolioProfitLoss(accountId || null, profitObj.date,
       profitObj.lastRiskTolerance,
       profitObj.lastStrategy,
-      profitObj.profit);
+      profitObj.profit).subscribe();
 
     localStorage.setItem('profitLoss', JSON.stringify(profitObj));
   }

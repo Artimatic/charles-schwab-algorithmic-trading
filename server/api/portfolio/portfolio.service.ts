@@ -822,8 +822,17 @@ class PortfolioService {
         lastRiskTolerance,
         lastStrategy,
         profit
-      }, 'stock_portfolio', 'profitLoss',  { name: date });
+      }, 'stock_portfolio', 'profitLoss',  { date: date });
+  }
 
+  addStrategy(date, type, key, strategy, reason) {
+    DatabaseService.update({
+      date,
+      type,
+      key,
+      strategy,
+      reason
+    }, 'stock_portfolio', 'strategies',  { key: key });
   }
 
   getTdBalance(accountId, response) {

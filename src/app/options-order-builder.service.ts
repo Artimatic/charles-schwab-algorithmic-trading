@@ -265,33 +265,31 @@ export class OptionsOrderBuilderService {
             if (callQuantity + putQuantity > 25) {
               this.reportingService.addAuditLog(null,
                 `Options quantity too high ${buy} ${callQuantity} ${sell} ${putQuantity}`);
-                break;
+              break;
             }
-              bullishStrangle.call.quantity = callQuantity;
-              bearishStrangle.put.quantity = putQuantity;
-              const availableFunds = await this.cartService.getAvailableFunds(true);
-              if (availableFunds >= (callPrice * callQuantity + putPrice * putQuantity)) {
-                if (!currentPut || (currentCall.quantity * currentCall.price +
-                  currentPut.quantity * currentPut.price) > (currentCall.quantity * currentCall.price + putQuantity * putPrice)) {
-                  currentCall.quantity = callQuantity;
-                  if (currentPut) {
-                    currentPut.put = bearishStrangle.put;
-                    currentPut.quantity = putQuantity;
-                    currentPut.price = putPrice;
-                    currentPut.underlying = sell;
-                  } else {
-                    currentPut = {
-                      put: bearishStrangle.put,
-                      price: putPrice,
-                      quantity: putQuantity,
-                      underlying: sell
-                    };
-                  }
+            bullishStrangle.call.quantity = callQuantity;
+            bearishStrangle.put.quantity = putQuantity;
+            const availableFunds = await this.cartService.getAvailableFunds(true);
+            if (availableFunds >= (callPrice * callQuantity + putPrice * putQuantity)) {
+              if (!currentPut || (currentCall.quantity * currentCall.price +
+                currentPut.quantity * currentPut.price) > (currentCall.quantity * currentCall.price + putQuantity * putPrice)) {
+                currentCall.quantity = callQuantity;
+                if (currentPut) {
+                  currentPut.put = bearishStrangle.put;
+                  currentPut.quantity = putQuantity;
+                  currentPut.price = putPrice;
+                  currentPut.underlying = sell;
+                } else {
+                  currentPut = {
+                    put: bearishStrangle.put,
+                    price: putPrice,
+                    quantity: putQuantity,
+                    underlying: sell
+                  };
                 }
               }
-            
+            }
           }
-
         }
         this.createOrderAddToList(currentPut, currentCall, reason, minCashAllocation, maxCashAllocation);
       }
