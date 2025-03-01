@@ -811,6 +811,21 @@ class PortfolioService {
       });
   }
 
+  addProfitLoss(accountId: string, 
+    date,
+    lastRiskTolerance,
+    lastStrategy,
+    profit) {
+      DatabaseService.update({
+        accountId,
+        date,
+        lastRiskTolerance,
+        lastStrategy,
+        profit
+      }, 'stock_portfolio', 'profitLoss',  { name: date });
+
+  }
+
   getTdBalance(accountId, response) {
     return this.renewAuth(accountId, response)
       .then(() => {

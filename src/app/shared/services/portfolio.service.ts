@@ -76,6 +76,21 @@ export class PortfolioService {
     return this.http.get('/api/portfolio/positions/', options);
   }
 
+  updatePortfolioProfitLoss(accountId: string,
+    date,
+    lastRiskTolerance,
+    lastStrategy,
+    profit): Observable<any> {
+    const body = {
+      accountId,
+      date,
+      lastRiskTolerance,
+      lastStrategy,
+      profit
+    };
+    return this.http.post('/api/portfolio/resources', body);
+  }
+
   getTdPortfolio() {
     const accountId = this.getAccountId();
     if (!accountId) {

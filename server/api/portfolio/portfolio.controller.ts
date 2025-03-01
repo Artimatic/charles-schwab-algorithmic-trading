@@ -166,6 +166,15 @@ class PortfolioController extends BaseController {
       response);
   }
 
+  addProfitLoss(request, response) {
+    PortfolioService.addProfitLoss(request.body.accountId,
+      request.body.date,
+      request.body.lastRiskTolerance,
+      request.body.lastStrategy,
+      request.body.profit)
+      BaseController.requestGetSuccessHandler(response, { success: true })
+  }
+
   checkForCredentials(request, response) {
     PortfolioService.isSet(request.body.accountId, response, request.headers.cookie);
   }

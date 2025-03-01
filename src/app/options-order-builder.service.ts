@@ -26,10 +26,9 @@ export class OptionsOrderBuilderService {
   tradingPairMaxLife = 432000000;
   tradingPairsCounter = 0;
   currentTradeIdeas = { calls: [], puts: [] };
-  maxImpliedMovement = 0.14;
+  maxImpliedMovement = 0.135;
   constructor(private strategyBuilderService: StrategyBuilderService,
     private cartService: CartService,
-    private optionsDataService: OptionsDataService,
     private backtestService: BacktestService,
     private reportingService: ReportingService,
     private orderHandlingService: OrderHandlingService,
@@ -101,6 +100,22 @@ export class OptionsOrderBuilderService {
         || Math.abs(new Date().valueOf() - this.tradingPairDate[this.getTradeHashValue(val)]) < this.tradingPairMaxLife;
     });
     return this.tradingPairs;
+  }
+
+  addCallToCurrentTrades(symbol: string) {
+    this.currentTradeIdeas.calls.push(symbol);
+    if (this.currentTradeIdeas.puts.length) {
+      this.strategyBuilderService.createStrategy('Pair', this.currentTradeIdeas.calls[0], this.currentTradeIdeas.calls, this.currentTradeIdeas.puts, 'Orphaned pair');
+      this.clearCurrentTradeIdeas();
+    }
+  }
+
+  addPutToCurrentTrades(symbol: string) {
+    this.currentTradeIdeas.puts.push(symbol);
+    if (this.currentTradeIdeas.calls.length) {
+      this.strategyBuilderService.createStrategy('Pair', this.currentTradeIdeas.calls[0], this.currentTradeIdeas.calls, this.currentTradeIdeas.puts, 'Orphaned pair');
+      this.clearCurrentTradeIdeas();
+    }
   }
 
   addTradingPairs(orders: SmartOrder[], reason) {
@@ -237,7 +252,6 @@ export class OptionsOrderBuilderService {
           break;
         }
         for (const sell of sellList) {
-
           const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell, null, this.maxImpliedMovement);
           if (bearishStrangle && bearishStrangle.put) {
             const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;

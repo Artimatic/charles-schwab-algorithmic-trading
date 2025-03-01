@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AiPicksService } from '@shared/services';
 import { Stock } from '@shared/stock.interface';
+import { OptionsOrderBuilderService } from 'src/app/options-order-builder.service';
 
 @Component({
   selector: 'app-algo-evaluation',
@@ -20,7 +21,7 @@ export class AlgoEvaluationComponent implements OnInit {
   currentList: Stock[] = [];
   stockList: Stock[] = [];
 
-  constructor(private aiPicksService: AiPicksService) { }
+  constructor(private aiPicksService: AiPicksService, private optionsOrderBuilderService: OptionsOrderBuilderService) { }
 
   ngOnInit(): void {
     this.getBacktests();
@@ -41,6 +42,9 @@ export class AlgoEvaluationComponent implements OnInit {
     this.currentList = this.stockList.filter(stock => {
       if ((stock?.ml > 0.5) && (stock.recommendation.toLowerCase() === 'buy' || stock.recommendation.toLowerCase() === 'strongbuy')) {
         stock.recommendation = 'Strong buy';
+        if (stock.impliedMovement < this.optionsOrderBuilderService.maxImpliedMovement) {
+          this.optionsOrderBuilderService.addCallToCurrentTrades(stock.stock);
+        }
         return true;
       } else if ((stock.ml === 0 || stock?.sellMl > 0.5) && (stock.recommendation.toLowerCase() === 'sell' || stock.recommendation.toLowerCase() === 'strongsell')) {
         stock.recommendation = 'Strong sell';
