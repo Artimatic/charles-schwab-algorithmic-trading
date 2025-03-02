@@ -75,7 +75,7 @@ export class OptionsOrderBuilderService {
   private isIdealOption(price: number,
     maxCashAllocation: number,
     option: Options) {
-    if (price < 100 || price > 3500 ||
+    if (price < 70 || price > 3700 ||
       price > (maxCashAllocation / 2)) {
       this.reportingService.addAuditLog(null,
         `Unable to find usable call option. Stock: ${option.underlyingSymbol} Option: ${option.symbol} Price: ${price} Cash available: ${maxCashAllocation}`);
