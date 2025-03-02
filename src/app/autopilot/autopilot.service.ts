@@ -761,7 +761,7 @@ export class AutopilotService {
         } else {
           await this.cartService.portfolioSell(holding, `Price target met ${pnl}`);
         }
-      } else if (pnl > 0 && pnl < (profitTarget * 0.2)) {
+      } else if (pnl > 0 && pnl < (profitTarget * 0.3)) {
         if (!isOptionOnly) {
           await this.addBuy(holding, this.riskToleranceList[0], 'Adding to position');
         }
