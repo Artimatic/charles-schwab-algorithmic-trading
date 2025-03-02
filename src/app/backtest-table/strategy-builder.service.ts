@@ -215,13 +215,13 @@ export class StrategyBuilderService {
         potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
           if ((!prev.call && curr.strategyStrike > goal) ||
             (this.isCallHedge(goal, curr.strategyStrike, impliedMovement))) {
-            const currentCall = curr.primaryLeg.putCallInd.toLowerCase() === 'c' ? curr.primaryLeg : curr.secondaryLeg;
+            const currentCall = curr.primaryLeg.putCallInd.toLowerCase() === 'c' ? curr.primaryLeg : ( curr.secondaryLeg.putCallInd.toLowerCase() === 'p' ? curr.secondaryLeg : null);
             if (this.passesVolumeCheck(currentCall.openInterest, currentCall.totalVolume, prev.call)) {
               prev.put = JSON.parse(JSON.stringify(currentCall));
             }
           }
           if (!prev.put || (Math.abs(curr.strategyStrike - goal) < Math.abs(Number(prev.put.strikePrice) - goal))) {
-            const currentPut = curr.primaryLeg.putCallInd.toLowerCase() === 'p' ? curr.primaryLeg : curr.secondaryLeg;
+            const currentPut = curr.primaryLeg.putCallInd.toLowerCase() === 'p' ? curr.primaryLeg : (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' ? curr.secondaryLeg : null);
             if (this.passesVolumeCheck(currentPut.openInterest, currentPut.totalVolume, prev.call)) {
               prev.put = JSON.parse(JSON.stringify(currentPut));
             }

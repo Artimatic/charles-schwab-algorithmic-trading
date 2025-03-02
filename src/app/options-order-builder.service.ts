@@ -216,11 +216,11 @@ export class OptionsOrderBuilderService {
     }
   }
 
-  async createTradingPair(currentHoldings = null, minCashAllocation: number, maxCashAllocation: number) {
+  async createTradingPair(minCashAllocation: number, maxCashAllocation: number) {
     this.strategyBuilderService.getTradingStrategies().forEach(async (strat) => {
       const buys: string[] = strat.strategy.buy;
       const sells: string[] = strat.strategy.sell;
-      await this.balanceTrades(currentHoldings, buys, sells, minCashAllocation, maxCashAllocation, strat.reason ? strat.reason : 'Trading pair');
+      await this.balanceTrades(buys, sells, minCashAllocation, maxCashAllocation, strat.reason ? strat.reason : 'Trading pair');
     });
   }
 
@@ -228,8 +228,7 @@ export class OptionsOrderBuilderService {
     this.currentTradeIdeas = { calls: [], puts: [] };
   }
 
-  async balanceTrades(currentHoldings = null,
-    buyList: string[],
+  async balanceTrades(buyList: string[],
     sellList: string[],
     minCashAllocation: number,
     maxCashAllocation: number,
@@ -249,6 +248,7 @@ export class OptionsOrderBuilderService {
         };
         let currentPut = null;
         if (this.isIdealOption(callPrice, maxCashAllocation, bullishStrangle.call)) {
+          currentCall = null;
           break;
         }
         for (const sell of sellList) {
@@ -256,6 +256,7 @@ export class OptionsOrderBuilderService {
           if (bearishStrangle && bearishStrangle.put) {
             const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
             if (this.isIdealOption(putPrice, maxCashAllocation, bearishStrangle.put)) {
+              currentPut = null;
               break;
             }
             const multiple = (callPrice > putPrice) ? Math.round(callPrice / putPrice) : Math.round(putPrice / callPrice);
