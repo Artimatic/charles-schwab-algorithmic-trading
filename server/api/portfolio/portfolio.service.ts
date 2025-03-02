@@ -825,6 +825,14 @@ class PortfolioService {
       }, 'stock_portfolio', 'profitLoss',  { date: date });
   }
 
+  getProfitLoss() {
+    return DatabaseService.getRecords('stock_portfolio', 'profitLoss');
+  }
+
+  deleteOldProfitLoss() {
+    return DatabaseService.deleteOldRecords('stock_portfolio', 'profitLoss');
+  }
+
   addStrategy(date, type, key, strategy, reason) {
     DatabaseService.update({
       date,
@@ -833,6 +841,14 @@ class PortfolioService {
       strategy,
       reason
     }, 'stock_portfolio', 'strategies',  { key: key });
+  }
+
+  getStrategy() {
+    return DatabaseService.getRecords('stock_portfolio', 'strategies');
+  }
+
+  deleteOldStrategy() {
+    return DatabaseService.deleteOldRecords('stock_portfolio', 'strategies');
   }
 
   getTdBalance(accountId, response) {

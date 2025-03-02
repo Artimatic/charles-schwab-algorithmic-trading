@@ -1,5 +1,6 @@
 const express = require('express');
 import * as handler from './portfolio.router';
+import portfolioController from './portfolio.controller';
 
 const router = express.Router();
 
@@ -26,8 +27,12 @@ router.post('/v2/sell', handler.tdSell);
 router.post('/v3/set-account', handler.setAccount);
 router.post('/v3/check-account', handler.checkAccount);
 router.post('/v3/delete-cred', handler.checkAccount);
-router.post('/add-profit-loss', handler.addProfitLoss);
-router.post('/add-strategy', handler.addStrategy);
+router.put('/add-profit-loss', handler.addProfitLoss);
+router.put('/add-strategy', handler.addStrategy);
+router.get('/profit-loss', portfolioController.getProfitLoss);
+router.get('/strategy', portfolioController.getStrategy);
+router.delete('/profit-loss', portfolioController.deleteStrategy);
+router.delete('/strategy', portfolioController.deleteStrategy);
 
 router.get('/instrument', handler.getInstrument);
 
