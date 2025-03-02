@@ -85,7 +85,7 @@ export enum Strategy {
   providedIn: 'root'
 })
 export class AutopilotService {
-  riskCounter = 0;
+  riskCounter = 1;
   addedOrdersCount = 0;
   maxTradeCount = 10;
   lastSpyMl = 0;
@@ -438,6 +438,12 @@ export class AutopilotService {
   async findTopBuy() {
     const buys = this.getBuyList();
     for (const b of buys) {
+      await this.addBuy(this.createHoldingObj(b), null, 'Buy top stock');
+    }
+  }
+
+  async findStocks() {
+    for (const b of this.strategyBuilderService.bullishStocks) {
       await this.addBuy(this.createHoldingObj(b), null, 'Buy top stock');
     }
   }
