@@ -137,6 +137,11 @@ export class StrategyBuilderService {
     return ((!prevObj && (openInterest > 500 || currTotalVolume > 200)) || prevObj && (openInterest > prevObj.openInterest));
   }
 
+  private passesPriceCheck(price) {
+    price *= 100;
+    return (price > 70 && price < 3700);
+  }
+
   async getCallStrangleTrade(symbol: string, minExpiration = this.defaultMinExpiration, maxImpliedMove = 0.14): Promise<Strangle> {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     if (optionsData.move > maxImpliedMove) {
@@ -164,7 +169,7 @@ export class StrategyBuilderService {
       potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
         if ((!prev.call || (Math.abs(Number(curr.strategyStrike) - goal) < Math.abs(Number(prev.call.strikePrice) - goal)))) {
           const currentCall = curr.secondaryLeg.putCallInd.toLowerCase() === 'c' ? curr.secondaryLeg : curr.primaryLeg;
-          if (this.passesVolumeCheck(currentCall.openInterest, currentCall.totalVolume, prev.call)) {
+          if (this.passesPriceCheck(currentCall.closePrice) && this.passesVolumeCheck(currentCall.openInterest, currentCall.totalVolume, prev.call)) {
             prev.call = JSON.parse(JSON.stringify(currentCall));
           }
         }
@@ -172,7 +177,7 @@ export class StrategyBuilderService {
         if ((!prev.put && curr.strategyStrike < goal) ||
           (this.isPutHedge(goal, curr.strategyStrike, impliedMovement))) {
           const currentPut = curr.primaryLeg.putCallInd.toLowerCase() === 'p' ? curr.primaryLeg : curr.secondaryLeg;
-          if (this.passesVolumeCheck(currentPut.openInterest, currentPut.totalVolume, prev.call)) {
+          if (this.passesPriceCheck(currentPut.closePrice) && this.passesVolumeCheck(currentPut.openInterest, currentPut.totalVolume, prev.call)) {
             prev.put = JSON.parse(JSON.stringify(currentPut));
           }
         }
@@ -216,13 +221,13 @@ export class StrategyBuilderService {
           if ((!prev.call && curr.strategyStrike > goal) ||
             (this.isCallHedge(goal, curr.strategyStrike, impliedMovement))) {
             const currentCall = curr.primaryLeg.putCallInd.toLowerCase() === 'c' ? curr.primaryLeg : ( curr.secondaryLeg.putCallInd.toLowerCase() === 'p' ? curr.secondaryLeg : null);
-            if (this.passesVolumeCheck(currentCall.openInterest, currentCall.totalVolume, prev.call)) {
+            if (this.passesPriceCheck(currentCall.closePrice) && this.passesVolumeCheck(currentCall.openInterest, currentCall.totalVolume, prev.call)) {
               prev.call = JSON.parse(JSON.stringify(currentCall));
             }
           }
           if (!prev.put || (Math.abs(curr.strategyStrike - goal) < Math.abs(Number(prev.put.strikePrice) - goal))) {
             const currentPut = curr.primaryLeg.putCallInd.toLowerCase() === 'p' ? curr.primaryLeg : (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' ? curr.secondaryLeg : null);
-            if (this.passesVolumeCheck(currentPut.openInterest, currentPut.totalVolume, prev.call)) {
+            if (this.passesPriceCheck(currentPut.closePrice) && this.passesVolumeCheck(currentPut.openInterest, currentPut.totalVolume, prev.call)) {
               prev.put = JSON.parse(JSON.stringify(currentPut));
             }
           }
