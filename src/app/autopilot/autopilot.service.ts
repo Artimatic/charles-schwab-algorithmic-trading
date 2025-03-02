@@ -217,8 +217,7 @@ export class AutopilotService {
     }
     const cash = await this.getMinMaxCashForOptions();
     while (MlSells.length) {
-      await this.optionsOrderBuilderService.balanceTrades(currentHoldings,
-        MlBuys, [MlSells.pop()],
+      await this.optionsOrderBuilderService.balanceTrades(MlBuys, [MlSells.pop()],
         cash.minCash, cash.maxCash, 'Bear pair');
     }
   }

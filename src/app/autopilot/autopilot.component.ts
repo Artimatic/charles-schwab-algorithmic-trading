@@ -191,8 +191,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test',
         command: async () => {
-          await this.optionsOrderBuilderService.balanceTrades(this.autopilotService.currentHoldings,
-            ['SPY'], ['GOOG'], 1000, 2000, 'Test');
+          await this.optionsOrderBuilderService.balanceTrades(['SPY'], ['GOOG'], 1000, 5000, 'Test');
         }
       },
       {
@@ -1034,15 +1033,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async createTradingPairs() {
     const cash = await this.getMinMaxCashForOptions();
-    await this.optionsOrderBuilderService.createTradingPair(this.autopilotService.currentHoldings, cash.minCash, cash.maxCash);
+    await this.optionsOrderBuilderService.createTradingPair(cash.minCash, cash.maxCash);
   }
 
   async addInverseDispersionTrade() {
     const findPuts = async (symbol: string, prediction: number, backtestData: any, sellMl: number) => {
       if (sellMl > 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
         const cash = await this.getMinMaxCashForOptions(backtestData.impliedMovement + 1);
-        await this.optionsOrderBuilderService.balanceTrades(this.autopilotService.currentHoldings,
-          ['SPY'], [symbol], cash.minCash, cash.maxCash, 'Inverse dispersion');
+        await this.optionsOrderBuilderService.balanceTrades(['SPY'], [symbol], cash.minCash, cash.maxCash, 'Inverse dispersion');
       } else if ((prediction > 0.8 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
         const stock: PortfolioInfoHolding = {
           name: symbol,
