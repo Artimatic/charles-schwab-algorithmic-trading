@@ -189,21 +189,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       },
       {
-        label: 'Test intraday ml',
+        label: 'Test',
         command: async () => {
-          this.autopilotService.updateVolatility();
-          this.machineLearningService
-            .trainDaytrade('APP',
-              moment().add({ days: 1 }).format('YYYY-MM-DD'),
-              moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
-              0.8,
-              this.globalSettingsService.daytradeAlgo
-            ).subscribe(async (result) => {
-              console.log(result);
-              const activationResult = await this.machineLearningService.activate('APP',
-                this.globalSettingsService.daytradeAlgo).toPromise();
-              console.log(activationResult);
-            });
+          await this.optionsOrderBuilderService.balanceTrades(this.autopilotService.currentHoldings,
+            ['SPY'], ['GOOG'], 1000, 2000, 'Test');
         }
       },
       {
