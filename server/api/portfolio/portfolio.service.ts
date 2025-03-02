@@ -805,7 +805,7 @@ class PortfolioService {
       .then((pos) => {
         if (process.env.reportUrl && (!this.lastPositionCheck || moment().diff(moment(this.lastPositionCheck), 'hours') > 12)) {
           this.lastPositionCheck = moment();
-          DatabaseService.update(pos.securitiesAccount.positions, 'stock_portfolio', 'portfolio',  { name: '1' });
+          DatabaseService.update({positions: pos.securitiesAccount.positions}, 'stock_portfolio', 'portfolio',  { name: '1' });
         }
         return pos.securitiesAccount.positions;
       });

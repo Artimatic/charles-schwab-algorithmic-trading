@@ -33,7 +33,7 @@ class DatabaseService {
                 $set: {
                     createdAt: new Date(),
                     date: new Date().toString(),
-                    positions: data
+                    ...data
                 }
             };
 
