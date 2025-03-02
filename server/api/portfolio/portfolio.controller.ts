@@ -172,7 +172,17 @@ class PortfolioController extends BaseController {
       request.body.lastRiskTolerance,
       request.body.lastStrategy,
       request.body.profit)
-      BaseController.requestGetSuccessHandler(response, { success: true })
+    BaseController.requestGetSuccessHandler(response, { success: true })
+  }
+
+  async getProfitLoss(request, response) {
+    const pl = await PortfolioService.getProfitLoss();
+    BaseController.requestGetSuccessHandler(response, pl)
+  }
+
+  deleteProfitLoss(request, response) {
+    PortfolioService.deleteOldProfitLoss();
+    BaseController.requestGetSuccessHandler(response, { success: true })
   }
 
   addStrategy(request, response) {
@@ -181,7 +191,17 @@ class PortfolioController extends BaseController {
       request.body.key,
       request.body.strategy,
       request.body.reason)
-      BaseController.requestGetSuccessHandler(response, { success: true })
+    BaseController.requestGetSuccessHandler(response, { success: true })
+  }
+
+  async getStrategy(request, response) {
+    const strategies = await PortfolioService.getStrategy();
+    BaseController.requestGetSuccessHandler(response, strategies)
+  }
+
+  deleteStrategy(request, response) {
+    PortfolioService.deleteOldProfitLoss();
+    BaseController.requestGetSuccessHandler(response, { success: true })
   }
 
   checkForCredentials(request, response) {
