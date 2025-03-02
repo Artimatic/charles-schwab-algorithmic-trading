@@ -199,7 +199,8 @@ export class StrategyBuilderService {
     const goal = optionsChain?.underlyingPrice;
 
     let potentialStrangle = { call: null, put: null };
-    let expiration = minExpiration;
+    minExpiration = minExpiration || this.defaultMinExpiration;
+    let expiration = minExpiration || this.defaultMinExpiration;
 
     while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 6) {
       expiration++;
