@@ -217,7 +217,7 @@ export class StrategyBuilderService {
             (this.isCallHedge(goal, curr.strategyStrike, impliedMovement))) {
             const currentCall = curr.primaryLeg.putCallInd.toLowerCase() === 'c' ? curr.primaryLeg : ( curr.secondaryLeg.putCallInd.toLowerCase() === 'p' ? curr.secondaryLeg : null);
             if (this.passesVolumeCheck(currentCall.openInterest, currentCall.totalVolume, prev.call)) {
-              prev.put = JSON.parse(JSON.stringify(currentCall));
+              prev.call = JSON.parse(JSON.stringify(currentCall));
             }
           }
           if (!prev.put || (Math.abs(curr.strategyStrike - goal) < Math.abs(Number(prev.put.strikePrice) - goal))) {
