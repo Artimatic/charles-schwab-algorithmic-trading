@@ -303,7 +303,7 @@ export class OptionsOrderBuilderService {
     multiple = 1,
     minCashAllocation: number,
     maxCashAllocation: number) {
-    while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > 600 &&
+    while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > 350 &&
       Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) <= maxCashAllocation) {
       if (callPrice > putPrice) {
         callQuantity++;
