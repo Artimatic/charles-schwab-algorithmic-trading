@@ -85,7 +85,7 @@ export enum Strategy {
   providedIn: 'root'
 })
 export class AutopilotService {
-  riskCounter = 1;
+  riskCounter = 0;
   addedOrdersCount = 0;
   maxTradeCount = 10;
   lastSpyMl = 0;
@@ -94,7 +94,6 @@ export class AutopilotService {
   sessionStart = null;
   sessionEnd = null;
   riskToleranceList = [
-    RiskTolerance.One,
     RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,
@@ -760,7 +759,7 @@ export class AutopilotService {
         } else {
           await this.cartService.portfolioSell(holding, `Price target met ${pnl}`);
         }
-      } else if (pnl > 0 && pnl < (profitTarget * 0.3)) {
+      } else if (pnl > 0) {
         if (!isOptionOnly) {
           await this.addBuy(holding, this.riskToleranceList[0], 'Adding to position');
         }

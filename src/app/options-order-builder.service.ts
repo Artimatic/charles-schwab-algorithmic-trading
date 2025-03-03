@@ -4,8 +4,7 @@ import * as moment from 'moment-timezone';
 import { BacktestService, CartService, PortfolioInfoHolding, ReportingService } from '@shared/services';
 import { StrategyBuilderService } from './backtest-table/strategy-builder.service';
 import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
-import { OptionsDataService } from '@shared/options-data.service';
-import { Options, Strangle } from '@shared/models/options';
+import { Options } from '@shared/models/options';
 import { OrderHandlingService } from './order-handling/order-handling.service';
 import { PriceTargetService } from './autopilot/price-target.service';
 
