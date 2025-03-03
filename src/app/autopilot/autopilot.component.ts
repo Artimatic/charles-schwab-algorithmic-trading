@@ -710,9 +710,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       if (lastProfitLoss && lastProfitLoss.profit) {
         const profit = Number(this.calculatePl(lastProfitLoss.profitRecord));
         const lastProfitMsg = 'Last profit ' + profit;
-        console.log(lastProfitMsg);
         this.reportingService.addAuditLog(this.autopilotService.strategyList[this.autopilotService.strategyCounter], lastProfitMsg);
-        const metTarget = await this.priceTargetService.hasMetPriceTarget(0);
+        const metTarget = await this.priceTargetService.hasMetPriceTarget(0.0025);
         if (!metTarget) {
           this.decreaseDayTradeRiskTolerance();
           this.increaseRiskTolerance();
