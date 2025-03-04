@@ -24,8 +24,7 @@ export class OptionsOrderBuilderService {
   tradingPairDate = {};
   tradingPairMaxLife = 432000000;
   tradingPairsCounter = 0;
-  currentTradeIdeas = { calls: [], puts: [] };
-  maxImpliedMovement = 0.135;
+  private currentTradeIdeas = { calls: [], puts: [] };
   constructor(private strategyBuilderService: StrategyBuilderService,
     private cartService: CartService,
     private backtestService: BacktestService,
@@ -235,7 +234,7 @@ export class OptionsOrderBuilderService {
       minCashAllocation = 0;
     }
     for (const buy of buyList) {
-      const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(buy, null, this.maxImpliedMovement);
+      const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(buy);
       if (bullishStrangle && bullishStrangle.call) {
         const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
         let currentCall = {
@@ -250,7 +249,7 @@ export class OptionsOrderBuilderService {
           break;
         }
         for (const sell of sellList) {
-          const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell, null, this.maxImpliedMovement);
+          const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
           if (bearishStrangle && bearishStrangle.put) {
             const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
             if (this.isIdealOption(putPrice, maxCashAllocation, bearishStrangle.put)) {
@@ -427,10 +426,11 @@ export class OptionsOrderBuilderService {
     const closePrice = price[symbol].quote.closePrice;
     const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
 
-    const impliedMove = await this.getImpliedMove(symbol, backtestResults)
+    //const impliedMove = await this.getImpliedMove(symbol, backtestResults)
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
     if (backtestResults && backtestResults.ml !== null) {
-      if (currentDiff < (((1 / (impliedMove + 0.01)) * 0.01))) {
+      //if (currentDiff < (((1 / (impliedMove + 0.01)) * 0.01))) {
+      if (Math.abs(currentDiff) < 0.01) {
         return true;
       }
     }
@@ -507,9 +507,37 @@ export class OptionsOrderBuilderService {
     this.removeTradingPair(trade[0].holding.symbol, trade[1].holding.symbol);
   }
 
-  async checkCurrentOptions(currentHoldings: PortfolioInfoHolding[]) {
-    this.reportingService.addAuditLog(null, 'Check current options');
+  async addOptionsStrategiesToCart() {
+    if (this.tradingPairsCounter >= this.getTradingPairs().length) {
+      this.tradingPairsCounter = 0;
+    }
+    const trade = this.getTradingPairs()[this.tradingPairsCounter];
+    if (trade) {
+      if (trade.length === 1) {
+        const shouldBuy = await this.shouldBuyOption(trade[0].holding.symbol);
+        if (shouldBuy) {
+          const reason = trade[0].reason ? trade[0].reason : 'Low volatility';
+          this.cartService.addToCart(trade[0], true, reason);
+          this.removeTradingPair(trade[0].holding.symbol);
+        }
+      } else {
+        const shouldBuy = await this.shouldBuyOption(trade[0].holding.symbol);
+        if (shouldBuy) {
+          this.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Low volatility');
+        }
+      }
+    } else if (trade.length === 2 && trade[0] && trade[1]) {
+      const shouldBuyCall = await this.shouldBuyOption(trade[0].holding.symbol);
+      const shouldBuyPut = await this.shouldBuyOption(trade[1].holding.symbol);
+      if (shouldBuyCall && shouldBuyPut) {
+        this.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Low volatility');
+      }
+    }
 
+    this.tradingPairsCounter++;
+  }
+
+  async checkCurrentOptions(currentHoldings: PortfolioInfoHolding[]) {
     currentHoldings.forEach(async (holding) => {
       if (holding.primaryLegs) {
         const callPutInd = holding.primaryLegs[0].putCallInd.toLowerCase();
@@ -541,33 +569,5 @@ export class OptionsOrderBuilderService {
         }
       }
     });
-
-    if (this.tradingPairsCounter >= this.getTradingPairs().length) {
-      this.tradingPairsCounter = 0;
-    }
-    const trade = this.getTradingPairs()[this.tradingPairsCounter];
-    if (trade) {
-      if (trade.length === 1) {
-        const shouldBuy = await this.shouldBuyOption(trade[0].holding.symbol);
-        if (shouldBuy) {
-          const reason = trade[0].reason ? trade[0].reason : 'Low volatility';
-          this.cartService.addToCart(trade[0], true, reason);
-          this.removeTradingPair(trade[0].holding.symbol);
-        }
-      } else {
-        const shouldBuy = await this.shouldBuyOption(trade[0].holding.symbol);
-        if (shouldBuy) {
-          this.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Low volatility');
-        }
-      }
-    } else if (trade.length === 2 && trade[0] && trade[1]) {
-      const shouldBuyCall = await this.shouldBuyOption(trade[0].holding.symbol);
-      const shouldBuyPut = await this.shouldBuyOption(trade[1].holding.symbol);
-      if (shouldBuyCall && shouldBuyPut) {
-        this.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Low volatility');
-      }
-    }
-
-    this.tradingPairsCounter++;
   }
 }
