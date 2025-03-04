@@ -643,14 +643,10 @@ export class AutopilotService {
     });
   }
 
-  async addShort(balance = 0) {
+  async addShort() {
     const sells = this.getSellList()
     if (sells.length) {
-      const sellSym = sells.pop();
-      const backtestResults = await this.strategyBuilderService.getBacktestData(sellSym);
-
-      const targetBalance = balance ? balance : (await this.getMinMaxCashForOptions(backtestResults.impliedMovement + 1)).maxCash;
-      this.optionsOrderBuilderService.addOptionByBalance(sellSym, targetBalance, 'Buy put', false, false);
+      this.optionsOrderBuilderService.addCallToCurrentTrades(sells.pop());
     }
   }
 
@@ -666,7 +662,7 @@ export class AutopilotService {
         await this.sellRightAway(sqqqHolding.name, sqqqHolding.shares);
         await this.buyRightAway('TQQQ', this.riskToleranceList[0]);
       } else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
-        this.addShort(results.put - results.call);
+        this.addShort();
         this.reportingService.addAuditLog(null, 'Add put' + results.call / results.put + `Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${(1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])}`);
         const tqqqHolding = holdings.find(h => h.name.toUpperCase() === 'TQQQ');
         const uproHolding = holdings.find(h => h.name.toUpperCase() === 'UPRO');
@@ -795,6 +791,10 @@ export class AutopilotService {
       }
       case 2: {
         await this.handleBalanceUtilization(this.currentHoldings);
+        break;
+      }
+      case 3: {
+        await this.optionsOrderBuilderService.addOptionsStrategiesToCart();
         break;
       }
       default: {

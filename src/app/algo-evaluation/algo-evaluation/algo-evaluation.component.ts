@@ -42,7 +42,7 @@ export class AlgoEvaluationComponent implements OnInit {
     this.currentList = this.stockList.filter(stock => {
       if ((stock?.ml > 0.5) && (stock.recommendation.toLowerCase() === 'buy' || stock.recommendation.toLowerCase() === 'strongbuy')) {
         stock.recommendation = 'Strong buy';
-        if (stock.impliedMovement < this.optionsOrderBuilderService.maxImpliedMovement) {
+        if (stock.impliedMovement < 0.11) {
           this.optionsOrderBuilderService.addCallToCurrentTrades(stock.stock);
         }
         return true;

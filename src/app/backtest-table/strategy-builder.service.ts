@@ -28,7 +28,7 @@ export class StrategyBuilderService {
   countNet = 0;
   defaultMinExpiration = 45;
   bullishStocks = [];
-
+  maxImpliedMovement = 0.14;
   constructor(private backtestService: BacktestService,
     private optionsDataService: OptionsDataService,
     private portfolioService: PortfolioService,
@@ -142,11 +142,11 @@ export class StrategyBuilderService {
     return (price > 70 && price < 3700);
   }
 
-  async getCallStrangleTrade(symbol: string, minExpiration = this.defaultMinExpiration, maxImpliedMove = 0.14): Promise<Strangle> {
+  async getCallStrangleTrade(symbol: string): Promise<Strangle> {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
-    if (optionsData.move > maxImpliedMove) {
+    if (optionsData.move > this.maxImpliedMovement) {
       this.reportingService.addAuditLog(null,
-        `Implied movement is too high for ${symbol} at ${optionsData.move}`);
+        `Implied movement is too high for ${symbol} at ${optionsData.move}. Max is ${this.maxImpliedMovement}`);
       this.bullishStocks.push(symbol);
         return { call: null, put: null };
     }
@@ -154,10 +154,9 @@ export class StrategyBuilderService {
     const impliedMovement = optionsData.move;
     const goal = optionsChain?.underlyingPrice;
     let potentialStrangle = { call: null, put: null };
-    minExpiration = minExpiration || this.defaultMinExpiration;
-    let expiration = minExpiration || this.defaultMinExpiration;
+    let expiration = this.defaultMinExpiration;
 
-    while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 6) {
+    while (!potentialStrangle.call && !potentialStrangle.put && expiration < this.defaultMinExpiration * 6) {
       expiration++;
       let strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
       if (!strategyList || !strategyList.optionStrategyList) {
@@ -192,9 +191,9 @@ export class StrategyBuilderService {
     return potentialStrangle;
   }
 
-  async getPutStrangleTrade(symbol: string, minExpiration = this.defaultMinExpiration, maxImpliedMove = 0.14) {
+  async getPutStrangleTrade(symbol: string) {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
-    if (optionsData.move > maxImpliedMove) {
+    if (optionsData.move > this.maxImpliedMovement) {
       this.reportingService.addAuditLog(null,
         `Implied movement is too high for ${symbol} at ${optionsData.move}`);
       return { call: null, put: null };
@@ -204,10 +203,9 @@ export class StrategyBuilderService {
     const goal = optionsChain?.underlyingPrice;
 
     let potentialStrangle = { call: null, put: null };
-    minExpiration = minExpiration || this.defaultMinExpiration;
-    let expiration = minExpiration || this.defaultMinExpiration;
+    let expiration = this.defaultMinExpiration;
 
-    while (!potentialStrangle.call && !potentialStrangle.put && expiration < minExpiration * 6) {
+    while (!potentialStrangle.call && !potentialStrangle.put && expiration < this.defaultMinExpiration * 6) {
       expiration++;
       if (optionsChain.monthlyStrategyList) {
         const strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
@@ -562,7 +560,7 @@ export class StrategyBuilderService {
   }
 
   async buyProtectivePut(symbol, quantity) {
-    const putOption = await this.getCallStrangleTrade(symbol, 65);
+    const putOption = await this.getCallStrangleTrade(symbol);
     const price = this.findOptionsPrice(putOption.put.bid, putOption.put.ask);
     const orderQuantity = quantity;
 

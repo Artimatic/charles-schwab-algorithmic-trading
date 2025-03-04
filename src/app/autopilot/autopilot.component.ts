@@ -711,7 +711,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const profit = Number(this.calculatePl(lastProfitLoss.profitRecord));
         const lastProfitMsg = 'Last profit ' + profit;
         this.reportingService.addAuditLog(this.autopilotService.strategyList[this.autopilotService.strategyCounter], lastProfitMsg);
-        const metTarget = await this.priceTargetService.hasMetPriceTarget(0.0025);
+        const metTarget = await this.priceTargetService.hasMetPriceTarget(0.0035);
         if (!metTarget) {
           this.decreaseDayTradeRiskTolerance();
           this.increaseRiskTolerance();
@@ -888,11 +888,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       case Strategy.BuyCalls:
         const buys = this.autopilotService.getBuyList()
         if (buys.length) {
-          const buysSym = buys.pop();
-          const backtestResults = await this.strategyBuilderService.getBacktestData(buysSym);
-
-          const targetBalance = (await this.getMinMaxCashForOptions(backtestResults.impliedMovement + 1)).minCash;
-          this.optionsOrderBuilderService.addOptionByBalance(buys.pop(), targetBalance, 'Buy call', true, false);
+          this.optionsOrderBuilderService.addCallToCurrentTrades(buys.pop());
         }
         break;
       case Strategy.InverseDispersion:
