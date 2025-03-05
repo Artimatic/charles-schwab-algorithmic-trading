@@ -133,16 +133,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
-    const lastStrategy = JSON.parse(localStorage.getItem('profitLoss'));
-    if (lastStrategy && lastStrategy.lastStrategy) {
-      const lastStrategyCount = this.autopilotService.strategyList.findIndex(strat => strat.toLowerCase() === lastStrategy.lastStrategy.toLowerCase());
-      this.autopilotService.strategyCounter = lastStrategyCount >= 0 ? lastStrategyCount : 0;
-      this.autopilotService.riskCounter = lastStrategy.lastRiskTolerance || 0;
-      console.log('Previous profit loss', lastStrategy);
-    } else {
-      this.autopilotService.strategyCounter = 0;
-    }
-
+    this.autopilotService.checkCredentials();
+    this.autopilotService.setPreferencesFromDB();
     this.startButtonOptions = [
       {
         label: 'Start orders without auto manage',
@@ -335,13 +327,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             const profitLog = `Profit ${this.scoreKeeperService.total}`;
             this.reportingService.addAuditLog(null, profitLog);
             this.reportingService.exportAuditHistory();
-            this.setProfitLoss();
-
-            setTimeout(async () => {
-              await this.modifyRisk();
-              this.scoreKeeperService.resetTotal();
-              this.resetCart();
-            }, 31000);
+            await this.setProfitLoss();
+            this.scoreKeeperService.resetTotal();
+            this.resetCart();
           }
         } else if (this.autopilotService.handleIntraday()) {
           const metTarget = await this.priceTargetService.checkProfitTarget(this.autopilotService.currentHoldings);
@@ -376,7 +364,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     return profit;
   }
 
-  setProfitLoss() {
+  async setProfitLoss() {
+    await this.modifyRisk();
+
     const tempProfitRecord = this.scoreKeeperService.profitLossHash;
 
     if (tempProfitRecord) {
@@ -896,9 +886,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       case Strategy.BuyWinners:
         await this.buyWinners();
         break;
-      case Strategy.BuySnP:
-        await this.autopilotService.buyUpro();
-        break;
       case Strategy.PerfectPair:
         await this.autopilotService.addPerfectPair();
         break;
@@ -928,6 +915,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'buy');
         } else {
           await this.autopilotService.buyOnSignal(SwingtradeAlgorithms.mfiTrade, 'buy');
+        }
+        break;
+      case Strategy.BuyMfiDiv2:
+        if (this.autopilotService.isVolatilityHigh()) {
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
+        } else {
+          await this.autopilotService.buyOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
         }
         break;
       case Strategy.BuyMfiDiv:

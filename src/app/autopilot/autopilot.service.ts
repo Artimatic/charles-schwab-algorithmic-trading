@@ -9,7 +9,7 @@ import { CurrentStockList } from '../rh-table/stock-list.constant';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { OrderTypes } from '@shared/models/smart-order';
-import { map } from 'rxjs/operators';
+import { map, tap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
@@ -69,6 +69,7 @@ export enum Strategy {
   BuyMfiTrade = 'Buy by mfi trade buy signal',
   SellMfiDiv = 'Buy by mfi divergence sell signal',
   BuyMfiDiv = 'Buy by mfi divergence buy signal',
+  BuyMfiDiv2 = 'Buy by mfi divergence2 buy signal',
   BuyMfi = 'Buy by mfi buy signal',
   BuyMacd = 'Buy by macd buy signal',
   SellMfi = 'Buy by mfi sell signal',
@@ -154,9 +155,34 @@ export class AutopilotService {
     this.sessionEnd = globalStartStop.endDateTime;
   }
 
+  setPreferencesFromDB() {
+    this.portfolioService.getProfitLoss().pipe(tap(plArray => {
+      if (plArray && plArray.length) {
+        plArray.sort((a, b) => {
+          const dateA = new Date(a.date);
+          const dateB = new Date(b.date);
+          return dateB.getTime() - dateA.getTime(); // Sort in descending order (latest first)
+        });
+        localStorage.setItem('profitLoss', JSON.stringify(plArray[0]));
+      }
+    }))
+      .subscribe(() => {
+        const lastStrategy = JSON.parse(localStorage.getItem('profitLoss'));
+        if (lastStrategy && lastStrategy.lastStrategy) {
+          const lastStrategyCount = this.strategyList.findIndex(strat => strat.toLowerCase() === lastStrategy.lastStrategy.toLowerCase());
+          this.strategyCounter = lastStrategyCount >= 0 ? lastStrategyCount : 0;
+          this.riskCounter = lastStrategy.lastRiskTolerance || 0;
+          console.log('Previous profit loss', lastStrategy);
+        } else {
+          this.strategyCounter = 0;
+        }
+        this.portfolioService.getStrategy().subscribe(strategies => this.strategyBuilderService.setTradingStrategies(strategies));
+      });
+  }
+
   async getMinMaxCashForOptions(modifier = 1) {
     const cash = await this.cartService.getAvailableFunds(false);
-    const minConstant = modifier ? (cash * RiskTolerance.Zero * modifier)  : 1000;
+    const minConstant = modifier ? (cash * RiskTolerance.Zero * modifier) : 1000;
     const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
     const minCash = maxCash - minConstant;
     return {
@@ -557,7 +583,7 @@ export class AutopilotService {
       1, -0.005, 0.01,
       -0.003, 1, false, 'Sell right away');
 
-    this.daytradeService.sendSell(order, 'market', () => { }, () => { }, () => {});
+    this.daytradeService.sendSell(order, 'market', () => { }, () => { }, () => { });
   }
 
   async buyUpro(reason: string = 'Buy UPRO', allocation = null) {
@@ -644,7 +670,7 @@ export class AutopilotService {
   async addShort() {
     const sells = this.getSellList()
     if (sells.length) {
-      this.optionsOrderBuilderService.addCallToCurrentTrades(sells.pop());
+      this.optionsOrderBuilderService.addPutToCurrentTrades(sells.pop());
     }
   }
 
@@ -677,9 +703,7 @@ export class AutopilotService {
 
   checkCredentials() {
     const accountId = sessionStorage.getItem('accountId');
-    if (accountId) {
-      this.authenticationService.checkCredentials(accountId).subscribe();
-    }
+    this.authenticationService.checkCredentials(accountId).subscribe();
   }
 
   isMarketOpened() {

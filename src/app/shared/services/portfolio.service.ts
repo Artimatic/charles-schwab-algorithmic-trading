@@ -88,7 +88,7 @@ export class PortfolioService {
       lastStrategy,
       profit
     };
-    return this.http.post('/api/portfolio/add-profit-loss', body);
+    return this.http.put('/api/portfolio/add-profit-loss', body);
   }
 
   addStrategy(date,
