@@ -103,7 +103,7 @@ export class PortfolioService {
       strategy,
       reason
     };
-    return this.http.post('/api/portfolio/add-strategy', body);
+    return this.http.put('/api/portfolio/add-strategy', body);
   }
 
   getStrategy(): Observable<any> {
