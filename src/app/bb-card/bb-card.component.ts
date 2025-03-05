@@ -1040,7 +1040,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       const currentBalance = balance.cashBalance;
       const usage = (balance.liquidationValue - currentBalance) / balance.liquidationValue;
       if (usage < 1) {
-        const bullishStrangle = await this.strategyBuilderService.getStrangleTrade(this.order.holding.symbol);
+        const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(this.order.holding.symbol);
         // const price = bullishStrangle.call.bid + bullishStrangle.put.bid;
         const price = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) +
           this.strategyBuilderService.findOptionsPrice(bullishStrangle.put.bid, bullishStrangle.put.ask);

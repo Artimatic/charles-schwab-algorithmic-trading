@@ -177,9 +177,9 @@ export class DefaultOrderListsComponent implements OnInit, OnChanges, OnDestroy 
     let optionStrategy = null;
     const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
     if (backtestResults && backtestResults.ml > 0.5) {
-      optionStrategy = await this.strategyBuilderService.getStrangleTrade(symbol);
+      optionStrategy = await this.strategyBuilderService.getCallStrangleTrade(symbol);
     } else {
-      optionStrategy = await this.strategyBuilderService.getStrangleTrade(symbol);
+      optionStrategy = await this.strategyBuilderService.getPutStrangleTrade(symbol);
     }
     console.log('optionStrategy', optionStrategy);
 

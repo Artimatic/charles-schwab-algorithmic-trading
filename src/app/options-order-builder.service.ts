@@ -169,7 +169,7 @@ export class OptionsOrderBuilderService {
     if (backtestResults?.impliedMovement > 0.1) {
       return this.reportingService.addAuditLog(symbol, `Implied movement too high for ${symbol}: ${backtestResults.impliedMovement}`);
     }
-    const optionStrategy = await this.strategyBuilderService.getStrangleTrade(symbol);
+    const optionStrategy = await this.strategyBuilderService.getCallStrangleTrade(symbol);
     const bid = isCall ? optionStrategy.call.bid : optionStrategy.put.bid;
     const ask = isCall ? optionStrategy.call.ask : optionStrategy.put.ask;
     const price = this.strategyBuilderService.findOptionsPrice(bid, ask) * 100;
@@ -201,7 +201,7 @@ export class OptionsOrderBuilderService {
 
       putsNeeded -= this.protectivePutCount(holding);
       if (putsNeeded > 0) {
-        const putOption = await this.strategyBuilderService.getStrangleTrade(holding.name);
+        const putOption = await this.strategyBuilderService.getCallStrangleTrade(holding.name);
         const estimatedPrice = this.strategyBuilderService.findOptionsPrice(putOption.put.bid, putOption.put.ask);
         if (estimatedPrice < 1) {
           console.log(`Protective put price for ${holding.name} is too low`, estimatedPrice);
@@ -234,7 +234,7 @@ export class OptionsOrderBuilderService {
       minCashAllocation = 0;
     }
     for (const buy of buyList) {
-      const bullishStrangle = await this.strategyBuilderService.getStrangleTrade(buy);
+      const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(buy);
       if (bullishStrangle && bullishStrangle.call) {
         const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
         let currentCall = {
@@ -249,7 +249,7 @@ export class OptionsOrderBuilderService {
           break;
         }
         for (const sell of sellList) {
-          const bearishStrangle = await this.strategyBuilderService.getStrangleTrade(sell);
+          const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
           if (bearishStrangle && bearishStrangle.put) {
             const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
             if (this.isIdealOption(putPrice, maxCashAllocation, bearishStrangle.put)) {
@@ -350,7 +350,7 @@ export class OptionsOrderBuilderService {
       let foundBearishStrangle = null;
       let foundPrice = null;
       hedgeUnderlyingStock = pairTrades.strategy.sell.find(async (stockSymbol: string) => {
-        const bearishStrangle = await this.strategyBuilderService.getStrangleTrade(stockSymbol);
+        const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(stockSymbol);
         const price = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
         if (price > 500) {
           foundBearishStrangle = bearishStrangle;
@@ -363,7 +363,7 @@ export class OptionsOrderBuilderService {
     if (!hedgeUnderlyingStock) {
       return false;
     }
-    const bullishStrangle = await this.strategyBuilderService.getStrangleTrade(hedgeUnderlyingStock);
+    const bullishStrangle = await this.strategyBuilderService.getPutStrangleTrade(hedgeUnderlyingStock);
     const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
 
     //const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple);

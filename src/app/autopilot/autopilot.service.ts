@@ -290,7 +290,7 @@ export class AutopilotService {
       if (isDown) {
         this.reportingService.addAuditLog(null, 'Down day, buy the dip');
         const spy = 'SPY';
-        const callOption = await this.strategyBuilderService.getStrangleTrade(spy);
+        const callOption = await this.strategyBuilderService.getCallStrangleTrade(spy);
         const estimatedPrice = this.strategyBuilderService.findOptionsPrice(callOption.call.bid, callOption.call.ask);
         this.cartService.addSingleLegOptionOrder(spy, [callOption.call],
           estimatedPrice, 1, OrderTypes.call, 'Buy',

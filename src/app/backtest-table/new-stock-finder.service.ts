@@ -33,7 +33,7 @@ export class NewStockFinderService {
       return;
     }
     const stock = this.newStocks.pop();
-    const bullishStrangle = await this.strategyBuilderService.getStrangleTrade(stock);
+    const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(stock);
 
     if (bullishStrangle && bullishStrangle.call && bullishStrangle.put) {
       this.strategyBuilderService.addToNewStocks(stock);
