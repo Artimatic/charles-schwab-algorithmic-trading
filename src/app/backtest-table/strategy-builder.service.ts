@@ -142,7 +142,7 @@ export class StrategyBuilderService {
     return (price > 70 && price < 3700);
   }
 
-  async getCallStrangleTrade(symbol: string): Promise<Strangle> {
+  async getStrangleTrade(symbol: string): Promise<Strangle> {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     if (optionsData.move > this.maxImpliedMovement) {
       this.reportingService.addAuditLog(null,
@@ -187,55 +187,6 @@ export class StrategyBuilderService {
     if (!potentialStrangle.call) {
       this.reportingService.addAuditLog(null,
         'Unable to find call for ' + symbol);
-    }
-    return potentialStrangle;
-  }
-
-  async getPutStrangleTrade(symbol: string) {
-    const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
-    if (optionsData.move > this.maxImpliedMovement) {
-      this.reportingService.addAuditLog(null,
-        `Implied movement is too high for ${symbol} at ${optionsData.move}`);
-      return { call: null, put: null };
-    }
-    const optionsChain = optionsData.optionsChain;
-    const impliedMovement = optionsData.move;
-    const goal = optionsChain?.underlyingPrice;
-
-    let potentialStrangle = { call: null, put: null };
-    let expiration = this.defaultMinExpiration;
-
-    while (!potentialStrangle.call && !potentialStrangle.put && expiration < this.defaultMinExpiration * 6) {
-      expiration++;
-      if (optionsChain.monthlyStrategyList) {
-        const strategyList = optionsChain.monthlyStrategyList.find(element => element.daysToExp >= expiration);
-        if (!strategyList || !strategyList.optionStrategyList) {
-          console.log('Unable to find options chain for', optionsChain);
-          this.reportingService.addAuditLog(null,
-            'Unable to find options chain for ' + symbol);
-          return;
-        }
-        potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
-          if ((!prev.call && curr.strategyStrike > goal) ||
-            (this.isCallHedge(goal, curr.strategyStrike, impliedMovement))) {
-            const currentCall = curr.primaryLeg.putCallInd.toLowerCase() === 'c' ? curr.primaryLeg : ( curr.secondaryLeg.putCallInd.toLowerCase() === 'p' ? curr.secondaryLeg : null);
-            if (this.passesPriceCheck(currentCall.closePrice) && this.passesVolumeCheck(currentCall.openInterest, currentCall.totalVolume, prev.call)) {
-              prev.call = JSON.parse(JSON.stringify(currentCall));
-            }
-          }
-          if (!prev.put || (Math.abs(curr.strategyStrike - goal) < Math.abs(Number(prev.put.strikePrice) - goal))) {
-            const currentPut = curr.primaryLeg.putCallInd.toLowerCase() === 'p' ? curr.primaryLeg : (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' ? curr.secondaryLeg : null);
-            if (this.passesPriceCheck(currentPut.closePrice) && this.passesVolumeCheck(currentPut.openInterest, currentPut.totalVolume, prev.call)) {
-              prev.put = JSON.parse(JSON.stringify(currentPut));
-            }
-          }
-          return prev;
-        }, { call: null, put: null });
-      }
-    }
-    if (!potentialStrangle.put) {
-      this.reportingService.addAuditLog(null,
-        'Unable to find put for ' + symbol);
     }
     return potentialStrangle;
   }
@@ -560,7 +511,7 @@ export class StrategyBuilderService {
   }
 
   async buyProtectivePut(symbol, quantity) {
-    const putOption = await this.getCallStrangleTrade(symbol);
+    const putOption = await this.getStrangleTrade(symbol);
     const price = this.findOptionsPrice(putOption.put.bid, putOption.put.ask);
     const orderQuantity = quantity;
 
@@ -633,7 +584,7 @@ export class StrategyBuilderService {
   }
 
   async buySnP(balance: number, totalBalance: number) {
-    const bullishStrangle = await this.getCallStrangleTrade('SPY');
+    const bullishStrangle = await this.getStrangleTrade('SPY');
     const callPrice = this.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
     const quantity = Math.floor(balance / callPrice) > 0 ? Math.floor(balance / callPrice) : (Math.floor(totalBalance / callPrice) >= 1 ? 1 : 0);
     if (quantity) {

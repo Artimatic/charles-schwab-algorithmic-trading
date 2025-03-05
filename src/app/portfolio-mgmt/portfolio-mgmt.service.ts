@@ -42,7 +42,7 @@ export class PortfolioMgmtService {
     if (pair) {
       console.log(`Trading pair for ${holding.name} put is ${pair[1].holding.name} call`);
       if (!currentHoldings.find(curr => curr.name === pair[1].holding.name)) {
-        const spyStrangle = await this.strategyBuilderService.getCallStrangleTrade('SPY');
+        const spyStrangle = await this.strategyBuilderService.getStrangleTrade('SPY');
         if (spyStrangle) {
           const callPrice = this.strategyBuilderService.findOptionsPrice(spyStrangle.call.bid, spyStrangle.call.ask) * 100;
           const putPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
