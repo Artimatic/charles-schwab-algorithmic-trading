@@ -440,7 +440,7 @@ export class AutopilotService {
 
   async findStocks() {
     for (const b of this.strategyBuilderService.bullishStocks) {
-      await this.addBuy(this.createHoldingObj(b), null, 'Buy top stock');
+      await this.addBuy(this.createHoldingObj(b), null, 'Buy bullish stock');
     }
   }
 

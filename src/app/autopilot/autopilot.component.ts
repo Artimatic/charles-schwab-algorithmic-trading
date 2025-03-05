@@ -190,7 +190,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test',
         command: async () => {
-          await this.optionsOrderBuilderService.balanceTrades(['SPY'], ['GOOG'], 1000, 5000, 'Test');
+          await this.optionsOrderBuilderService.balanceTrades(['V'], ['GOOG'], 1000, 5000, 'Test');
           this.portfolioService.getStrategy().subscribe(strategies => console.log(strategies));
           this.portfolioService.getProfitLoss().subscribe(pl => console.log(pl));
           this.portfolioService.purgeStrategy().subscribe();
@@ -981,12 +981,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         break;
       default: {
         await this.autopilotService.findTopBuy();
+        await this.autopilotService.findStocks();
         break;
       }
     }
 
     await this.createTradingPairs();
-    await this.autopilotService.findStocks();
     if (this.autopilotService.isVolatilityHigh()) {
       await this.autopilotService.sellLoser(this.autopilotService.currentHoldings);
     }
