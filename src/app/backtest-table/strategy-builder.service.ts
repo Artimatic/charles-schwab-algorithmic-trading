@@ -114,7 +114,7 @@ export class StrategyBuilderService {
   isPutHedge(goal: number, strike: number, impliedMovement: number) {
     if (strike < goal) {
       const diff = ((goal - strike) / goal);
-      if (impliedMovement && diff < (impliedMovement * -1) - 0.003) {
+      if (impliedMovement && diff < (impliedMovement * -1)) {
         return true;
       }
     }
@@ -125,7 +125,7 @@ export class StrategyBuilderService {
   isCallHedge(goal: number, strike: number, impliedMovement: number) {
     if (strike > goal) {
       const diff = ((strike - goal) / goal);
-      if (impliedMovement && diff < impliedMovement + 0.003) {
+      if (impliedMovement && diff > impliedMovement) {
         return true;
       }
     }
