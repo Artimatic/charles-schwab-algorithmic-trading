@@ -86,7 +86,6 @@ export enum Strategy {
 })
 export class AutopilotService {
   riskCounter = 0;
-  addedOrdersCount = 0;
   maxTradeCount = 10;
   lastSpyMl = 0;
   volatility = 0;
@@ -300,8 +299,8 @@ export class AutopilotService {
     }
   }
 
-  hasReachedBuyLimit(addedOrdersCount = this.addedOrdersCount, limit = this.maxTradeCount) {
-    return (this.optionsOrderBuilderService.getTradingPairs().length + addedOrdersCount + this.cartService.buyOrders.length + this.cartService.otherOrders.length) > limit;
+  hasReachedBuyLimit() {
+    return (this.optionsOrderBuilderService.getTradingPairs().length + this.cartService.buyOrders.length + this.cartService.otherOrders.length) > this.maxTradeCount;
   }
 
   getTechnicalIndicators(stock: string, startDate: string, currentDate: string) {
@@ -321,8 +320,7 @@ export class AutopilotService {
     if (!holding.name) {
       throw Error('Ticker is missing')
     }
-    if ((this.addedOrdersCount + this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.maxTradeCount) {
-      this.addedOrdersCount++;
+    if ((this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.maxTradeCount) {
       const currentDate = moment().format('YYYY-MM-DD');
       const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
       const backtestData = await this.strategyBuilderService.getBacktestData(holding.name);

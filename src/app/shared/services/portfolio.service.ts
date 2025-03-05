@@ -106,6 +106,18 @@ export class PortfolioService {
     return this.http.post('/api/portfolio/add-strategy', body);
   }
 
+  getStrategy(): Observable<any> {
+    return this.http.get('/api/portfolio/strategy');
+  }
+  
+  getProfitLoss(): Observable<any> {
+    return this.http.get('/api/portfolio/profit-loss');
+  }
+
+  purgeStrategy(): Observable<any> {
+    return this.http.delete('/api/portfolio/strategy');
+  }
+
   getTdPortfolio() {
     const accountId = this.getAccountId();
     if (!accountId) {
