@@ -709,7 +709,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
           }
         });
       }
-    } else if ((this.order.side.toLowerCase() === 'sell' || this.isDayTrading()) && ((this.lastMlResult && this.lastMlResult < 0.2) || analysis.recommendation.toLowerCase() === 'sell' || this.order.forImmediateExecution)) {
+    } else if (this.order.side.toLowerCase() === 'sell' || this.isDayTrading() || analysis.recommendation.toLowerCase() === 'sell' || this.order.forImmediateExecution) {
       // console.log('Received sell recommendation: ', analysis, this.order.holding.symbol);
       const sellLog = 'Received sell recommendation';
       this.reportingService.addAuditLog(this.order.holding.symbol, sellLog);

@@ -106,6 +106,7 @@ class PortfolioService {
           .then(accountNumbers => {
             accountNumbers.forEach(val => {
               this.accountIdToHash[val.accountNumber] = val.hashValue;
+              console.log('hashValue', val.accountNumber, val.hashValue);
             });
             this.refreshTokensHash[accountId] = (data?.refresh_token as string) || null;
             this.access_token[accountId] = {
@@ -735,24 +736,21 @@ class PortfolioService {
     price,
     type = 'LIMIT',
     extendedHours = false, accountId, response) {
-    return this.renewAuth(accountId, response)
-      .then(() => {
-        this.getPositions(accountId)
-          .then(pos => {
-            const foundPosition = pos.securitiesAccount.positions.find((position) => {
-              return position.instrument.symbol === symbol;
-            });
-            if (foundPosition) {
-              quantity = foundPosition.longQuantity <= quantity ? quantity : foundPosition.longQuantity;
-              return this.tdSell(symbol,
-                quantity,
-                price,
-                type,
-                extendedHours, accountId);
-            } else {
-              throw new Error('Position not found');
-            }
-          });
+    return this.sendPositionRequest(accountId)
+      .then((pos) => {
+        const foundPosition = pos.securitiesAccount.positions.find((position) => {
+          return position.instrument.symbol === symbol;
+        });
+        if (foundPosition) {
+          quantity = foundPosition.longQuantity > quantity ? quantity : foundPosition.longQuantity;
+          return this.tdSell(symbol,
+            quantity,
+            price,
+            type,
+            extendedHours, accountId);
+        } else {
+          throw new Error('Position not found');
+        }
       });
   }
 
@@ -805,24 +803,24 @@ class PortfolioService {
       .then((pos) => {
         if (process.env.reportUrl && (!this.lastPositionCheck || moment().diff(moment(this.lastPositionCheck), 'hours') > 12)) {
           this.lastPositionCheck = moment();
-          DatabaseService.update({positions: pos.securitiesAccount.positions}, 'stock_portfolio', 'portfolio',  { name: '1' });
+          DatabaseService.update({ positions: pos.securitiesAccount.positions }, 'stock_portfolio', 'portfolio', { name: '1' });
         }
         return pos.securitiesAccount.positions;
       });
   }
 
-  addProfitLoss(accountId: string, 
+  addProfitLoss(accountId: string,
     date,
     lastRiskTolerance,
     lastStrategy,
     profit) {
-      DatabaseService.update({
-        accountId,
-        date,
-        lastRiskTolerance,
-        lastStrategy,
-        profit
-      }, 'stock_portfolio', 'profitLoss',  { date: date });
+    DatabaseService.update({
+      accountId,
+      date,
+      lastRiskTolerance,
+      lastStrategy,
+      profit
+    }, 'stock_portfolio', 'profitLoss', { date: date });
   }
 
   getProfitLoss() {
@@ -840,7 +838,7 @@ class PortfolioService {
       key,
       strategy,
       reason
-    }, 'stock_portfolio', 'strategies',  { key: key });
+    }, 'stock_portfolio', 'strategies', { key: key });
   }
 
   getStrategy() {

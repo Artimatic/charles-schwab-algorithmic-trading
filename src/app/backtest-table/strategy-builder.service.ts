@@ -158,7 +158,7 @@ export class StrategyBuilderService {
   }
 
   private passesVolumeCheck(openInterest, currTotalVolume, prevObj) {
-    return ((!prevObj && (openInterest > 500 || currTotalVolume > 200)) || prevObj && (openInterest > prevObj.openInterest));
+    return ((!prevObj && (openInterest > 450 || currTotalVolume > 200)) || prevObj && (openInterest > prevObj.openInterest));
   }
 
   private passesPriceCheck(price) {
