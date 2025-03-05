@@ -69,7 +69,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   alive = false;
   destroy$ = new Subject();
   maxHoldings = 100;
-  addedOrdersCount = 0;
   developedStrategy = false;
   tradingPairsCounter = 0;
 
@@ -192,6 +191,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         label: 'Test',
         command: async () => {
           await this.optionsOrderBuilderService.balanceTrades(['SPY'], ['GOOG'], 1000, 5000, 'Test');
+          this.portfolioService.getStrategy().subscribe(strategies => console.log(strategies));
+          this.portfolioService.getProfitLoss().subscribe(pl => console.log(pl));
+          this.portfolioService.purgeStrategy().subscribe();
         }
       },
       {
@@ -388,6 +390,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         profitRecord: tempProfitRecord
       };
       localStorage.setItem('profitLoss', JSON.stringify(profitObj));
+      const accountId = sessionStorage.getItem('accountId');
+      this.portfolioService.updatePortfolioProfitLoss(accountId || null, profitObj.date,
+        profitObj.lastRiskTolerance,
+        profitObj.lastStrategy,
+        profitObj.profit).subscribe();
     }
   }
 
@@ -403,7 +410,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   resetCart() {
     this.optionsOrderBuilderService.clearTradingPairs();
-    this.autopilotService.addedOrdersCount = 0;
     this.cartService.removeCompletedOrders();
     this.cartService.otherOrders = [];
     this.cartService.buyOrders = [];
@@ -458,11 +464,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       profitObj.profit = lastProfitLoss.profit;
       profitObj.profitRecord = lastProfitLoss.profitRecord;
     }
-    const accountId = sessionStorage.getItem('accountId');
-    this.portfolioService.updatePortfolioProfitLoss(accountId || null, profitObj.date,
-      profitObj.lastRiskTolerance,
-      profitObj.lastStrategy,
-      profitObj.profit).subscribe();
 
     localStorage.setItem('profitLoss', JSON.stringify(profitObj));
   }
@@ -711,7 +712,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const profit = Number(this.calculatePl(lastProfitLoss.profitRecord));
         const lastProfitMsg = 'Last profit ' + profit;
         this.reportingService.addAuditLog(this.autopilotService.strategyList[this.autopilotService.strategyCounter], lastProfitMsg);
-        const metTarget = await this.priceTargetService.hasMetPriceTarget(0.0035);
+        const metTarget = await this.priceTargetService.hasMetPriceTarget(0.005);
         if (!metTarget) {
           this.decreaseDayTradeRiskTolerance();
           this.increaseRiskTolerance();
@@ -763,10 +764,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     const backtestData = await this.strategyBuilderService.getBacktestData('SPY');
 
-    const buySymbol = 'UPRO';
-
     this.autopilotService.setLastSpyMl(backtestData.ml);
-    await this.autopilotService.buyRightAway(buySymbol, backtestData.ml);
+    // await this.autopilotService.buyRightAway(buySymbol, backtestData.ml);
   }
 
   updateStockList() {
@@ -1058,7 +1057,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async padOrders() {
-    if (!this.autopilotService.hasReachedBuyLimit(this.autopilotService.addedOrdersCount)) {
+    if (!this.autopilotService.hasReachedBuyLimit()) {
       this.changeStrategy();
       await this.handleStrategy();
     }
