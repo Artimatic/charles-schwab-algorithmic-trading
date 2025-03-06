@@ -32,7 +32,6 @@ describe('LiveSimulationComponent', () => {
     fixture = TestBed.createComponent(LiveSimulationComponent);
     component = fixture.componentInstance;
     scenarioGeneratorServiceSpy = spyOn(spyScenarioGeneratorService, 'testSellLoser').and.returnValue(Promise.resolve());
-    scenarioGeneratorServiceSpy = TestBed.inject(ScenarioGeneratorService);
     cartServiceSpy = TestBed.inject(CartService);
     autopilotServiceSpy =  spyOn(spyAutopilotService, 'isMarketOpened');
     fixture.detectChanges();
