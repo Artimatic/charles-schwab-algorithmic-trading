@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ScenarioGeneratorService } from '../scenario-generator.service';
 import { CartService } from '@shared/services';
-import { AlgoQueueItem, TradeService } from '@shared/services/trade.service';
 import { OrderType } from '@shared/stock-backtest.interface';
 import { AutopilotService } from 'src/app/autopilot/autopilot.service';
 
@@ -20,7 +19,7 @@ interface TestEvent {
   styleUrls: ['./live-simulation.component.css']
 })
 export class LiveSimulationComponent implements OnInit {
-  events: TestEvent[];
+  events: TestEvent[] = [];
 
   lastCart = {
     buyOrders: [],
@@ -33,14 +32,14 @@ export class LiveSimulationComponent implements OnInit {
     private autopilotService: AutopilotService
   ) { }
 
-  ngOnInit(): void {
+  async ngOnInit() {
     this.lastCart = {
       buyOrders: this.cartService.buyOrders,
       sellOrders: this.cartService.sellOrders,
       otherOrders: this.cartService.otherOrders
     };
 
-    this.startSimulation();
+    await this.startSimulation();
   }
 
   createSuccessEvent(expected: string, result: string) {

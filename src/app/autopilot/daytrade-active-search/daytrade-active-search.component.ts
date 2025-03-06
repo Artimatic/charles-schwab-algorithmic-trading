@@ -9,6 +9,7 @@ import { FindDaytradeService, StockTrade } from '../find-daytrade.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { GlobalSettingsService } from 'src/app/settings/global-settings.service';
+import { StrategyStoreService } from 'src/app/backtest-table/strategy-store.service';
 
 interface Daytrade {
   stock: string;
@@ -46,6 +47,7 @@ export class DaytradeActiveSearchComponent implements OnInit, OnDestroy {
     private findDaytradeService: FindDaytradeService,
     private machineLearningService: MachineLearningService,
     private globalSettingsService: GlobalSettingsService,
+    private strategyStoreService: StrategyStoreService,
     private ref: ChangeDetectorRef
   ) { }
 
@@ -175,7 +177,7 @@ export class DaytradeActiveSearchComponent implements OnInit, OnDestroy {
     if (!this.currentCycleList.length) {
       this.currentCycleList = this.mostRelevantStockList;
 
-      const savedBacktestData = this.strategyBuilderService.getStorage('backtest');
+      const savedBacktestData = this.strategyStoreService.getStorage('backtest');
       for (const backtestDataKey in savedBacktestData) {
         const backtestData = savedBacktestData[backtestDataKey];
         if (backtestData) {
