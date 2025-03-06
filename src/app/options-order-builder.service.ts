@@ -81,6 +81,10 @@ export class OptionsOrderBuilderService {
     return true;
   }
 
+  getCurrentTradeIdeas() {
+    return this.currentTradeIdeas;
+  }
+
   getTradeHashValue(arr: SmartOrder[]) {
     const str = arr.reduce((acc: string, val: SmartOrder) => {
       if (!val || !val.holding) {
@@ -100,17 +104,17 @@ export class OptionsOrderBuilderService {
   }
 
   addCallToCurrentTrades(symbol: string) {
-    this.currentTradeIdeas.calls.push(symbol);
-    if (this.currentTradeIdeas.puts.length) {
-      this.strategyBuilderService.createStrategy('Pair', this.currentTradeIdeas.calls[0], this.currentTradeIdeas.calls, this.currentTradeIdeas.puts, 'Orphaned pair');
+    this.getCurrentTradeIdeas().calls.push(symbol);
+    if (this.getCurrentTradeIdeas().puts.length) {
+      this.strategyBuilderService.createStrategy('Pair', this.getCurrentTradeIdeas().calls[0], this.getCurrentTradeIdeas().calls, this.getCurrentTradeIdeas().puts, 'Orphaned pair');
       this.clearCurrentTradeIdeas();
     }
   }
 
   addPutToCurrentTrades(symbol: string) {
-    this.currentTradeIdeas.puts.push(symbol);
-    if (this.currentTradeIdeas.calls.length) {
-      this.strategyBuilderService.createStrategy('Pair', this.currentTradeIdeas.calls[0], this.currentTradeIdeas.calls, this.currentTradeIdeas.puts, 'Orphaned pair');
+    this.getCurrentTradeIdeas().puts.push(symbol);
+    if (this.getCurrentTradeIdeas().calls.length) {
+      this.strategyBuilderService.createStrategy('Pair', this.getCurrentTradeIdeas().calls[0], this.getCurrentTradeIdeas().calls, this.getCurrentTradeIdeas().puts, 'Orphaned pair');
       this.clearCurrentTradeIdeas();
     }
   }

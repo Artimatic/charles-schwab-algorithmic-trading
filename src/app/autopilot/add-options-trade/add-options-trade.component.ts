@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from '@angular/core';
 import { DynamicDialogRef } from 'primeng/dynamicdialog';
 import { Subject } from 'rxjs';
 import { StrategyBuilderService } from 'src/app/backtest-table/strategy-builder.service';
+import { StrategyStoreService } from 'src/app/backtest-table/strategy-store.service';
 
 @Component({
   selector: 'app-add-options-trade',
@@ -17,11 +18,12 @@ export class AddOptionsTradeComponent implements OnInit, OnDestroy {
   isLoading = false;
 
   constructor(private strategyBuilderService: StrategyBuilderService,
+    private strategyStoreService: StrategyStoreService,
     private ref: DynamicDialogRef) { }
 
 
   ngOnInit() {
-    const storedSuggestions = this.strategyBuilderService.getStorage('strangle_suggestions');
+    const storedSuggestions = this.strategyStoreService.getStorage('strangle_suggestions');
     for (const s in storedSuggestions) {
       this.suggestionsArr.push({ label: s })
     }

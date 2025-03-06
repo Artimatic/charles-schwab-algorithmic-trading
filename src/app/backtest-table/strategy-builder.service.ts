@@ -11,6 +11,7 @@ import { Indicators } from '@shared/stock-backtest.interface';
 import { MessageService } from 'primeng/api';
 import { AlwaysBuy } from '../rh-table/backtest-stocks.constant';
 import { SchedulerService } from '@shared/service/scheduler.service';
+import { StrategyStoreService } from './strategy-store.service';
 
 export interface ComplexStrategy {
   state: 'assembling' | 'assembled' | 'disassembling' | 'disassembled';
@@ -35,10 +36,11 @@ export class StrategyBuilderService {
     private messageService: MessageService,
     private schedulerService: SchedulerService,
     private reportingService: ReportingService,
+    private strategyStoreService: StrategyStoreService,
     private cartService: CartService) { }
 
   getRecentBacktest(symbol: string = null, expiry = 1) {
-    const backtestStorage = this.getStorage('backtest');
+    const backtestStorage = this.strategyStoreService.getStorage('backtest');
     if (!symbol) {
       return backtestStorage;
     }
@@ -171,7 +173,6 @@ export class StrategyBuilderService {
     if (optionsData.move > this.maxImpliedMovement) {
       this.reportingService.addAuditLog(null,
         `Implied movement is too high for ${symbol} at ${optionsData.move}. Max is ${this.maxImpliedMovement}`);
-      this.bullishStocks.push(symbol);
         return { call: null, put: null };
     }
     const optionsChain = optionsData.optionsChain;
@@ -326,11 +327,6 @@ export class StrategyBuilderService {
     }
   }
 
-  getStorage(storageName: string) {
-    const storage = JSON.parse(localStorage.getItem(storageName));
-    return storage ? storage : {};
-  }
-
   addToBlackList(ticker: string) {
     const backtestBlacklist = JSON.parse(localStorage.getItem('blacklist'));
     if (backtestBlacklist) {
@@ -402,7 +398,7 @@ export class StrategyBuilderService {
   }
 
   sanitizeData() {
-    const backtestData = this.getStorage('backtest');
+    const backtestData = this.strategyStoreService.getStorage('backtest');
     const newBacktestData = {};
     for (const b in backtestData) {
       if (!backtestData[b].ml || !backtestData[b].recommendation || !backtestData[b].backtestDate || moment().diff(moment(backtestData[b].backtestDate), 'days') < 4) {
@@ -459,6 +455,11 @@ export class StrategyBuilderService {
     localStorage.setItem('tradingStrategy', JSON.stringify(strats));
   }
 
+  addAndRemoveOldStrategies(storage) {
+    storage = storage.filter(s => moment().diff(moment(s.date), 'days') < 6);
+    this.setTradingStrategies(storage);
+  }
+
   addTradingStrategy(trade: PotentialTrade) {
     let storage = this.getTradingStrategies();
     if (trade) {
@@ -486,7 +487,7 @@ export class StrategyBuilderService {
         }
 
         storage = storage.filter(s => moment().diff(moment(s.date), 'days') < 5);
-        this.setTradingStrategies(storage);
+        this.addAndRemoveOldStrategies(storage);
       } else {
         const newStorageObj = [trade];
         this.setTradingStrategies(newStorageObj);
@@ -590,7 +591,7 @@ export class StrategyBuilderService {
   }
 
   getBuyList() {
-    const alwaysBuyStorage = this.getStorage('always_buy');
+    const alwaysBuyStorage = this.strategyStoreService.getStorage('always_buy');
     if (alwaysBuyStorage && alwaysBuyStorage.length) {
       return AlwaysBuy.concat(alwaysBuyStorage);
     }
@@ -598,7 +599,7 @@ export class StrategyBuilderService {
   }
 
   getComplexStrategy() {
-    const storage = this.getStorage('complex_strategy');
+    const storage = this.strategyStoreService.getStorage('complex_strategy');
     if (storage && storage.length) {
       return storage;
     }
