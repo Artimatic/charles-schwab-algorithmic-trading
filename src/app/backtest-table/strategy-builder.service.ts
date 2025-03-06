@@ -114,9 +114,9 @@ export class StrategyBuilderService {
   isWithinCallMovementRange(goal: number, 
     strike: number, 
     impliedMovement: number) {
-    if (strike > goal) {
-      const diff = ((strike - goal) / goal);
-      if (diff > 0 && diff < impliedMovement + 0.003) {
+    if (Number(strike) > goal) {
+      const diff = ((Number(strike) - goal) / goal);
+      if (diff > 0 && diff < impliedMovement + 0.01) {
         return true;
       }
     }
@@ -125,9 +125,9 @@ export class StrategyBuilderService {
   }
 
   isWithinPutMovementRange(goal: number, strike: number, impliedMovement: number) {
-    if (strike < goal) {
-      const diff = ((strike - goal) / goal);
-      if (diff < 0 && diff > (impliedMovement * -1) - 0.003) {
+    if (Number(strike) < goal) {
+      const diff = ((Number(strike) - goal) / goal);
+      if (diff < 0 && diff > (impliedMovement * -1) - 0.01) {
         return true;
       }
     }
@@ -136,8 +136,8 @@ export class StrategyBuilderService {
   }
 
   isPutHedge(goal: number, strike: number, impliedMovement: number) {
-    if (strike < goal) {
-      const diff = ((strike - goal) / goal);
+    if (Number(strike) < goal) {
+      const diff = ((Number(strike) - goal) / goal);
       if (impliedMovement && diff < (impliedMovement * -1)) {
         return true;
       }
@@ -147,8 +147,8 @@ export class StrategyBuilderService {
   }
 
   isCallHedge(goal: number, strike: number, impliedMovement: number) {
-    if (strike > goal) {
-      const diff = ((strike - goal) / goal);
+    if (Number(strike) > goal) {
+      const diff = ((Number(strike) - goal) / goal);
       if (impliedMovement && diff > impliedMovement) {
         return true;
       }
@@ -158,7 +158,7 @@ export class StrategyBuilderService {
   }
 
   private passesVolumeCheck(openInterest, currTotalVolume, prevObj) {
-    return ((!prevObj && (openInterest > 450 || currTotalVolume > 200)) || prevObj && (openInterest > prevObj.openInterest));
+    return ((!prevObj && (openInterest > 430 || currTotalVolume > 200)) || prevObj && (openInterest > prevObj.openInterest));
   }
 
   private passesPriceCheck(price) {
