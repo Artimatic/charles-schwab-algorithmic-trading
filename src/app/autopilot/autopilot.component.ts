@@ -681,26 +681,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async modifyRisk() {
-    const backtestResults = await this.strategyBuilderService.getBacktestData('SPY');
-
-    if (backtestResults && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL')) {
-      console.log('Backtest recommendation', backtestResults.recommendation);
-      this.increaseDayTradeRiskTolerance();
-      this.adjustRiskTolerance();
+    const metTarget = await this.priceTargetService.hasMetPriceTarget(0);
+    if (!metTarget) {
+      this.decreaseDayTradeRiskTolerance();
+      this.increaseRiskTolerance();
     } else {
-      const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
-      if (lastProfitLoss && lastProfitLoss.profit) {
-        const profit = Number(this.calculatePl(lastProfitLoss.profitRecord));
-        const lastProfitMsg = 'Last profit ' + profit;
-        this.reportingService.addAuditLog(this.autopilotService.strategyList[this.autopilotService.strategyCounter], lastProfitMsg);
-        const metTarget = await this.priceTargetService.hasMetPriceTarget(0.005);
-        if (!metTarget) {
-          this.decreaseDayTradeRiskTolerance();
-          this.increaseRiskTolerance();
-        } else {
-          this.increaseDayTradeRiskTolerance();
-        }
-      }
+      this.increaseDayTradeRiskTolerance();
     }
   }
 
