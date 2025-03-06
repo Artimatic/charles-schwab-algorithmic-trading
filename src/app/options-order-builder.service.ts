@@ -244,7 +244,7 @@ export class OptionsOrderBuilderService {
           underlying: buy
         };
         let currentPut = null;
-        if (this.isIdealOption(callPrice, maxCashAllocation, bullishStrangle.call)) {
+        if (!this.isIdealOption(callPrice, maxCashAllocation, bullishStrangle.call)) {
           currentCall = null;
           break;
         }
@@ -252,7 +252,7 @@ export class OptionsOrderBuilderService {
           const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
           if (bearishStrangle && bearishStrangle.put) {
             const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
-            if (this.isIdealOption(putPrice, maxCashAllocation, bearishStrangle.put)) {
+            if (!this.isIdealOption(putPrice, maxCashAllocation, bearishStrangle.put)) {
               currentPut = null;
               break;
             }
