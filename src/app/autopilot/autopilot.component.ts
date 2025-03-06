@@ -180,15 +180,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       },
       {
-        label: 'Test',
-        command: async () => {
-          await this.optionsOrderBuilderService.balanceTrades(['GOOG'], ['AAPL'], 1000, 5000, 'Test');
-          this.portfolioService.getStrategy().subscribe(strategies => console.log(strategies));
-          this.portfolioService.getProfitLoss().subscribe(pl => console.log(pl));
-          this.portfolioService.purgeStrategy().subscribe();
-        }
-      },
-      {
         label: 'Test handle strategy',
         command: async () => {
           await this.handleStrategy();
@@ -1128,6 +1119,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.modifyCurrentHoldings();
     console.log(this.autopilotService.currentHoldings);
     await this.orderHandlingService.intradayStep('SPY');
+    await this.optionsOrderBuilderService.balanceTrades(['GOOG'], ['AAPL'], 1000, 5000, 'Test');
+    if (!this.tradingPairs.length) {
+      console.error('TRADING PAIR NOT ADDED');
+    }
+    this.portfolioService.purgeStrategy().subscribe();
   }
 
   ngOnDestroy() {

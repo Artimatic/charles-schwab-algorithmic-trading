@@ -134,18 +134,6 @@ export class OptionsOrderBuilderService {
     });
     if (calls.length && puts.length) {
       this.strategyBuilderService.createStrategy('Pair', calls[0], calls, puts, reason);
-    } else if (calls.length) {
-      this.currentTradeIdeas.calls.push(calls[0]);
-      if (this.currentTradeIdeas.puts.length) {
-        this.strategyBuilderService.createStrategy('Pair', this.currentTradeIdeas.calls[0], this.currentTradeIdeas.calls, this.currentTradeIdeas.puts, reason);
-        this.clearCurrentTradeIdeas();
-      }
-    } else if (puts.length) {
-      this.currentTradeIdeas.puts.push(puts[0]);
-      if (this.currentTradeIdeas.calls.length) {
-        this.strategyBuilderService.createStrategy('Pair', this.currentTradeIdeas.calls[0], this.currentTradeIdeas.calls, this.currentTradeIdeas.puts, reason);
-        this.clearCurrentTradeIdeas();
-      }
     }
   }
 
