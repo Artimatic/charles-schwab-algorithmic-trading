@@ -554,13 +554,19 @@ describe('OptionsOrderBuilderService', () => {
         return {
           holding: {
             symbol: 'BAC123'
-          }
+          },
+          primaryLegs: [{
+            symbol: 'BAC123'
+          }]
         };
       }
       return {
         holding: {
           symbol: 'MO123'
-        }
+        },
+        primaryLegs: [{
+          symbol: 'MO123'
+        }]
       };
     });
 
