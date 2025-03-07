@@ -34,9 +34,9 @@ export class LiveSimulationComponent implements OnInit {
 
   async ngOnInit() {
     this.lastCart = {
-      buyOrders: this.cartService.buyOrders,
-      sellOrders: this.cartService.sellOrders,
-      otherOrders: this.cartService.otherOrders
+      buyOrders: this.cartService.getBuyOrders(),
+      sellOrders: this.cartService.getSellOrders(),
+      otherOrders: this.cartService.getOtherOrders()
     };
 
     await this.startSimulation();
@@ -70,7 +70,7 @@ export class LiveSimulationComponent implements OnInit {
       return;
     }
     await this.scenarioGeneratorService.testSellLoser();
-    const newOrder = this.cartService.sellOrders.find(order => !this.lastCart.sellOrders.find(lastOrder => lastOrder.id === order.id));
+    const newOrder = this.cartService.getSellOrders().find(order => !this.lastCart.sellOrders.find(lastOrder => lastOrder.id === order.id));
     if (newOrder) {
       const log = this.cartService.createOrderLog(newOrder, 'Sell Loser');
       this.createSuccessEvent('Create order to sell loser', log);

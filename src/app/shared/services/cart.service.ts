@@ -26,6 +26,17 @@ export class CartService {
     private machineLearningService: MachineLearningService,
     private globalSettingsService: GlobalSettingsService) { }
 
+  getBuyOrders() {
+    return this.buyOrders;
+  }
+
+  getSellOrders() {
+    return this.sellOrders;
+  }
+
+  getOtherOrders() {
+    return this.otherOrders;
+  }
 
   createOrderLog(order: SmartOrder, reason: string) {
     let log = `Adding order ${order.side} ${order.quantity} ${order.holding.symbol}. Reason: ${order?.reason ? order?.reason : reason}`;
@@ -272,14 +283,14 @@ export class CartService {
     };
   }
 
-  buildOrderWithAllocation(symbol: string, 
-    quantity = 0, 
+  buildOrderWithAllocation(symbol: string,
+    quantity = 0,
     price = 0,
-    side = 'DayTrade', 
-    orderSizePct = 0.3, 
+    side = 'DayTrade',
+    orderSizePct = 0.3,
     lossThreshold = -0.004,
-    profitTarget = 0.008, 
-    trailingStop = -0.003, 
+    profitTarget = 0.008,
+    trailingStop = -0.003,
     allocation = null,
     executeImmediately = false,
     reason = ''): SmartOrder {
@@ -363,7 +374,7 @@ export class CartService {
     if (this.buyOrders.find(order => this.existingOptionsCheck(order, symbol, primaryLegs[0].symbol) ||
       this.sellOrders.find(order => this.existingOptionsCheck(order, symbol, primaryLegs[0].symbol)))) {
       const log = `Found existing order ${symbol} ${primaryLegs[0].symbol}`;
-        console.log(log);
+      console.log(log);
       this.reportingService.addAuditLog(symbol, log);
 
       return null;
@@ -404,7 +415,7 @@ export class CartService {
     primaryLegs: Options[], price: number,
     quantity: number, optionType,
     side = 'Buy', reason: string = '', executeImmediately = false) {
-      this.reportingService.addAuditLog(symbol, `${side} option ${primaryLegs[0].symbol}. Reason ${reason}`);
+    this.reportingService.addAuditLog(symbol, `${side} option ${primaryLegs[0].symbol}. Reason ${reason}`);
 
     if (primaryLegs.find(leg => !leg.quantity)) {
       console.log('Legs missing quantity', primaryLegs);
@@ -608,9 +619,9 @@ export class CartService {
   async portfolioSell(holding: PortfolioInfoHolding, reason = '', executeImmediately = false) {
     const price = await this.portfolioService.getPrice(holding.name, false).toPromise();
     const orderSizePct = 0.5;
-    const order = this.buildOrderWithAllocation(holding.name, 
-      holding.shares, 
-      price, 
+    const order = this.buildOrderWithAllocation(holding.name,
+      holding.shares,
+      price,
       'Sell',
       orderSizePct, -0.005, 0.01, -0.003, null, executeImmediately, reason);
     this.addToCart(order, true, reason);
