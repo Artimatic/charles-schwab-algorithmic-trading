@@ -194,7 +194,7 @@ export class AutopilotService {
   async addPairsFromHashMap(MlBuys, MlSells, reason) {
     for (const buyKey in MlBuys) {
       if (MlSells[buyKey]?.length && MlSells[buyKey]?.length) {
-        this.strategyBuilderService.createStrategy(`${reason} Pair trade`, reason, MlSells[buyKey], MlSells[buyKey], reason);
+        this.strategyBuilderService.createStrategy(`${reason} Pair trade`, reason, MlBuys[buyKey], MlSells[buyKey], reason);
       }
     }
   }
@@ -226,26 +226,6 @@ export class AutopilotService {
     await this.addPairsFromHashMap(MlBuys, MlSells, 'Volatility pairs');
   }
 
-  async bearPair(currentHoldings) {
-    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
-    const MlBuys = ['SPY'];
-    const MlSells = [];
-    if (savedBacktest) {
-      for (const saved in savedBacktest) {
-        const backtestObj = savedBacktest[saved];
-        const symbol = backtestObj.stock
-        if (backtestObj?.sellMl > 0.5 && backtestObj.recommendation.toLowerCase() === 'strongsell') {
-          MlSells.push(symbol);
-        }
-      }
-    }
-    const cash = await this.getMinMaxCashForOptions();
-    while (MlSells.length) {
-      await this.optionsOrderBuilderService.balanceTrades(MlBuys, [MlSells.pop()],
-        cash.minCash, cash.maxCash, 'Bear pair');
-    }
-  }
-
   async addPerfectPair() {
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     const MlBuys = {};
@@ -257,13 +237,13 @@ export class AutopilotService {
         const buySignalStr = savedBacktest[saved]?.buySignals?.sort()?.join();
         const key = (sellSignalStr || '') + '-' + (buySignalStr || '') + Math.round(savedBacktest[saved].impliedMovement * 100);
         const symbol = backtestObj.stock
-        if (backtestObj.ml > 0.5 && this.priceTargetService.isProfitable(backtestObj.invested, backtestObj.net) && backtestObj.recommendation.toLowerCase() === 'strongbuy') {
+        if (backtestObj.ml > 0.5 && backtestObj.recommendation.toLowerCase() === 'strongbuy') {
           if (MlBuys[key]) {
             MlBuys[key].push(symbol);
           } else {
             MlBuys[key] = [symbol];
           }
-        } else if (backtestObj?.sellMl > 0.5 && this.priceTargetService.notProfitable(backtestObj.invested, backtestObj.net) && backtestObj.recommendation.toLowerCase() === 'strongsell') {
+        } else if (backtestObj?.sellMl > 0.5 && backtestObj.recommendation.toLowerCase() === 'strongsell') {
           if (MlSells[key]) {
             MlSells[key].push(symbol);
           } else {
@@ -275,31 +255,25 @@ export class AutopilotService {
     await this.addPairsFromHashMap(MlBuys, MlSells, 'Perfect pair');
   }
 
-  async addMLPairs(useSellSignal = true) {
+  async addMLPairs() {
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     const MlBuys = {};
     const MlSells = {};
     if (savedBacktest) {
       for (const saved in savedBacktest) {
         const backtestObj = savedBacktest[saved];
-        const signals = useSellSignal ? backtestObj.sellSignals : backtestObj.buySignals;
-        if (signals && signals.length) {
-          const key = signals?.sort()?.join();
-          const symbol = backtestObj.stock;
-          if (key) {
-            if (backtestObj.ml > 0.5 && backtestObj.recommendation === 'STRONGBUY') {
-              if (MlBuys[key]) {
-                MlBuys[key].push(symbol);
-              } else {
-                MlBuys[key] = [symbol];
-              }
-            } else if (backtestObj?.sellMl > 0.5 && backtestObj.recommendation === 'STRONGSELL') {
-              if (MlSells[key]) {
-                MlSells[key].push(symbol);
-              } else {
-                MlSells[key] = [symbol];
-              }
-            }
+        const symbol = backtestObj.stock
+        if (backtestObj.ml > 0.5 && backtestObj.sellMl < 0.5 && backtestObj.recommendation.toLowerCase() === 'STRONGBUY') {
+          if (MlBuys[backtestObj.ml]) {
+            MlBuys[backtestObj.ml].push(symbol);
+          } else {
+            MlBuys[backtestObj.ml] = [symbol];
+          }
+        } else if (backtestObj.ml < 0.5 && backtestObj.sellMl > 0.5 && backtestObj.recommendation.toLowerCase() === 'STRONGSELL') {
+          if (MlSells[backtestObj.sellMl]) {
+            MlSells[backtestObj.sellMl].push(symbol);
+          } else {
+            MlSells[backtestObj.sellMl] = [symbol];
           }
         }
       }
@@ -585,7 +559,7 @@ export class AutopilotService {
     const order = this.cartService.buildOrderWithAllocation(symbol, quantity, price, 'Sell',
       1, -0.005, 0.01,
       -0.003, 1, false, 'Sell right away');
-    
+
     this.daytradeService.sendSell(order, 'market', () => { }, () => { }, () => { });
   }
 

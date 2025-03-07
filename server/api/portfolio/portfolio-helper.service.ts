@@ -8,20 +8,11 @@ interface Holding {
  * Calculates portfolio volatility using implied movements and correlations.
  *
  * @param holdings An array of Holding objects representing the portfolio holdings.
- * @param correlationMatrix A 2D array (matrix) representing the correlation
- *                          between each pair of holdings.
- *                          correlationMatrix[i][j] should be the correlation
- *                          between holding i and holding j.
  * @returns The portfolio volatility as a number (standard deviation).
  */
-function calculatePortfolioVolatility(
-    holdings: Holding[],
-    correlationMatrix: number[][]
+export function calculatePortfolioVolatility(
+    holdings: Holding[]
 ): number {
-    if (holdings.length !== correlationMatrix.length || holdings.length !== correlationMatrix[0].length) {
-        throw new Error("The correlation matrix dimensions must match the number of holdings.");
-    }
-
     let portfolioVariance = 0;
     const numHoldings = holdings.length;
 
@@ -31,8 +22,7 @@ function calculatePortfolioVolatility(
                 holdings[i].weight *
                 holdings[j].weight *
                 holdings[i].impliedVolatility *
-                holdings[j].impliedVolatility *
-                correlationMatrix[i][j]
+                holdings[j].impliedVolatility
             );
         }
     }

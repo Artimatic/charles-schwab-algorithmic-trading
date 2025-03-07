@@ -868,7 +868,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         break;
       case Strategy.MLPairs:
         await this.autopilotService.addMLPairs();
-        await this.autopilotService.addMLPairs(false);
         break;
       case Strategy.VolatilityPairs:
         await this.autopilotService.addVolatilityPairs();

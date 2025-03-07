@@ -4,6 +4,12 @@ import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { OrderTypes } from '@shared/models/smart-order';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 
+interface Holding {
+  name: string;
+  weight: number; // Portfolio weight (e.g., 0.25 for 25%)
+  impliedVolatility: number; // Implied volatility (e.g., 0.20 for 20%)
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -17,6 +23,31 @@ export class PriceTargetService {
     private reportingService: ReportingService,
     private globalSettingsService: GlobalSettingsService
   ) { }
+
+  createHoldingWeights(): Holding[] {
+    return null;
+  }
+
+  calculatePortfolioVolatility(
+    holdings: Holding[]
+  ): number {
+    let portfolioVariance = 0;
+    const numHoldings = holdings.length;
+
+    for (let i = 0; i < numHoldings; i++) {
+      for (let j = 0; j < numHoldings; j++) {
+        portfolioVariance += (
+          holdings[i].weight *
+          holdings[j].weight *
+          holdings[i].impliedVolatility *
+          holdings[j].impliedVolatility
+        );
+      }
+    }
+
+    const portfolioVolatility = Math.sqrt(portfolioVariance);
+    return portfolioVolatility;
+  }
 
   async setTargetDiff() {
     const tenYrYield = await this.globalSettingsService.get10YearYield();
@@ -42,12 +73,12 @@ export class PriceTargetService {
       }
       acc.total += curr.marketValue;
       return acc;
-    }, { profitLoss: 0, total: 0});
+    }, { profitLoss: 0, total: 0 });
     return this.getDiff(todayPl.total, todayPl.total + todayPl.profitLoss);
   }
 
   getDiff(cost, currentValue) {
-    return  (currentValue - cost) / cost;
+    return (currentValue - cost) / cost;
   }
 
   async isDownDay() {
@@ -58,24 +89,24 @@ export class PriceTargetService {
   }
 
   async hasMetPriceTarget(target = this.targetDiff) {
-      const symbol = 'SPY';
-      const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
-      const portfolioPl = await this.todaysPortfolioPl();
-      const priceTarget = this.getDiff(price[symbol].quote.closePrice, price[symbol].quote.lastPrice) + target;
-      this.portfolioPl = portfolioPl;
-      this.reportingService.addAuditLog(null, `Portfolio PnL: ${portfolioPl}. target: ${priceTarget}`);
-      if (portfolioPl && portfolioPl > priceTarget) {
-        this.reportingService.addAuditLog(null, `Profit target met.`);
-        return true;
-      }
-      return false;
+    const symbol = 'SPY';
+    const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
+    const portfolioPl = await this.todaysPortfolioPl();
+    const priceTarget = this.getDiff(price[symbol].quote.closePrice, price[symbol].quote.lastPrice) + target;
+    this.portfolioPl = portfolioPl;
+    this.reportingService.addAuditLog(null, `Portfolio PnL: ${portfolioPl}. target: ${priceTarget}`);
+    if (portfolioPl && portfolioPl > priceTarget) {
+      this.reportingService.addAuditLog(null, `Profit target met.`);
+      return true;
+    }
+    return false;
   }
 
   async checkProfitTarget(retrievedHoldings: PortfolioInfoHolding[] = null, target = this.targetDiff) {
     const targetMet = await this.hasMetPriceTarget(target);
     if (targetMet) {
-      const holdings = retrievedHoldings? retrievedHoldings : await this.cartService.findCurrentPositions();
-      holdings.forEach(async(portItem: PortfolioInfoHolding) => {
+      const holdings = retrievedHoldings ? retrievedHoldings : await this.cartService.findCurrentPositions();
+      holdings.forEach(async (portItem: PortfolioInfoHolding) => {
         if (portItem.primaryLegs) {
           let orderType = null;
           if (portItem.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
@@ -103,7 +134,7 @@ export class PriceTargetService {
         }
       }
       return previousValue
-    }, { call: 0, put: 0});
+    }, { call: 0, put: 0 });
   }
 
   calculateOptionChangeOfProfit(delta: number) {

@@ -7,6 +7,7 @@ import { OptionsDataService } from '@shared/options-data.service';
 import { OrderTypes } from '@shared/models/smart-order';
 import { of } from 'rxjs';
 import { OrderHandlingService } from './order-handling/order-handling.service';
+import { PriceTargetService } from './autopilot/price-target.service';
 
 describe('OptionsOrderBuilderService', () => {
   let service: OptionsOrderBuilderService;
@@ -15,6 +16,7 @@ describe('OptionsOrderBuilderService', () => {
   const optionsDataServiceSpy = jasmine.createSpyObj('OptionsDataService', ['getImpliedMove']);
   const reportingServiceSpy = jasmine.createSpyObj('ReportingService', ['addAuditLog']);
   const orderHandlingServiceSpy = jasmine.createSpyObj('OrderHandlingService', ['getEstimatedPrice']);
+  const priceTargetServiceSpy = jasmine.createSpyObj('PriceTargetService', ['getDiff', ]);
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -25,6 +27,7 @@ describe('OptionsOrderBuilderService', () => {
         { provide: CartService, useValue: cartServiceSpy },
         { provide: OptionsDataService, useValue: optionsDataServiceSpy },
         { provide: ReportingService, useValue: reportingServiceSpy },
+        { provide: PriceTargetService, useValue: priceTargetServiceSpy },
         { provide: OrderHandlingService, useValue: orderHandlingServiceSpy }
       ]
     });
@@ -551,13 +554,19 @@ describe('OptionsOrderBuilderService', () => {
         return {
           holding: {
             symbol: 'BAC123'
-          }
+          },
+          primaryLegs: [{
+            symbol: 'BAC123'
+          }]
         };
       }
       return {
         holding: {
           symbol: 'MO123'
-        }
+        },
+        primaryLegs: [{
+          symbol: 'MO123'
+        }]
       };
     });
 
