@@ -5,6 +5,7 @@ import { BacktestService, CartService, PortfolioService, ReportingService } from
 import { OptionsOrderBuilderService } from '../options-order-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { of } from 'rxjs';
+import { GlobalSettingsService } from '../settings/global-settings.service';
 
 describe('PriceTargetService', () => {
   let service: PriceTargetService;
@@ -13,6 +14,7 @@ describe('PriceTargetService', () => {
   const portfolioServiceSpy = jasmine.createSpyObj('PortfolioService', ['getTdPortfolio']);
   const backtestServiceSpy = jasmine.createSpyObj('BacktestService', ['getLastPriceTiingo']);
   const reportingServiceSpy = jasmine.createSpyObj('ReportingService', ['addAuditLog']);
+  const globalSettingsServiceSpy = jasmine.createSpyObj('GlobalSettingsService', ['get10YearYield']);
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -23,6 +25,7 @@ describe('PriceTargetService', () => {
         { provide: PortfolioService, useValue: portfolioServiceSpy },
         { provide: OptionsOrderBuilderService, useValue: {} },
         { provide: OrderHandlingService, useValue: orderHandlingServiceSpy },
+        { provide: GlobalSettingsService, useValue: globalSettingsServiceSpy },
         { provide: ReportingService, useValue: reportingServiceSpy }
       ]
     });
