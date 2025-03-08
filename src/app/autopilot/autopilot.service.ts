@@ -283,7 +283,7 @@ export class AutopilotService {
 
   async checkIntradayStrategies() {
     const start = moment().tz('America/New_York').set({ hour: 10, minute: 15 });
-    const end = moment().tz('America/New_York').set({ hour: 11, minute: 0 });
+    const end = moment().tz('America/New_York').set({ hour: 11, minute: 15 });
     if (moment().isAfter(moment(start)) &&
       moment().isBefore(moment(end))) {
       const isDown = await this.priceTargetService.isDownDay();
@@ -786,14 +786,14 @@ export class AutopilotService {
   }
 
   private async intradayProcess() {
-    if (this.intradayProcessCounter > 4) {
+    if (this.intradayProcessCounter > 8) {
       this.intradayProcessCounter = 0;
     }
     this.currentHoldings = await this.cartService.findCurrentPositions();
 
     switch (this.intradayProcessCounter) {
       case 0: {
-        await this.checkIntradayStrategies();
+        this.priceTargetService.setTargetDiff();
         break;
       }
       case 1: {
@@ -806,6 +806,10 @@ export class AutopilotService {
       }
       case 3: {
         await this.optionsOrderBuilderService.addOptionsStrategiesToCart();
+        break;
+      }
+      case 4: {
+        await this.checkIntradayStrategies();
         break;
       }
       default: {
