@@ -962,7 +962,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         break;
       default: {
         await this.autopilotService.findTopBuy();
-        await this.autopilotService.findStocks();
         break;
       }
     }
@@ -971,6 +970,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (this.autopilotService.isVolatilityHigh()) {
       await this.autopilotService.sellLoser(this.autopilotService.currentHoldings);
     }
+    await this.autopilotService.findStocks();
   }
 
   async buyWinners() {
