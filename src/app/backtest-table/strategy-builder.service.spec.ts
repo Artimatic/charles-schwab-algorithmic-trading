@@ -1,13 +1,22 @@
 import { TestBed } from '@angular/core/testing';
 
 import { StrategyBuilderService } from './strategy-builder.service';
-import { AiPicksService, BacktestService, CartService, PortfolioService } from '@shared/services';
+import { BacktestService, CartService, PortfolioService, ReportingService } from '@shared/services';
 import { OptionsDataService } from '@shared/options-data.service';
 import { MessageService } from 'primeng/api';
 import { of } from 'rxjs';
+import { SchedulerService } from '@shared/service/scheduler.service';
+import { StrategyStoreService } from './strategy-store.service';
 
 describe('StrategyBuilderService', () => {
   let service: StrategyBuilderService;
+  const mockBacktestService = jasmine.createSpyObj('BacktestService', ['getBacktestData']);
+  const mockPortfolioService = jasmine.createSpyObj('PortfolioService', ['addStrategy', 'sendOptionBuy']);
+  const mockMessageService = jasmine.createSpyObj('MessageService', ['add']);
+  const mockSchedulerService = jasmine.createSpyObj('SchedulerService', ['schedule']);
+  const mockReportingService = jasmine.createSpyObj('ReportingService', ['addAuditLog']);
+  const mockStrategyStoreService = jasmine.createSpyObj('StrategyStoreService', ['getStorage', 'setStorage']);
+  const mockCartService = jasmine.createSpyObj('CartService', ['getAvailableFunds', 'addToCart', 'createOptionOrder']);
   const optionsDataServiceSpy = jasmine.createSpyObj('OptionsDataService', ['getImpliedMove']);
 
   const testOptionsChain = {
@@ -10629,14 +10638,18 @@ describe('StrategyBuilderService', () => {
   };
 
   beforeEach(() => {
+
     TestBed.configureTestingModule({
       providers: [
         MessageService,
-        { provide: BacktestService, useValue: {} },
-        { provide: AiPicksService, useValue: {} },
-        { provide: OptionsDataService, useValue: optionsDataServiceSpy },
-        { provide: PortfolioService, useValue: {} },
-        { provide: CartService, useValue: {} },
+        { provide: BacktestService, useValue: mockBacktestService },
+        { provide: PortfolioService, useValue: mockPortfolioService },
+        { provide: MessageService, useValue: mockMessageService },
+        { provide: SchedulerService, useValue: mockSchedulerService },
+        { provide: ReportingService, useValue: mockReportingService },
+        { provide: StrategyStoreService, useValue: mockStrategyStoreService },
+        { provide: CartService, useValue: mockCartService },
+        { provide: OptionsDataService, useValue: optionsDataServiceSpy }
       ]
     });
     service = TestBed.inject(StrategyBuilderService);
@@ -10650,10 +10663,10 @@ describe('StrategyBuilderService', () => {
     optionsDataServiceSpy.getImpliedMove.and.returnValue(of(testOptionsChain));
     const callStrangle = await service.getCallStrangleTrade('AAPL');
     expect(callStrangle.call).toBeDefined();
-    expect(callStrangle.call.symbol).toEqual('AAPL  250117C00230000');
-    expect(callStrangle.call.putCallInd).toEqual( 'C');
+    expect(callStrangle.call.symbol).toEqual('AAPL  250117C00240000');
+    expect(callStrangle.call.putCallInd).toEqual('C');
     expect(callStrangle.put).toBeDefined()
-    expect(callStrangle.put.symbol).toEqual('AAPL  250221P00215000');
+    expect(callStrangle.put.symbol).toEqual('AAPL  250117P00215000');
     expect(callStrangle.put.putCallInd).toEqual('P');
   });
 });

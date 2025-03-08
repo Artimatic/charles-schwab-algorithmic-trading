@@ -156,7 +156,8 @@ export class OptionsOrderBuilderService {
     this.tradingPairs = [];
   }
 
-  async addOptionByBalance(symbol: string, targetBalance: number, reason: string, isCall: boolean, addOrderRightAway = true) {
+  async addOptionByBalance(symbol: string, targetBalance: number, 
+    reason: string, isCall: boolean) {
     const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
     if (backtestResults?.impliedMovement > 0.1) {
       return this.reportingService.addAuditLog(symbol, `Implied movement too high for ${symbol}: ${backtestResults.impliedMovement}`);
@@ -174,17 +175,9 @@ export class OptionsOrderBuilderService {
     };
 
     const option = isCall ? currentOption.call : currentOption.put;
-    if (addOrderRightAway) {
-      this.cartService.addSingleLegOptionOrder(currentOption.underlying, [option], price, currentOption.quantity || 1,
-        isCall ? OrderTypes.call : OrderTypes.put, 'Buy', reason);
-    } else {
-
-      let order = this.cartService.createOptionOrder(symbol, [option],
-        price, currentOption.quantity || 1,
-        isCall ? OrderTypes.call : OrderTypes.put, reason, 'Buy',
-        null, false);
-      this.addTradingPairs([order], reason);
-    }
+    console.log('call', currentOption.underlying)
+    this.cartService.addSingleLegOptionOrder(currentOption.underlying, [option], price, currentOption.quantity || 1,
+      isCall ? OrderTypes.call : OrderTypes.put, 'Buy', reason);
   }
 
   async createProtectivePutOrder(holding: PortfolioInfoHolding) {
@@ -195,12 +188,8 @@ export class OptionsOrderBuilderService {
       if (putsNeeded > 0) {
         const putOption = await this.strategyBuilderService.getCallStrangleTrade(holding.name);
         const estimatedPrice = this.strategyBuilderService.findOptionsPrice(putOption.put.bid, putOption.put.ask);
-        if (estimatedPrice < 1) {
-          console.log(`Protective put price for ${holding.name} is too low`, estimatedPrice);
-          return;
-        }
 
-        this.addOptionByBalance(holding.name, estimatedPrice, 'Protective put', false, false);
+        this.addOptionByBalance(holding.name, estimatedPrice, 'Protective put', false);
       }
     }
   }
@@ -422,7 +411,7 @@ export class OptionsOrderBuilderService {
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
     if (backtestResults && backtestResults.ml !== null) {
       //if (currentDiff < (((1 / (impliedMove + 0.01)) * 0.01))) {
-      if (Math.abs(currentDiff) < 0.01) {
+      if (Math.abs(currentDiff) < 0.015) {
         return true;
       }
     }

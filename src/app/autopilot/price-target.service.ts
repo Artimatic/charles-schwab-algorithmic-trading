@@ -3,55 +3,29 @@ import { BacktestService, CartService, PortfolioInfoHolding, PortfolioService, R
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { OrderTypes } from '@shared/models/smart-order';
 import { GlobalSettingsService } from '../settings/global-settings.service';
-
-interface Holding {
-  name: string;
-  weight: number; // Portfolio weight (e.g., 0.25 for 25%)
-  impliedVolatility: number; // Implied volatility (e.g., 0.20 for 20%)
-}
+import { PortfolioWeightsService } from './portfolio-weights.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PriceTargetService {
-  targetDiff = 0.023;
+  targetDiff = 0.02;
   portfolioPl = null;
   constructor(private backtestService: BacktestService,
     private portfolioService: PortfolioService,
     private cartService: CartService,
     private orderHandlingService: OrderHandlingService,
     private reportingService: ReportingService,
-    private globalSettingsService: GlobalSettingsService
+    private globalSettingsService: GlobalSettingsService,
+    private portfolioWeightsService: PortfolioWeightsService
   ) { }
 
-  createHoldingWeights(): Holding[] {
-    return null;
-  }
-
-  calculatePortfolioVolatility(
-    holdings: Holding[]
-  ): number {
-    let portfolioVariance = 0;
-    const numHoldings = holdings.length;
-
-    for (let i = 0; i < numHoldings; i++) {
-      for (let j = 0; j < numHoldings; j++) {
-        portfolioVariance += (
-          holdings[i].weight *
-          holdings[j].weight *
-          holdings[i].impliedVolatility *
-          holdings[j].impliedVolatility
-        );
-      }
-    }
-
-    const portfolioVolatility = Math.sqrt(portfolioVariance);
-    return portfolioVolatility;
-  }
-
   async setTargetDiff() {
+    const holdings = await this.cartService.findCurrentPositions();
+    const portfolioVolatility = await this.portfolioWeightsService.getPortfolioVolatility(holdings);
     const tenYrYield = await this.globalSettingsService.get10YearYield();
-    this.targetDiff = (tenYrYield * 0.01) || this.targetDiff;
+    const target = (tenYrYield * 0.01 * portfolioVolatility);
+    this.targetDiff = (!target || target < 0.01) ? this.targetDiff : target;
     this.reportingService.addAuditLog(null, `Target set to ${this.targetDiff}`);
   }
 
@@ -66,11 +40,7 @@ export class PriceTargetService {
   async todaysPortfolioPl() {
     const portData = await this.portfolioService.getTdPortfolio().toPromise();
     const todayPl = portData.reduce((acc, curr) => {
-      if (curr.instrument.assetType === 'COLLECTIVE_INVESTMENT') {
-        acc.profitLoss += (curr.currentDayCost + curr.currentDayProfitLoss);
-      } else {
-        acc.profitLoss += curr.currentDayProfitLoss;
-      }
+      acc.profitLoss += (curr.currentDayCost + curr.currentDayProfitLoss);
       acc.total += curr.marketValue;
       return acc;
     }, { profitLoss: 0, total: 0 });
