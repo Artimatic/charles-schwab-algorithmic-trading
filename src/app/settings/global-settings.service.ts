@@ -33,7 +33,7 @@ export class GlobalSettingsService {
 
   async get10YearYield() {
     const spreadData = await this.get10y2ySpread().toPromise();
-    return Number(spreadData.QuickQuoteResult.QuickQuote[0].FundamentalData.yrhiprice) / 2;
+    return Number(spreadData.QuickQuoteResult.QuickQuote[0].FundamentalData.yrhiprice);
   }
 
   get10y2ySpread(): Observable<any> {

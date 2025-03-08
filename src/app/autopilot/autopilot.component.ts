@@ -31,6 +31,7 @@ import { AutopilotService, RiskTolerance, Strategy, SwingtradeAlgorithms } from 
 import { BacktestAggregatorService } from '../backtest-table/backtest-aggregator.service';
 import { OrderingService } from '@shared/ordering.service';
 import { NewStockFinderService } from '../backtest-table/new-stock-finder.service';
+import { PortfolioWeightsService } from './portfolio-weights.service';
 
 export interface PositionHoldings {
   name: string;
@@ -129,7 +130,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private backtestAggregatorService: BacktestAggregatorService,
     private aiPicksService: AiPicksService,
     private orderingService: OrderingService,
-    private newStockFinderService: NewStockFinderService
+    private newStockFinderService: NewStockFinderService,
+    private portfolioWeightsService: PortfolioWeightsService
   ) { }
 
   ngOnInit(): void {
@@ -183,6 +185,15 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         label: 'Test handle strategy',
         command: async () => {
           await this.handleStrategy();
+        }
+      },
+      {
+        label: 'Test',
+        command: async () => {
+          const currentHoldings = await this.cartService.findCurrentPositions();
+          console.log('holdings', currentHoldings);
+          const weightedHoldings = await this.portfolioWeightsService.createHoldingWeights(currentHoldings);
+          console.log('portfolio volatility', weightedHoldings, this.portfolioWeightsService.calculatePortfolioVolatility(weightedHoldings));
         }
       },
       {
