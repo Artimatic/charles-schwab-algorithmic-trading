@@ -9,7 +9,7 @@ import { PortfolioWeightsService } from './portfolio-weights.service';
   providedIn: 'root'
 })
 export class PriceTargetService {
-  targetDiff = 0.02;
+  targetDiff = 0.023;
   portfolioPl = null;
   constructor(private backtestService: BacktestService,
     private portfolioService: PortfolioService,
@@ -24,8 +24,8 @@ export class PriceTargetService {
     const holdings = await this.cartService.findCurrentPositions();
     const portfolioVolatility = await this.portfolioWeightsService.getPortfolioVolatility(holdings);
     const tenYrYield = await this.globalSettingsService.get10YearYield();
-    const target = (tenYrYield * 0.01 * portfolioVolatility);
-    this.targetDiff = (!target || target < 0.01) ? this.targetDiff : target;
+    const target = ((tenYrYield +  1.618034) * 0.01 * portfolioVolatility) + 0.008;
+    this.targetDiff = (!target || target < 0.01 || target > 0.04) ? this.targetDiff : target;
     this.reportingService.addAuditLog(null, `Target set to ${this.targetDiff}`);
   }
 
