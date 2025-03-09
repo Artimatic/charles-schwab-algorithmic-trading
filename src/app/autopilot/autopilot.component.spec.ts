@@ -12,7 +12,7 @@ import { GlobalSettingsService } from '../settings/global-settings.service';
 import { FindDaytradeService } from './find-daytrade.service';
 import { PricingService } from '../pricing/pricing.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
-import { OptionsOrderBuilderService } from '../options-order-builder.service';
+import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';
 import { PortfolioMgmtService } from '../portfolio-mgmt/portfolio-mgmt.service';
 import { PriceTargetService } from './price-target.service';
 import { AutopilotService, RiskTolerance, Strategy } from './autopilot.service';

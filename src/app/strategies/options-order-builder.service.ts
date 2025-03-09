@@ -2,11 +2,11 @@ import { Injectable } from '@angular/core';
 import crc from 'crc';
 import * as moment from 'moment-timezone';
 import { BacktestService, CartService, PortfolioInfoHolding, ReportingService } from '@shared/services';
-import { StrategyBuilderService } from './backtest-table/strategy-builder.service';
+import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
 import { Options } from '@shared/models/options';
-import { OrderHandlingService } from './order-handling/order-handling.service';
-import { PriceTargetService } from './autopilot/price-target.service';
+import { OrderHandlingService } from '../order-handling/order-handling.service';
+import { PriceTargetService } from '../autopilot/price-target.service';
 
 export interface TradingPair {
   put?: Options;

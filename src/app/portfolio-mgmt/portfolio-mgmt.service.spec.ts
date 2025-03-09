@@ -7,7 +7,7 @@ import { DialogService } from 'primeng/dynamicdialog';
 import { MessageService } from 'primeng/api';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
 import { of } from 'rxjs';
-import { OptionsOrderBuilderService } from '../options-order-builder.service';
+import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 

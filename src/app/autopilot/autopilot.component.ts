@@ -17,7 +17,7 @@ import { takeUntil } from 'rxjs/operators';
 import { PotentialTrade } from '../backtest-table/potential-trade.constant';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
-import { OptionsOrderBuilderService } from '../options-order-builder.service';
+import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { PortfolioMgmtService } from '../portfolio-mgmt/portfolio-mgmt.service';
 import { PricingService } from '../pricing/pricing.service';

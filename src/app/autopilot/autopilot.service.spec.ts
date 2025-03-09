@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { AutopilotService, RiskTolerance, Strategy, SwingtradeAlgorithms } from './autopilot.service';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
-import { OptionsOrderBuilderService } from '../options-order-builder.service';
+import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';
 import { BacktestService, CartService, PortfolioService, ReportingService, AuthenticationService, DaytradeService, MachineLearningService } from '@shared/services';
 import { PriceTargetService } from './price-target.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';

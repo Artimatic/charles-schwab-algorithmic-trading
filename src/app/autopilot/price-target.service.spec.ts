@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 
 import { PriceTargetService } from './price-target.service';
 import { BacktestService, CartService, PortfolioService, ReportingService } from '@shared/services';
-import { OptionsOrderBuilderService } from '../options-order-builder.service';
+import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { of } from 'rxjs';
 import { GlobalSettingsService } from '../settings/global-settings.service';
