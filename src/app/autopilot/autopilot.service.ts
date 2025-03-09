@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { AuthenticationService, BacktestService, CartService, DaytradeService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService } from '@shared/services';
 import { round } from 'lodash';
 import * as moment from 'moment-timezone';
-import { OptionsOrderBuilderService } from '../options-order-builder.service';
+import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';
 import { PriceTargetService } from './price-target.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
 import { CurrentStockList } from '../rh-table/stock-list.constant';

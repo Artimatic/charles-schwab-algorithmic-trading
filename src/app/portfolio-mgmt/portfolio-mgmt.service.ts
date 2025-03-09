@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { round } from 'lodash';
 import { CartService, PortfolioInfoHolding } from '@shared/services';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
-import { OptionsOrderBuilderService } from '../options-order-builder.service';
+import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';
 import { SmartOrder } from '@shared/index';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';

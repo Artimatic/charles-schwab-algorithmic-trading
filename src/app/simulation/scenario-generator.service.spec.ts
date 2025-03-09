@@ -3,7 +3,7 @@ import { ScenarioGeneratorService } from './scenario-generator.service';
 import { AutopilotService } from '../autopilot/autopilot.service';
 import { CartService } from '@shared/services/cart.service';
 import { TradeService } from '@shared/services/trade.service';
-import { OptionsOrderBuilderService } from '../options-order-builder.service';
+import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';
 import { Subject } from 'rxjs';
 import { OrderType } from '@shared/stock-backtest.interface';
 import { DaytradeRecommendation } from '@shared/stock-backtest.interface';

@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AiPicksService } from '@shared/services';
 import { Stock } from '@shared/stock.interface';
-import { OptionsOrderBuilderService } from 'src/app/options-order-builder.service';
+import { OptionsOrderBuilderService } from 'src/app/strategies/options-order-builder.service';
 
 @Component({
   selector: 'app-algo-evaluation',
