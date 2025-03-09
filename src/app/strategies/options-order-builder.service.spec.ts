@@ -1,13 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 
 import { OptionsOrderBuilderService } from './options-order-builder.service';
-import { StrategyBuilderService } from './backtest-table/strategy-builder.service';
+import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { BacktestService, CartService, ReportingService } from '@shared/services';
 import { OptionsDataService } from '@shared/options-data.service';
 import { OrderTypes } from '@shared/models/smart-order';
 import { of } from 'rxjs';
-import { OrderHandlingService } from './order-handling/order-handling.service';
-import { PriceTargetService } from './autopilot/price-target.service';
+import { OrderHandlingService } from '../order-handling/order-handling.service';
+import { PriceTargetService } from '../autopilot/price-target.service';
 
 describe('OptionsOrderBuilderService', () => {
   let service: OptionsOrderBuilderService;

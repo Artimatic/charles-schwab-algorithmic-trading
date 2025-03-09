@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { AlgoEvaluationComponent } from './algo-evaluation.component';
 import { AiPicksService } from '@shared/services';
-import { OptionsOrderBuilderService } from 'src/app/options-order-builder.service';
+import { OptionsOrderBuilderService } from 'src/app/strategies/options-order-builder.service';
 import { of, Subject } from 'rxjs';
 import { Stock } from '@shared/stock.interface';
 

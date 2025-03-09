@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { PricingService } from './pricing.service';
 import { BacktestService, CartService, PortfolioService } from '@shared/services';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
-import { OptionsOrderBuilderService } from '../options-order-builder.service';
+import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';
 
 xdescribe('PricingService', () => {
   let service: PricingService;

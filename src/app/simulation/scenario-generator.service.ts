@@ -4,7 +4,7 @@ import { CartService } from '@shared/services/cart.service';
 import { AlgoQueueItem, TradeService } from '@shared/services/trade.service';
 import { DaytradeRecommendation } from '@shared/stock-backtest.interface';
 import { OrderType } from '@shared/stock-backtest.interface';
-import { OptionsOrderBuilderService } from '../options-order-builder.service';
+import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';
 
 @Injectable({
   providedIn: 'root'
