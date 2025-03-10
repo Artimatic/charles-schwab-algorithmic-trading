@@ -22,8 +22,6 @@ export interface TradingPair {
 export class OptionsOrderBuilderService {
   tradingPairs: SmartOrder[][] = [];
   tradingPairDate = {};
-  tradingPairMaxLife = 432000000;
-  tradingPairsCounter = 0;
   private currentTradeIdeas = { calls: [], puts: [] };
   constructor(private strategyBuilderService: StrategyBuilderService,
     private cartService: CartService,
@@ -98,7 +96,7 @@ export class OptionsOrderBuilderService {
   getTradingPairs() {
     this.tradingPairs = this.tradingPairs.filter(val => {
       return !this.tradingPairDate[this.getTradeHashValue(val)]
-        || Math.abs(new Date().valueOf() - this.tradingPairDate[this.getTradeHashValue(val)]) < this.tradingPairMaxLife;
+        || Math.abs(new Date().valueOf() - this.tradingPairDate[this.getTradeHashValue(val)]) < 432000000;
     });
     return this.tradingPairs;
   }
@@ -156,7 +154,7 @@ export class OptionsOrderBuilderService {
     this.tradingPairs = [];
   }
 
-  async addOptionByBalance(symbol: string, targetBalance: number, 
+  async addOptionByBalance(symbol: string, targetBalance: number,
     reason: string, isCall: boolean) {
     const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
     if (backtestResults?.impliedMovement > 0.1) {
@@ -405,15 +403,12 @@ export class OptionsOrderBuilderService {
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
     const lastPrice = price[symbol].quote.lastPrice;
     const closePrice = price[symbol].quote.closePrice;
-    const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
 
     //const impliedMove = await this.getImpliedMove(symbol, backtestResults)
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
-    if (backtestResults && backtestResults.ml !== null) {
-      //if (currentDiff < (((1 / (impliedMove + 0.01)) * 0.01))) {
-      if (Math.abs(currentDiff) < 0.023) {
-        return true;
-      }
+    //if (currentDiff < (((1 / (impliedMove + 0.01)) * 0.01))) {
+    if (Math.abs(currentDiff) < 0.023) {
+      return true;
     }
 
     return false;
@@ -489,33 +484,26 @@ export class OptionsOrderBuilderService {
   }
 
   async addOptionsStrategiesToCart() {
-    if (this.tradingPairsCounter >= this.getTradingPairs().length) {
-      this.tradingPairsCounter = 0;
-    }
-    const trade = this.getTradingPairs()[this.tradingPairsCounter];
-    if (trade) {
-      if (trade.length === 1) {
-        const shouldBuy = await this.shouldBuyOption(trade[0].holding.symbol);
-        if (shouldBuy) {
-          const reason = trade[0].reason ? trade[0].reason : 'Low volatility';
-          this.cartService.addToCart(trade[0], true, reason);
-          this.removeTradingPair(trade[0].holding.symbol);
-        }
-      } else {
-        const shouldBuy = await this.shouldBuyOption(trade[0].holding.symbol);
-        if (shouldBuy) {
-          this.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Low volatility');
-        }
-      }
-    } else if (trade.length === 2 && trade[0] && trade[1]) {
-      const shouldBuyCall = await this.shouldBuyOption(trade[0].holding.symbol);
-      const shouldBuyPut = await this.shouldBuyOption(trade[1].holding.symbol);
-      if (shouldBuyCall && shouldBuyPut) {
-        this.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Low volatility');
-      }
-    }
+    const tradeList = this.getTradingPairs();
 
-    this.tradingPairsCounter++;
+    for (const trade of tradeList) {
+      if (trade) {
+        if (trade.length === 1) {
+          const shouldBuy = await this.shouldBuyOption(trade[0].holding.symbol);
+          if (shouldBuy) {
+            const reason = trade[0].reason ? trade[0].reason : 'Low volatility';
+            this.cartService.addToCart(trade[0], true, reason);
+            this.removeTradingPair(trade[0].holding.symbol);
+          }
+        } else if (trade.length === 2 && trade[0] && trade[1]) {
+          const shouldBuyCall = await this.shouldBuyOption(trade[0].holding.symbol);
+          const shouldBuyPut = await this.shouldBuyOption(trade[1].holding.symbol);
+          if (shouldBuyCall && shouldBuyPut) {
+            this.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Low volatility');
+          }
+        }
+      }
+    }
   }
 
   async checkCurrentOptions(currentHoldings: PortfolioInfoHolding[]) {

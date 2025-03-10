@@ -174,7 +174,8 @@ export class StrategyBuilderService {
       this.reportingService.addAuditLog(null,
         `Implied movement is too high for ${symbol} at ${optionsData.move}. Max is ${this.maxImpliedMovement}`);
         return { call: null, put: null };
-    }
+        this.bullishStocks.push(symbol);
+      }
     const optionsChain = optionsData.optionsChain;
     const impliedMovement = optionsData.move;
     const goal = optionsChain?.underlyingPrice;

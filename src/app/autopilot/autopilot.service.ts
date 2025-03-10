@@ -438,9 +438,9 @@ export class AutopilotService {
     }
   }
 
-  async findStocks() {
-    for (const b of this.strategyBuilderService.bullishStocks) {
-      await this.addBuy(this.createHoldingObj(b), null, 'Buy bullish stock');
+  async findStock() {
+    if (this.strategyBuilderService.bullishStocks.length) {
+      await this.addBuy(this.createHoldingObj(this.strategyBuilderService.bullishStocks.pop()), null, 'Buy bullish stock');
     }
   }
 
@@ -524,9 +524,12 @@ export class AutopilotService {
       const targetUtilization = Number(new Date().getDate() * 0.005) + spyPrediction - this.getVolatilityMl();
       const actualUtilization = (1 - (balance.cashBalance / balance.liquidationValue));
       if (actualUtilization < targetUtilization) {
+        this.reportingService.addAuditLog(null, `Underutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
+
         if (this.lastBuyList.length) {
           const buySym = this.lastBuyList.pop();
-          this.reportingService.addAuditLog(null, `Underutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}, Buying: ${buySym}`);
+          this.reportingService.addAuditLog(null, `Underutilized Buying: ${buySym}`);
+
           this.buyRightAway(buySym, this.riskToleranceList[0]);
         } else {
           this.lastBuyList = this.getBuyList();
@@ -786,33 +789,27 @@ export class AutopilotService {
   }
 
   private async intradayProcess() {
-    if (this.intradayProcessCounter > 8) {
+    if (this.intradayProcessCounter > 2) {
       this.intradayProcessCounter = 0;
     }
-    this.currentHoldings = await this.cartService.findCurrentPositions();
 
     switch (this.intradayProcessCounter) {
       case 0: {
         this.priceTargetService.setTargetDiff();
-        break;
-      }
-      case 1: {
+        this.currentHoldings = await this.cartService.findCurrentPositions();
         await this.balanceCallPutRatio(this.currentHoldings);
         break;
       }
-      case 2: {
+      case 1: {
+        this.currentHoldings = await this.cartService.findCurrentPositions();
         await this.handleBalanceUtilization(this.currentHoldings);
-        break;
-      }
-      case 3: {
-        await this.optionsOrderBuilderService.addOptionsStrategiesToCart();
-        break;
-      }
-      case 4: {
         await this.checkIntradayStrategies();
         break;
       }
       default: {
+        await this.optionsOrderBuilderService.addOptionsStrategiesToCart();
+
+        this.currentHoldings = await this.cartService.findCurrentPositions();
         await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
         break;
       }
@@ -821,11 +818,11 @@ export class AutopilotService {
   }
 
   handleIntraday() {
-    if (moment().isAfter(moment(this.sessionStart).add(25, 'minutes')) &&
-      moment().isBefore(moment(this.sessionEnd).subtract(5, 'minutes'))) {
+    if (moment().isAfter(moment(this.sessionStart).add(23, 'minutes')) &&
+      moment().isBefore(moment(this.sessionEnd).subtract(10, 'minutes'))) {
       this.isMarketOpened().subscribe(async (isOpen) => {
         if (isOpen) {
-          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 15) {
+          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 5) {
             this.lastOptionsCheckCheck = moment();
             await this.intradayProcess();
           } else {

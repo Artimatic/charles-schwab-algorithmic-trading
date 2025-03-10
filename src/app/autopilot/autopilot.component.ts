@@ -100,6 +100,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   boughtAtClose = false;
   boughtAtOpen = false;
   multibuttonOptions: MenuItem[];
+  otherOptions: MenuItem[];
   startButtonOptions: MenuItem[];
   tradingPairs: SmartOrder[][] = [];
   manualStart = false;
@@ -160,6 +161,17 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       }
     ];
 
+    this.otherOptions = [
+      {
+        label: 'Update stock list',
+        command: () => this.updateStockList()
+      },
+      {
+        label: 'Change strategy',
+        command: () => this.changeStrategy(true)
+      },
+    ];
+
     this.multibuttonOptions = [
       {
         label: 'Sell All',
@@ -188,12 +200,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       },
       {
-        label: 'Test',
+        label: 'Test add options strategies',
         command: async () => {
-          const currentHoldings = await this.cartService.findCurrentPositions();
-          console.log('holdings', currentHoldings);
-          const weightedHoldings = await this.portfolioWeightsService.createHoldingWeights(currentHoldings);
-          console.log('portfolio volatility', weightedHoldings, this.portfolioWeightsService.calculatePortfolioVolatility(weightedHoldings));
+          await this.optionsOrderBuilderService.addOptionsStrategiesToCart();
         }
       },
       {
@@ -970,7 +979,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (this.autopilotService.isVolatilityHigh()) {
       await this.autopilotService.sellLoser(this.autopilotService.currentHoldings);
     }
-    await this.autopilotService.findStocks();
+    await this.autopilotService.findStock();
   }
 
   async buyWinners() {

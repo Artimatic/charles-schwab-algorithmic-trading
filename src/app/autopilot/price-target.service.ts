@@ -39,6 +39,9 @@ export class PriceTargetService {
 
   async todaysPortfolioPl() {
     const portData = await this.portfolioService.getTdPortfolio().toPromise();
+    if (!portData) {
+      return null;
+    }
     const todayPl = portData.reduce((acc, curr) => {
       acc.profitLoss += (curr.currentDayCost + curr.currentDayProfitLoss);
       acc.total += curr.marketValue;
@@ -58,10 +61,16 @@ export class PriceTargetService {
     return diff < 0.002;
   }
 
-  async hasMetPriceTarget(target = this.targetDiff) {
+  async hasMetPriceTarget(target = null) {
+    if (!target) {
+      target = this.targetDiff;
+    }
     const symbol = 'SPY';
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
     const portfolioPl = await this.todaysPortfolioPl();
+    if (!portfolioPl) {
+      return false;
+    }
     const priceTarget = this.getDiff(price[symbol].quote.closePrice, price[symbol].quote.lastPrice) + target;
     this.portfolioPl = portfolioPl;
     this.reportingService.addAuditLog(null, `Portfolio PnL: ${portfolioPl}. target: ${priceTarget}`);
