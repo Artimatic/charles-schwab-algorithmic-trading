@@ -43,7 +43,7 @@ export class PriceTargetService {
       return null;
     }
     const todayPl = portData.reduce((acc, curr) => {
-      acc.profitLoss += (curr.currentDayCost + curr.currentDayProfitLoss);
+      acc.profitLoss += (curr.averageLongPrice * curr.longQuantity) - curr.marketValue;
       acc.total += curr.marketValue;
       return acc;
     }, { profitLoss: 0, total: 0 });
