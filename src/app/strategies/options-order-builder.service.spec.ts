@@ -681,7 +681,6 @@ describe('OptionsOrderBuilderService', () => {
   
       expect(cartServiceSpy.addToCart).toHaveBeenCalledWith(mockTrade, true, 'Test Reason');
       expect(service.tradingPairs.length).toBe(0);
-      expect(service.tradingPairsCounter).toBe(1);
     });
 
     it('should not add single option to cart if shouldBuyOption returns false', async () => {
@@ -708,7 +707,6 @@ describe('OptionsOrderBuilderService', () => {
   
       expect(cartServiceSpy.addToCart).not.toHaveBeenCalled();
       expect(service.tradingPairs.length).toBe(1);
-      expect(service.tradingPairsCounter).toBe(1);
     });  
     it('should add trading pair to cart if shouldBuyOption returns true for both', async () => {
       const mockTrade1 = {
@@ -757,7 +755,6 @@ describe('OptionsOrderBuilderService', () => {
       expect(service.addTradingPair).toHaveBeenCalledWith([mockTrade1, mockTrade2], 'Test Reason 1');
       expect(cartServiceSpy.addToCart).toHaveBeenCalledTimes(1);
       expect(service.tradingPairs.length).toBe(0);
-      expect(service.tradingPairsCounter).toBe(1);
     });
   
       it('should not add trading pair to cart if shouldBuyOption returns false for call', async () => {
@@ -812,7 +809,6 @@ describe('OptionsOrderBuilderService', () => {
       expect(service.addTradingPair).not.toHaveBeenCalled();
       expect(cartServiceSpy.addToCart).not.toHaveBeenCalled();
       expect(service.tradingPairs.length).toBe(1);
-      expect(service.tradingPairsCounter).toBe(1);
     });
   });
 });

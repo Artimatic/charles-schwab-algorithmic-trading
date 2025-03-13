@@ -658,7 +658,10 @@ export class AutopilotService {
     const results = this.priceTargetService.getCallPutBalance(holdings);
     this.reportingService.addAuditLog(null, `Calls: ${results.call}, Puts: ${results.put}, ratio: ${results.call / results.put}`);
     if (results.put > 0 && results.call > 0) {
-      if (results.put + (results.put * this.getLastSpyMl() * (this.riskToleranceList[this.riskCounter] * 3) * (1 - this.volatility)) > results.call) {
+      const ratio = results.call / results.put;
+      //if (results.put + (results.put * this.getLastSpyMl() * (this.riskToleranceList[this.riskCounter] * 3) * (1 - this.volatility)) > results.call) {
+      if (ratio < 0.96) {
+
         const targetBalance = Number(results.put - results.call);
         this.reportingService.addAuditLog(null, `Add calls Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${targetBalance}`);
         this.optionsOrderBuilderService.addOptionByBalance('SPY', targetBalance, 'Balance call put ratio', true);
@@ -667,7 +670,8 @@ export class AutopilotService {
           await this.sellRightAway(sqqqHolding.name, sqqqHolding.shares);
         }
         await this.buyRightAway('TQQQ', this.riskToleranceList[0]);
-      } else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
+      //} else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
+      } else if (ratio > 1.06) {
         this.addShort();
         const targetBalance = Number(results.call - results.put);
 
@@ -789,7 +793,7 @@ export class AutopilotService {
   }
 
   private async intradayProcess() {
-    if (this.intradayProcessCounter > 2) {
+    if (this.intradayProcessCounter > 5) {
       this.intradayProcessCounter = 0;
     }
 
@@ -822,7 +826,7 @@ export class AutopilotService {
       moment().isBefore(moment(this.sessionEnd).subtract(10, 'minutes'))) {
       this.isMarketOpened().subscribe(async (isOpen) => {
         if (isOpen) {
-          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 5) {
+          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 10) {
             this.lastOptionsCheckCheck = moment();
             await this.intradayProcess();
           } else {
