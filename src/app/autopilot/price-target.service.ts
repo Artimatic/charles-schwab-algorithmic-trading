@@ -43,10 +43,10 @@ export class PriceTargetService {
       return null;
     }
     const todayPl = portData.reduce((acc, curr) => {
-      if (curr.instrument.assetType.toUpperCase() === 'OPTION') {
-        acc.profitLoss += (curr.averageLongPrice * 100 * curr.longQuantity) - curr.marketValue;
+      if (curr.instrument.assetType === 'COLLECTIVE_INVESTMENT') {
+        acc.profitLoss += (curr.currentDayCost + curr.currentDayProfitLoss);
       } else {
-        acc.profitLoss += (curr.averageLongPrice * curr.longQuantity) - curr.marketValue;
+        acc.profitLoss += curr.currentDayProfitLoss;
       }
       acc.total += curr.marketValue;
       return acc;
