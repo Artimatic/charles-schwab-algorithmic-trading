@@ -31,7 +31,6 @@ import { AutopilotService, RiskTolerance, Strategy, SwingtradeAlgorithms } from 
 import { BacktestAggregatorService } from '../backtest-table/backtest-aggregator.service';
 import { OrderingService } from '@shared/ordering.service';
 import { NewStockFinderService } from '../backtest-table/new-stock-finder.service';
-import { PortfolioWeightsService } from './portfolio-weights.service';
 
 export interface PositionHoldings {
   name: string;
@@ -131,8 +130,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private backtestAggregatorService: BacktestAggregatorService,
     private aiPicksService: AiPicksService,
     private orderingService: OrderingService,
-    private newStockFinderService: NewStockFinderService,
-    private portfolioWeightsService: PortfolioWeightsService
+    private newStockFinderService: NewStockFinderService
   ) { }
 
   ngOnInit(): void {

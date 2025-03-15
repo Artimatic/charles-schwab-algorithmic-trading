@@ -87,13 +87,14 @@ export enum Strategy {
 })
 export class AutopilotService {
   riskCounter = 0;
-  maxTradeCount = 10;
+  maxTradeCount = 6;
   lastSpyMl = 0;
   volatility = 0;
   lastMarketHourCheck = null;
   sessionStart = null;
   sessionEnd = null;
   riskToleranceList = [
+    RiskTolerance.One,
     RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,

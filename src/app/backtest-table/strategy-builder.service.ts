@@ -29,7 +29,7 @@ export class StrategyBuilderService {
   countNet = 0;
   defaultMinExpiration = 45;
   bullishStocks = [];
-  maxImpliedMovement = 0.14;
+  maxImpliedMovement = 0.10;
   constructor(private backtestService: BacktestService,
     private optionsDataService: OptionsDataService,
     private portfolioService: PortfolioService,
@@ -113,8 +113,8 @@ export class StrategyBuilderService {
     return null;
   }
 
-  isWithinCallMovementRange(goal: number, 
-    strike: number, 
+  isWithinCallMovementRange(goal: number,
+    strike: number,
     impliedMovement: number) {
     if (Number(strike) > goal) {
       const diff = ((Number(strike) - goal) / goal);
@@ -170,12 +170,12 @@ export class StrategyBuilderService {
 
   async getCallStrangleTrade(symbol: string): Promise<Strangle> {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
-    if (optionsData.move > this.maxImpliedMovement) {
+    if (!optionsData.move || optionsData.move > this.maxImpliedMovement) {
       this.reportingService.addAuditLog(null,
         `Implied movement is too high for ${symbol} at ${optionsData.move}. Max is ${this.maxImpliedMovement}`);
-        return { call: null, put: null };
-        this.bullishStocks.push(symbol);
-      }
+      this.bullishStocks.push(symbol);
+      return { call: null, put: null };
+    }
     const optionsChain = optionsData.optionsChain;
     const impliedMovement = optionsData.move;
     const goal = optionsChain?.underlyingPrice;
@@ -218,7 +218,7 @@ export class StrategyBuilderService {
 
   async getPutStrangleTrade(symbol: string) {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
-    if (optionsData.move > this.maxImpliedMovement) {
+    if (!optionsData.move || optionsData.move > this.maxImpliedMovement) {
       this.reportingService.addAuditLog(null,
         `Implied movement is too high for ${symbol} at ${optionsData.move}`);
       return { call: null, put: null };
@@ -242,7 +242,7 @@ export class StrategyBuilderService {
         }
         potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
           if (this.isCallHedge(goal, curr.strategyStrike, impliedMovement)) {
-            const currentCall = curr.primaryLeg.putCallInd.toLowerCase() === 'c' ? curr.primaryLeg : ( curr.secondaryLeg.putCallInd.toLowerCase() === 'p' ? curr.secondaryLeg : null);
+            const currentCall = curr.primaryLeg.putCallInd.toLowerCase() === 'c' ? curr.primaryLeg : (curr.secondaryLeg.putCallInd.toLowerCase() === 'p' ? curr.secondaryLeg : null);
             if (this.passesPriceCheck(currentCall.closePrice) && this.passesVolumeCheck(currentCall.openInterest, currentCall.totalVolume, prev.call)) {
               prev.call = JSON.parse(JSON.stringify(currentCall));
             }
