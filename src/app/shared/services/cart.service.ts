@@ -17,7 +17,7 @@ export class CartService {
   buyOrders: SmartOrder[] = [];
   otherOrders: SmartOrder[] = [];
   cartObserver: Subject<boolean> = new Subject<boolean>();
-
+  maxTrade = 8;
   constructor(
     private portfolioService: PortfolioService,
     private tradeService: TradeService,

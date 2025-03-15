@@ -131,8 +131,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private backtestAggregatorService: BacktestAggregatorService,
     private aiPicksService: AiPicksService,
     private orderingService: OrderingService,
-    private newStockFinderService: NewStockFinderService,
-    private portfolioWeightsService: PortfolioWeightsService
+    private newStockFinderService: NewStockFinderService
   ) { }
 
   ngOnInit(): void {
@@ -322,7 +321,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.autopilotService.isMarketOpened().toPromise();
           this.lastCredentialCheck = moment();
           await this.backtestOneStock(true, false);
-          this.padOrders();
         } else if (moment().isAfter(moment(this.autopilotService.sessionEnd).subtract(25, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionEnd).subtract(20, 'minutes'))) {
           console.log('Buy on close');
@@ -348,7 +346,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             this.decreaseRiskTolerance();
           }
           if (this.autopilotService.strategyList[this.autopilotService.strategyCounter] === Strategy.Daytrade &&
-            (this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.autopilotService.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
+            (this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.cartService.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
             this.triggerDaytradeRefresh();
           }
         } else if (moment().isAfter(moment(this.autopilotService.sessionStart).subtract(Math.floor(this.interval / 60000) * 2, 'minutes')) &&
@@ -542,7 +540,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async addDaytrade(stock: string) {
-    if ((this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.autopilotService.maxTradeCount) {
+    if ((this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.cartService.maxTradeCount) {
       const currentDate = moment().format('YYYY-MM-DD');
       const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
       try {
@@ -1065,7 +1063,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   hasTradeCapacity() {
-    return this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length < this.autopilotService.maxTradeCount;
+    return this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length < this.cartService.maxTradeCount;
   }
 
   async placeInverseDispersionOrders() {

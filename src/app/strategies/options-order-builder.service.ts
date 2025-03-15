@@ -407,7 +407,7 @@ export class OptionsOrderBuilderService {
     //const impliedMove = await this.getImpliedMove(symbol, backtestResults)
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
     //if (currentDiff < (((1 / (impliedMove + 0.01)) * 0.01))) {
-    if (Math.abs(currentDiff) < 0.02) {
+    if (Math.abs(currentDiff) < 0.019) {
       return true;
     }
 
@@ -484,6 +484,9 @@ export class OptionsOrderBuilderService {
   }
 
   async addOptionsStrategiesToCart() {
+    if (this.cartService.buyOrders.length >= this.cartService.maxTrade) {
+      return null;
+    }
     const tradeList = this.getTradingPairs();
     let foundTrade = false;
     for (const trade of tradeList) {
