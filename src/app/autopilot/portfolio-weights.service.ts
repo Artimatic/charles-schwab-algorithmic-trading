@@ -12,7 +12,6 @@ interface WeightedHolding {
   providedIn: 'root'
 })
 export class PortfolioWeightsService {
-
   constructor(private strategyBuilderService: StrategyBuilderService) { }
   async createHoldingWeights(portfolioData: PortfolioInfoHolding[]): Promise<WeightedHolding[]> {
     const totalMarketValue = portfolioData.reduce((sum, item) => sum + item.netLiq, 0);
