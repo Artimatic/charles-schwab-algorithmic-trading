@@ -29,7 +29,7 @@ export class StrategyBuilderService {
   countNet = 0;
   defaultMinExpiration = 45;
   bullishStocks = [];
-  maxImpliedMovement = 0.14;
+  maxImpliedMovement = 0.10;
   constructor(private backtestService: BacktestService,
     private optionsDataService: OptionsDataService,
     private portfolioService: PortfolioService,
@@ -173,8 +173,8 @@ export class StrategyBuilderService {
     if (!optionsData.move || optionsData.move > this.maxImpliedMovement) {
       this.reportingService.addAuditLog(null,
         `Implied movement is too high for ${symbol} at ${optionsData.move}. Max is ${this.maxImpliedMovement}`);
-      return { call: null, put: null };
       this.bullishStocks.push(symbol);
+      return { call: null, put: null };
     }
     const optionsChain = optionsData.optionsChain;
     const impliedMovement = optionsData.move;

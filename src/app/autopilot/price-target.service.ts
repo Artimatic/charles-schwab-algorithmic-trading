@@ -29,6 +29,7 @@ export class PriceTargetService {
     const target = ((tenYrYield +  1.618034) * 0.01 * portfolioVolatility) + 0.008;
     this.targetDiff = (!target || target < 0.01 || target > 0.04) ? this.targetDiff : target;
     this.reportingService.addAuditLog(null, `Target set to ${this.targetDiff}`);
+    this.reportingService.addAuditLog(null, `Current portfolio volatility: ${portfolioVolatility}`);
   }
 
   isProfitable(invested: number, pl: number, target = 0.05) {

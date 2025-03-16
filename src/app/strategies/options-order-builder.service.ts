@@ -484,7 +484,7 @@ export class OptionsOrderBuilderService {
   }
 
   async addOptionsStrategiesToCart() {
-    if (this.cartService.buyOrders.length >= this.cartService.maxTrade) {
+    if (this.cartService.buyOrders && this.cartService.buyOrders.length >= this.cartService.maxTradeCount) {
       return null;
     }
     const tradeList = this.getTradingPairs();
