@@ -974,9 +974,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
 
     await this.createTradingPairs();
-    if (this.autopilotService.isVolatilityHigh()) {
-      await this.autopilotService.sellLoser(this.autopilotService.currentHoldings);
-    }
     await this.autopilotService.findStock();
   }
 
