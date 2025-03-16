@@ -22,9 +22,18 @@ class PortfolioService {
   accountStore = {};
   lastTokenRequest = null;
   lastPositionCheck = null;
-
+  lastOptionsOrders: { symbol: string, timestamp: number }[] = [];
   constructor() {
     this.useCookieOrEnvironmentVariable(null)
+  }
+
+  private findOrder(symbol) {
+    return Boolean(this.lastOptionsOrders.find(oldOrder => oldOrder.symbol === symbol && moment().diff(oldOrder.timestamp, 'minutes') < 10));
+  }
+
+  private addOrder(symbol) {
+    this.lastOptionsOrders.push({ symbol, timestamp: moment().valueOf() });
+    this.lastOptionsOrders.filter(oldOrder => moment().diff(oldOrder.timestamp, 'minutes') > 10);
   }
 
   postLogin(accountId, appKey, secret, callbackUrl, response) {
@@ -609,6 +618,9 @@ class PortfolioService {
     price,
     type = 'LIMIT',
     extendedHours = false, accountId) {
+    if (this.findOrder(symbol)) {
+      return Promise.reject({ statusCode: 409, message: 'Order already exists' });
+    }
     const headers = {
       'Accept': '*/*',
       'Accept-Encoding': 'gzip',
@@ -641,6 +653,7 @@ class PortfolioService {
         ]
       }
     };
+    this.addOrder(symbol);
 
     return request.post(options);
   }
@@ -649,6 +662,9 @@ class PortfolioService {
     quantity,
     price,
     accountId, response) {
+    if (this.findOrder(symbol)) {
+      return Promise.reject({ statusCode: 409, message: 'Order already exists' });
+    }
     const headers = {
       'Accept': '*/*',
       'Accept-Encoding': 'gzip',
@@ -684,6 +700,7 @@ class PortfolioService {
 
     return this.renewAuth(accountId, response)
       .then(() => {
+        this.addOrder(symbol);
         return request.post(options);
       });
   }
