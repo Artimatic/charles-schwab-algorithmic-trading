@@ -11,6 +11,8 @@ import { PortfolioWeightsService } from './portfolio-weights.service';
 export class PriceTargetService {
   targetDiff = 0.023;
   portfolioPl = null;
+  startingBalance: { date: string, balance: number } = null;
+
   constructor(private backtestService: BacktestService,
     private portfolioService: PortfolioService,
     private cartService: CartService,
