@@ -17,7 +17,7 @@ export class CartService {
   buyOrders: SmartOrder[] = [];
   otherOrders: SmartOrder[] = [];
   cartObserver: Subject<boolean> = new Subject<boolean>();
-  maxTradeCount = 8;
+  maxTradeCount = 5;
   constructor(
     private portfolioService: PortfolioService,
     private tradeService: TradeService,
@@ -361,6 +361,11 @@ export class CartService {
     return order.primaryLegs && (order.holding.symbol === underlyingSymbol || order.primaryLegs[0].symbol === optionSymbol);
   }
 
+  optionsOrderExists(symbol, leg) {
+    return this.buyOrders.find(order => this.existingOptionsCheck(order, symbol, leg[0].symbol)) || 
+    this.sellOrders.find(order => this.existingOptionsCheck(order, symbol, leg[0].symbol));
+  }
+
   createOptionOrder(symbol: string,
     primaryLegs: Options[],
     price: number,
@@ -371,8 +376,7 @@ export class CartService {
     orderSize = 1,
     executeImmediately = false,
   ) {
-    if (this.buyOrders.find(order => this.existingOptionsCheck(order, symbol, primaryLegs[0].symbol) ||
-      this.sellOrders.find(order => this.existingOptionsCheck(order, symbol, primaryLegs[0].symbol)))) {
+    if (this.optionsOrderExists(symbol, primaryLegs)) {
       const log = `Found existing order ${symbol} ${primaryLegs[0].symbol}`;
       console.log(log);
       this.reportingService.addAuditLog(symbol, log);

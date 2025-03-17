@@ -79,6 +79,7 @@ export enum Strategy {
   PerfectPair = 'Perfect Pair',
   AnyPair = 'Any Pair',
   BuyDemark = 'Buy demark',
+  AddToPositions = 'Add to current positions',
   None = 'None'
 }
 
@@ -87,7 +88,6 @@ export enum Strategy {
 })
 export class AutopilotService {
   riskCounter = 0;
-  maxTradeCount = 6;
   lastSpyMl = 0;
   volatility = 0;
   lastMarketHourCheck = null;
@@ -101,7 +101,7 @@ export class AutopilotService {
     RiskTolerance.Neutral
   ];
   isOpened = false;
-  maxHoldings = 100;
+  maxHoldings = 30;
   lastBuyList = [];
   lastOptionsCheckCheck = null;
   currentHoldings: PortfolioInfoHolding[] = [];
@@ -111,7 +111,7 @@ export class AutopilotService {
     Strategy.BuyMfiTrade,
     Strategy.BuyMfiDiv,
     Strategy.BuyMfi,
-    Strategy.TrimHoldings,
+    Strategy.AddToPositions,
     Strategy.PerfectPair,
     Strategy.BuyCalls,
     Strategy.BuyMacd,
@@ -301,7 +301,7 @@ export class AutopilotService {
   }
 
   hasReachedBuyLimit() {
-    return (this.cartService.buyOrders.length + this.cartService.otherOrders.length) > this.maxTradeCount;
+    return (this.cartService.buyOrders.length + this.cartService.otherOrders.length) > this.cartService.maxTradeCount;
   }
 
   getTechnicalIndicators(stock: string, startDate: string, currentDate: string) {
@@ -321,7 +321,7 @@ export class AutopilotService {
     if (!holding.name) {
       throw Error('Ticker is missing')
     }
-    if ((this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.maxTradeCount) {
+    if ((this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.cartService.maxTradeCount) {
       const currentDate = moment().format('YYYY-MM-DD');
       const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
       const backtestData = await this.strategyBuilderService.getBacktestData(holding.name);
@@ -671,7 +671,7 @@ export class AutopilotService {
           await this.sellRightAway(sqqqHolding.name, sqqqHolding.shares);
         }
         await this.buyRightAway('TQQQ', this.riskToleranceList[0]);
-      //} else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
+        //} else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
       } else if (ratio > 1.06) {
         this.addShort();
         const targetBalance = Number(results.call - results.put);
@@ -782,6 +782,18 @@ export class AutopilotService {
     }
   }
 
+  async addToCurrentPositions() {
+    this.currentHoldings = await this.cartService.findCurrentPositions();
+
+    this.currentHoldings.forEach(async (holding) => {
+      if (holding.pnlPercentage > -0.035) {
+        if (!holding.primaryLegs && holding.shares) {
+          await this.addBuy(holding, this.riskToleranceList[this.riskCounter], 'Adding to winners');
+        }
+      }
+    });
+  }
+
   async executeOrderList() {
     const buyAndSellList = this.cartService.sellOrders.concat(this.cartService.buyOrders);
     const orders = buyAndSellList.concat(this.cartService.otherOrders);
@@ -811,9 +823,11 @@ export class AutopilotService {
         await this.checkIntradayStrategies();
         break;
       }
-      default: {
+      case 1: {
         await this.optionsOrderBuilderService.addOptionsStrategiesToCart();
-
+        break;
+      }
+      default: {
         this.currentHoldings = await this.cartService.findCurrentPositions();
         await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
         break;
@@ -827,7 +841,7 @@ export class AutopilotService {
       moment().isBefore(moment(this.sessionEnd).subtract(10, 'minutes'))) {
       this.isMarketOpened().subscribe(async (isOpen) => {
         if (isOpen) {
-          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 10) {
+          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 15) {
             this.lastOptionsCheckCheck = moment();
             await this.intradayProcess();
           } else {

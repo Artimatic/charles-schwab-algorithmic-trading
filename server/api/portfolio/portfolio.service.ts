@@ -47,15 +47,12 @@ class PortfolioService {
 
   login(consumerKey, callbackUrl, reply) {
     return charlesSchwabApi.authorize(consumerKey, callbackUrl).then(response => {
-      console.log((response as any).json());
       reply.status(200).send((response as any).json());
     })
       .catch((e) => {
-        console.log('auth e:', e);
         if (e.request && e.request._redirectable && e.request._redirectable._options && e.request._redirectable._options.href) {
           reply.redirect(e.request._redirectable._options.href);
         } else {
-          console.log('authorize error:', e.response.status, e.response.statusText);
           reply.status(e.response.status).send({ message: e.response.statusText });
         }
       });
@@ -107,7 +104,6 @@ class PortfolioService {
     const appKey = this.accountStore[accountId].appKey;
     const secret = this.accountStore[accountId].secret;
     const callbackUrl = this.accountStore[accountId].callbackUrl;
-    console.log('sending: ', appKey, secret, 'authorization_code', code, callbackUrl);
     return charlesSchwabApi.getAccessToken(appKey, secret, 'authorization_code', code, callbackUrl)
       .then((response) => {
         const data = (response as any).data;
@@ -115,16 +111,12 @@ class PortfolioService {
           .then(accountNumbers => {
             accountNumbers.forEach(val => {
               this.accountIdToHash[val.accountNumber] = val.hashValue;
-              console.log('hashValue', val.accountNumber, val.hashValue);
             });
             this.refreshTokensHash[accountId] = (data?.refresh_token as string) || null;
             this.access_token[accountId] = {
               timestamp: moment().valueOf(),
               token: data?.access_token || null
             };
-            if (configurations.charles.refresh_token) {
-              console.log(this.refreshTokensHash[accountId])
-            }
           });
 
         reply.status(200).send(data);
@@ -132,7 +124,6 @@ class PortfolioService {
       .catch((e) => {
         if (e.toJSON) {
           const error = e.toJSON();
-          console.log('Auth error:', JSON.stringify(error));
           reply.status(error.status).send(error);
         } else {
           reply.status(500).send(e);
