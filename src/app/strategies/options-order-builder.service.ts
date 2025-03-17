@@ -407,7 +407,7 @@ export class OptionsOrderBuilderService {
     //const impliedMove = await this.getImpliedMove(symbol, backtestResults)
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
     //if (currentDiff < (((1 / (impliedMove + 0.01)) * 0.01))) {
-    if (Math.abs(currentDiff) < 0.019) {
+    if (Math.abs(currentDiff) < 0.018) {
       return true;
     }
 
@@ -492,9 +492,11 @@ export class OptionsOrderBuilderService {
     for (const trade of tradeList) {
       if (foundTrade) {
         this.reportingService.addAuditLog(null, 'Found a trade.');
-          break;
+        break;
       } else if (trade) {
-        if (trade.length === 1) {
+        if (trade.length === 1 &&
+          !this.cartService.optionsOrderExists(trade[0].holding.symbol, trade[0].primaryLegs) &&
+          !this.cartService.optionsOrderExists(trade[0].holding.symbol, trade[0].secondaryLegs)) {
           const shouldBuy = await this.shouldBuyOption(trade[0].holding.symbol);
           if (shouldBuy) {
             const reason = trade[0].reason ? trade[0].reason : 'Low volatility';
@@ -503,7 +505,12 @@ export class OptionsOrderBuilderService {
             foundTrade = true;
             break;
           }
-        } else if (trade.length === 2 && trade[0] && trade[1]) {
+        } else if (trade.length === 2 && trade[0] && trade[1] &&
+          !this.cartService.optionsOrderExists(trade[0].holding.symbol, trade[0].primaryLegs) &&
+          !this.cartService.optionsOrderExists(trade[0].holding.symbol, trade[0].secondaryLegs) &&
+          !this.cartService.optionsOrderExists(trade[1].holding.symbol, trade[1].primaryLegs) &&
+          !this.cartService.optionsOrderExists(trade[1].holding.symbol, trade[1].secondaryLegs)
+        ) {
           const shouldBuyCall = await this.shouldBuyOption(trade[0].holding.symbol);
           const shouldBuyPut = await this.shouldBuyOption(trade[1].holding.symbol);
           if (shouldBuyCall && shouldBuyPut) {

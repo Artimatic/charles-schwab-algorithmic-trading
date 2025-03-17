@@ -881,6 +881,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       case Strategy.BuyWinners:
         await this.buyWinners();
         break;
+      case Strategy.AddToPositions:
+        await this.autopilotService.addToCurrentPositions();
+        break;
       case Strategy.PerfectPair:
         await this.autopilotService.addPerfectPair();
         break;
