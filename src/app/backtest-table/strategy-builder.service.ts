@@ -648,8 +648,8 @@ export class StrategyBuilderService {
     }
   }
 
-  getQuantity(stockPrice: number, allocationPct: number, total: number) {
-    const totalCost = round(total * allocationPct, 2);
+  getQuantity(stockPrice: number, allocationPct: number, cash: number) {
+    const totalCost = round(cash * allocationPct, 2);
     if (!totalCost) {
       return 0;
     }

@@ -544,7 +544,7 @@ export class AutopilotService {
     const price = await this.portfolioService.getPrice(buySymbol).toPromise();
     const balance = await this.portfolioService.getTdBalance().toPromise();
     const allocation = alloc > 0 && alloc <= 1 ? alloc : 0.01;
-    const cash = (balance.cashBalance < balance.availableFunds * 0.01) ?
+    const cash = (balance.cashBalance < balance.availableFunds * 0.05) ?
       balance.cashBalance :
       (balance.cashBalance * this.riskToleranceList[this.riskCounter] * allocation);
     const quantity = this.strategyBuilderService.getQuantity(price, 1, cash);
@@ -620,7 +620,7 @@ export class AutopilotService {
   }
 
   isVolatilityHigh() {
-    return this.volatility > 0.28;
+    return this.volatility > 0.25 && this.volatility < 0.7;
   }
 
   async sellOptionsHolding(holding: PortfolioInfoHolding, reason: string) {
@@ -648,6 +648,32 @@ export class AutopilotService {
     });
   }
 
+  sellCallLoser(currentHoldings: PortfolioInfoHolding[]) {
+    currentHoldings
+    .sort((a, b) => a.pl - b.pl)
+    .filter(holding => holding.primaryLegs[0].putCallInd.toLowerCase() === 'c')
+
+    const toBeSold = currentHoldings.slice(0, 1);
+    toBeSold.forEach(async (holdingInfo) => {
+      if (holdingInfo.primaryLegs) {
+        await this.sellOptionsHolding(holdingInfo, 'Selling call');
+      }
+    });
+  }
+
+  sellPutLoser(currentHoldings: PortfolioInfoHolding[]) {
+    currentHoldings
+    .sort((a, b) => a.pl - b.pl)
+    .filter(holding => holding.primaryLegs[0].putCallInd.toLowerCase() === 'p')
+
+    const toBeSold = currentHoldings.slice(0, 1);
+    toBeSold.forEach(async (holdingInfo) => {
+      if (holdingInfo.primaryLegs) {
+        await this.sellOptionsHolding(holdingInfo, 'Selling call');
+      }
+    });
+  }
+
   async addShort() {
     const sells = this.getSellList()
     if (sells.length) {
@@ -662,7 +688,6 @@ export class AutopilotService {
       const ratio = results.call / results.put;
       //if (results.put + (results.put * this.getLastSpyMl() * (this.riskToleranceList[this.riskCounter] * 3) * (1 - this.volatility)) > results.call) {
       if (ratio < 0.96) {
-
         const targetBalance = Number(results.put - results.call);
         this.reportingService.addAuditLog(null, `Add calls Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${targetBalance}`);
         this.optionsOrderBuilderService.addOptionByBalance('SPY', targetBalance, 'Balance call put ratio', true);
@@ -670,16 +695,11 @@ export class AutopilotService {
         if (sqqqHolding) {
           await this.sellRightAway(sqqqHolding.name, sqqqHolding.shares);
         }
-        await this.buyRightAway('TQQQ', this.riskToleranceList[0]);
+        await this.buyRightAway('TQQQ', this.riskToleranceList[1]);
+        await this.addBuy(this.createHoldingObj('TQQQ'), this.riskToleranceList[1], 'Balance puts');
+
         //} else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
       } else if (ratio > 1.06) {
-        this.addShort();
-        const targetBalance = Number(results.call - results.put);
-
-        if (this.optionsOrderBuilderService.getCurrentTradeIdeas().puts.length) {
-          this.optionsOrderBuilderService.addOptionByBalance(this.optionsOrderBuilderService.getCurrentTradeIdeas().puts.pop(), targetBalance, 'Balance call put ratio', true);
-        }
-
         this.reportingService.addAuditLog(null, 'Add put ' + results.call / results.put + ` Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${(1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])}`);
         const tqqqHolding = holdings.find(h => h.name.toUpperCase() === 'TQQQ');
         const uproHolding = holdings.find(h => h.name.toUpperCase() === 'UPRO');
@@ -689,7 +709,9 @@ export class AutopilotService {
         if (uproHolding) {
           await this.sellRightAway(uproHolding.name, uproHolding.shares);
         }
-        await this.buyRightAway('SQQQ', this.riskToleranceList[0]);
+        await this.addBuy(this.createHoldingObj('SQQQ'), this.riskToleranceList[1], 'Balance calls');
+
+        await this.buyRightAway('SQQQ', this.riskToleranceList[1]);
       }
     }
   }
@@ -776,7 +798,7 @@ export class AutopilotService {
         }
       } else if (pnl > 0) {
         if (!isOptionOnly) {
-          await this.addBuy(holding, this.riskToleranceList[0], 'Adding to position');
+          await this.addBuy(holding, this.riskToleranceList[1], 'Adding to position');
         }
       }
     }
