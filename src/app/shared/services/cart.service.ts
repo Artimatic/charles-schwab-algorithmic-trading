@@ -358,7 +358,8 @@ export class CartService {
   }
 
   private existingOptionsCheck(order, underlyingSymbol: string, optionSymbol: string) {
-    return order.primaryLegs && (order.holding.symbol === underlyingSymbol || order.primaryLegs[0].symbol === optionSymbol);
+    return order.primaryLegs && (order.holding.symbol === underlyingSymbol || order.primaryLegs[0].symbol === optionSymbol) ||
+    (order.secondaryLegs && order.secondaryLegs[0].symbol === optionSymbol);
   }
 
   optionsOrderExists(symbol, leg) {

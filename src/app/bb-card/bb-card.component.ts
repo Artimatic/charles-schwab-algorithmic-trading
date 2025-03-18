@@ -1,4 +1,4 @@
-import { Component, OnChanges, Input, OnInit, SimpleChanges, OnDestroy } from '@angular/core';
+import { Component, OnChanges, Input, OnInit, SimpleChanges, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
 
 import * as moment from 'moment-timezone';
@@ -107,36 +107,36 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     private scoreKeeperService: ScoreKeeperService,
     private strategyBuilderService: StrategyBuilderService,
     private daytradeStrategiesService: DaytradeStrategiesService,
-    private orderHandlingService: OrderHandlingService) { }
+    private orderHandlingService: OrderHandlingService,
+    private changeDetectionRef: ChangeDetectorRef) { }
 
   ngOnInit() {
     this.init();
     this.subscriptions = [];
 
     const algoQueueSub = this.tradeService.algoQueue.subscribe(async (item: AlgoQueueItem) => {
-      setTimeout(async () => {
-        if (!this.order) {
-          console.log('Order deleted: ', this.order);
-          this.ngOnDestroy();
-        } else if (this.order.holding.symbol === item.symbol || (this.order.id !== undefined && this.order.id === item.id)) {
-          if (item.reset) {
-            this.setup();
-            this.alive = true;
-            this.setLive();
-          } else if (item.triggerMlBuySell) {
-            if (this.lastTriggeredTime !== this.getTimeStamp()) {
-              this.lastTriggeredTime = this.getTimeStamp();
-              this.runMlBuySell();
-            }
-          } else if (this.alive) {
-            const currentTimeStamp = this.getTimeStamp();
-            if (this.lastTriggeredTime !== currentTimeStamp) {
-              this.lastTriggeredTime = this.getTimeStamp();
-              await this.step(item);
-            }
+      if (!this.order) {
+        console.log('Order deleted: ', this.order);
+        this.ngOnDestroy();
+      } else if (this.order.holding.symbol === item.symbol || (this.order.id !== undefined && this.order.id === item.id)) {
+        if (item.reset) {
+          this.setup();
+          this.alive = true;
+          this.setLive();
+        } else if (item.triggerMlBuySell) {
+          if (this.lastTriggeredTime !== this.getTimeStamp()) {
+            this.lastTriggeredTime = this.getTimeStamp();
+            this.runMlBuySell();
+          }
+        } else if (this.alive) {
+          const currentTimeStamp = this.getTimeStamp();
+          if (this.lastTriggeredTime !== currentTimeStamp) {
+            this.lastTriggeredTime = this.getTimeStamp();
+            await this.step(item);
           }
         }
-      }, item?.delay || 0);
+      }
+      this.changeDetectionRef.detectChanges();
     });
 
     this.subscriptions.push(algoQueueSub);

@@ -132,7 +132,6 @@ const fullList = [
     'MTCH',
     'ZIM',
     'Z',
-    'EA',
     'SLB',
     'WD',
     'VRTS',

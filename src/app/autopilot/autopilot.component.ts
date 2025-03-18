@@ -870,10 +870,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.autopilotService.addShort();
         break;
       case Strategy.BuyCalls:
-        const buys = this.autopilotService.getBuyList()
-        if (buys.length) {
-          this.optionsOrderBuilderService.addCallToCurrentTrades(buys.pop());
-        }
+        this.optionsOrderBuilderService.addAnyPair();
         break;
       case Strategy.InverseDispersion:
         await this.addInverseDispersionTrade();
