@@ -685,22 +685,23 @@ export class AutopilotService {
     const results = this.priceTargetService.getCallPutBalance(holdings);
     this.reportingService.addAuditLog(null, `Calls: ${results.call}, Puts: ${results.put}, ratio: ${results.call / results.put}`);
     if (results.put > 0 && results.call > 0) {
-      const ratio = results.call / results.put;
+      const threshold = this.volatility ? this.volatility : 0.5;
+      const putPct = results.put / (results.call + results.put);
       //if (results.put + (results.put * this.getLastSpyMl() * (this.riskToleranceList[this.riskCounter] * 3) * (1 - this.volatility)) > results.call) {
-      if (ratio < 0.96) {
-        const targetBalance = Number(results.put - results.call);
-        this.reportingService.addAuditLog(null, `Add calls Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${targetBalance}`);
-        this.optionsOrderBuilderService.addOptionByBalance('SPY', targetBalance, 'Balance call put ratio', true);
+      if (putPct > threshold + 0.1) {
+        this.reportingService.addAuditLog(null, `Add calls Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${threshold}`);
+        this.optionsOrderBuilderService.addOptionByBalance('SPY', threshold, 'Balance call put ratio', true);
         const sqqqHolding = holdings.find(h => h.name.toUpperCase() === 'SQQQ');
         if (sqqqHolding) {
           await this.sellRightAway(sqqqHolding.name, sqqqHolding.shares);
         }
         await this.buyRightAway('TQQQ', this.riskToleranceList[1]);
         await this.addBuy(this.createHoldingObj('TQQQ'), this.riskToleranceList[1], 'Balance puts');
-
+        const currentHoldings = await this.cartService.findCurrentPositions();
+        await this.sellPutLoser(currentHoldings);
         //} else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
-      } else if (ratio > 1.06) {
-        this.reportingService.addAuditLog(null, 'Add put ' + results.call / results.put + ` Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${(1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])}`);
+      } else if (putPct < threshold - 0.1) {
+        this.reportingService.addAuditLog(null, 'Add put ' + results.call / results.put + ` Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${threshold}`);
         const tqqqHolding = holdings.find(h => h.name.toUpperCase() === 'TQQQ');
         const uproHolding = holdings.find(h => h.name.toUpperCase() === 'UPRO');
         if (tqqqHolding) {
@@ -712,6 +713,8 @@ export class AutopilotService {
         await this.addBuy(this.createHoldingObj('SQQQ'), this.riskToleranceList[1], 'Balance calls');
 
         await this.buyRightAway('SQQQ', this.riskToleranceList[1]);
+        const currentHoldings = await this.cartService.findCurrentPositions();
+        await this.sellCallLoser(currentHoldings);
       }
     }
   }
