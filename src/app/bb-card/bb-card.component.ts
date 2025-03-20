@@ -490,6 +490,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
             };
 
             const handleNotFound = () => {
+              this.stop();
               const notFoundMsg = `Trying to sell position that doesn\'t exists ${this.order.holding.name}`;
               this.removeOrder(this.order);
               this.setWarning(notFoundMsg);
@@ -543,6 +544,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
         };
 
         const handleNotFound = () => {
+          this.stop();
           const notFoundMsg = `Trying to sell position that doesn\'t exists ${order.holding.name}`;
           this.removeOrder(order);
           this.setWarning(notFoundMsg);
@@ -1017,6 +1019,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     };
 
     const handleNotFound = () => {
+      this.stop();
       this.setWarning(`Trying to sell position that doesn\'t exists ${symbol}`);
     };
     await this.daytradeService.sendOptionSell(symbol, this.order.orderSize || 1, resolve, reject, handleNotFound);
