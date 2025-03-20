@@ -809,7 +809,7 @@ class PortfolioService {
   getPositions(accountId) {
     return this.sendPositionRequest(accountId)
       .then((pos) => {
-        if (process.env.reportUrl && (!this.lastPositionCheck || moment().diff(moment(this.lastPositionCheck), 'hours') > 12)) {
+        if (process.env.reportUrl && (!this.lastPositionCheck || moment().diff(moment(this.lastPositionCheck), 'hours') > 1)) {
           this.lastPositionCheck = moment();
           DatabaseService.update({ positions: pos.securitiesAccount.positions }, 'stock_portfolio', 'portfolio', { name: '1' });
         }

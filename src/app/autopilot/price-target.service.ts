@@ -89,6 +89,12 @@ export class PriceTargetService {
   }
 
   async checkProfitTarget(retrievedHoldings: PortfolioInfoHolding[] = null, target = this.targetDiff) {
+    const balance = await this.portfolioService.getTdBalance().toPromise();
+    const targetUtilization = new Date().getDate() * 0.005;
+    const actualUtilization = (1 - (balance.cashBalance / balance.liquidationValue));
+    if (actualUtilization < targetUtilization) {
+      return false;
+    }
     const targetMet = await this.hasMetPriceTarget(target);
     if (targetMet) {
       const holdings = retrievedHoldings ? retrievedHoldings : await this.cartService.findCurrentPositions();
