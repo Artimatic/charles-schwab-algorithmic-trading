@@ -321,7 +321,7 @@ export class AutopilotService {
     if (!holding.name) {
       throw Error('Ticker is missing')
     }
-    if ((this.cartService.buyOrders.length + this.cartService.otherOrders.length) < this.cartService.maxTradeCount) {
+    if ((this.cartService.getBuyOrders().length + this.cartService.getOtherOrders().length) < this.cartService.getMaxTradeCount()) {
       const currentDate = moment().format('YYYY-MM-DD');
       const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
       const backtestData = await this.strategyBuilderService.getBacktestData(holding.name);
@@ -641,7 +641,7 @@ export class AutopilotService {
       if (this.cartService.isStrangle(holdingInfo)) {
         this.optionsOrderBuilderService.sellStrangle(holdingInfo);
       } else if (holdingInfo.shares) {
-        await this.cartService.portfolioSell(holdingInfo, reason);
+        await this.cartService.portfolioSell(holdingInfo, reason, false, false);
       } else if (holdingInfo.primaryLegs) {
         await this.sellOptionsHolding(holdingInfo, 'Selling loser');
       }
@@ -797,7 +797,7 @@ export class AutopilotService {
         if (isOptionOnly) {
           await this.sellOptionsHolding(holding, `Options price target reached ${pnl}`);
         } else {
-          await this.cartService.portfolioSell(holding, `Price target met ${pnl}`);
+          await this.cartService.portfolioSell(holding, `Price target met ${pnl}`, false, false);
         }
       } else if (pnl > 0) {
         if (!isOptionOnly) {
@@ -848,7 +848,7 @@ export class AutopilotService {
         await this.checkIntradayStrategies();
         break;
       }
-      case 1: {
+      case 2: {
         await this.optionsOrderBuilderService.addOptionsStrategiesToCart();
         break;
       }

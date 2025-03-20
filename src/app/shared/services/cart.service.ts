@@ -8,8 +8,6 @@ import { Subject } from 'rxjs';
 import * as moment from 'moment-timezone';
 import { Options } from '@shared/models/options';
 import { ReportingService } from './reporting.service';
-import { MachineLearningService } from './machine-learning/machine-learning.service';
-import { GlobalSettingsService } from 'src/app/settings/global-settings.service';
 
 @Injectable()
 export class CartService {
@@ -22,9 +20,17 @@ export class CartService {
     private portfolioService: PortfolioService,
     private tradeService: TradeService,
     private reportingService: ReportingService,
-    private messageService: MessageService,
-    private machineLearningService: MachineLearningService,
-    private globalSettingsService: GlobalSettingsService) { }
+    private messageService: MessageService) { }
+
+  private removeDuplicates(arr: SmartOrder[]): SmartOrder[] {
+    const seen = new Map();
+    for (const item of arr) {
+      if (!seen.has(item.holding.name)) {
+        seen.set(item.holding.name, item);
+      }
+    }
+    return Array.from(seen.values());
+  }
 
   getBuyOrders() {
     return this.buyOrders;
@@ -36,6 +42,10 @@ export class CartService {
 
   getOtherOrders() {
     return this.otherOrders;
+  }
+
+  getMaxTradeCount() {
+    return this.maxTradeCount;
   }
 
   createOrderLog(order: SmartOrder, reason: string) {
@@ -149,7 +159,6 @@ export class CartService {
   }
 
   deleteOrder(order: SmartOrder) {
-    console.log('Deleting order', order);
     switch (order.side.toLowerCase()) {
       case 'sell':
         this.deleteSell(order);
@@ -161,19 +170,12 @@ export class CartService {
         this.deleteDaytrade(order);
         break;
     }
+    console.log('Deleted order', order, this.sellOrders);
+
     this.cartObserver.next(true);
   }
 
   addOrder(order: SmartOrder) {
-    const mlTask = () => {
-      this.machineLearningService
-        .trainDaytrade(order.holding.symbol.toUpperCase(),
-          moment().add({ days: 1 }).format('YYYY-MM-DD'),
-          moment().subtract({ days: 1 }).format('YYYY-MM-DD'),
-          1,
-          this.globalSettingsService.daytradeAlgo
-        ).subscribe();
-    };
     switch (order.side.toLowerCase()) {
       case 'sell':
         this.sellOrders.push(order);
@@ -185,11 +187,16 @@ export class CartService {
         this.otherOrders.push(order);
         break;
     }
+
+    this.sellOrders = this.removeDuplicates(this.sellOrders);
+    this.buyOrders = this.removeDuplicates(this.buyOrders);
+    this.otherOrders = this.removeDuplicates(this.otherOrders);
+    console.log('Added new order', order, this.sellOrders, this.buyOrders, this.otherOrders);
     this.cartObserver.next(true);
   }
 
   getOrderIndex(orderList: SmartOrder[], targetOrder: SmartOrder) {
-    return orderList.findIndex((order) => order && targetOrder && order.holding.symbol === targetOrder.holding.symbol);
+    return orderList.findIndex((order) => order.holding.symbol === targetOrder.holding.symbol);
   }
 
   deleteBySymbol(symbol: string) {
@@ -359,12 +366,12 @@ export class CartService {
 
   private existingOptionsCheck(order, underlyingSymbol: string, optionSymbol: string) {
     return order.primaryLegs && (order.holding.symbol === underlyingSymbol || order.primaryLegs[0].symbol === optionSymbol) ||
-    (order.secondaryLegs && order.secondaryLegs[0].symbol === optionSymbol);
+      (order.secondaryLegs && order.secondaryLegs[0].symbol === optionSymbol);
   }
 
   optionsOrderExists(symbol, leg) {
-    return this.buyOrders.find(order => this.existingOptionsCheck(order, symbol, leg[0].symbol)) || 
-    this.sellOrders.find(order => this.existingOptionsCheck(order, symbol, leg[0].symbol));
+    return this.buyOrders.find(order => this.existingOptionsCheck(order, symbol, leg[0].symbol)) ||
+      this.sellOrders.find(order => this.existingOptionsCheck(order, symbol, leg[0].symbol));
   }
 
   createOptionOrder(symbol: string,
@@ -621,7 +628,7 @@ export class CartService {
     return order;
   }
 
-  async portfolioSell(holding: PortfolioInfoHolding, reason = '', executeImmediately = false) {
+  async portfolioSell(holding: PortfolioInfoHolding, reason = '', executeImmediately = false, replaceExistingOrder = true) {
     const price = await this.portfolioService.getPrice(holding.name, false).toPromise();
     const orderSizePct = 0.5;
     const order = this.buildOrderWithAllocation(holding.name,
@@ -629,7 +636,7 @@ export class CartService {
       price,
       'Sell',
       orderSizePct, -0.005, 0.01, -0.003, null, executeImmediately, reason);
-    this.addToCart(order, true, reason);
+    this.addToCart(order, replaceExistingOrder, reason);
     this.initializeOrder(order);
   }
 
