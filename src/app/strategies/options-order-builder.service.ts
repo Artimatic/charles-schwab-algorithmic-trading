@@ -52,7 +52,9 @@ export class OptionsOrderBuilderService {
   }
 
   private createOrderAddToList(currentPut: TradingPair, currentCall: TradingPair, reason: string, minCashAllocation: number, maxCashAllocation: number) {
-    if (currentPut && currentCall && (currentCall.price * currentCall.quantity) + (currentPut.price * currentPut.quantity) <= maxCashAllocation) {
+    if (currentPut && currentCall && 
+      currentCall.quantity && currentPut.quantity &&
+      (currentCall.price * currentCall.quantity) + (currentPut.price * currentPut.quantity) <= maxCashAllocation) {
       const option1 = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call],
         currentCall.price, currentCall.quantity,
         OrderTypes.call, reason,
@@ -60,7 +62,7 @@ export class OptionsOrderBuilderService {
       const option2 = this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put],
         currentPut.price, currentPut.quantity,
         OrderTypes.put, reason,
-        'Buy', currentCall.quantity);
+        'Buy', currentPut.quantity);
 
       this.reportingService.addAuditLog(null,
         `Added trading pair ${option1?.primaryLegs[0]?.symbol} ${option2?.primaryLegs[0]?.symbol}. Reason: ${reason}, Min cash: ${minCashAllocation}, Max cash: ${maxCashAllocation}`);
@@ -491,7 +493,8 @@ export class OptionsOrderBuilderService {
   }
 
   async addOptionsStrategiesToCart() {
-    if (this.cartService.buyOrders && this.cartService.buyOrders.length >= this.cartService.maxTradeCount) {
+    const buyOrders = this.cartService.getBuyOrders();
+    if (buyOrders && buyOrders.length >= this.cartService.getMaxTradeCount()) {
       return null;
     }
     const tradeList = this.getTradingPairs();

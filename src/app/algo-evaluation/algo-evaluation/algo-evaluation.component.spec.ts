@@ -4,6 +4,7 @@ import { AiPicksService } from '@shared/services';
 import { OptionsOrderBuilderService } from 'src/app/strategies/options-order-builder.service';
 import { of, Subject } from 'rxjs';
 import { Stock } from '@shared/stock.interface';
+import { StrategyBuilderService } from 'src/app/backtest-table/strategy-builder.service';
 
 const mockAiPicksService = {
   mlNeutralResults: of({})
@@ -24,6 +25,7 @@ describe('AlgoEvaluationComponent', () => {
       providers: [
         { provide: AiPicksService, useValue: mockAiPicksService },
         { provide: OptionsOrderBuilderService, useValue: spyOptionsOrderBuilderService },
+        { provide: StrategyBuilderService, useValue: { bullishStocks: []} },
       ],
     });
 

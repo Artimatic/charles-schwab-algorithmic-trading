@@ -115,7 +115,7 @@ describe('PriceTargetService', () => {
   let service: PriceTargetService;
   const cartServiceSpy = jasmine.createSpyObj('CartService', ['addSingleLegOptionOrder', 'getAvailableFunds', 'createOptionOrder', 'portfolioSell', 'isStrangle']);
   const orderHandlingServiceSpy = jasmine.createSpyObj('OrderHandlingService', ['getEstimatedPrice']);
-  const portfolioServiceSpy = jasmine.createSpyObj('PortfolioService', ['getTdPortfolio']);
+  const portfolioServiceSpy = jasmine.createSpyObj('PortfolioService', ['getTdPortfolio', 'getTdBalance']);
   const backtestServiceSpy = jasmine.createSpyObj('BacktestService', ['getLastPriceTiingo']);
   const reportingServiceSpy = jasmine.createSpyObj('ReportingService', ['addAuditLog']);
   const globalSettingsServiceSpy = jasmine.createSpyObj('GlobalSettingsService', ['get10YearYield']);
@@ -675,6 +675,7 @@ describe('PriceTargetService', () => {
     });
 
     cartServiceSpy.isStrangle.and.returnValue(false);
+    portfolioServiceSpy.getTdBalance.and.returnValue(of({cashBalance: 10000, liquidationValue: 100000}));
 
     expect(service.getDiff(testSpyPrice['SPY'].quote.closePrice, testSpyPrice['SPY'].quote.lastPrice)).toEqual(-0.019689655172413723);
 

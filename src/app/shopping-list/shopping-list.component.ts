@@ -18,7 +18,6 @@ import { FormControl, Validators } from '@angular/forms';
 import { takeWhile } from 'rxjs/operators';
 import { Subject } from 'rxjs';
 import { MenuItem } from 'primeng/api';
-import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { NewStockFinderService } from '../backtest-table/new-stock-finder.service';
 
 @Component({
