@@ -53,7 +53,7 @@ export class OrderHandlingService {
       const log = `SELL ORDER SENT ${order.side} ${order.quantity} ${order.holding.symbol}@${order.price}`;
       order = this.incrementSell(order);
 
-      const resolve = (response) => {
+      const resolve = () => {
         console.log(`${moment().format('hh:mm')} - ${log}`);
         this.reportingService.addAuditLog(order.holding.symbol, log);
       };
