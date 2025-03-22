@@ -494,7 +494,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async setupStrategy() {
     this.autopilotService.updateVolatility();
-    this.priceTargetService.setTargetDiff();
+    await this.priceTargetService.setTargetDiff();
     this.backtestAggregatorService.clearTimeLine();
 
     this.developedStrategy = true;

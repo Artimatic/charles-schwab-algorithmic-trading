@@ -7,6 +7,7 @@ import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
 import { Options } from '@shared/models/options';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { PriceTargetService } from '../autopilot/price-target.service';
+import { Balance } from '@shared/services/portfolio.service';
 
 export interface TradingPair {
   put?: Options;
@@ -52,7 +53,7 @@ export class OptionsOrderBuilderService {
   }
 
   private createOrderAddToList(currentPut: TradingPair, currentCall: TradingPair, reason: string, minCashAllocation: number, maxCashAllocation: number) {
-    if (currentPut && currentCall && 
+    if (currentPut && currentCall &&
       currentCall.quantity && currentPut.quantity &&
       (currentCall.price * currentCall.quantity) + (currentPut.price * currentPut.quantity) <= maxCashAllocation) {
       const option1 = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call],
@@ -182,21 +183,17 @@ export class OptionsOrderBuilderService {
     };
 
     const option = isCall ? currentOption.call : currentOption.put;
-    console.log('call', currentOption.underlying)
     this.cartService.addSingleLegOptionOrder(currentOption.underlying, [option], price, currentOption.quantity || 1,
       isCall ? OrderTypes.call : OrderTypes.put, 'Buy', reason);
   }
 
-  async createProtectivePutOrder(holding: PortfolioInfoHolding) {
+  async createProtectivePutOrder(holding: PortfolioInfoHolding, maxCash: number) {
     if (holding.shares && !holding.primaryLegs) {
       let putsNeeded = Math.floor(holding.shares / 100);
 
       putsNeeded -= this.protectivePutCount(holding);
       if (putsNeeded > 0) {
-        const putOption = await this.strategyBuilderService.getCallStrangleTrade(holding.name);
-        const estimatedPrice = this.strategyBuilderService.findOptionsPrice(putOption.put.bid, putOption.put.ask);
-
-        this.addOptionByBalance(holding.name, estimatedPrice, 'Protective put', false);
+        this.addOptionByBalance(holding.name, maxCash, 'Protective put', false);
       }
     }
   }
@@ -416,7 +413,7 @@ export class OptionsOrderBuilderService {
     //const impliedMove = await this.getImpliedMove(symbol, backtestResults)
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
     //if (currentDiff < (((1 / (impliedMove + 0.01)) * 0.01))) {
-    if (Math.abs(currentDiff) < 0.018) {
+    if (Math.abs(currentDiff) < 0.017) {
       return true;
     }
 
@@ -451,6 +448,18 @@ export class OptionsOrderBuilderService {
     return false;
   }
 
+  async hedge(currentHoldings: PortfolioInfoHolding[], balance: Balance) {
+    currentHoldings.forEach(async (holding) => {
+      const shouldBuy = await this.shouldBuyOption(holding.name);
+      if (shouldBuy && holding.assetType !== 'collective_investment') {
+        if (holding.netLiq && (holding.netLiq / balance.liquidationValue) > 0.15)
+          console.log('Adding protective put for', holding.name);
+        await this.createProtectivePutOrder(holding, balance.cashBalance);
+      }
+    });
+
+    return currentHoldings;
+  }
 
   async sellStrangle(holding: PortfolioInfoHolding) {
     if (this.cartService.isStrangle(holding)) {
