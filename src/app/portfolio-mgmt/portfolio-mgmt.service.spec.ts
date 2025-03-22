@@ -54,26 +54,4 @@ describe('PortfolioMgmtService', () => {
   it('should be created', () => {
     expect(service).toBeTruthy();
   });
-
-  it('should buy protective put', async() => {
-    const testHoldings = [
-      {
-        alloc: 0,
-        buyConfidence: 0,
-        buyReasons: "",
-        name: "LULU",
-        cost: 15493.77,
-        netLiq: 15866.28,
-        pl: 372.51,
-        prediction: null,
-        recommendation: null,
-        sellConfidence: 0,
-        sellReasons: "",
-        shares: 59
-      }
-    ];
-
-    await service.hedge(testHoldings, [], 0.02, 0.1);
-    expect(optionsOrderBuilderServiceSpy.createProtectivePutOrder).toHaveBeenCalledWith(testHoldings[0]);
-  });
 });

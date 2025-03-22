@@ -87,7 +87,7 @@ describe('OptionsOrderBuilderService', () => {
 
     strategyBuilderServiceSpy.findOptionsPrice.and.returnValue(4.5);
 
-    await service.createProtectivePutOrder(testHoldings[0]);
+    await service.createProtectivePutOrder(testHoldings[0], 10000);
     expect(cartServiceSpy.addSingleLegOptionOrder).not.toHaveBeenCalled();
   });
 
@@ -117,7 +117,7 @@ describe('OptionsOrderBuilderService', () => {
 
     strategyBuilderServiceSpy.findOptionsPrice.and.returnValue(0.5);
 
-    await service.createProtectivePutOrder(testHoldings[0]);
+    await service.createProtectivePutOrder(testHoldings[0], 10000);
     expect(cartServiceSpy.addSingleLegOptionOrder).not.toHaveBeenCalled();
   });
 
@@ -156,7 +156,7 @@ describe('OptionsOrderBuilderService', () => {
       }
     });
     spyOn(service, 'addTradingPair').and.callThrough();
-    await service.createProtectivePutOrder(testHoldings[0]);
+    await service.createProtectivePutOrder(testHoldings[0], 10000);
     expect(strategyBuilderServiceSpy.getBacktestData).toHaveBeenCalledWith('OKTA');
     expect(strategyBuilderServiceSpy.getCallStrangleTrade).toHaveBeenCalledWith('OKTA');
     expect(reportingServiceSpy.addAuditLog).not.toHaveBeenCalled();
@@ -192,7 +192,7 @@ describe('OptionsOrderBuilderService', () => {
 
     strategyBuilderServiceSpy.findOptionsPrice.and.returnValue(4.5);
 
-    await service.createProtectivePutOrder(testHoldings[0]);
+    await service.createProtectivePutOrder(testHoldings[0], 10000);
     expect(cartServiceSpy.addSingleLegOptionOrder).toHaveBeenCalledWith('OKTA', [testStrangleObj.put], 4.5, 3, OrderTypes.protectivePut, 'Buy', 'Adding protective put');
   });
 
