@@ -31,6 +31,7 @@ import { AutopilotService, RiskTolerance, Strategy, SwingtradeAlgorithms } from 
 import { BacktestAggregatorService } from '../backtest-table/backtest-aggregator.service';
 import { OrderingService } from '@shared/ordering.service';
 import { NewStockFinderService } from '../backtest-table/new-stock-finder.service';
+import { OrderType } from '@shared/stock-backtest.interface';
 
 export interface PositionHoldings {
   name: string;
@@ -125,7 +126,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private orderHandlingService: OrderHandlingService,
     private optionsOrderBuilderService: OptionsOrderBuilderService,
     private portfolioMgmtService: PortfolioMgmtService,
-    private priceTargetService: PriceTargetService,
+    public priceTargetService: PriceTargetService,
     public autopilotService: AutopilotService,
     private backtestAggregatorService: BacktestAggregatorService,
     private aiPicksService: AiPicksService,
@@ -1113,17 +1114,124 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
   }
 
+  async testPut() {
+    const sell = 'WMT';
+    const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
+    const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
+    const currentPut = {
+      put: bearishStrangle.put,
+      price: putPrice,
+      quantity: 1,
+      underlying: sell
+    };
+
+    const putOption = this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put],
+      currentPut.price, currentPut.quantity,
+      OrderTypes.put, 'Testing buy put',
+      'Buy', currentPut.quantity);
+    this.cartService.addToCart(putOption, true, 'Testing buy put');
+  }
+
+  async testCall() {
+    const buy = 'AMZN';
+    const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(buy);
+    const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
+
+    const currentCall = {
+      call: bullishStrangle.call,
+      price: callPrice,
+      quantity: 1,
+      underlying: buy
+    };
+    const option1 = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call],
+      currentCall.price, currentCall.quantity,
+      OrderTypes.call, 'Testing buy call',
+      'Buy', currentCall.quantity);
+    this.cartService.addToCart(option1, true, 'Testing buy put');
+  }
+
+  async testAddTradingPairsToCart() {
+    await this.optionsOrderBuilderService.addOptionsStrategiesToCart();
+  }
   async test() {
+    this.cartService.deleteCart();
     this.cartService.removeCompletedOrders();
     this.autopilotService.currentHoldings = await this.cartService.findCurrentPositions();
     await this.modifyCurrentHoldings();
     console.log(this.autopilotService.currentHoldings);
-    await this.orderHandlingService.intradayStep('SPY');
+    //await this.orderHandlingService.intradayStep('SPY');
     await this.optionsOrderBuilderService.balanceTrades(['GOOG'], ['AAPL'], 1000, 5000, 'Test');
     if (!this.tradingPairs.length) {
       console.error('TRADING PAIR NOT ADDED');
     }
     this.portfolioService.purgeStrategy().subscribe();
+
+    // Sell all
+    this.autopilotService.currentHoldings.forEach(async (portItem: PortfolioInfoHolding) => {
+      if (portItem.primaryLegs) {
+        let orderType = null;
+        if (portItem.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
+          orderType = OrderTypes.call;
+        } else if (portItem.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
+          orderType = OrderTypes.put;
+        }
+        const estPrice = await this.orderHandlingService.getEstimatedPrice(portItem.primaryLegs[0].symbol);
+        this.cartService.addSingleLegOptionOrder(portItem.name, [portItem.primaryLegs[0]], estPrice, portItem.primaryLegs[0].quantity, orderType, 'Sell', 'Testing sell', true);
+      } else {
+        await this.cartService.portfolioSell(portItem, 'Testing sell', true);
+      }
+    });
+
+    // Testing buy stock
+    await this.autopilotService.addBuy(this.autopilotService.createHoldingObj('GOOG'), null, 'Testing buy stock');
+
+    // Testing buy put
+    await this.testPut();
+    // Testing buy call
+    await this.testCall();
+    // Testing buy pair
+    const buy = 'META';
+    const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(buy);
+    const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
+
+    const currentCall = {
+      call: bullishStrangle.call,
+      price: callPrice,
+      quantity: 1,
+      underlying: buy
+    };
+    const option1 = this.cartService.createOptionOrder(currentCall.underlying, [currentCall.call],
+      currentCall.price, currentCall.quantity,
+      OrderTypes.call, 'Testing buy pair',
+      'Buy', currentCall.quantity);
+
+    const sell = 'ADBE';
+    const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
+    const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
+    const currentPut = {
+      put: bearishStrangle.put,
+      price: putPrice,
+      quantity: 1,
+      underlying: sell
+    };
+
+    const option2 = this.cartService.createOptionOrder(currentPut.underlying, [currentPut.put],
+      currentPut.price, currentPut.quantity,
+      OrderTypes.put, 'Testing buy pair',
+      'Buy', currentPut.quantity);
+    const trade = [option1, option2];
+    this.optionsOrderBuilderService.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Testing pair trading');
+
+    setTimeout(async () => {
+      const buyAndSellList = this.cartService.sellOrders.concat(this.cartService.buyOrders);
+      const orders = buyAndSellList.concat(this.cartService.otherOrders);
+      for (let i = 0; i < orders.length; i++) {
+        await this.orderHandlingService.handleIntradayRecommendation(orders[i], { recommendation: OrderType.Buy } as any);
+        await this.orderHandlingService.handleIntradayRecommendation(orders[i], { recommendation: OrderType.Sell } as any);
+      }
+      this.testAddTradingPairsToCart()
+    }, 30000);
+
   }
 
   ngOnDestroy() {

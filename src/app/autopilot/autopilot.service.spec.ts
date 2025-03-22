@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { AutopilotService, RiskTolerance, Strategy, SwingtradeAlgorithms } from './autopilot.service';
+import { AutopilotService } from './autopilot.service';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
 import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';
@@ -31,7 +31,7 @@ describe('AutopilotService', () => {
     mockStrategyBuilderService = jasmine.createSpyObj('StrategyBuilderService', ['getBacktestData', 'addAndRemoveOldStrategies', 'createStrategy', 'getCallStrangleTrade', 'findOptionsPrice', 'getRecentBacktest', 'getQuantity']);
     mockMachineDaytradingService = jasmine.createSpyObj('MachineDaytradingService', ['getNextStock', 'getCurrentStockList', 'setCurrentStockList']);
     mockOptionsOrderBuilderService = jasmine.createSpyObj('OptionsOrderBuilderService', ['getImpliedMove', 'balanceTrades', 'addPutToCurrentTrades', 'addOptionByBalance', 'sellStrangle', 'addOptionsStrategiesToCart', 'checkCurrentOptions', 'getTradingPairs', 'getTradingPairs', 'clearTradingPairs', 'getCurrentTradeIdeas']);
-    mockCartService = jasmine.createSpyObj('CartService', ['getAvailableFunds', 'portfolioBuy', 'portfolioSell', 'addSingleLegOptionOrder', 'isStrangle', 'findCurrentPositions', 'buildOrderWithAllocation', 'sellOrders', 'buyOrders', 'otherOrders']);
+    mockCartService = jasmine.createSpyObj('CartService', ['getAvailableFunds', 'portfolioBuy', 'portfolioSell', 'addSingleLegOptionOrder', 'isStrangle', 'findCurrentPositions', 'buildOrderWithAllocation', 'getSellOrders', 'getBuyOrders', 'getOtherOrders', 'getMaxTradeCount']);
     mockBacktestService = jasmine.createSpyObj('BacktestService', ['getBacktestEvaluation']);
     mockPriceTargetService = jasmine.createSpyObj('PriceTargetService', ['isDownDay', 'isProfitable', 'notProfitable', 'getDiff', 'getCallPutBalance']);
     mockOrderHandlingService = jasmine.createSpyObj('OrderHandlingService', ['getEstimatedPrice', 'intradayStep']);
@@ -57,6 +57,10 @@ describe('AutopilotService', () => {
     mockDaytradeStrategiesService.shouldSkip.and.returnValue(false);
     mockStrategyBuilderService.getRecentBacktest.and.returnValue({ ml: 0.8, recommendation: 'STRONGBUY', sellMl: 0.3 });
 
+    mockCartService.getBuyOrders.and.returnValue([1, 2, 3]);
+    mockCartService.getSellOrders.and.returnValue([1, 2, 3]);
+    mockCartService.getOtherOrders.and.returnValue([1, 2, 3]);
+    mockCartService.getMaxTradeCount.and.returnValue(20);
     TestBed.configureTestingModule({
       providers: [
         AutopilotService,

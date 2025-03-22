@@ -15,7 +15,7 @@ export class CartService {
   buyOrders: SmartOrder[] = [];
   otherOrders: SmartOrder[] = [];
   cartObserver: Subject<boolean> = new Subject<boolean>();
-  maxTradeCount = 5;
+  maxTradeCount = 8;
   constructor(
     private portfolioService: PortfolioService,
     private tradeService: TradeService,
@@ -196,7 +196,7 @@ export class CartService {
   }
 
   getOrderIndex(orderList: SmartOrder[], targetOrder: SmartOrder) {
-    return orderList.findIndex((order) => order.holding.symbol === targetOrder.holding.symbol);
+    return orderList.findIndex((order) => order && targetOrder&& order.holding.symbol === targetOrder.holding.symbol);
   }
 
   deleteBySymbol(symbol: string) {
@@ -370,6 +370,9 @@ export class CartService {
   }
 
   optionsOrderExists(symbol, leg) {
+    if (!leg || !leg.length) {
+      return false;
+    }
     return this.buyOrders.find(order => this.existingOptionsCheck(order, symbol, leg[0].symbol)) ||
       this.sellOrders.find(order => this.existingOptionsCheck(order, symbol, leg[0].symbol));
   }
@@ -391,6 +394,7 @@ export class CartService {
 
       return null;
     } else {
+      
       const order: SmartOrder = {
         holding: {
           instrument: null,
@@ -411,7 +415,10 @@ export class CartService {
         useTakeProfit: false,
         sellAtClose: false,
         allocation: 0.05,
-        primaryLegs,
+        primaryLegs: primaryLegs.map(leg => {
+          leg.quantity = leg.quantity ? leg.quantity : quantity;
+          return leg;
+        }),
         type: optionType,
         forImmediateExecution: executeImmediately,
         reason,

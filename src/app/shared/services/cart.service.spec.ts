@@ -7,9 +7,17 @@ import { ReportingService } from './reporting.service';
 import { MachineLearningService } from './machine-learning/machine-learning.service';
 import { GlobalSettingsService } from 'src/app/settings/global-settings.service';
 import { MessageService } from 'primeng/api';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
+import { SmartOrder } from '@shared/models/smart-order';
 
 describe('CartService', () => {
+  let service: CartService;
+  let mockTradeService: jasmine.SpyObj<TradeService>;
+  let mockMessageService: jasmine.SpyObj<MessageService>;
+  let mockReportingService: jasmine.SpyObj<ReportingService>;
+  let mockMachineLearningService: jasmine.SpyObj<MachineLearningService>;
+  let mockGlobalSettingsService: jasmine.SpyObj<GlobalSettingsService>;
+
   const portfolioServiceSpy = jasmine.createSpyObj('PortfolioService', ['getTdPortfolio', 'findOptionsPrice', 'getTradingStrategies', 'getPutStrangleTrade']);
   const mockPortfolioArr = [{
     "shortQuantity": 0,
@@ -61,18 +69,25 @@ describe('CartService', () => {
   }];
 
   beforeEach(() => {
+    mockTradeService = jasmine.createSpyObj('TradeService', ['']);
+    mockMessageService = jasmine.createSpyObj('MessageService', ['add']);
+    mockReportingService = jasmine.createSpyObj('ReportingService', ['addAuditLog']);
+    mockMachineLearningService = jasmine.createSpyObj('MachineLearningService', ['']);
+    mockGlobalSettingsService = jasmine.createSpyObj('GlobalSettingsService', ['']);
+    
     TestBed.configureTestingModule({
       imports: [],
       providers: [
         CartService,
         { provide: PortfolioService, useValue: portfolioServiceSpy },
-        { provide: TradeService, useValue: {} },
-        { provide: ReportingService, useValue: {} },
-        { provide: MachineLearningService, useValue: {} },
-        { provide: GlobalSettingsService, useValue: {} },
-        { provide: MessageService, useValue: {} }
+        { provide: TradeService, useValue: mockTradeService },
+        { provide: MessageService, useValue: mockMessageService },
+        { provide: ReportingService, useValue: mockReportingService },
+        { provide: MachineLearningService, useValue: mockMachineLearningService },
+        { provide: GlobalSettingsService, useValue: mockGlobalSettingsService },
       ]
     });
+    service = TestBed.inject(CartService);
   });
 
   it('should be created', inject([CartService], (service: CartService) => {
@@ -103,4 +118,18 @@ describe('CartService', () => {
     expect(testHoldings2.length).toBe(1);
     expect(Number(testHoldings2[0].pnlPercentage.toFixed(2))).toBe(0.60);
   }));
+  it('should get buy orders', () => {
+    service.buyOrders = [{ holding: { symbol: 'AAPL' } } as SmartOrder];
+    expect(service.getBuyOrders()).toEqual([{ holding: { symbol: 'AAPL' } } as SmartOrder]);
+  });
+
+  it('should get sell orders', () => {
+    service.sellOrders = [{ holding: { symbol: 'TSLA' } } as SmartOrder];
+    expect(service.getSellOrders()).toEqual([{ holding: { symbol: 'TSLA' } } as SmartOrder]);
+  });
+
+  it('should get other orders', () => {
+    service.otherOrders = [{ holding: { symbol: 'SPY' } } as SmartOrder];
+    expect(service.getOtherOrders()).toEqual([{ holding: { symbol: 'SPY' } } as SmartOrder]);
+  });
 });

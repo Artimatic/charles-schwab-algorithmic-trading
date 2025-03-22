@@ -4,6 +4,7 @@ import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { OrderTypes } from '@shared/models/smart-order';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { PortfolioWeightsService } from './portfolio-weights.service';
+import * as moment from 'moment-timezone';
 
 @Injectable({
   providedIn: 'root'
@@ -12,6 +13,8 @@ export class PriceTargetService {
   targetDiff = 0.023;
   portfolioPl = null;
   startingBalance: { date: string, balance: number } = null;
+  lastTargetMet = null;
+  portfolioVolatility = 0;
 
   constructor(private backtestService: BacktestService,
     private portfolioService: PortfolioService,
@@ -24,12 +27,12 @@ export class PriceTargetService {
 
   async setTargetDiff() {
     const holdings = await this.cartService.findCurrentPositions();
-    const portfolioVolatility = await this.portfolioWeightsService.getPortfolioVolatility(holdings);
+    this.portfolioVolatility = await this.portfolioWeightsService.getPortfolioVolatility(holdings);
     const tenYrYield = await this.globalSettingsService.get10YearYield();
-    const target = ((tenYrYield +  1.618034) * 0.01 * portfolioVolatility) + 0.008;
+    const target = ((tenYrYield +  1.618034) * 0.01 * this.portfolioVolatility) + 0.008;
     this.targetDiff = (!target || target < 0.01 || target > 0.04) ? this.targetDiff : target;
     this.reportingService.addAuditLog(null, `Target set to ${this.targetDiff}`);
-    this.reportingService.addAuditLog(null, `Current portfolio volatility: ${portfolioVolatility}`);
+    this.reportingService.addAuditLog(null, `Current portfolio volatility: ${this.portfolioVolatility}`);
   }
 
   isProfitable(invested: number, pl: number, target = 0.05) {
@@ -72,6 +75,10 @@ export class PriceTargetService {
     if (!target) {
       target = this.targetDiff;
     }
+
+    if (this.lastTargetMet && moment().diff(this.lastTargetMet, 'hours') > 10) {
+      return false;
+    }
     const symbol = 'SPY';
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
     const portfolioPl = await this.todaysPortfolioPl();
@@ -83,6 +90,7 @@ export class PriceTargetService {
     this.reportingService.addAuditLog(null, `Portfolio PnL: ${portfolioPl}. target: ${priceTarget}`);
     if (portfolioPl && portfolioPl > priceTarget) {
       this.reportingService.addAuditLog(null, `Profit target met.`);
+      this.lastTargetMet = moment();
       return true;
     }
     return false;

@@ -9,8 +9,6 @@ import * as _ from 'lodash';
 import { IndicatorsService } from './indicators.service';
 import { CartService } from './cart.service';
 import { CardOptions } from '../models/card-options';
-import { GlobalSettingsService } from '../../settings/global-settings.service';
-import { OrderHandlingService } from 'src/app/order-handling/order-handling.service';
 import { map } from 'rxjs/operators';
 
 @Injectable()
@@ -19,8 +17,7 @@ export class DaytradeService {
   constructor(private backtestService: BacktestService,
     private portfolioService: PortfolioService,
     private indicatorsService: IndicatorsService,
-    private cartService: CartService,
-    private orderHandlingService: OrderHandlingService) { }
+    private cartService: CartService) { }
 
   getDefaultOrderSize(quantity) {
     return Math.ceil(quantity / 10);
@@ -152,24 +149,6 @@ export class DaytradeService {
     return this.closeTdPosition(sellOrder, type, resolve, reject, handleNotFound);
   }
 
-  sellAll(sellOrder: SmartOrder, type: string, resolve: Function, reject: Function, handleNotFound: Function) {
-    return this.portfolioService.getQuote(sellOrder.holding.symbol)
-      .map((quote) => {
-        let bid: number = quote.price;
-
-        if (_.round(_.divide(quote.askPrice, quote.bidPrice), 3) < 1.005) {
-          bid = quote.askPrice;
-        } else {
-          bid = quote.price;
-        }
-
-        return bid;
-      }).subscribe((bid) => {
-        sellOrder.price = bid;
-        this.closePosition(sellOrder, 'limit', resolve, reject, handleNotFound);
-      });
-  }
-  
   sendTdSell(sellOrder: SmartOrder, type: string, resolve: Function, reject: Function, handleNotFound: Function): SmartOrder {
     this.portfolioService.getTdPortfolio()
       .subscribe(result => {
@@ -201,35 +180,31 @@ export class DaytradeService {
     return sellOrder;
   }
 
-  sendOptionSell(symbol: string, quantity: number, resolve: Function, reject: Function, handleNotFound: Function) {
-    this.portfolioService.getTdPortfolio()
-      .subscribe(async (result) => {
-        const foundPosition = result.find((pos) => {
-          return pos.instrument.symbol === symbol;
-        });
+  async sendOptionSell(symbol: string, quantity: number, price: number, resolve: Function, reject: Function, handleNotFound: Function) {
+    const result = await this.portfolioService.getTdPortfolio().toPromise();
+    const foundPosition = result.find((pos) => {
+      return pos.instrument.symbol === symbol;
+    });
 
-        if (foundPosition) {
-          const positionCount = Number(foundPosition.longQuantity);
-          if (positionCount === 0) {
-            handleNotFound();
-          } else {
-            quantity = quantity < positionCount ? quantity : positionCount;
+    if (foundPosition) {
+      const positionCount = Number(foundPosition.longQuantity);
+      if (positionCount === 0) {
+        handleNotFound();
+      } else {
+        quantity = quantity < positionCount ? quantity : positionCount;
 
-            const price = await this.orderHandlingService.getEstimatedPrice(symbol);
-
-            this.portfolioService.sendOptionSell(symbol, quantity, price)
-              .subscribe(
-                response => {
-                  resolve(response);
-                },
-                error => {
-                  reject(error);
-                });
-          }
-        } else {
-          handleNotFound();
-        }
-      });
+        this.portfolioService.sendOptionSell(symbol, quantity, price)
+          .subscribe(
+            response => {
+              resolve(response);
+            },
+            error => {
+              reject(error);
+            });
+      }
+    } else {
+      handleNotFound();
+    }
   }
 
   closeTdPosition(sellOrder: SmartOrder, type: string, resolve: Function, reject: Function, handleNotFound: Function): SmartOrder {

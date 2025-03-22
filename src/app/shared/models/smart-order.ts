@@ -40,7 +40,7 @@ export interface SmartOrder extends Order {
     reason?: string;
     id?: string;
     targetQuantity?: number
-    previousOrders?: SmartOrder[];
+    previousOrders?: {timestamp: string, price: number, quantity: number, side: string} [];
     warnings?: string[];
     errors?: string[];
     trailingHighPrice?: number;

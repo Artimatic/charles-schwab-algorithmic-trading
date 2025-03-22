@@ -825,7 +825,7 @@ export class AutopilotService {
     for (let i = 0; i < orders.length; i++) {
       const symbol = orders[i].holding.symbol;
       if (!this.daytradeStrategiesService.shouldSkip(symbol)) {
-        await this.orderHandlingService.intradayStep(symbol);
+        await this.orderHandlingService.intradayStep(orders[i]);
       }
     }
   }

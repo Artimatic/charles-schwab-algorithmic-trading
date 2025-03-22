@@ -1,18 +1,18 @@
 <div *ngIf="order.primaryLeg">
   <p-button [label]="order.primaryLeg.description" (click)="toggleSettingsVisible()"
-    [badge]="firstFormGroup.value.quantity" styleClass="mr-2" severity="warning"></p-button>
+    [badge]="order.quantity" styleClass="mr-2" severity="warning"></p-button>
 </div>
 <div *ngIf="!order.primaryLeg && !order.primaryLegs && !order.secondaryLegs && !order.primaryLegs">
-  <p-button [label]="order.holding.symbol" (click)="toggleSettingsVisible()" [badge]="firstFormGroup.value.quantity"
+  <p-button [label]="order.holding.symbol" (click)="toggleSettingsVisible()" [badge]="order.quantity"
     class="p-button-outlined p-button-help" severity="secondary"></p-button>
 </div>
 <div *ngIf="order.primaryLegs && !order.secondaryLegs">
   <p-button [label]="order.primaryLegs[0].description" (click)="toggleSettingsVisible()"
-    [badge]="firstFormGroup.value.quantity" class="p-button-outlined" severity="help"></p-button>
+    [badge]="order.quantity" class="p-button-outlined" severity="help"></p-button>
 </div>
 <div *ngIf="order.primaryLegs && order.secondaryLegs">
   <p-button [label]="order.primaryLegs[0].description + ' - ' +order.secondaryLegs[0].description"
-    (click)="toggleSettingsVisible()" [badge]="firstFormGroup.value.quantity"
+    (click)="toggleSettingsVisible()" [badge]="order.quantity"
     class="p-button-outlined p-button-secondary" severity="contrast"></p-button>
 </div>
 <p-dialog [header]="order.holding.symbol" [(visible)]="settingsVisible">
@@ -28,50 +28,7 @@
   </div>
   <p-steps [model]="items" [(activeIndex)]="activeIndex" [readonly]="false"></p-steps>
 
-  <div class="card-form-main" *ngIf="activeIndex === 0">
-    <form [formGroup]="firstFormGroup">
-      <div class="p-field-radiobutton bb-form-field" *ngFor="let side of sides">
-        <p-radioButton name="orderType" [value]="side" [label]="side" formControlName="orderType"></p-radioButton>
-      </div>
-      <div class="bb-form-field">
-        <p-multiSelect [formControl]="preferences" defaultLabel="Select additional options"
-          [options]="preferenceList"></p-multiSelect>
-      </div>
-      <span class="p-float-label bb-form-field">
-        <p-inputNumber id="float-input" type="number" placeholder="Quantity" pInputText formControlName="quantity"
-          required></p-inputNumber>
-        <label for="float-input">Quantity</label>
-      </span>
-      <span class="p-float-label bb-form-field">
-        <p-inputNumber id="float-input" type="number" pInputText formControlName="orderSize" required></p-inputNumber>
-        <label for="float-input">Orders</label>
-      </span>
-      <div class="bb-form-field">
-        <p-dropdown [options]="algorithmList" [formControl]="selectedAlgorithm"
-          optionLabel="Select an Algorithm"></p-dropdown>
-      </div>
-      <span class="p-float-label bb-form-field">
-        <p-inputNumber id="float-input" type="number" placeholder="Stop Loss" pInputText formControlName="lossThreshold"
-          required></p-inputNumber>
-        <label for="float-input">Stop Loss</label>
-      </span>
-      <span class="p-float-label bb-form-field">
-        <p-inputNumber id="float-input" type="number" placeholder="Trailing Stop Loss" pInputText
-          formControlName="trailingStop" required></p-inputNumber>
-        <label for="float-input">Trailing Stop Loss</label>
-      </span>
-      <span class="p-float-label bb-form-field">
-        <p-inputNumber id="float-input" type="number" pInputText formControlName="profitTarget"
-          required></p-inputNumber>
-        <label for="float-input">Profit Target</label>
-      </span>
-      <span class="p-float-label bb-form-field">
-        <input type="text" pInputText formControlName="phoneNumber" />
-        <label for="float-input">Phone Number</label>
-      </span>
-    </form>
-  </div>
-  <div *ngIf="activeIndex === 1">
+  <div>
     <div>
       <div *ngIf="live">
         <p-chip label="Live" styleClass="p-mr-2 live-chip"></p-chip>
@@ -80,7 +37,7 @@
         <p-chip label="Stalled"></p-chip>
       </div>
       <div>
-        Orders Submitted: {{ order.buyCount + order.sellCount}}/{{firstFormGroup.value.quantity || 0}} shares
+        Orders Submitted: {{ order.buyCount + order.sellCount}}/{{order.quantity || 0}} shares
       </div>
       <div class="toolbar-content" fxLayout fxLayout.xs="column" fxLayoutAlign="center center" fxLayoutGap="10px"
         fxLayoutGap.xs="0">
@@ -111,18 +68,16 @@
               </li>
             </ul>
             <p>
-              <p-tag *ngIf="firstFormGroup.value.orderType=='Buy'" styleClass="p-mr-2" severity="success"
+              <p-tag *ngIf="order.side=='Buy'" styleClass="p-mr-2" severity="success"
                 value="Buy"></p-tag>
-              <p-tag *ngIf="firstFormGroup.value.orderType=='Sell'" severity="danger" value="Sell"></p-tag>
-              <p-tag *ngIf="firstFormGroup.value.orderType=='DayTrade'" styleClass="p-mr-2" severity="info"
+              <p-tag *ngIf="order.side=='Sell'" severity="danger" value="Sell"></p-tag>
+              <p-tag *ngIf="order.side=='DayTrade'" styleClass="p-mr-2" severity="info"
                 value="Daytrade"></p-tag>
-              <p-tag *ngIf="order.type=='options'" styleClass="p-mr-2" severity="info" value="Options"></p-tag>
             </p>
           </p-header>
-          <mat-checkbox (click)="toggleChart()">Chart</mat-checkbox>
         </div>
         <div fxFlex="95%">
-          <div class="order-log" *ngIf="!showChart">
+          <div class="order-log">
             <mat-grid-list cols="3" rowHeight="150px">
               <mat-grid-tile *ngFor="let tile of tiles" [colspan]="tile.cols" [rowspan]="tile.rows">
                 <div class="tiles">

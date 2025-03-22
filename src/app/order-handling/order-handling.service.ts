@@ -4,11 +4,14 @@ import { Recommendation } from '@shared/stock-backtest.interface';
 import { PricingService } from '../pricing/pricing.service';
 import * as moment from 'moment-timezone';
 import { GlobalSettingsService } from '../settings/global-settings.service';
-import { BacktestService, CartService, PortfolioInfoHolding, PortfolioService, TradeService } from '@shared/services';
+import { BacktestService, CartService, DaytradeService, PortfolioService, TradeService } from '@shared/services';
 import { Options } from '@shared/models/options';
 import { AlgoQueueItem } from '@shared/services/trade.service';
 import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
+import { round } from 'lodash';
+import { OrderTypes } from '@shared/models/smart-order';
+import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
 
 @Injectable({
   providedIn: 'root'
@@ -25,7 +28,9 @@ export class OrderHandlingService {
     private tradeService: TradeService,
     private daytradeStrategiesService: DaytradeStrategiesService,
     private backtestService: BacktestService,
-    private strategyBuilderService: StrategyBuilderService
+    private strategyBuilderService: StrategyBuilderService,
+    private daytradeService: DaytradeService,
+    private machineDaytradingService: MachineDaytradingService,
   ) { }
 
   async hasPositions(symbols: string[]) {
@@ -35,18 +40,182 @@ export class OrderHandlingService {
     }));
   }
 
-  incrementSell(order) {
+  initializeOrder(order: SmartOrder): SmartOrder {
+    order.previousOrders = [];
+    order.errors = [];
+    order.warnings = [];
+    return order;
+  }
+
+  sendSell(order: SmartOrder, lastPrice: number): SmartOrder {
+    if (order) {
+      order.price = round(lastPrice, 2);
+      const log = `SELL ORDER SENT ${order.side} ${order.quantity} ${order.holding.symbol}@${order.price}`;
+      order = this.incrementSell(order);
+
+      const resolve = () => {
+        console.log(`${moment().format('hh:mm')} - ${log}`);
+        this.reportingService.addAuditLog(order.holding.symbol, log);
+      };
+
+      const reject = (error) => {
+        order.errors.push(error._body);
+        order.stopped = true;
+        this.reportingService.addAuditLog(order.holding.symbol, JSON.stringify(error._body));
+      };
+
+      const handleNotFound = () => {
+        order.stopped = true;
+        const notFoundMsg = `Trying to sell position that doesn\'t exists ${order.holding.name}`;
+        order.warnings.push(notFoundMsg);
+        this.reportingService.addAuditLog(order.holding.symbol, notFoundMsg);
+      };
+
+      this.daytradeService.sendSell(order, 'limit', resolve, reject, handleNotFound);
+    }
+    return order;
+  }
+
+  hasReachedOrderLimit(order: SmartOrder) {
+    const tradeType = order.side.toLowerCase();
+    if (tradeType === 'daytrade') {
+      return (order.buyCount >= order.quantity) &&
+        (order.sellCount >= order.quantity);
+    } else if (tradeType === 'buy') {
+      return (order.buyCount >= order.quantity);
+    } else if (tradeType === 'sell') {
+      return order.sellCount >= order.quantity;
+    }
+  }
+
+  async buyOptions(order: SmartOrder) {
+    const balance = await this.machineDaytradingService.getPortfolioBalance().toPromise();
+    const cashBalance = balance.cashBalance;
+    const primaryLegPrice = await this.getEstimatedPrice(order.primaryLegs[0].symbol);
+    if (order.secondaryLegs) {
+      const secondaryLegPrice = await this.getEstimatedPrice(order.secondaryLegs[0].symbol);
+      const totalPrice = (primaryLegPrice * order.primaryLegs[0].quantity) + (secondaryLegPrice * order.secondaryLegs[0].quantity);
+      this.reportingService.addAuditLog(order.holding.symbol, `Total Price with secondary leg ${totalPrice}, balance: ${cashBalance}`);
+      if (totalPrice < cashBalance) {
+        order = this.incrementBuy(order);
+        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.primaryLegs[0].quantity} ${order.primaryLegs[0].symbol}`);
+        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.secondaryLegs[0].quantity} ${order.secondaryLegs[0].symbol}`);
+
+        await this.buyOption(order.primaryLegs[0].symbol, order.primaryLegs[0].quantity || 1, primaryLegPrice, () => { });
+        await this.buyOption(order.secondaryLegs[0].symbol, order.secondaryLegs[0].quantity || 1, secondaryLegPrice, () => { });
+      }
+    } else {
+      const totalPrice = primaryLegPrice * order.primaryLegs[0].quantity;
+      if (totalPrice) {
+        this.reportingService.addAuditLog(order.holding.symbol, `Option price: ${totalPrice}, balance: ${cashBalance}`);
+      } else {
+        this.reportingService.addAuditLog(order.holding.symbol, `price: ${primaryLegPrice}, quantity: ${order.primaryLegs[0].quantity}, balance: ${cashBalance}`);
+      }
+
+      if (totalPrice < cashBalance) {
+        order = this.incrementBuy(order);
+        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.quantity} ${order.primaryLegs[0].symbol}`);
+        await this.buyOption(order.primaryLegs[0].symbol, order.quantity || 1);
+      }
+    }
+    return order;
+  }
+
+  async sellOptions(order: SmartOrder) {
+    const symbol = order.primaryLegs[0].symbol;
+    order = this.incrementSell(order);
+    const resolve = () => {
+      const log = `Sell option sent ${order.quantity} ${symbol}`;
+      console.log(`${moment().format('hh:mm')} ${log}`);
+      this.reportingService.addAuditLog(symbol, log);
+    };
+
+    const reject = (error) => {
+      order.errors.push(error._body);
+      order.stopped = true;
+      this.reportingService.addAuditLog(symbol, JSON.stringify(error._body));
+    };
+
+    const handleNotFound = () => {
+      const error = `Trying to sell position that doesn\'t exists ${symbol}`;
+      order.errors.push(error);
+      order.stopped = true;
+      this.reportingService.addAuditLog(symbol, error);
+    };
+    const price = await this.getEstimatedPrice(symbol);
+
+    await this.daytradeService.sendOptionSell(symbol, order.quantity, price, resolve, reject, handleNotFound);
+    return order;
+  }
+
+  async handleIntradayRecommendation(order: SmartOrder, analysis: Recommendation) {
+    if (order.stopped) {
+      return order;
+    }
+    const price = await this.backtestService.getLastPriceTiingo({ symbol: order.holding.symbol }).toPromise();
+    order.price = price[order.holding.symbol].quote.lastPrice;
+
+    if (analysis.recommendation.toLowerCase() === 'none') {
+      return order;
+    } else if (this.hasReachedOrderLimit(order)) {
+      order.stopped = true;
+    } else if (order.type === OrderTypes.call) {
+      if (order.side.toLowerCase() === 'buy' && (analysis.recommendation.toLowerCase() === 'buy')) {
+        order = await this.buyOptions(order);
+      } else if (order.side.toLowerCase() === 'sell' && (analysis.recommendation.toLowerCase() === 'sell')) {
+        order = await this.sellOptions(order);
+      }
+    } else if (order.type === OrderTypes.put) {
+      if (order.side.toLowerCase() === 'buy' && (analysis.recommendation.toLowerCase() === 'sell')) {
+        order = await this.buyOptions(order);
+      } else if (order.side.toLowerCase() === 'sell' && (analysis.recommendation.toLowerCase() === 'buy')) {
+        order = await this.sellOptions(order);
+      }
+    } else if (order.type === OrderTypes.strangle && order.side.toLowerCase() == 'sell') {
+      await this.sellStrangle(order, analysis);
+    } else if (order.side.toLowerCase() === 'buy' && analysis.recommendation.toLowerCase() === 'buy') {
+      if (!order.priceLowerBound) {
+        order.priceLowerBound = order.price;
+        return order;
+      }
+      const balance = await this.machineDaytradingService.getPortfolioBalance().toPromise();
+      const currentBalance = balance.cashBalance;
+      if (order.quantity * order.price < currentBalance) {
+        const log = `${moment().format()} Received buy recommendation`;
+        this.reportingService.addAuditLog(order.holding.symbol, log);
+
+        if (Number(order.price) > Number(order.priceLowerBound)) {
+          order = this.incrementBuy(order);
+          this.daytradeService.sendBuy(order, 'limit', () => { }, () => { });
+        } else {
+          const log = 'Price too low ' + Number(order.price) + ' vs ' + Number(order.priceLowerBound);
+          this.reportingService.addAuditLog(order.holding.symbol, log);
+        }
+      }
+    } else if (order.side.toLowerCase() === 'sell' && (analysis.recommendation.toLowerCase() === 'sell')) {
+      const sellLog = 'Received sell recommendation';
+      this.reportingService.addAuditLog(order.holding.symbol, sellLog);
+      if (order.side.toLowerCase() === 'sell') {
+        this.sendSell(order, order.price)
+      }
+    }
+    return order;
+  }
+
+  incrementSell(order: SmartOrder) {
     order.sellCount += order.quantity;
     order.positionCount -= order.quantity;
 
     this.cartService.updateOrder(order);
+    return order;
   }
 
-  incrementBuy(order) {
+  incrementBuy(order: SmartOrder) {
+    console.log('Sent buy order', order.holding.symbol, order);
     order.buyCount += order.quantity;
     order.positionCount += order.quantity;
-
     this.cartService.updateOrder(order);
+    return order;
   }
 
   async sendSellStrangle(order: SmartOrder, calls: Options[], puts: Options[], callsTotalPrice, putsTotalPrice) {
@@ -56,8 +225,9 @@ export class OrderHandlingService {
     if (hasPosition) {
       this.portfolioService.sendMultiOrderSell(calls,
         puts, callsTotalPrice + putsTotalPrice).subscribe();
-      this.incrementSell(order);
+      order = this.incrementSell(order);
     }
+    return order;
   }
 
   async sellStrangle(order: SmartOrder, analysis: Recommendation) {
@@ -77,9 +247,9 @@ export class OrderHandlingService {
     }
   }
 
-  async intradayStep(symbol: string) {
-    if (!this.daytradeStrategiesService.shouldSkip(symbol)) {
-      const analysis = await this.backtestService.getDaytradeRecommendation(symbol.toUpperCase(), null, null, { minQuotes: 81 }).toPromise();
+  async intradayStep(order: SmartOrder) {
+    if (!this.daytradeStrategiesService.shouldSkip(order.holding.symbol)) {
+      const analysis = await this.backtestService.getDaytradeRecommendation(order.holding.symbol.toUpperCase(), null, null, { minQuotes: 81 }).toPromise();
       const hasBuyPotential = this.daytradeStrategiesService.isPotentialBuy(analysis);
       const hasSellPotential = this.daytradeStrategiesService.isPotentialSell(analysis);
       if (hasBuyPotential || hasSellPotential) {
@@ -98,13 +268,7 @@ export class OrderHandlingService {
         //     console.log(error);
         //   }
         // }
-        const queueItem: AlgoQueueItem = {
-          symbol: symbol,
-          reset: false,
-          analysis: analysis,
-          ml: null
-        };
-        this.tradeService.algoQueue.next(queueItem);
+        this.handleIntradayRecommendation(order, analysis);
       }
     }
   }

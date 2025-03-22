@@ -29,7 +29,7 @@ export class StrategyBuilderService {
   countNet = 0;
   defaultMinExpiration = 45;
   bullishStocks = [];
-  maxImpliedMovement = 0.10;
+  maxImpliedMovement = 0.11;
   constructor(private backtestService: BacktestService,
     private optionsDataService: OptionsDataService,
     private portfolioService: PortfolioService,
