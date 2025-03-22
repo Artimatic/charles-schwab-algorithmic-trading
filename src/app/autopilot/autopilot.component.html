@@ -56,7 +56,8 @@
             [model]="startButtonOptions" styleClass="p-button-success"></p-splitButton>
         <p-button label="Stop" icon="pi pi-times" *ngIf="display" styleClass="p-button-danger"
             (click)="stop()"></p-button>
-        <p-splitButton label="Show strategies" severity="success" (onClick)="showStrategies()" [model]="otherOptions"></p-splitButton>
+        <p-splitButton label="Show strategies" severity="success" (onClick)="showStrategies()"
+            [model]="otherOptions"></p-splitButton>
         <p-splitButton label="Test Functionalities" severity="warning" (onClick)="test()" [model]="multibuttonOptions"
             styleClass="p-button-warning"></p-splitButton>
         <app-default-order-lists class="default-orders-button"></app-default-order-lists>
@@ -78,16 +79,16 @@
     <p-tag [value]="autopilotService.volatility * 100 +'%'"
         *ngIf="autopilotService.volatility >= 0.28 && autopilotService.volatility < 0.5" severity="warning"
         pTooltip="Current volatility"></p-tag>
-    <p-tag [value]="autopilotService.volatility * 100 +'%'" *ngIf="autopilotService.volatility < 0.28" severity="success"
-        pTooltip="Current volatility"></p-tag>
+    <p-tag [value]="autopilotService.volatility * 100 +'%'" *ngIf="autopilotService.volatility < 0.28"
+        severity="success" pTooltip="Current volatility"></p-tag>
 
     <p-tag [value]="priceTargetService.portfolioVolatility" severity="info"
         pTooltip="Current portfolio volatility"></p-tag>
-<!-- 
-    <p-tag [value]="dayTradingRiskToleranceList[dayTradeRiskCounter] * 100 +'%'" severity="warning"
-        pTooltip="Day trade allocation - percentage of total bp"></p-tag>
     <p-tag pTooltip="Swing trade allocation - percentage of cash balance"
         [value]="autopilotService.riskToleranceList[autopilotService.riskCounter] * 100 +'%'" severity="danger"></p-tag>
+    <!-- 
+    <p-tag [value]="dayTradingRiskToleranceList[dayTradeRiskCounter] * 100 +'%'" severity="warning"
+        pTooltip="Day trade allocation - percentage of total bp"></p-tag>
     <label for="daytrade-switch">Daytrade mode</label>
     <p-inputSwitch inputId="daytrade-switch" (onChange)="handleDaytrade()" [(ngModel)]="daytradeMode"></p-inputSwitch>
      -->
