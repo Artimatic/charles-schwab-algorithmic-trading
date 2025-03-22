@@ -5,6 +5,7 @@ import { OrderTypes } from '@shared/models/smart-order';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { PortfolioWeightsService } from './portfolio-weights.service';
 import * as moment from 'moment-timezone';
+import { round } from 'lodash';
 
 @Injectable({
   providedIn: 'root'
@@ -25,9 +26,14 @@ export class PriceTargetService {
     private portfolioWeightsService: PortfolioWeightsService
   ) { }
 
+  getPortfolioVolatility() {
+    return this.portfolioVolatility;
+  }
+
   async setTargetDiff() {
     const holdings = await this.cartService.findCurrentPositions();
-    this.portfolioVolatility = await this.portfolioWeightsService.getPortfolioVolatility(holdings);
+    let portfolioVolatility = await this.portfolioWeightsService.getPortfolioVolatility(holdings);
+    this.portfolioVolatility = round(portfolioVolatility, 2);
     const tenYrYield = await this.globalSettingsService.get10YearYield();
     const target = ((tenYrYield +  1.618034) * 0.01 * this.portfolioVolatility) + 0.008;
     this.targetDiff = (!target || target < 0.01 || target > 0.04) ? this.targetDiff : target;

@@ -13,6 +13,7 @@ import { map, tap } from 'rxjs/operators';
 import { of } from 'rxjs';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
+import { Balance } from '@shared/services/portfolio.service';
 
 export enum SwingtradeAlgorithms {
   demark9 = 'demark9',
@@ -513,7 +514,7 @@ export class AutopilotService {
   }
 
   async handleBalanceUtilization(currentHoldings) {
-    const balance = await this.portfolioService.getTdBalance().toPromise();
+    const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
     const isOverBalance = Boolean(Number(balance.cashBalance) < 0);
     if (isOverBalance) {
       this.reportingService.addAuditLog(null, 'Over balance');
@@ -620,7 +621,7 @@ export class AutopilotService {
   }
 
   isVolatilityHigh() {
-    return this.volatility > 0.25 && this.volatility < 0.7;
+    return (this.volatility + 0.1618034) > this.priceTargetService.getPortfolioVolatility();
   }
 
   async sellOptionsHolding(holding: PortfolioInfoHolding, reason: string) {
@@ -831,24 +832,37 @@ export class AutopilotService {
   }
 
   private async intradayProcess() {
-    if (this.intradayProcessCounter > 5) {
+    if (this.intradayProcessCounter > 6) {
       this.intradayProcessCounter = 0;
     }
 
     switch (this.intradayProcessCounter) {
       case 0: {
-        this.priceTargetService.setTargetDiff();
-        this.currentHoldings = await this.cartService.findCurrentPositions();
-        await this.balanceCallPutRatio(this.currentHoldings);
+        await this.priceTargetService.setTargetDiff();
         break;
       }
       case 1: {
         this.currentHoldings = await this.cartService.findCurrentPositions();
-        await this.handleBalanceUtilization(this.currentHoldings);
-        await this.checkIntradayStrategies();
+        await this.balanceCallPutRatio(this.currentHoldings);
         break;
       }
       case 2: {
+        this.currentHoldings = await this.cartService.findCurrentPositions();
+        await this.handleBalanceUtilization(this.currentHoldings);
+        break;
+      }
+      case 3: {
+        await this.checkIntradayStrategies();
+        break;
+      }
+      case 4: {
+        this.currentHoldings = await this.cartService.findCurrentPositions();
+        const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
+
+        await this.optionsOrderBuilderService.hedge(this.currentHoldings, balance);
+        break;
+      }
+      case 5: {
         await this.optionsOrderBuilderService.addOptionsStrategiesToCart();
         break;
       }
@@ -866,7 +880,7 @@ export class AutopilotService {
       moment().isBefore(moment(this.sessionEnd).subtract(10, 'minutes'))) {
       this.isMarketOpened().subscribe(async (isOpen) => {
         if (isOpen) {
-          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 15) {
+          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 5) {
             this.lastOptionsCheckCheck = moment();
             await this.intradayProcess();
           } else {
