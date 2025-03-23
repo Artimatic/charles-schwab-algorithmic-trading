@@ -321,7 +321,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.autopilotService.isMarketOpened().toPromise();
           this.lastCredentialCheck = moment();
           await this.backtestOneStock(true, false);
-          await this.padOrders();
         } else if (moment().isAfter(moment(this.autopilotService.sessionEnd).subtract(25, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionEnd).subtract(20, 'minutes'))) {
           console.log('Buy on close');
@@ -1040,13 +1039,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       }
     };
     await this.autopilotService.getNewTrades(findPuts, null, this.autopilotService.currentHoldings);
-  }
-
-  async padOrders() {
-    if (!this.autopilotService.hasReachedBuyLimit()) {
-      this.changeStrategy();
-      await this.handleStrategy();
-    }
   }
 
   showStrategies() {

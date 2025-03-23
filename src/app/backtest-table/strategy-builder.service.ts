@@ -39,6 +39,9 @@ export class StrategyBuilderService {
     private strategyStoreService: StrategyStoreService,
     private cartService: CartService) { }
 
+  addBullishStock(symbol: string) {
+    this.bullishStocks.push(symbol);
+  }
   getRecentBacktest(symbol: string = null, expiry = 1) {
     const backtestStorage = this.strategyStoreService.getStorage('backtest');
     if (!symbol) {
@@ -173,7 +176,7 @@ export class StrategyBuilderService {
     if (!optionsData.move || optionsData.move > this.maxImpliedMovement) {
       this.reportingService.addAuditLog(null,
         `Implied movement is too high for ${symbol} at ${optionsData.move}. Max is ${this.maxImpliedMovement}`);
-      this.bullishStocks.push(symbol);
+      this.addBullishStock(symbol);
       return { call: null, put: null };
     }
     const optionsChain = optionsData.optionsChain;
