@@ -231,6 +231,7 @@ export class OptionsOrderBuilderService {
         let currentPut = null;
         if (!this.isIdealOption(callPrice, maxCashAllocation, bullishStrangle.call)) {
           currentCall = null;
+          this.strategyBuilderService.bullishStocks.push(buy);
           break;
         }
         for (const sell of sellList) {
