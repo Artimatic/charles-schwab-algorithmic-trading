@@ -75,16 +75,22 @@
             severity="danger"></p-tag>
     </span>
     <p-tag [value]="autopilotService.volatility * 100 +'%'" *ngIf="autopilotService.volatility >= 0.5" severity="danger"
-        pTooltip="Current volatility"></p-tag>
+        pTooltip="Predicted volatility"></p-tag>
     <p-tag [value]="autopilotService.volatility * 100 +'%'"
         *ngIf="autopilotService.volatility >= 0.28 && autopilotService.volatility < 0.5" severity="warning"
-        pTooltip="Current volatility"></p-tag>
+        pTooltip="Predicted volatility"></p-tag>
     <p-tag [value]="autopilotService.volatility * 100 +'%'" *ngIf="autopilotService.volatility < 0.28"
-        severity="success" pTooltip="Current volatility"></p-tag>
+        severity="success" pTooltip="Predicted volatility"></p-tag>
 
-    <p-tag [value]="priceTargetService.portfolioVolatility" severity="info"
-        pTooltip="Current portfolio volatility"></p-tag>
-    <p-tag pTooltip="Swing trade allocation - percentage of cash balance"
+    <p-tag [value]="priceTargetService.portfolioVolatility * 100 +'%'" severity="info"
+        pTooltip="Portfolio volatility"></p-tag>
+
+    <p-tag [value]="priceTargetService.portfolioPl * 100 +'%'" severity="info"
+        pTooltip="Portfolio profit and loss"></p-tag>
+
+    <p-tag [value]="priceTargetService.targetDiff * 100 +'%'" severity="info"
+        pTooltip="Profit target"></p-tag>
+    <p-tag pTooltip="Trade allocation - percentage of cash balance"
         [value]="autopilotService.riskToleranceList[autopilotService.riskCounter] * 100 +'%'" severity="danger"></p-tag>
     <!-- 
     <p-tag [value]="dayTradingRiskToleranceList[dayTradeRiskCounter] * 100 +'%'" severity="warning"
