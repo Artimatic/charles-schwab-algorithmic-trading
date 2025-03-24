@@ -305,6 +305,10 @@ export class AutopilotService {
     return (this.cartService.buyOrders.length + this.cartService.otherOrders.length) > this.cartService.maxTradeCount;
   }
 
+  hasReachedLimit() {
+    return (this.cartService.buyOrders.length + this.cartService.otherOrders.length + this.optionsOrderBuilderService.tradingPairs.length) > this.cartService.maxTradeCount;
+  }
+
   getTechnicalIndicators(stock: string, startDate: string, currentDate: string) {
     return this.backtestService.getBacktestEvaluation(stock, startDate, currentDate, 'daily-indicators');
   }

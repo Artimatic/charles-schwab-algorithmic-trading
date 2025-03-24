@@ -149,7 +149,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.backtestBuffer$ = new Subject();
 
           this.display = true;
-          this.startInterval();
+          await this.startInterval();
           this.interval = this.defaultInterval;
           this.messageService.add({
             severity: 'success',
@@ -305,11 +305,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     });
   }
 
-  startInterval() {
+  async startInterval() {
     if (this.timer) {
       this.timer.unsubscribe();
     }
-    this.setupStrategy();
+    await this.setupStrategy();
+    await this.handleStrategy();
+    this.handleStrategy();
     this.timer = TimerObservable.create(1000, this.interval)
       .pipe(takeUntil(this.destroy$))
       .subscribe(async () => {
@@ -321,6 +323,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.autopilotService.isMarketOpened().toPromise();
           this.lastCredentialCheck = moment();
           await this.backtestOneStock(true, false);
+          await this.padOrders();
         } else if (moment().isAfter(moment(this.autopilotService.sessionEnd).subtract(25, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionEnd).subtract(20, 'minutes'))) {
           console.log('Buy on close');
@@ -339,6 +342,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             await this.setProfitLoss();
             this.scoreKeeperService.resetTotal();
             this.resetCart();
+            setTimeout(() => {
+              this.handleStrategy();
+            }, 10800000);
           }
         } else if (this.autopilotService.handleIntraday()) {
           const metTarget = await this.priceTargetService.checkProfitTarget(this.autopilotService.currentHoldings);
@@ -360,6 +366,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.newStockFinderService.processOneStock();
         }
       });
+  }
+
+  async padOrders() {
+    if (!this.autopilotService.hasReachedLimit()) {
+      await this.handleStrategy();
+    }
   }
 
   calculatePl(records) {
