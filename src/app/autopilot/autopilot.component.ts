@@ -149,7 +149,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.backtestBuffer$ = new Subject();
 
           this.display = true;
-          this.startInterval();
+          await this.startInterval();
           this.interval = this.defaultInterval;
           this.messageService.add({
             severity: 'success',
@@ -305,11 +305,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     });
   }
 
-  startInterval() {
+  async startInterval() {
     if (this.timer) {
       this.timer.unsubscribe();
     }
-    this.setupStrategy();
+    await this.setupStrategy();
+    await this.handleStrategy();
     this.timer = TimerObservable.create(1000, this.interval)
       .pipe(takeUntil(this.destroy$))
       .subscribe(async () => {
@@ -340,6 +341,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             await this.setProfitLoss();
             this.scoreKeeperService.resetTotal();
             this.resetCart();
+            setTimeout(() => {
+              this.handleStrategy();
+            }, 10800000);
           }
         } else if (this.autopilotService.handleIntraday()) {
           const metTarget = await this.priceTargetService.checkProfitTarget(this.autopilotService.currentHoldings);
@@ -361,6 +365,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.newStockFinderService.processOneStock();
         }
       });
+  }
+
+  async padOrders() {
+    if (!this.autopilotService.hasReachedLimit()) {
+      await this.handleStrategy();
+    }
   }
 
   calculatePl(records) {
@@ -1040,13 +1050,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       }
     };
     await this.autopilotService.getNewTrades(findPuts, null, this.autopilotService.currentHoldings);
-  }
-
-  async padOrders() {
-    if (!this.autopilotService.hasReachedBuyLimit()) {
-      this.changeStrategy();
-      await this.handleStrategy();
-    }
   }
 
   showStrategies() {
