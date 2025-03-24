@@ -311,7 +311,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
     await this.setupStrategy();
     await this.handleStrategy();
-    this.handleStrategy();
     this.timer = TimerObservable.create(1000, this.interval)
       .pipe(takeUntil(this.destroy$))
       .subscribe(async () => {
