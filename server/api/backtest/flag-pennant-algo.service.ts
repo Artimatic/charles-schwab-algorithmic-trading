@@ -128,7 +128,7 @@ interface TradingPatternData {
     measuredRuleTargetMet: boolean;
 }
 
-function findStocksMatchingTradingPattern(
+export function findStocksMatchingTradingPattern(
     stockSymbol: string,
     historicalData: StockDataPoint[],
     patternData: TradingPatternData,
@@ -294,5 +294,5 @@ const patternDataForExample: TradingPatternData = {
     measuredRuleTargetMet: false,
 };
 
-const exampleMatchResult = findStocksMatchingTradingPattern("ExampleStock", sampleHistoricalData, patternDataForExample, 10, 20);  //Trend from 10, Formation from 20.
-console.log("Example Match Result:", exampleMatchResult);
+// const exampleMatchResult = findStocksMatchingTradingPattern("ExampleStock", sampleHistoricalData, patternDataForExample, 10, 20);  //Trend from 10, Formation from 20.
+// console.log("Example Match Result:", exampleMatchResult);
