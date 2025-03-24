@@ -139,6 +139,8 @@ describe('PriceTargetService', () => {
     portfolioWeightsServiceSpy.getPortfolioVolatility.and.returnValue(new Promise((resolve) => {
       resolve(0.1);
     }));
+
+    portfolioServiceSpy.getTdBalance.and.returnValue(of({cashBalance: 80000, liquidationValue: 100000}));
   });
 
   it('should be created', () => {
@@ -675,7 +677,6 @@ describe('PriceTargetService', () => {
     });
 
     cartServiceSpy.isStrangle.and.returnValue(false);
-    portfolioServiceSpy.getTdBalance.and.returnValue(of({cashBalance: 10000, liquidationValue: 100000}));
 
     expect(service.getDiff(testSpyPrice['SPY'].quote.closePrice, testSpyPrice['SPY'].quote.lastPrice)).toEqual(-0.019689655172413723);
 

@@ -94,21 +94,25 @@ export class PriceTargetService {
     const priceTarget = this.getDiff(price[symbol].quote.closePrice, price[symbol].quote.lastPrice) + target;
     this.portfolioPl = portfolioPl;
     this.reportingService.addAuditLog(null, `Portfolio PnL: ${portfolioPl}. target: ${priceTarget}`);
+
+    const balance = await this.portfolioService.getTdBalance().toPromise();
+    const targetUtilization = new Date().getDate() * 0.005;
+    const actualUtilization = (1 - (balance.cashBalance / balance.liquidationValue));
+    if (actualUtilization < targetUtilization) {
+      this.reportingService.addAuditLog(null, `Utilization requirements not met. Target ${targetUtilization}, Actual ${actualUtilization}`);
+      return false;
+    }
+
     if (portfolioPl && portfolioPl > priceTarget) {
       this.reportingService.addAuditLog(null, `Profit target met.`);
       this.lastTargetMet = moment();
+      this.targetDiff = round(this.targetDiff * 1.25, 2);
       return true;
     }
     return false;
   }
 
   async checkProfitTarget(retrievedHoldings: PortfolioInfoHolding[] = null, target = this.targetDiff) {
-    const balance = await this.portfolioService.getTdBalance().toPromise();
-    const targetUtilization = new Date().getDate() * 0.005;
-    const actualUtilization = (1 - (balance.cashBalance / balance.liquidationValue));
-    if (actualUtilization < targetUtilization) {
-      return false;
-    }
     const targetMet = await this.hasMetPriceTarget(target);
     if (targetMet) {
       const holdings = retrievedHoldings ? retrievedHoldings : await this.cartService.findCurrentPositions();

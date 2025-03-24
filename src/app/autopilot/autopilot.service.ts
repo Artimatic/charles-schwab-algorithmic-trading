@@ -137,6 +137,29 @@ export class AutopilotService {
 
   intradayProcessCounter = 0;
 
+  private processes = [
+    async () => await this.priceTargetService.setTargetDiff(),
+    async () => {
+      this.currentHoldings = await this.cartService.findCurrentPositions();
+      await this.handleBalanceUtilization(this.currentHoldings);
+    },
+    async () => await this.checkIntradayStrategies(),
+    async () => {
+      this.currentHoldings = await this.cartService.findCurrentPositions();
+      const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
+      await this.optionsOrderBuilderService.hedge(this.currentHoldings, balance);
+    },
+    async () => await this.optionsOrderBuilderService.addOptionsStrategiesToCart(),
+    async () => {
+      this.currentHoldings = await this.cartService.findCurrentPositions();
+      await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
+    },
+    async () => {
+      this.currentHoldings = await this.cartService.findCurrentPositions();
+      await this.balanceCallPutRatio(this.currentHoldings);
+    }
+  ];
+
   constructor(private cartService: CartService,
     private optionsOrderBuilderService: OptionsOrderBuilderService,
     private priceTargetService: PriceTargetService,
@@ -522,8 +545,8 @@ export class AutopilotService {
       currentHoldings = await this.cartService.findCurrentPositions();
       this.sellLoser(currentHoldings, 'Over balance');
     } else {
-      const spyPrediction = this.getLastSpyMl() || 0;
-      const targetUtilization = Number(new Date().getDate() * 0.005) + spyPrediction - this.getVolatilityMl();
+      let targetUtilization = 1.618034 - this.getVolatilityMl();
+      targetUtilization = targetUtilization > 1 ? 1 : targetUtilization;
       const actualUtilization = (1 - (balance.cashBalance / balance.liquidationValue));
       if (actualUtilization < targetUtilization) {
         this.reportingService.addAuditLog(null, `Underutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
@@ -547,7 +570,7 @@ export class AutopilotService {
     const allocation = alloc > 0 && alloc <= 1 ? alloc : 0.01;
     const cash = (balance.cashBalance < balance.availableFunds * 0.05) ?
       balance.cashBalance :
-      (balance.cashBalance * this.riskToleranceList[this.riskCounter] * allocation);
+      (balance.cashBalance * allocation);
     const quantity = this.strategyBuilderService.getQuantity(price, 1, cash);
     const order = this.cartService.buildOrderWithAllocation(buySymbol, quantity, price, 'Buy',
       1, -0.005, 0.01,
@@ -613,7 +636,7 @@ export class AutopilotService {
   }
 
   setVolatilityMl(val: number) {
-    this.volatility = val;
+    this.volatility = round(val, 2);
   }
 
   getVolatilityMl() {
@@ -696,8 +719,7 @@ export class AutopilotService {
         if (sqqqHolding) {
           await this.sellRightAway(sqqqHolding.name, sqqqHolding.shares);
         }
-        await this.buyRightAway('TQQQ', this.riskToleranceList[1]);
-        await this.addBuy(this.createHoldingObj('TQQQ'), this.riskToleranceList[1], 'Balance puts');
+        await this.buyRightAway('TQQQ', this.riskToleranceList[0]);
         const currentHoldings = await this.cartService.findCurrentPositions();
         await this.sellPutLoser(currentHoldings);
         //} else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
@@ -711,9 +733,7 @@ export class AutopilotService {
         if (uproHolding) {
           await this.sellRightAway(uproHolding.name, uproHolding.shares);
         }
-        await this.addBuy(this.createHoldingObj('SQQQ'), this.riskToleranceList[1], 'Balance calls');
-
-        await this.buyRightAway('SQQQ', this.riskToleranceList[1]);
+        await this.buyRightAway('SQQQ', this.riskToleranceList[0]);
         const currentHoldings = await this.cartService.findCurrentPositions();
         await this.sellCallLoser(currentHoldings);
       }
@@ -832,55 +852,21 @@ export class AutopilotService {
   }
 
   private async intradayProcess() {
-    if (this.intradayProcessCounter > 6) {
+    if (this.intradayProcessCounter >= this.processes.length) {
       this.intradayProcessCounter = 0;
     }
 
-    switch (this.intradayProcessCounter) {
-      case 0: {
-        await this.priceTargetService.setTargetDiff();
-        break;
-      }
-      case 1: {
-        this.currentHoldings = await this.cartService.findCurrentPositions();
-        await this.balanceCallPutRatio(this.currentHoldings);
-        break;
-      }
-      case 2: {
-        this.currentHoldings = await this.cartService.findCurrentPositions();
-        await this.handleBalanceUtilization(this.currentHoldings);
-        break;
-      }
-      case 3: {
-        await this.checkIntradayStrategies();
-        break;
-      }
-      case 4: {
-        this.currentHoldings = await this.cartService.findCurrentPositions();
-        const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
-
-        await this.optionsOrderBuilderService.hedge(this.currentHoldings, balance);
-        break;
-      }
-      case 5: {
-        await this.optionsOrderBuilderService.addOptionsStrategiesToCart();
-        break;
-      }
-      default: {
-        this.currentHoldings = await this.cartService.findCurrentPositions();
-        await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
-        break;
-      }
-    }
+    await this.processes[this.intradayProcessCounter]();
     this.intradayProcessCounter++;
   }
+
 
   handleIntraday() {
     if (moment().isAfter(moment(this.sessionStart).add(23, 'minutes')) &&
       moment().isBefore(moment(this.sessionEnd).subtract(10, 'minutes'))) {
       this.isMarketOpened().subscribe(async (isOpen) => {
         if (isOpen) {
-          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 5) {
+          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 7) {
             this.lastOptionsCheckCheck = moment();
             await this.intradayProcess();
           } else {
