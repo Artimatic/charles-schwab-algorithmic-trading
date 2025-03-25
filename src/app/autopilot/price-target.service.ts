@@ -5,7 +5,7 @@ import { OrderTypes } from '@shared/models/smart-order';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { PortfolioWeightsService } from './portfolio-weights.service';
 import * as moment from 'moment-timezone';
-import { round } from 'lodash';
+import { round } from 'lodash-es';
 
 @Injectable({
   providedIn: 'root'
@@ -35,7 +35,7 @@ export class PriceTargetService {
     let portfolioVolatility = await this.portfolioWeightsService.getPortfolioVolatility(holdings);
     this.portfolioVolatility = round(portfolioVolatility, 2);
     const tenYrYield = await this.globalSettingsService.get10YearYield();
-    const target = ((tenYrYield +  1.618034) * 0.01 * this.portfolioVolatility) + 0.008;
+    const target = ((tenYrYield + 1.618034) * 0.01 * this.portfolioVolatility) + 0.01;
     this.targetDiff = (!target || target < 0.01 || target > 0.04) ? this.targetDiff : target;
     this.reportingService.addAuditLog(null, `Target set to ${this.targetDiff}`);
     this.reportingService.addAuditLog(null, `Current portfolio volatility: ${this.portfolioVolatility}`);
@@ -49,20 +49,29 @@ export class PriceTargetService {
     return this.getDiff(invested, invested + pl) < target;
   }
 
+  private skipPnL(current) {
+    if (current.currentDayCost > 0) {
+      return true;
+    }
+    
+    return false;
+  }
+
   async todaysPortfolioPl() {
     const portData = await this.portfolioService.getTdPortfolio().toPromise();
     if (!portData) {
       return null;
     }
     const todayPl = portData.reduce((acc, curr) => {
-      if (curr.instrument.assetType === 'COLLECTIVE_INVESTMENT') {
-        acc.profitLoss += (curr.currentDayCost + curr.currentDayProfitLoss);
-      } else {
-        acc.profitLoss += curr.currentDayProfitLoss;
+      if (this.skipPnL(curr)) {
+        return acc;
       }
+      acc.profitLoss += curr.currentDayProfitLoss;
       acc.total += curr.marketValue;
       return acc;
     }, { profitLoss: 0, total: 0 });
+    console.log('todayPl', todayPl);
+
     return this.getDiff(todayPl.total, todayPl.total + todayPl.profitLoss);
   }
 

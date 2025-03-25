@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { round } from 'lodash';
+import { round } from 'lodash-es';
 import { CartService, PortfolioInfoHolding } from '@shared/services';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
 import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';

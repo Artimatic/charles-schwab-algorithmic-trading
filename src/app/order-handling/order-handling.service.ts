@@ -9,7 +9,7 @@ import { Options } from '@shared/models/options';
 import { AlgoQueueItem } from '@shared/services/trade.service';
 import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
-import { round } from 'lodash';
+import { round } from 'lodash-es';
 import { OrderTypes } from '@shared/models/smart-order';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
 

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Subject } from 'rxjs';
 import * as moment from 'moment-timezone';
-import { round } from 'lodash';
+import { round } from 'lodash-es';
 import { GlobalSettingsService } from 'src/app/settings/global-settings.service';
 import { MachineLearningService } from './machine-learning/machine-learning.service';
 

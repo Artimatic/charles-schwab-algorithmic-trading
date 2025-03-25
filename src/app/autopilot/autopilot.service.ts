@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { AuthenticationService, BacktestService, CartService, DaytradeService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService } from '@shared/services';
-import { round } from 'lodash';
+import { round } from 'lodash-es';
 import * as moment from 'moment-timezone';
 import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';
 import { PriceTargetService } from './price-target.service';
