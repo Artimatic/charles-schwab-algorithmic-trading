@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { PortfolioInfoHolding, PortfolioService } from './portfolio.service';
 import { OrderTypes, SmartOrder } from '../models/smart-order';
 import { TradeService, AlgoQueueItem } from './trade.service';
-import { round } from 'lodash';
+import { round } from 'lodash-es';
 import { MessageService } from 'primeng/api';
 import { Subject } from 'rxjs';
 import * as moment from 'moment-timezone';

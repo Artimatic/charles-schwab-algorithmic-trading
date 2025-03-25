@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { round } from 'lodash';
+import { round } from 'lodash-es';
 import { OptionsDataService } from '@shared/options-data.service';
 import { BacktestService, CartService, PortfolioService, ReportingService } from '@shared/services';
 import { Stock } from '@shared/stock.interface';
