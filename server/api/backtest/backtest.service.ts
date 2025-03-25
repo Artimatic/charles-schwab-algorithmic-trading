@@ -1762,7 +1762,8 @@ class BacktestService {
       demark9: DaytradeRecommendation.Neutral,
       mfiDivergence: DaytradeRecommendation.Neutral,
       mfiDivergence2: DaytradeRecommendation.Neutral,
-      bband: DaytradeRecommendation.Neutral
+      bband: DaytradeRecommendation.Neutral,
+      flagPennant: DaytradeRecommendation.Neutral
     };
 
     recommendations.roc = AlgoService.checkRocCrossover(indicator.roc70Previous, indicator.roc70, indicator.mfiLeft);
@@ -1783,6 +1784,7 @@ class BacktestService {
     recommendations.mfiDivergence = AlgoService.checkMfiDivergence(allIndicators);
     recommendations.mfiDivergence2 = AlgoService.checkMfiDivergence2(allIndicators);
     recommendations.mfiTrade = AlgoService.checkMfiTrade(allIndicators);
+    recommendations.flagPennant = AlgoService.checkFlagPennant(allIndicators);
     recommendations.recommendation = AlgoService.determineFinalRecommendation(allIndicators);
 
     return recommendations;
