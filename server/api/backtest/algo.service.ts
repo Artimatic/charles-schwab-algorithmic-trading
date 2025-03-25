@@ -1,6 +1,7 @@
 import * as _ from 'lodash';
 import { Indicators, DaytradeRecommendation, OrderType } from './backtest.constants';
 import DecisionService from '../mean-reversion/reversion-decision.service';
+import { findStocksMatchingTradingPattern } from './flag-pennant-algo.service';
 
 class AlgoService {
   getLowerBBand(bband): number {
@@ -269,6 +270,24 @@ class AlgoService {
 
   checkBBandBreakout(isBreakout) {
     return isBreakout ? DaytradeRecommendation.Bullish : DaytradeRecommendation.Neutral;
+  }
+
+  checkFlagPennant(indicators: Indicators[]): DaytradeRecommendation {
+    const matchBullishResult = findStocksMatchingTradingPattern(indicators, {
+      steepPrecedingTrend: false,  // Set by the steep trend analysis
+      flagPennantFormation: false,  // Set by the flag/pennant analysis
+      breakoutOccurred: false,  //Set by the breakout anlaysis
+      breakoutDirection: 'up',
+      measuredRuleTargetMet: false,
+    }, 10, 20);
+    const matchBearishResult = findStocksMatchingTradingPattern(indicators, {
+      steepPrecedingTrend: false,  // Set by the steep trend analysis
+      flagPennantFormation: false,  // Set by the flag/pennant analysis
+      breakoutOccurred: false,  //Set by the breakout anlaysis
+      breakoutDirection: 'down',
+      measuredRuleTargetMet: false,
+    }, 10, 20);
+    return matchBullishResult ? DaytradeRecommendation.Bullish : (matchBearishResult ? DaytradeRecommendation.Bearish : DaytradeRecommendation.Neutral);
   }
 
   determineFinalRecommendation(indicators: Indicators[]): OrderType {

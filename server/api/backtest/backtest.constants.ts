@@ -16,6 +16,7 @@ export interface Recommendation {
     overboughtMomentum?: DaytradeRecommendation;
     data?: any;
     bbandBreakout?: DaytradeRecommendation;
+    flagPennant?: DaytradeRecommendation;
 }
 
 export enum DaytradeRecommendation {

@@ -1,3 +1,5 @@
+import { Indicators } from "./backtest.constants";
+
 /**
  * Helper function to detect a flag or pennant formation.
  *
@@ -108,18 +110,6 @@ function isBreakoutOccurred(
     }
 }
 
-
-/**
- * Example usage within the overall pattern detection:
- */
-
-interface StockDataPoint {
-    close: number;
-    high: number;
-    low: number;
-    // Add other properties like open, volume, date, etc.
-}
-
 interface TradingPatternData {
     steepPrecedingTrend: boolean;
     flagPennantFormation: boolean;
@@ -129,14 +119,11 @@ interface TradingPatternData {
 }
 
 export function findStocksMatchingTradingPattern(
-    stockSymbol: string,
-    historicalData: StockDataPoint[],
+    historicalData: Indicators[],
     patternData: TradingPatternData,
     trendStartIndex: number = 0,
     formationStartIndex: number = 0
 ): boolean | string {
-
-    console.log(`Analyzing stock: ${stockSymbol}`);
 
     // 1. Calculate Steep Preceding Trend
     const periodForTrend = 20;
@@ -150,11 +137,11 @@ export function findStocksMatchingTradingPattern(
     );
 
     if (isSteepTrend === null) {
-        return `Insufficient historical data to analyze steep trend for ${stockSymbol}.`;
+        return `Insufficient historical data to analyze steep trend.`;
     }
 
     if (!isSteepTrend) {
-        return `Stock ${stockSymbol} does not have a steep preceding trend.`;
+        return `Stock does not have a steep preceding trend.`;
     }
 
     patternData.steepPrecedingTrend = true;
@@ -172,11 +159,11 @@ export function findStocksMatchingTradingPattern(
     );
 
     if (isFormationPresent === null) {
-        return `Insufficient data to analyze flag/pennant formation for ${stockSymbol}.`;
+        return `Insufficient data to analyze flag/pennant formation.`;
     }
 
     if (!isFormationPresent) {
-        return `Stock ${stockSymbol} doesn't appear to be forming a flag/pennant pattern.`;
+        return `Stock doesn't appear to be forming a flag/pennant pattern.`;
     }
 
     patternData.flagPennantFormation = true; //Update pattern data
@@ -185,22 +172,22 @@ export function findStocksMatchingTradingPattern(
     const breakoutResult = isBreakoutOccurred(historicalData, formationStartIndex, formationPeriodValue);
 
     if (breakoutResult === null) {
-        return `Insufficient data to analyze breakout for ${stockSymbol}.`;
+        return `Insufficient data to analyze breakout.`;
     }
 
     if (!breakoutResult) {
-        return `Stock ${stockSymbol} hasn't broken out of the pattern yet.`;
+        return `Stock hasn't broken out of the pattern yet.`;
     }
     patternData.breakoutOccurred = true;  //Update pattern data
 
     patternData.breakoutDirection = "up";  //Hardcoding up for this example since that is what is tested.
 
     if (!patternData.measuredRuleTargetMet) {
-        console.warn(`Stock ${stockSymbol} hasn't reached its measured rule target yet.`);
+        console.warn(`Stock hasn't reached its measured rule target yet.`);
     }
 
 
-    console.log(`Stock ${stockSymbol} potentially matches the trading flags/pennants pattern!`);
+    console.log(`Stock potentially matches the trading flags/pennants pattern!`);
     return true;
 }
 
@@ -272,27 +259,6 @@ function isSteepPrecedingTrend(
 
     return averagePriceIncrease >= steepnessThreshold;
 }
-
-// Example Usage (with sample data):
-
-const sampleHistoricalData: StockDataPoint[] = [
-    { close: 100, high: 101, low: 99 }, { close: 100.2, high: 101.2, low: 99.2 }, { close: 100.5, high: 101.5, low: 99.5 }, { close: 101, high: 102, low: 100 }, { close: 101.6, high: 102.6, low: 100.6 },
-    { close: 102.3, high: 103.3, low: 101.3 }, { close: 103, high: 104, low: 102 }, { close: 103.8, high: 104.8, low: 102.8 }, { close: 104.7, high: 105.7, low: 103.7 }, { close: 105.7, high: 106.7, low: 104.7 },
-    { close: 106.8, high: 107.8, low: 105.8 }, { close: 108, high: 109, low: 107 }, { close: 109.3, high: 110.3, low: 108.3 }, { close: 110.7, high: 111.7, low: 109.7 }, { close: 112.2, high: 113.2, low: 111.2 },
-    { close: 113.8, high: 114.8, low: 112.8 }, { close: 115.5, high: 116.5, low: 114.5 }, { close: 117.3, high: 118.3, low: 116.3 }, { close: 119.2, high: 120.2, low: 118.2 }, { close: 121.2, high: 122.2, low: 120.2 },
-    { close: 123.3, high: 124.3, low: 122.3 }, { close: 125.5, high: 126.5, low: 124.5 }, { close: 127.8, high: 128.8, low: 126.8 }, { close: 130.2, high: 131.2, low: 129.2 }, { close: 132.7, high: 133.7, low: 131.7 },
-    { close: 135.3, high: 136.3, low: 134.3 }, { close: 138, high: 139, low: 137 }, { close: 140.8, high: 141.8, low: 139.8 }, { close: 143.7, high: 144.7, low: 142.7 }, { close: 146.7, high: 147.7, low: 145.7 },
-    { close: 150, high: 151, low: 149 } // Breakout period at index 30
-
-];
-
-const patternDataForExample: TradingPatternData = {
-    steepPrecedingTrend: false,  // Set by the steep trend analysis
-    flagPennantFormation: false,  // Set by the flag/pennant analysis
-    breakoutOccurred: false,  //Set by the breakout anlaysis
-    breakoutDirection: "up",
-    measuredRuleTargetMet: false,
-};
 
 // const exampleMatchResult = findStocksMatchingTradingPattern("ExampleStock", sampleHistoricalData, patternDataForExample, 10, 20);  //Trend from 10, Formation from 20.
 // console.log("Example Match Result:", exampleMatchResult);
