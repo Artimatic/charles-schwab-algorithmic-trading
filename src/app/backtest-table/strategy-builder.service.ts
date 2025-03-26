@@ -103,6 +103,9 @@ export class StrategyBuilderService {
         sellSignals: results.sellSignals,
         backtestDate: results.backtestDate
       };
+      if (results.buySignals.find(s => s.includes('pennant')) || results.sellSignals.find(s => s.includes('pennant'))) {
+        this.messageService.add({ severity: 'info', summary: `${symbol} found flag pennant`, sticky: true });
+      }
 
       this.addToResultStorage(tableObj);
       return results;
