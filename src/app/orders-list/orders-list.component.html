@@ -1,4 +1,4 @@
-<div class="order-container">
+<div class="order-container" *ngIf="!loading">
   <div class="column">
     <h4>Daytrade</h4>
     <div *ngIf="!cartService.otherOrders.length" class="empty-card">

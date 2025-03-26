@@ -14,6 +14,7 @@ export class OrdersListComponent implements OnInit, OnDestroy {
   sellOrders = [];
   otherOrders = [];
   destroy$ = new Subject();
+  loading = false;
 
   constructor(public cartService: CartService,
     private ref: ChangeDetectorRef
@@ -31,7 +32,11 @@ export class OrdersListComponent implements OnInit, OnDestroy {
     this.cartService.cartObserver
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
-        this.ref.detectChanges();
+        this.loading = true;
+        setTimeout(() => {
+          this.loading = false;
+          this.ref.detectChanges();
+        }, 1000);
       });
   }
 

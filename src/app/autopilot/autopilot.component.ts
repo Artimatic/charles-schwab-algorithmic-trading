@@ -323,6 +323,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.lastCredentialCheck = moment();
           await this.backtestOneStock(true, false);
           await this.padOrders();
+          this.cartService.removeCompletedOrders();
         } else if (moment().isAfter(moment(this.autopilotService.sessionEnd).subtract(25, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionEnd).subtract(20, 'minutes'))) {
           console.log('Buy on close');

@@ -307,10 +307,8 @@ export class AutopilotService {
   }
 
   async checkIntradayStrategies() {
-    const start = moment().tz('America/New_York').set({ hour: 10, minute: 15 });
-    const end = moment().tz('America/New_York').set({ hour: 11, minute: 15 });
-    if (moment().isAfter(moment(start)) &&
-      moment().isBefore(moment(end))) {
+    if (moment().isAfter(moment().tz('America/New_York').set({ hour: 10, minute: 35 })) &&
+      moment().isBefore(moment().tz('America/New_York').set({ hour: 10, minute: 50 }))) {
       const isDown = await this.priceTargetService.isDownDay();
       if (isDown) {
         this.reportingService.addAuditLog(null, 'Down day, buy the dip');
@@ -678,8 +676,8 @@ export class AutopilotService {
 
   sellCallLoser(currentHoldings: PortfolioInfoHolding[]) {
     currentHoldings
-    .sort((a, b) => a.pl - b.pl)
-    .filter(holding => holding.primaryLegs[0].putCallInd.toLowerCase() === 'c')
+      .sort((a, b) => a.pl - b.pl)
+      .filter(holding => holding.primaryLegs[0].putCallInd.toLowerCase() === 'c')
 
     const toBeSold = currentHoldings.slice(0, 1);
     toBeSold.forEach(async (holdingInfo) => {
@@ -691,8 +689,8 @@ export class AutopilotService {
 
   sellPutLoser(currentHoldings: PortfolioInfoHolding[]) {
     currentHoldings
-    .sort((a, b) => a.pl - b.pl)
-    .filter(holding => holding.primaryLegs[0].putCallInd.toLowerCase() === 'p')
+      .sort((a, b) => a.pl - b.pl)
+      .filter(holding => holding.primaryLegs[0].putCallInd.toLowerCase() === 'p')
 
     const toBeSold = currentHoldings.slice(0, 1);
     toBeSold.forEach(async (holdingInfo) => {

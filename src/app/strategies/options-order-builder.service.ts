@@ -414,7 +414,7 @@ export class OptionsOrderBuilderService {
     //const impliedMove = await this.getImpliedMove(symbol, backtestResults)
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
     //if (currentDiff < (((1 / (impliedMove + 0.01)) * 0.01))) {
-    if (Math.abs(currentDiff) < 0.017) {
+    if (Math.abs(currentDiff) < 0.011) {
       return true;
     }
 
