@@ -151,7 +151,7 @@ describe('PriceTargetService', () => {
     portfolioServiceSpy.getTdPortfolio.and.returnValue(of(mockPortfolioData));
     const pl = await service.todaysPortfolioPl();
 
-    expect(pl).toEqual(-0.007036289678282304);
+    expect(pl).toEqual(-0.007);
   });
   it('should return true if profit target met', async () => {
     const fakePortData = [
@@ -232,8 +232,8 @@ describe('PriceTargetService', () => {
       {
         "shortQuantity": 0,
         "averagePrice": 3.9051,
-        "currentDayProfitLoss": 0,
-        "currentDayProfitLossPercentage": 0,
+        "currentDayProfitLoss": 100,
+        "currentDayProfitLossPercentage": 10,
         "longQuantity": 2,
         "settledLongQuantity": 2,
         "settledShortQuantity": 0,
@@ -291,17 +291,17 @@ describe('PriceTargetService', () => {
     service.targetDiff = 0;
     const pl = await service.todaysPortfolioPl();
 
-    expect(pl).toEqual(0.016304100414841503);
+    expect(pl).toEqual(0.0137);
     const priceTargetMet = await service.hasMetPriceTarget();
     expect(priceTargetMet).toEqual(true);
   });
 
-  it('should return false if profit target no met', async () => {
+  it('should return false if profit target not met', async () => {
     const fakePortData = [
       {
         "shortQuantity": 0,
         "averagePrice": 73.1541361257,
-        "currentDayProfitLoss": 150.690000000001,
+        "currentDayProfitLoss": -10,
         "currentDayProfitLossPercentage": null,
         "longQuantity": 191,
         "settledLongQuantity": 191,
@@ -434,7 +434,7 @@ describe('PriceTargetService', () => {
     service.targetDiff = 0;
     const pl = await service.todaysPortfolioPl();
 
-    expect(pl).toEqual(-0.0018785716631869993);
+    expect(pl).toEqual(-0.0012);
     const priceTargetMet = await service.hasMetPriceTarget();
     expect(priceTargetMet).toEqual(false);
   });

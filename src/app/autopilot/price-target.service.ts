@@ -36,7 +36,7 @@ export class PriceTargetService {
     this.portfolioVolatility = round(portfolioVolatility, 2);
     const tenYrYield = await this.globalSettingsService.get10YearYield();
     const target = ((tenYrYield + 1.618034) * 0.01 * this.portfolioVolatility) + 0.01;
-    this.targetDiff = (!target || target < 0.01 || target > 0.04) ? this.targetDiff : target;
+    this.targetDiff = round((!target || target < 0.01 || target > 0.04) ? this.targetDiff : target, 4);
     this.reportingService.addAuditLog(null, `Target set to ${this.targetDiff}`);
     this.reportingService.addAuditLog(null, `Current portfolio volatility: ${this.portfolioVolatility}`);
   }
@@ -72,7 +72,7 @@ export class PriceTargetService {
     }, { profitLoss: 0, total: 0 });
     console.log('todayPl', todayPl);
 
-    return this.getDiff(todayPl.total, todayPl.total + todayPl.profitLoss);
+    return round(this.getDiff(todayPl.total, todayPl.total + todayPl.profitLoss), 4);
   }
 
   getDiff(cost, currentValue) {
@@ -101,7 +101,7 @@ export class PriceTargetService {
       return false;
     }
     const priceTarget = this.getDiff(price[symbol].quote.closePrice, price[symbol].quote.lastPrice) + target;
-    this.portfolioPl = portfolioPl;
+    this.portfolioPl = round(portfolioPl, 4);
     this.reportingService.addAuditLog(null, `Portfolio PnL: ${portfolioPl}. target: ${priceTarget}`);
 
     const balance = await this.portfolioService.getTdBalance().toPromise();
@@ -115,7 +115,7 @@ export class PriceTargetService {
     if (portfolioPl && portfolioPl > priceTarget) {
       this.reportingService.addAuditLog(null, `Profit target met.`);
       this.lastTargetMet = moment();
-      this.targetDiff = round(this.targetDiff * 1.25, 2);
+      this.targetDiff = round(this.targetDiff * 1.25, 4);
       return true;
     }
     return false;

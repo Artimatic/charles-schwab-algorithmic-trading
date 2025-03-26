@@ -11,7 +11,7 @@ import { PriceTargetService } from '../autopilot/price-target.service';
 
 describe('OptionsOrderBuilderService', () => {
   let service: OptionsOrderBuilderService;
-  const strategyBuilderServiceSpy = jasmine.createSpyObj('StrategyBuilderService', ['getCallStrangleTrade', 'findOptionsPrice', 'getTradingStrategies', 'getPutStrangleTrade', 'getBacktestData', 'createStrategy']);
+  const strategyBuilderServiceSpy = jasmine.createSpyObj('StrategyBuilderService', ['getCallStrangleTrade', 'findOptionsPrice', 'getTradingStrategies', 'getPutStrangleTrade', 'getBacktestData', 'createStrategy', 'addBullishStock']);
   const cartServiceSpy = jasmine.createSpyObj('CartService', ['addSingleLegOptionOrder', 'getAvailableFunds', 'createOptionOrder', 'addToCart', 'optionsOrderExists', 'getBuyOrders', 'getMaxTradeCount']);
   const optionsDataServiceSpy = jasmine.createSpyObj('OptionsDataService', ['getImpliedMove']);
   const reportingServiceSpy = jasmine.createSpyObj('ReportingService', ['addAuditLog']);
