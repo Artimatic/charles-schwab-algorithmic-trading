@@ -114,7 +114,7 @@ interface TradingPatternData {
     steepPrecedingTrend: boolean;
     flagPennantFormation: boolean;
     breakoutOccurred: boolean;
-    breakoutDirection: "up" | "down";
+    breakoutDirection: 'up' | 'down';
     measuredRuleTargetMet: boolean;
 }
 
@@ -137,11 +137,11 @@ export function findStocksMatchingTradingPattern(
     );
 
     if (isSteepTrend === null) {
-        return `Insufficient historical data to analyze steep trend.`;
+        return false;
     }
 
     if (!isSteepTrend) {
-        return `Stock does not have a steep preceding trend.`;
+        return false;
     }
 
     patternData.steepPrecedingTrend = true;
@@ -159,11 +159,11 @@ export function findStocksMatchingTradingPattern(
     );
 
     if (isFormationPresent === null) {
-        return `Insufficient data to analyze flag/pennant formation.`;
+        return false;
     }
 
     if (!isFormationPresent) {
-        return `Stock doesn't appear to be forming a flag/pennant pattern.`;
+        return false;
     }
 
     patternData.flagPennantFormation = true; //Update pattern data
@@ -172,22 +172,20 @@ export function findStocksMatchingTradingPattern(
     const breakoutResult = isBreakoutOccurred(historicalData, formationStartIndex, formationPeriodValue);
 
     if (breakoutResult === null) {
-        return `Insufficient data to analyze breakout.`;
+        return false;
     }
 
     if (!breakoutResult) {
-        return `Stock hasn't broken out of the pattern yet.`;
+        return false;
     }
     patternData.breakoutOccurred = true;  //Update pattern data
 
-    patternData.breakoutDirection = "up";  //Hardcoding up for this example since that is what is tested.
+    patternData.breakoutDirection = 'up';  //Hardcoding up for this example since that is what is tested.
 
     if (!patternData.measuredRuleTargetMet) {
-        console.warn(`Stock hasn't reached its measured rule target yet.`);
+        return false;
     }
 
-
-    console.log(`Stock potentially matches the trading flags/pennants pattern!`);
     return true;
 }
 
