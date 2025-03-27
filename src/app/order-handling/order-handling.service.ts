@@ -161,13 +161,33 @@ export class OrderHandlingService {
       order.stopped = true;
     } else if (order.type === OrderTypes.call) {
       if (order.side.toLowerCase() === 'buy' && (analysis.recommendation.toLowerCase() === 'buy')) {
-        order = await this.buyOptions(order);
+        if (!order.priceLowerBound) {
+          order.priceLowerBound = order.price;
+          return order;
+        }
+
+        if (Number(order.price) > Number(order.priceLowerBound)) {
+          order = await this.buyOptions(order);
+        } else {
+          const log = 'Price too low ' + Number(order.price) + ' vs ' + Number(order.priceLowerBound);
+          this.reportingService.addAuditLog(order.holding.symbol, log);
+        }
       } else if (order.side.toLowerCase() === 'sell' && (analysis.recommendation.toLowerCase() === 'sell')) {
         order = await this.sellOptions(order);
       }
     } else if (order.type === OrderTypes.put) {
       if (order.side.toLowerCase() === 'buy' && (analysis.recommendation.toLowerCase() === 'sell')) {
-        order = await this.buyOptions(order);
+        if (!order.priceLowerBound) {
+          order.priceLowerBound = order.price;
+          return order;
+        }
+
+        if (Number(order.price) < Number(order.priceLowerBound)) {
+          order = await this.buyOptions(order);
+        } else {
+          const log = 'Price too low ' + Number(order.price) + ' vs ' + Number(order.priceLowerBound);
+          this.reportingService.addAuditLog(order.holding.symbol, log);
+        }
       } else if (order.side.toLowerCase() === 'sell' && (analysis.recommendation.toLowerCase() === 'buy')) {
         order = await this.sellOptions(order);
       }

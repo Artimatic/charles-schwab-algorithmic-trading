@@ -334,7 +334,6 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       this.order.stopped = true;
     }
     this.cartService.updateOrder(this.order);
-    this.cartService.removeCompletedOrders();
     if (this.sub) {
       this.sub.unsubscribe();
     }

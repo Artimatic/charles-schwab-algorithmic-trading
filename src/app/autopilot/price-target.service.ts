@@ -83,7 +83,7 @@ export class PriceTargetService {
     const symbol = 'SPY';
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
     const diff = this.getDiff(price[symbol].quote.closePrice, price[symbol].quote.lastPrice);
-    return diff < 0.002;
+    return diff < 0;
   }
 
   async hasMetPriceTarget(target = null) {
