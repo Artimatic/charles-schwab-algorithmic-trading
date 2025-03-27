@@ -29,6 +29,7 @@ p-splitbutton {
     display: flex;
     flex-direction: row;
     max-height: 75vh;
+
     .buy-sell-container {
         max-width: 25vw;
         margin-left: 1rem;
@@ -52,4 +53,14 @@ p-splitbutton {
             list-style-type: none;
         }
     }
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+}
+
+.grid-item {
+    padding: 1rem;
 }
