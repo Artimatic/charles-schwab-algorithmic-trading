@@ -505,7 +505,7 @@ class BacktestService {
 
     _.forEach(indicators, (indicator, idx) => {
       if (indicator.close) {
-        indicator.flagPennant = AlgoService.addFlagPennantData(indicators.slice(idx - 25, idx));
+        indicator.flagPennant = AlgoService.addFlagPennantData(indicators.slice(idx - 79, idx));
 
         let orderType = OrderType.None;
         const avgPrice = this.estimateAverageBuyOrderPrice(orders);
