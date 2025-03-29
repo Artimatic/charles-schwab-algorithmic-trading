@@ -134,7 +134,7 @@ export class AutopilotService {
   ];
 
   strategyCounter = 0;
-  callPutBuffer = 1.5;
+  callPutBuffer = 0.1;
   intradayProcessCounter = 0;
   intradayStrategyTriggered = false;
   private processes = [
@@ -731,7 +731,7 @@ export class AutopilotService {
     const results = this.priceTargetService.getCallPutBalance(holdings);
     this.reportingService.addAuditLog(null, `Calls: ${results.call}, Puts: ${results.put}, ratio: ${results.call / results.put}`);
     if (results.put > 0 && results.call > 0) {
-      const threshold = this.volatility ? this.volatility : 0.5;
+      const threshold = this.volatility ? (this.volatility * 0.25) + 0.4 : 0.5;
       const putPct = results.put / (results.call + results.put);
       //if (results.put + (results.put * this.getLastSpyMl() * (this.riskToleranceList[this.riskCounter] * 3) * (1 - this.volatility)) > results.call) {
       if (putPct > threshold + this.callPutBuffer) {
@@ -741,10 +741,8 @@ export class AutopilotService {
         if (sqqqHolding) {
           await this.sellRightAway(sqqqHolding.name, sqqqHolding.shares);
         }
-        await this.buyRightAway('TQQQ', this.riskToleranceList[0]);
         const currentHoldings = await this.cartService.findCurrentPositions();
         await this.sellPutLoser(currentHoldings);
-        await this.buySpyCall();
         //} else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
       } else if (putPct < threshold - this.callPutBuffer) {
         this.reportingService.addAuditLog(null, 'Add put ' + results.call / results.put + ` Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${threshold - this.callPutBuffer}`);
@@ -756,7 +754,6 @@ export class AutopilotService {
         if (uproHolding) {
           await this.sellRightAway(uproHolding.name, uproHolding.shares);
         }
-        await this.buyRightAway('SQQQ', this.riskToleranceList[0]);
         const currentHoldings = await this.cartService.findCurrentPositions();
         await this.sellCallLoser(currentHoldings);
       }

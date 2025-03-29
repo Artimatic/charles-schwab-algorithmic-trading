@@ -60,4 +60,5 @@ export interface Indicators {
     resistance: number[];
     sma10: number;
     sma50: number;
+    flagPennant
 }

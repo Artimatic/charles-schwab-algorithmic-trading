@@ -505,6 +505,8 @@ class BacktestService {
 
     _.forEach(indicators, (indicator, idx) => {
       if (indicator.close) {
+        indicator.flagPennant = AlgoService.addFlagPennantData(indicators.slice(idx - 25, idx));
+
         let orderType = OrderType.None;
         const avgPrice = this.estimateAverageBuyOrderPrice(orders);
 
@@ -1784,7 +1786,6 @@ class BacktestService {
     recommendations.mfiDivergence = AlgoService.checkMfiDivergence(allIndicators);
     recommendations.mfiDivergence2 = AlgoService.checkMfiDivergence2(allIndicators);
     recommendations.mfiTrade = AlgoService.checkMfiTrade(allIndicators);
-    recommendations.flagPennant = AlgoService.checkFlagPennant(allIndicators);
     recommendations.recommendation = AlgoService.determineFinalRecommendation(allIndicators);
 
     return recommendations;

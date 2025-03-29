@@ -31,15 +31,15 @@ function isFlagPennantFormation(
     formationStartIndex: number,
     formationPeriod: number,
     convergenceThreshold: number
-): boolean | null {
+): FlagPennantFormationResult | null {
     if (formationStartIndex + formationPeriod > historicalData.length) {
         console.warn("Not enough data to analyze flag/pennant formation.");
-        return null; // Not enough data
+        return { status: false}; // Not enough data
     }
 
     if (formationPeriod < 5) { // Minimum number of periods for analysis
         console.warn("Formation period too short for reliable pattern detection.");
-        return false;
+        return { status: false};
     }
 
     // 1. Calculate Upper Trendline (connecting highs)
@@ -59,7 +59,11 @@ function isFlagPennantFormation(
     // 3. Check for Convergence (or near-convergence)
     const slopeDifference = Math.abs(upperTrendline.slope - lowerTrendline.slope);
 
-    return slopeDifference <= convergenceThreshold;
+    return {
+        status: slopeDifference <= convergenceThreshold,
+        lowerTrendline,
+        upperTrendline
+    }
 }
 
 
@@ -110,8 +114,16 @@ function isBreakoutOccurred(
     }
 }
 
-interface TradingPatternData {
+interface FlagPennantFormationResult {
+    status: boolean;
+    lowerTrendline?: { slope: number; intercept: number; };
+    upperTrendline?: { slope: number; intercept: number; };
+}
+
+export interface TradingPatternData {
     steepPrecedingTrend: boolean;
+    lowerTrendline?: { slope: number; intercept: number; };
+    upperTrendline?: { slope: number; intercept: number; };
     flagPennantFormation: boolean;
     breakoutOccurred: boolean;
     breakoutDirection: 'up' | 'down';
@@ -123,8 +135,7 @@ export function findStocksMatchingTradingPattern(
     patternData: TradingPatternData,
     trendStartIndex: number = 0,
     formationStartIndex: number = 0
-): boolean | string {
-
+): TradingPatternData {
     // 1. Calculate Steep Preceding Trend
     const periodForTrend = 20;
     const steepnessThresholdValue = 0.5;
@@ -136,12 +147,8 @@ export function findStocksMatchingTradingPattern(
         steepnessThresholdValue
     );
 
-    if (isSteepTrend === null) {
-        return false;
-    }
-
     if (!isSteepTrend) {
-        return false;
+        return patternData;
     }
 
     patternData.steepPrecedingTrend = true;
@@ -151,42 +158,32 @@ export function findStocksMatchingTradingPattern(
     const formationPeriodValue = 15; // Number of periods to analyze for the formation
     const convergenceThresholdValue = 0.1; // Adjust based on data's noise level
 
-    const isFormationPresent = isFlagPennantFormation(
+    const formation = isFlagPennantFormation(
         historicalData,
         formationStartIndex,
         formationPeriodValue,
         convergenceThresholdValue
     );
 
-    if (isFormationPresent === null) {
-        return false;
+    if (!formation.status) {
+        return patternData;
     }
 
-    if (!isFormationPresent) {
-        return false;
-    }
+    patternData.lowerTrendline = formation.lowerTrendline;
+    patternData.upperTrendline = formation.upperTrendline;
 
     patternData.flagPennantFormation = true; //Update pattern data
 
     // 3. Check for Breakout
     const breakoutResult = isBreakoutOccurred(historicalData, formationStartIndex, formationPeriodValue);
 
-    if (breakoutResult === null) {
-        return false;
-    }
-
     if (!breakoutResult) {
-        return false;
+        return patternData;
     }
     patternData.breakoutOccurred = true;  //Update pattern data
+    patternData.measuredRuleTargetMet = true;
 
-    patternData.breakoutDirection = 'up';  //Hardcoding up for this example since that is what is tested.
-
-    if (!patternData.measuredRuleTargetMet) {
-        return false;
-    }
-
-    return true;
+    return patternData;
 }
 
 
