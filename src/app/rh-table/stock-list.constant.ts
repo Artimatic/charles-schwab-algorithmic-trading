@@ -11,7 +11,7 @@ const fullList = [
     'RDDT',
     'AAPL',
     'MSFT',
-    'GOOG',
+    'GOOGL',
     'TSLA',
     'AMZN',
     'META',
