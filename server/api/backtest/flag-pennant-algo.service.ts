@@ -240,7 +240,7 @@ function isSteepPrecedingTrend(
     steepnessThreshold: number
 ): boolean | null {
     if (startIndex + period > historicalData.length) {
-        console.warn("Not enough data to analyze trend.");
+        console.warn(`Not enough data to analyze trend. Data size: ${historicalData.length}`);
         return null; // Not enough data
     }
 

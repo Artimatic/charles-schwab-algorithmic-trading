@@ -29,6 +29,7 @@ export enum SwingtradeAlgorithms {
 }
 
 export enum RiskTolerance {
+  None = 0.003,
   Zero = 0.005,
   One = 0.01,
   Two = 0.025,
@@ -741,8 +742,11 @@ export class AutopilotService {
         if (sqqqHolding) {
           await this.sellRightAway(sqqqHolding.name, sqqqHolding.shares);
         }
-        const currentHoldings = await this.cartService.findCurrentPositions();
-        await this.sellPutLoser(currentHoldings);
+        await this.buyRightAway('TQQQ', RiskTolerance.Zero);
+        this.currentHoldings = await this.cartService.findCurrentPositions();
+        await this.sellLoser(this.currentHoldings);
+        //const currentHoldings = await this.cartService.findCurrentPositions();
+        // await this.sellPutLoser(currentHoldings);
         //} else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
       } else if (putPct < threshold - this.callPutBuffer) {
         this.reportingService.addAuditLog(null, 'Add put ' + results.call / results.put + ` Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${threshold - this.callPutBuffer}`);
@@ -754,8 +758,11 @@ export class AutopilotService {
         if (uproHolding) {
           await this.sellRightAway(uproHolding.name, uproHolding.shares);
         }
-        const currentHoldings = await this.cartService.findCurrentPositions();
-        await this.sellCallLoser(currentHoldings);
+        await this.buyRightAway('SQQQ', RiskTolerance.Zero);
+        this.currentHoldings = await this.cartService.findCurrentPositions();
+        await this.sellLoser(this.currentHoldings);
+        // await this.sellCallLoser(currentHoldings);
+
       }
     }
   }
