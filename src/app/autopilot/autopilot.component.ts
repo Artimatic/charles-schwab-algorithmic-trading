@@ -322,7 +322,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.autopilotService.isMarketOpened().toPromise();
           this.lastCredentialCheck = moment();
           await this.backtestOneStock(true, false);
-          await this.padOrders();
         } else if (moment().isAfter(moment(this.autopilotService.sessionEnd).subtract(25, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionEnd).subtract(20, 'minutes'))) {
           console.log('Buy on close');
@@ -365,12 +364,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.newStockFinderService.processOneStock();
         }
       });
-  }
-
-  async padOrders() {
-    if (!this.autopilotService.hasReachedLimit()) {
-      await this.handleStrategy();
-    }
   }
 
   calculatePl(records) {
@@ -503,6 +496,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async setupStrategy() {
+    console.log('Setting up strategy')
+    const backtestData = await this.strategyBuilderService.getBacktestData('SPY');
+
+    this.autopilotService.setLastSpyMl(backtestData.ml);
     this.autopilotService.updateVolatility();
     await this.priceTargetService.setTargetDiff();
     this.backtestAggregatorService.clearTimeLine();

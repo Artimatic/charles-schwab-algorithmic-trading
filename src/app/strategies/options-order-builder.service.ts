@@ -128,7 +128,9 @@ export class OptionsOrderBuilderService {
   }
 
   addTradingPairs(orders: SmartOrder[], reason) {
-    if (this.tradingPairs.find(pair => pair[0].holding.symbol === orders[0].holding.symbol)) {
+    if (this.tradingPairs.find(pair => pair &&
+      pair[0].holding && orders &&
+      orders[0].holding && pair[0].holding.symbol === orders[0].holding.symbol)) {
       console.log('Pair has already been added', orders[0]);
       return;
     }
@@ -414,7 +416,7 @@ export class OptionsOrderBuilderService {
     //const impliedMove = await this.getImpliedMove(symbol, backtestResults)
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
     //if (currentDiff < (((1 / (impliedMove + 0.01)) * 0.01))) {
-    if (Math.abs(currentDiff) < 0.011) {
+    if (Math.abs(currentDiff) < 0.01) {
       return true;
     }
 

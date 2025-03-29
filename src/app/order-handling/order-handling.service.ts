@@ -59,12 +59,18 @@ export class OrderHandlingService {
       };
 
       const reject = (error) => {
+        if (!order.errors) {
+          order.errors = [];
+        }
         order.errors.push(error._body);
         order.stopped = true;
         this.reportingService.addAuditLog(order.holding.symbol, JSON.stringify(error._body));
       };
 
       const handleNotFound = () => {
+        if (!order.warnings) {
+          order.warnings = [];
+        }
         order.stopped = true;
         const notFoundMsg = `Trying to sell position that doesn\'t exists ${order.holding.name}`;
         order.warnings.push(notFoundMsg);
@@ -131,12 +137,18 @@ export class OrderHandlingService {
     };
 
     const reject = (error) => {
+      if (!order.errors) {
+        order.errors = [];
+      }
       order.errors.push(error._body);
       order.stopped = true;
       this.reportingService.addAuditLog(symbol, JSON.stringify(error._body));
     };
 
     const handleNotFound = () => {
+      if (!order.errors) {
+        order.errors = [];
+      }
       const error = `Trying to sell position that doesn\'t exists ${symbol}`;
       order.errors.push(error);
       order.stopped = true;
