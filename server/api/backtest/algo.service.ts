@@ -328,11 +328,11 @@ class AlgoService {
       }
 
 
-      if (previous.bullishCounter > 4 && previous.bearishCounter < 1) {
+      if (previous.bullishCounter > 4 && previous.bullishCounter - previous.bearishCounter > 3) {
         if (indicators[indicators.length - 3].mfiLeft < indicators[indicators.length - 1].mfiLeft && indicators[indicators.length - 3].close < indicators[indicators.length - 1].close) {
           previous.recommendation = OrderType.Buy;
         }
-      } else if (previous.bearishCounter > 4 && previous.bullishCounter < 1) {
+      } else if (previous.bullishCounter > 4 && previous.bearishCounter - previous.bullishCounter > 3) {
         if (indicators[indicators.length - 3].mfiLeft > indicators[indicators.length - 1].mfiLeft && indicators[indicators.length - 3].close > indicators[indicators.length - 1].close) {
           previous.recommendation = OrderType.Sell;
         }

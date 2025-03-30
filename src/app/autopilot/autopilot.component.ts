@@ -933,6 +933,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.autopilotService.buyOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
         }
         break;
+      case Strategy.BuyFlag:
+        if (this.autopilotService.isVolatilityHigh()) {
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
+        } else {
+          await this.autopilotService.buyOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
+        }
+        break;
       case Strategy.BuyDemark:
         if (this.autopilotService.isVolatilityHigh()) {
           await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.demark9, 'buy');
