@@ -17,6 +17,8 @@ export interface Recommendation {
     data?: any;
     bbandBreakout?: DaytradeRecommendation;
     flagPennant?: DaytradeRecommendation;
+    breakSupport?: DaytradeRecommendation;
+    breakResistance?: DaytradeRecommendation;
 }
 
 export enum DaytradeRecommendation {
