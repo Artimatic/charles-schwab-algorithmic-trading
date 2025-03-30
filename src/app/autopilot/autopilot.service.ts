@@ -25,7 +25,8 @@ export enum SwingtradeAlgorithms {
   mfiTrade = 'mfiTrade',
   roc = 'roc',
   vwma = 'vwma',
-  bband = 'bband'
+  bband = 'bband',
+  flagPennant = 'flagPennant'
 }
 
 export enum RiskTolerance {
@@ -74,6 +75,7 @@ export enum Strategy {
   BuyMfiDiv2 = 'Buy by mfi divergence2 buy signal',
   BuyMfi = 'Buy by mfi buy signal',
   BuyMacd = 'Buy by macd buy signal',
+  BuyFlag = 'Buy by flag pennant buy signal',
   SellMfi = 'Buy by mfi sell signal',
   BuyBband = 'Buy by bband buy signal',
   SellBband = 'Buy by bband sell signal',
