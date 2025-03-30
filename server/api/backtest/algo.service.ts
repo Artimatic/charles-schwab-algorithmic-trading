@@ -221,6 +221,26 @@ class AlgoService {
     }).recommendation;
   }
 
+  checkSupport(indicator: Indicators): DaytradeRecommendation {
+    if (indicator.high > indicator.support[0] &&
+      indicator.low < indicator.support[0] &&
+      indicator.close < indicator.support[0]) {
+      return DaytradeRecommendation.Bearish;
+    }
+
+    return DaytradeRecommendation.Neutral;
+  }
+
+  checkResistance(indicator: Indicators): DaytradeRecommendation {
+    if (indicator.high > indicator.resistance[0] &&
+      indicator.low < indicator.resistance[0] &&
+      indicator.close > indicator.resistance[0]) {
+      return DaytradeRecommendation.Bullish;
+    }
+
+    return DaytradeRecommendation.Neutral;
+  }
+
   checkMacd(indicator: Indicators, previousIndicator: Indicators): DaytradeRecommendation {
     if (previousIndicator) {
       const macd = indicator.macd[2];
@@ -270,6 +290,15 @@ class AlgoService {
 
   checkBBandBreakout(isBreakout) {
     return isBreakout ? DaytradeRecommendation.Bullish : DaytradeRecommendation.Neutral;
+  }
+
+  checkFlagPennant(indicator: Indicators): DaytradeRecommendation {
+    if (indicator.flagPennant.flagPennantFormation &&
+      indicator.flagPennant.steepPrecedingTrend &&
+      indicator.flagPennant.breakoutOccurred) {
+      return DaytradeRecommendation.Bullish;
+    }
+    return DaytradeRecommendation.Neutral;
   }
 
   addFlagPennantData(indicators: Indicators[]): TradingPatternData {

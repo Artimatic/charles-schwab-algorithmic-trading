@@ -401,6 +401,9 @@ class BacktestService {
 
     const demark9Recommendation = AlgoService.checkDemark9(indicator.demark9);
     const bbandBreakoutRecommendation = AlgoService.checkBBandBreakout(indicator.bbandBreakout);
+    const flagPennantRecommendation = AlgoService.checkFlagPennant(indicator);
+    const supportRecommendation = AlgoService.checkSupport(indicator);
+    const resistanceRecommendation = AlgoService.checkResistance(indicator);
 
     let mfiTradeRec = DaytradeRecommendation.Neutral;
     if (indicator.mfiTrend === true) {
@@ -416,6 +419,9 @@ class BacktestService {
     counter = AlgoService.countRecommendation(demark9Recommendation, counter);
     counter = AlgoService.countRecommendation(mfiTradeRec, counter);
     counter = AlgoService.countRecommendation(bbandBreakoutRecommendation, counter);
+    counter = AlgoService.countRecommendation(flagPennantRecommendation, counter);
+    counter = AlgoService.countRecommendation(supportRecommendation, counter);
+    counter = AlgoService.countRecommendation(resistanceRecommendation, counter);
 
     if (counter.bullishCounter > 1 && counter.bearishCounter < 2) {
       recommendations.recommendation = OrderType.Buy;
@@ -505,8 +511,6 @@ class BacktestService {
 
     _.forEach(indicators, (indicator, idx) => {
       if (indicator.close) {
-        indicator.flagPennant = AlgoService.addFlagPennantData(indicators.slice(idx - 79, idx));
-
         let orderType = OrderType.None;
         const avgPrice = this.estimateAverageBuyOrderPrice(orders);
 
@@ -516,10 +520,12 @@ class BacktestService {
           orderType = OrderType.Sell;
           indicator.recommendation = { recommendation: OrderType.Sell };
         } else {
+          indicator.flagPennant = AlgoService.addFlagPennantData(indicators.slice(idx - 79, idx));
+
           const recommendation: Recommendation = recommendationFn(indicator.close,
             indicator,
             idx > 0 ? indicators[idx - 1] : null,
-            indicators.slice(idx - 79, idx));
+            indicators.slice(idx - 10, idx));
 
           orderType = recommendation.recommendation;
           indicator.recommendation = recommendation;
@@ -1765,7 +1771,9 @@ class BacktestService {
       mfiDivergence: DaytradeRecommendation.Neutral,
       mfiDivergence2: DaytradeRecommendation.Neutral,
       bband: DaytradeRecommendation.Neutral,
-      flagPennant: DaytradeRecommendation.Neutral
+      flagPennant: DaytradeRecommendation.Neutral,
+      breakSupport: DaytradeRecommendation.Neutral,
+      breakResistance: DaytradeRecommendation.Neutral
     };
 
     recommendations.roc = AlgoService.checkRocCrossover(indicator.roc70Previous, indicator.roc70, indicator.mfiLeft);
@@ -1786,6 +1794,10 @@ class BacktestService {
     recommendations.mfiDivergence = AlgoService.checkMfiDivergence(allIndicators);
     recommendations.mfiDivergence2 = AlgoService.checkMfiDivergence2(allIndicators);
     recommendations.mfiTrade = AlgoService.checkMfiTrade(allIndicators);
+    recommendations.flagPennant = AlgoService.checkFlagPennant(indicator);
+    recommendations.breakSupport = AlgoService.checkSupport(indicator);
+    recommendations.breakResistance = AlgoService.checkResistance(indicator);
+
     recommendations.recommendation = AlgoService.determineFinalRecommendation(allIndicators);
 
     return recommendations;

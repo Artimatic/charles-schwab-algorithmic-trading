@@ -140,10 +140,10 @@ export class AutopilotService {
   intradayStrategyTriggered = false;
   private processes = [
     async () => await this.priceTargetService.setTargetDiff(),
-    async () => {
-      this.currentHoldings = await this.cartService.findCurrentPositions();
-      await this.handleBalanceUtilization(this.currentHoldings);
-    },
+    // async () => {
+    //   this.currentHoldings = await this.cartService.findCurrentPositions();
+    //   await this.handleBalanceUtilization(this.currentHoldings);
+    // },
     async () => await this.checkIntradayStrategies(),
     async () => {
       this.currentHoldings = await this.cartService.findCurrentPositions();
@@ -742,9 +742,9 @@ export class AutopilotService {
         if (sqqqHolding) {
           await this.sellRightAway(sqqqHolding.name, sqqqHolding.shares);
         }
-        await this.buyRightAway('TQQQ', RiskTolerance.Zero);
-        this.currentHoldings = await this.cartService.findCurrentPositions();
-        await this.sellLoser(this.currentHoldings);
+        await this.buyRightAway('TQQQ', RiskTolerance.One);
+        // this.currentHoldings = await this.cartService.findCurrentPositions();
+        //await this.sellLoser(this.currentHoldings);
         //const currentHoldings = await this.cartService.findCurrentPositions();
         // await this.sellPutLoser(currentHoldings);
         //} else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
@@ -758,9 +758,9 @@ export class AutopilotService {
         if (uproHolding) {
           await this.sellRightAway(uproHolding.name, uproHolding.shares);
         }
-        await this.buyRightAway('SQQQ', RiskTolerance.Zero);
-        this.currentHoldings = await this.cartService.findCurrentPositions();
-        await this.sellLoser(this.currentHoldings);
+        await this.buyRightAway('SQQQ', RiskTolerance.One);
+        // this.currentHoldings = await this.cartService.findCurrentPositions();
+        // await this.sellLoser(this.currentHoldings);
         // await this.sellCallLoser(currentHoldings);
 
       }
@@ -849,7 +849,7 @@ export class AutopilotService {
         }
       } else if (pnl > 0) {
         if (!isOptionOnly) {
-          await this.addBuy(holding, this.riskToleranceList[1], 'Adding to position');
+          await this.addBuy(holding, RiskTolerance.Zero, 'Adding to position');
         }
       }
     }
