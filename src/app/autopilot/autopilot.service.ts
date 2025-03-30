@@ -123,6 +123,7 @@ export class AutopilotService {
     Strategy.TrimHoldings,
     Strategy.Short,
     Strategy.SellMfi,
+    Strategy.BuyFlag,
     Strategy.BuyML,
     Strategy.SellBband,
     Strategy.BuySnP,
