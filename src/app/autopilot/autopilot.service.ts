@@ -144,7 +144,7 @@ export class AutopilotService {
     //   this.currentHoldings = await this.cartService.findCurrentPositions();
     //   await this.handleBalanceUtilization(this.currentHoldings);
     // },
-    async () => await this.checkIntradayStrategies(),
+    // async () => await this.checkIntradayStrategies(),
     async () => {
       this.currentHoldings = await this.cartService.findCurrentPositions();
       const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
@@ -893,7 +893,7 @@ export class AutopilotService {
       moment().isBefore(moment(this.sessionEnd).subtract(10, 'minutes'))) {
       this.isMarketOpened().subscribe(async (isOpen) => {
         if (isOpen) {
-          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 7) {
+          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 9) {
             this.lastOptionsCheckCheck = moment();
             await this.intradayProcess();
           } else {
