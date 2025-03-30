@@ -867,6 +867,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       await this.autopilotService.findTopBuy();
       return;
     }
+
+    await this.autopilotService.addMLPairs();
+
     switch (this.autopilotService.strategyList[this.autopilotService.strategyCounter]) {
       case Strategy.TradingPairs:
         this.startFindingTrades();
@@ -891,9 +894,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         break;
       case Strategy.PerfectPair:
         await this.autopilotService.addPerfectPair();
-        break;
-      case Strategy.MLPairs:
-        await this.autopilotService.addMLPairs();
         break;
       case Strategy.VolatilityPairs:
         await this.autopilotService.addVolatilityPairs();
