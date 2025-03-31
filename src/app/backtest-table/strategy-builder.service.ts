@@ -111,10 +111,6 @@ export class StrategyBuilderService {
       return results;
     } catch (error) {
       console.log(`Backtest table error ${symbol}`, new Date().toString(), error);
-      const lastBacktest = this.getRecentBacktest(symbol, 30);
-      if (lastBacktest && lastBacktest.net && lastBacktest.net > 10) {
-        this.schedulerService.schedule(() => this.getBacktestData(symbol), 'Rebacktest');
-      }
     }
     return null;
   }

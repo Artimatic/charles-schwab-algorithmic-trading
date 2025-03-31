@@ -867,9 +867,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       await this.autopilotService.findTopBuy();
       return;
     }
+
+    this.startFindingTrades();
+
     switch (this.autopilotService.strategyList[this.autopilotService.strategyCounter]) {
-      case Strategy.TradingPairs:
-        this.startFindingTrades();
+      case Strategy.MLPairs:
+        await this.autopilotService.addMLPairs();
         break;
       case Strategy.TrimHoldings:
         await this.autopilotService.sellLoser(this.autopilotService.currentHoldings);
