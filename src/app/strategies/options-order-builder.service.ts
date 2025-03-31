@@ -128,7 +128,7 @@ export class OptionsOrderBuilderService {
   }
 
   addTradingPairs(orders: SmartOrder[], reason) {
-    if (this.tradingPairs.find(pair => pair &&
+    if (this.tradingPairs.find(pair => pair && pair[0] &&
       pair[0].holding && orders &&
       orders[0].holding && pair[0].holding.symbol === orders[0].holding.symbol)) {
       console.log('Pair has already been added', orders[0]);
@@ -140,7 +140,9 @@ export class OptionsOrderBuilderService {
     const calls = [];
     const puts = [];
     orders.forEach(order => {
-      if (order.type === OrderTypes.call) {
+      if (!order.type) {
+        console.warn('Order missing type', order);
+      } else if (order.type === OrderTypes.call) {
         calls.push(order.holding.symbol);
       } else if (order.type === OrderTypes.put) {
         puts.push(order.holding.symbol);

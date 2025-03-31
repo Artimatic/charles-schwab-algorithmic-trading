@@ -25,7 +25,8 @@ export enum SwingtradeAlgorithms {
   mfiTrade = 'mfiTrade',
   roc = 'roc',
   vwma = 'vwma',
-  bband = 'bband'
+  bband = 'bband',
+  flagPennant = 'flagPennant'
 }
 
 export enum RiskTolerance {
@@ -74,6 +75,7 @@ export enum Strategy {
   BuyMfiDiv2 = 'Buy by mfi divergence2 buy signal',
   BuyMfi = 'Buy by mfi buy signal',
   BuyMacd = 'Buy by macd buy signal',
+  BuyFlag = 'Buy by flag pennant buy signal',
   SellMfi = 'Buy by mfi sell signal',
   BuyBband = 'Buy by bband buy signal',
   SellBband = 'Buy by bband sell signal',
@@ -121,6 +123,7 @@ export class AutopilotService {
     Strategy.TrimHoldings,
     Strategy.Short,
     Strategy.SellMfi,
+    Strategy.BuyFlag,
     Strategy.BuyML,
     Strategy.SellBband,
     Strategy.BuySnP,
@@ -140,11 +143,11 @@ export class AutopilotService {
   intradayStrategyTriggered = false;
   private processes = [
     async () => await this.priceTargetService.setTargetDiff(),
-    async () => {
-      this.currentHoldings = await this.cartService.findCurrentPositions();
-      await this.handleBalanceUtilization(this.currentHoldings);
-    },
-    async () => await this.checkIntradayStrategies(),
+    // async () => {
+    //   this.currentHoldings = await this.cartService.findCurrentPositions();
+    //   await this.handleBalanceUtilization(this.currentHoldings);
+    // },
+    // async () => await this.checkIntradayStrategies(),
     async () => {
       this.currentHoldings = await this.cartService.findCurrentPositions();
       const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
@@ -742,9 +745,9 @@ export class AutopilotService {
         if (sqqqHolding) {
           await this.sellRightAway(sqqqHolding.name, sqqqHolding.shares);
         }
-        await this.buyRightAway('TQQQ', RiskTolerance.Zero);
-        this.currentHoldings = await this.cartService.findCurrentPositions();
-        await this.sellLoser(this.currentHoldings);
+        await this.buyRightAway('TQQQ', RiskTolerance.One);
+        // this.currentHoldings = await this.cartService.findCurrentPositions();
+        //await this.sellLoser(this.currentHoldings);
         //const currentHoldings = await this.cartService.findCurrentPositions();
         // await this.sellPutLoser(currentHoldings);
         //} else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
@@ -758,9 +761,9 @@ export class AutopilotService {
         if (uproHolding) {
           await this.sellRightAway(uproHolding.name, uproHolding.shares);
         }
-        await this.buyRightAway('SQQQ', RiskTolerance.Zero);
-        this.currentHoldings = await this.cartService.findCurrentPositions();
-        await this.sellLoser(this.currentHoldings);
+        await this.buyRightAway('SQQQ', RiskTolerance.One);
+        // this.currentHoldings = await this.cartService.findCurrentPositions();
+        // await this.sellLoser(this.currentHoldings);
         // await this.sellCallLoser(currentHoldings);
 
       }
@@ -849,7 +852,7 @@ export class AutopilotService {
         }
       } else if (pnl > 0) {
         if (!isOptionOnly) {
-          await this.addBuy(holding, this.riskToleranceList[1], 'Adding to position');
+          await this.addBuy(holding, RiskTolerance.Zero, 'Adding to position');
         }
       }
     }
@@ -893,7 +896,7 @@ export class AutopilotService {
       moment().isBefore(moment(this.sessionEnd).subtract(10, 'minutes'))) {
       this.isMarketOpened().subscribe(async (isOpen) => {
         if (isOpen) {
-          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 7) {
+          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 9) {
             this.lastOptionsCheckCheck = moment();
             await this.intradayProcess();
           } else {

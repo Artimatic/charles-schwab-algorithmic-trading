@@ -895,9 +895,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       case Strategy.PerfectPair:
         await this.autopilotService.addPerfectPair();
         break;
-      case Strategy.MLPairs:
-        await this.autopilotService.addMLPairs();
-        break;
       case Strategy.VolatilityPairs:
         await this.autopilotService.addVolatilityPairs();
         break;
@@ -934,6 +931,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
         } else {
           await this.autopilotService.buyOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
+        }
+        break;
+      case Strategy.BuyFlag:
+        if (this.autopilotService.isVolatilityHigh()) {
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
+        } else {
+          await this.autopilotService.buyOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
         }
         break;
       case Strategy.BuyDemark:

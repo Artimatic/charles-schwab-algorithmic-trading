@@ -35,8 +35,8 @@ export class OrdersListComponent implements OnInit, OnDestroy {
         this.loading = true;
         setTimeout(() => {
           this.loading = false;
-          this.ref.detectChanges();
-        }, 1000);
+          this.ref.markForCheck();
+        }, 10000);
       });
   }
 
