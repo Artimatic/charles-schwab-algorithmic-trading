@@ -63,8 +63,8 @@ export interface ProfitLossRecord {
 export class AutopilotComponent implements OnInit, OnDestroy {
   display = false;
   isLoading = true;
-  defaultInterval = 121000;
-  interval = 120000;
+  defaultInterval = 160000;
+  interval = 160000;
   oneDayInterval;
   timer: Subscription;
   alive = false;
@@ -107,7 +107,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   daytradeMode = false;
   isLive = false;
   tradeObserverSub;
-  
+  lastProfitCheck = moment();
+
   constructor(
     private portfolioService: PortfolioService,
     private strategyBuilderService: StrategyBuilderService,
@@ -345,13 +346,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             }, 10800000);
           }
         } else if (this.autopilotService.handleIntraday()) {
-          const metTarget = await this.priceTargetService.checkProfitTarget(this.autopilotService.currentHoldings);
-          if (metTarget) {
-            this.decreaseRiskTolerance();
-          }
-          if (this.autopilotService.strategyList[this.autopilotService.strategyCounter] === Strategy.Daytrade &&
-            (this.cartService.otherOrders.length + this.cartService.buyOrders.length + this.cartService.sellOrders.length) < this.cartService.maxTradeCount && (!this.lastReceivedRecommendation || Math.abs(this.lastReceivedRecommendation.diff(moment(), 'minutes')) > 5)) {
-            this.triggerDaytradeRefresh();
+          if (moment().diff(this.lastProfitCheck, 'minutes') > 5) {
+            this.lastProfitCheck = moment();
+            const metTarget = await this.priceTargetService.checkProfitTarget(this.autopilotService.currentHoldings);
+            if (metTarget) {
+              this.decreaseRiskTolerance();
+            }
+            await this.padOrders();
           }
         } else if (moment().isAfter(moment(this.autopilotService.sessionStart).subtract(Math.floor(this.interval / 60000) * 2, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionStart))) {
@@ -361,9 +362,16 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             this.aiPicksService.mlNeutralResults.next(null);
           }
           await this.backtestOneStock(false, false);
-          await this.newStockFinderService.processOneStock();
+          // await this.newStockFinderService.processOneStock();
         }
       });
+  }
+
+  private async padOrders() {
+    if (this.cartService.getBuyOrders().length < 1) {
+      this.changeStrategy();
+      await this.handleStrategy();
+    }
   }
 
   calculatePl(records) {
@@ -983,6 +991,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
         break;
       default: {
+        await this.autopilotService.findStock();
         await this.autopilotService.findTopBuy();
         break;
       }
@@ -990,6 +999,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     await this.createTradingPairs();
     await this.autopilotService.findStock();
+    await this.autopilotService.findTopBuy();
   }
 
   async buyWinners() {
