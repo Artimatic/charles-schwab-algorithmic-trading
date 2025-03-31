@@ -293,7 +293,7 @@ class AlgoService {
   }
 
   checkFlagPennant(indicator: Indicators): DaytradeRecommendation {
-    if (indicator.flagPennant.flagPennantFormation &&
+    if (indicator.flagPennant && indicator.flagPennant.flagPennantFormation &&
       indicator.flagPennant.steepPrecedingTrend &&
       indicator.flagPennant.breakoutOccurred) {
       return DaytradeRecommendation.Bullish;

@@ -401,7 +401,6 @@ class BacktestService {
 
     const demark9Recommendation = AlgoService.checkDemark9(indicator.demark9);
     const bbandBreakoutRecommendation = AlgoService.checkBBandBreakout(indicator.bbandBreakout);
-    const flagPennantRecommendation = AlgoService.checkFlagPennant(indicator);
     const supportRecommendation = AlgoService.checkSupport(indicator);
     const resistanceRecommendation = AlgoService.checkResistance(indicator);
 
@@ -419,7 +418,6 @@ class BacktestService {
     counter = AlgoService.countRecommendation(demark9Recommendation, counter);
     counter = AlgoService.countRecommendation(mfiTradeRec, counter);
     counter = AlgoService.countRecommendation(bbandBreakoutRecommendation, counter);
-    counter = AlgoService.countRecommendation(flagPennantRecommendation, counter);
     counter = AlgoService.countRecommendation(supportRecommendation, counter);
     counter = AlgoService.countRecommendation(resistanceRecommendation, counter);
 

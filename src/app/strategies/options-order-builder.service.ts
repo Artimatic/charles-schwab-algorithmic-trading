@@ -250,7 +250,8 @@ export class OptionsOrderBuilderService {
             let initialCallQuantity = (callPrice > putPrice) ? 1 : multiple;
             let initialPutQuantity = (callPrice > putPrice) ? multiple : 1;
             const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple, minCashAllocation, maxCashAllocation);
-            if (callQuantity + putQuantity > 25) {
+            if (callQuantity + putQuantity > 35) {
+              this.strategyBuilderService.addBullishStock(buy);
               this.reportingService.addAuditLog(null,
                 `Options quantity too high ${buy} ${callQuantity} ${sell} ${putQuantity}`);
               break;
@@ -418,7 +419,7 @@ export class OptionsOrderBuilderService {
     //const impliedMove = await this.getImpliedMove(symbol, backtestResults)
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
     //if (currentDiff < (((1 / (impliedMove + 0.01)) * 0.01))) {
-    if (Math.abs(currentDiff) < 0.01) {
+    if (Math.abs(currentDiff) < 0.015) {
       return true;
     }
 
