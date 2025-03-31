@@ -104,14 +104,6 @@ export class PriceTargetService {
     this.portfolioPl = round(portfolioPl, 4);
     this.reportingService.addAuditLog(null, `Portfolio PnL: ${portfolioPl}. target: ${priceTarget}`);
 
-    const balance = await this.portfolioService.getTdBalance().toPromise();
-    const targetUtilization = new Date().getDate() * 0.005;
-    const actualUtilization = (1 - (balance.cashBalance / balance.liquidationValue));
-    if (actualUtilization < targetUtilization) {
-      this.reportingService.addAuditLog(null, `Utilization requirements not met. Target ${targetUtilization}, Actual ${actualUtilization}`);
-      return false;
-    }
-
     if (portfolioPl && portfolioPl > priceTarget) {
       this.reportingService.addAuditLog(null, `Profit target met.`);
       this.lastTargetMet = moment();
