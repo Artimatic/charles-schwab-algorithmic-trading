@@ -3,7 +3,7 @@ import * as _ from 'lodash';
 
 import BacktestService from '../backtest/backtest.service';
 import { BacktestResults } from '../backtest/backtest.service';
-import PredictionService, { FeatureSet } from './prediction.service';
+import PredictionService from './prediction.service';
 import InputHelperService from './input-helper.service';
 import DecisionService from '../mean-reversion/reversion-decision.service';
 

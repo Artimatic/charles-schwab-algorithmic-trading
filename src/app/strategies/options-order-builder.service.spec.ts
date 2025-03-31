@@ -677,7 +677,7 @@ describe('OptionsOrderBuilderService', () => {
           }
         }
       }));
-      priceTargetServiceSpy.getDiff.and.returnValue(0.01);
+      priceTargetServiceSpy.getDiff.and.returnValue(0.001);
       strategyBuilderServiceSpy.getBacktestData.and.returnValue(Promise.resolve({ ml: 1 }));
 
       await service.addOptionsStrategiesToCart();
