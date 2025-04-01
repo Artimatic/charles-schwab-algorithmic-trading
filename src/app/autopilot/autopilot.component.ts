@@ -878,9 +878,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       case Strategy.MLPairs:
         await this.autopilotService.addMLPairs();
         break;
-      case Strategy.TrimHoldings:
-        await this.autopilotService.sellLoser(this.autopilotService.currentHoldings);
-        break;
       case Strategy.Short:
         await this.autopilotService.addShort();
         break;
@@ -987,8 +984,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
         break;
       default: {
-        await this.autopilotService.findStock();
-        await this.autopilotService.findTopBuy();
+        await this.autopilotService.sellLoser(this.autopilotService.currentHoldings);
         break;
       }
     }
