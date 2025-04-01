@@ -316,10 +316,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(async () => {
         if (!this.lastCredentialCheck || Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 25) {
-          if (moment().isAfter(moment(this.autopilotService.sessionEnd).add(60, 'minutes')) &&
-            moment().isBefore(moment(this.autopilotService.sessionStart).add(65, 'minutes'))) {
-            await this.setupStrategy();
-          }
           await this.autopilotService.isMarketOpened().toPromise();
           this.lastCredentialCheck = moment();
           await this.backtestOneStock(true, false);
@@ -341,7 +337,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             await this.setProfitLoss();
             this.scoreKeeperService.resetTotal();
             this.resetCart();
-            setTimeout(() => {
+            setTimeout(async() => {
               this.handleStrategy();
             }, 10800000);
           }
@@ -354,7 +350,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             }
             await this.padOrders();
           }
-        } else if (moment().isAfter(moment(this.autopilotService.sessionStart).subtract(Math.floor(this.interval / 60000) * 2, 'minutes')) &&
+        } else if (!this.developedStrategy && moment().isAfter(moment(this.autopilotService.sessionStart).subtract(this.interval * 2, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionStart))) {
           await this.setupStrategy();
         } else {
