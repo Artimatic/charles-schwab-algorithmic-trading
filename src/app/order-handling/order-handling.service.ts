@@ -181,7 +181,7 @@ export class OrderHandlingService {
         if (Number(order.price) > Number(order.priceLowerBound)) {
           order = await this.buyOptions(order);
         } else {
-          const log = 'Price too low ' + Number(order.price) + ' vs ' + Number(order.priceLowerBound);
+          const log = 'Price too low. Current:' + Number(order.price) + ' Expected:' + Number(order.priceLowerBound);
           this.reportingService.addAuditLog(order.holding.symbol, log);
         }
       } else if (order.side.toLowerCase() === 'sell' && (analysis.recommendation.toLowerCase() === 'sell')) {
@@ -197,7 +197,7 @@ export class OrderHandlingService {
         if (Number(order.price) < Number(order.priceLowerBound)) {
           order = await this.buyOptions(order);
         } else {
-          const log = 'Price too low ' + Number(order.price) + ' vs ' + Number(order.priceLowerBound);
+          const log = 'Price too low. Current:' + Number(order.price) + ' Expected' + Number(order.priceLowerBound);
           this.reportingService.addAuditLog(order.holding.symbol, log);
         }
       } else if (order.side.toLowerCase() === 'sell' && (analysis.recommendation.toLowerCase() === 'buy')) {
@@ -220,7 +220,7 @@ export class OrderHandlingService {
           order = this.incrementBuy(order);
           this.daytradeService.sendBuy(order, 'limit', () => { }, () => { });
         } else {
-          const log = 'Price too low ' + Number(order.price) + ' vs ' + Number(order.priceLowerBound);
+          const log = 'Price too low. Current:' + Number(order.price) + ' Expected:' + Number(order.priceLowerBound);
           this.reportingService.addAuditLog(order.holding.symbol, log);
         }
       }

@@ -139,6 +139,8 @@ export class AutopilotService {
   callPutBuffer = 0.1;
   intradayProcessCounter = 0;
   intradayStrategyTriggered = false;
+  strategies = [];
+
   private processes = [
     async () => await this.priceTargetService.setTargetDiff(),
     // async () => {
@@ -659,7 +661,7 @@ export class AutopilotService {
   }
 
   isVolatilityHigh() {
-    return (this.volatility + 0.1618034) > this.priceTargetService.getPortfolioVolatility();
+    return (this.volatility - 0.1618034) > this.priceTargetService.getPortfolioVolatility();
   }
 
   async sellOptionsHolding(holding: PortfolioInfoHolding, reason: string) {
@@ -906,5 +908,192 @@ export class AutopilotService {
     } else {
       return false;
     }
+  }
+
+
+  async addInverseDispersionTrade() {
+    const findPuts = async (symbol: string, prediction: number, backtestData: any, sellMl: number) => {
+      if (sellMl > 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
+        const cash = await this.getMinMaxCashForOptions(backtestData.impliedMovement + 1);
+        await this.optionsOrderBuilderService.balanceTrades(['SPY'], [symbol], cash.minCash, cash.maxCash, 'Inverse dispersion');
+      } else if ((prediction > 0.8 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
+        const stock: PortfolioInfoHolding = {
+          name: symbol,
+          pl: 0,
+          netLiq: 0,
+          shares: 0,
+          alloc: 0,
+          recommendation: 'None',
+          buyReasons: '',
+          sellReasons: '',
+          buyConfidence: 0,
+          sellConfidence: 0,
+          prediction: null
+        };
+        console.log('Found potential buy', stock);
+        await this.addBuy(stock, null, 'inverse dispersion reject');
+      }
+    };
+    await this.getNewTrades(findPuts, null, this.currentHoldings);
+  }
+
+  async buyWinners() {
+    const buyWinner = async (symbol: string, prediction: number, backtestData: any) => {
+      if (prediction > 0.7 && this.priceTargetService.isProfitable(backtestData.invested, backtestData.net)) {
+        const stock: PortfolioInfoHolding = {
+          name: symbol,
+          pl: 0,
+          netLiq: 0,
+          shares: 0,
+          alloc: 0,
+          recommendation: 'None',
+          buyReasons: '',
+          sellReasons: '',
+          buyConfidence: 0,
+          sellConfidence: 0,
+          prediction: null
+        };
+        await this.addBuy(stock, null, 'Buy winners');
+      }
+    };
+    await this.getNewTrades(buyWinner, null, this.currentHoldings);
+  }
+
+  async createTradingPairs() {
+    const cash = await this.getMinMaxCashForOptions();
+    await this.optionsOrderBuilderService.createTradingPair(cash.minCash, cash.maxCash);
+  }
+
+  async handleStrategy() {
+    const balance = await this.machineDaytradingService.getPortfolioBalance().toPromise();
+    if (balance.liquidationValue < 26000) {
+      await this.findTopBuy();
+      return;
+    }
+
+    this.strategyBuilderService.findTrades();
+    this.strategies = this.strategyBuilderService.getTradingStrategies();
+
+    switch (this.strategyList[this.strategyCounter]) {
+      case Strategy.MLPairs:
+        await this.addMLPairs();
+        break;
+      case Strategy.TrimHoldings:
+        await this.sellLoser(this.currentHoldings);
+        break;
+      case Strategy.Short:
+        await this.addShort();
+        break;
+      case Strategy.BuyCalls:
+        this.optionsOrderBuilderService.addAnyPair();
+        break;
+      case Strategy.InverseDispersion:
+        await this.addInverseDispersionTrade();
+        break;
+      case Strategy.BuyWinners:
+        await this.buyWinners();
+        break;
+      case Strategy.AddToPositions:
+        await this.addToCurrentPositions();
+        break;
+      case Strategy.PerfectPair:
+        await this.addPerfectPair();
+        break;
+      case Strategy.VolatilityPairs:
+        await this.addVolatilityPairs();
+        break;
+      case Strategy.SellMfiTrade:
+        if (this.isVolatilityHigh()) {
+          await this.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'sell');
+        } else {
+          await this.buyOnSignal(SwingtradeAlgorithms.mfiTrade, 'sell');
+        }
+        break;
+      case Strategy.SellMfiDiv:
+        if (this.isVolatilityHigh()) {
+          await this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
+        } else {
+          await this.buyOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
+        }
+        break;
+      case Strategy.BuyMfiTrade:
+        if (this.isVolatilityHigh()) {
+          await this.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'buy');
+        } else {
+          await this.buyOnSignal(SwingtradeAlgorithms.mfiTrade, 'buy');
+        }
+        break;
+      case Strategy.BuyMfiDiv2:
+        if (this.isVolatilityHigh()) {
+          await this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
+        } else {
+          await this.buyOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
+        }
+        break;
+      case Strategy.BuyMfiDiv:
+        if (this.isVolatilityHigh()) {
+          await this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
+        } else {
+          await this.buyOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
+        }
+        break;
+      case Strategy.BuyFlag:
+        if (this.isVolatilityHigh()) {
+          await this.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
+        } else {
+          await this.buyOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
+        }
+        break;
+      case Strategy.BuyDemark:
+        if (this.isVolatilityHigh()) {
+          await this.addPairOnSignal(SwingtradeAlgorithms.demark9, 'buy');
+        } else {
+          await this.buyOnSignal(SwingtradeAlgorithms.demark9, 'buy');
+        }
+        break;
+      case Strategy.SellMfi:
+        if (this.isVolatilityHigh()) {
+          await this.addPairOnSignal(SwingtradeAlgorithms.mfi, 'sell');
+        } else {
+          await this.buyOnSignal(SwingtradeAlgorithms.mfi, 'sell');
+        }
+        break;
+      case Strategy.SellBband:
+        if (this.isVolatilityHigh()) {
+          await this.addPairOnSignal(SwingtradeAlgorithms.bband, 'sell');
+        } else {
+          await this.buyOnSignal(SwingtradeAlgorithms.bband, 'sell');
+        }
+        break;
+      case Strategy.BuyMfi:
+        if (this.isVolatilityHigh()) {
+          await this.addPairOnSignal(SwingtradeAlgorithms.mfi, 'buy');
+        } else {
+          await this.buyOnSignal(SwingtradeAlgorithms.mfi, 'buy');
+        }
+        break;
+      case Strategy.BuyBband:
+        if (this.isVolatilityHigh()) {
+          await this.addPairOnSignal(SwingtradeAlgorithms.bband, 'buy');
+        } else {
+          await this.buyOnSignal(SwingtradeAlgorithms.bband, 'buy');
+        }
+        break;
+      case Strategy.BuyMacd:
+        if (this.isVolatilityHigh()) {
+          await this.addPairOnSignal(SwingtradeAlgorithms.macd, 'buy');
+        } else {
+          await this.buyOnSignal(SwingtradeAlgorithms.macd, 'buy');
+        }
+        break;
+      default: {
+        await this.sellLoser(this.currentHoldings);
+        break;
+      }
+    }
+
+    await this.createTradingPairs();
+    await this.findStock();
+    await this.findTopBuy();
   }
 }
