@@ -165,7 +165,7 @@ export class OrderHandlingService {
       return order;
     }
     const price = await this.backtestService.getLastPriceTiingo({ symbol: order.holding.symbol }).toPromise();
-    order.price = price[order.holding.symbol].quote.lastPrice;
+    order.price = round(price[order.holding.symbol].quote.lastPrice, 2);
 
     if (analysis.recommendation.toLowerCase() === 'none') {
       return order;
