@@ -84,6 +84,7 @@ export enum Strategy {
   AnyPair = 'Any Pair',
   BuyDemark = 'Buy demark',
   AddToPositions = 'Add to current positions',
+  Hedge = 'Hedge',
   None = 'None'
 }
 
@@ -118,6 +119,7 @@ export class AutopilotService {
     Strategy.AddToPositions,
     Strategy.PerfectPair,
     Strategy.BuyCalls,
+    Strategy.Hedge,
     Strategy.BuyMacd,
     Strategy.BuyBband,
     Strategy.Short,
@@ -136,7 +138,7 @@ export class AutopilotService {
   ];
 
   strategyCounter = 0;
-  callPutBuffer = 0.1;
+  callPutBuffer = 0.05;
   intradayProcessCounter = 0;
   intradayStrategyTriggered = false;
   strategies = [];
@@ -148,11 +150,11 @@ export class AutopilotService {
     //   await this.handleBalanceUtilization(this.currentHoldings);
     // },
     // async () => await this.checkIntradayStrategies(),
-    async () => {
-      this.currentHoldings = await this.cartService.findCurrentPositions();
-      const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
-      await this.optionsOrderBuilderService.hedge(this.currentHoldings, balance);
-    },
+    // async () => {
+    //   this.currentHoldings = await this.cartService.findCurrentPositions();
+    //   const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
+    //   await this.optionsOrderBuilderService.hedge(this.currentHoldings, balance);
+    // },
     async () => await this.optionsOrderBuilderService.addOptionsStrategiesToCart(),
     async () => {
       this.currentHoldings = await this.cartService.findCurrentPositions();
@@ -365,14 +367,13 @@ export class AutopilotService {
     if ((this.cartService.getBuyOrders().length + this.cartService.getOtherOrders().length) < this.cartService.getMaxTradeCount()) {
       const currentDate = moment().format('YYYY-MM-DD');
       const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
-      const backtestData = await this.strategyBuilderService.getBacktestData(holding.name);
 
       try {
         const allIndicators = await this.getTechnicalIndicators(holding.name, startDate, currentDate).toPromise();
         const indicator = allIndicators.signals[allIndicators.signals.length - 1];
         const thresholds = this.getStopLoss(indicator.low, indicator.high);
         await this.cartService.portfolioBuy(holding,
-          allocation || ((1 - backtestData.impliedMovement) / 10),
+          allocation || (this.riskToleranceList[this.riskCounter]),
           thresholds.profitTakingThreshold,
           thresholds.stopLoss, reason);
       } catch (error) {
@@ -733,26 +734,26 @@ export class AutopilotService {
 
   async balanceCallPutRatio(holdings: PortfolioInfoHolding[]) {
     const results = this.priceTargetService.getCallPutBalance(holdings);
-    this.reportingService.addAuditLog(null, `Calls: ${results.call}, Puts: ${results.put}, ratio: ${results.call / results.put}`);
     if (results.put > 0 && results.call > 0) {
-      const threshold = this.volatility ? (this.volatility * 0.25) + 0.4 : 0.5;
+      const threshold = await this.priceTargetService.getCallPutRatio(this.volatility);
       const putPct = results.put / (results.call + results.put);
+      this.reportingService.addAuditLog(null, `Calls: ${results.call}, Puts: ${results.put}, ratio: ${results.call / results.put}`);
+
       //if (results.put + (results.put * this.getLastSpyMl() * (this.riskToleranceList[this.riskCounter] * 3) * (1 - this.volatility)) > results.call) {
       if (putPct > threshold + this.callPutBuffer) {
-        this.reportingService.addAuditLog(null, `Add calls Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${threshold + this.callPutBuffer}`);
-        this.optionsOrderBuilderService.addOptionByBalance('SPY', threshold, 'Balance call put ratio', true);
         const sqqqHolding = holdings.find(h => h.name.toUpperCase() === 'SQQQ');
         if (sqqqHolding) {
           await this.sellRightAway(sqqqHolding.name, sqqqHolding.shares);
         }
-        await this.buyRightAway('TQQQ', RiskTolerance.One);
+        await this.buyRightAway('TQQQ', RiskTolerance.None);
+        //this.optionsOrderBuilderService.addOptionByBalance('SPY', threshold, 'Balance call put ratio', true);
+
         // this.currentHoldings = await this.cartService.findCurrentPositions();
         //await this.sellLoser(this.currentHoldings);
         //const currentHoldings = await this.cartService.findCurrentPositions();
         // await this.sellPutLoser(currentHoldings);
         //} else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
       } else if (putPct < threshold - this.callPutBuffer) {
-        this.reportingService.addAuditLog(null, 'Add put ' + results.call / results.put + ` Balance call put ratio. Calls: ${results.call}, Puts: ${results.put}, Target: ${threshold - this.callPutBuffer}`);
         const tqqqHolding = holdings.find(h => h.name.toUpperCase() === 'TQQQ');
         const uproHolding = holdings.find(h => h.name.toUpperCase() === 'UPRO');
         if (tqqqHolding) {
@@ -761,7 +762,7 @@ export class AutopilotService {
         if (uproHolding) {
           await this.sellRightAway(uproHolding.name, uproHolding.shares);
         }
-        await this.buyRightAway('SQQQ', RiskTolerance.One);
+        await this.buyRightAway('SQQQ', RiskTolerance.None);
         // this.currentHoldings = await this.cartService.findCurrentPositions();
         // await this.sellLoser(this.currentHoldings);
         // await this.sellCallLoser(currentHoldings);
@@ -1085,6 +1086,11 @@ export class AutopilotService {
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.macd, 'buy');
         }
+        break;
+      case Strategy.Hedge:
+        this.currentHoldings = await this.cartService.findCurrentPositions();
+        const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
+        await this.optionsOrderBuilderService.hedge(this.currentHoldings, balance);
         break;
       default: {
         await this.sellLoser(this.currentHoldings);

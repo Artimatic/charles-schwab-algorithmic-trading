@@ -182,7 +182,6 @@ describe('AutopilotService', () => {
   it('should add buy', async () => {
     mockCartService.portfolioBuy.and.callFake(() => { });;
     await service.addBuy({ name: 'AAPL' } as PortfolioInfoHolding, 0.1, 'reason');
-    expect(mockStrategyBuilderService.getBacktestData).toHaveBeenCalled();
     expect(mockBacktestService.getBacktestEvaluation).toHaveBeenCalled();
     expect(mockCartService.portfolioBuy).toHaveBeenCalled();
   });
@@ -190,7 +189,6 @@ describe('AutopilotService', () => {
     mockBacktestService.getBacktestEvaluation.and.returnValue(of(null));
     mockCartService.portfolioBuy.and.callFake(() => { });;
     await service.addBuy({ name: 'AAPL' } as PortfolioInfoHolding, 0.1, 'reason');
-    expect(mockStrategyBuilderService.getBacktestData).toHaveBeenCalled();
     expect(mockBacktestService.getBacktestEvaluation).toHaveBeenCalled();
     expect(mockCartService.portfolioBuy).not.toHaveBeenCalled();
   });

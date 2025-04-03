@@ -458,7 +458,7 @@ export class OptionsOrderBuilderService {
     currentHoldings.forEach(async (holding) => {
       const shouldBuy = await this.shouldBuyOption(holding.name);
       if (shouldBuy && holding.assetType !== 'collective_investment') {
-        if (holding.netLiq && (holding.netLiq / balance.liquidationValue) > 0.15)
+        if (holding.netLiq && (holding.netLiq / balance.liquidationValue) > 0.1)
           console.log('Adding protective put for', holding.name);
         await this.createProtectivePutOrder(holding, balance.cashBalance);
       }
@@ -508,8 +508,7 @@ export class OptionsOrderBuilderService {
   }
 
   async addOptionsStrategiesToCart() {
-    const buyOrders = this.cartService.getBuyOrders();
-    if (buyOrders && buyOrders.length >= this.cartService.getMaxTradeCount()) {
+    if (this.cartService.getSellOrders().length + this.cartService.getBuyOrders().length >= this.cartService.getMaxTradeCount()) {
       return null;
     }
     const tradeList = this.getTradingPairs();

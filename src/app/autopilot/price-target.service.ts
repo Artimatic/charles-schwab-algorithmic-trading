@@ -16,6 +16,7 @@ export class PriceTargetService {
   startingBalance: { date: string, balance: number } = null;
   lastTargetMet = null;
   portfolioVolatility = 0;
+  lastCallPutRatio: { datetime: string, value: number } = null; 
 
   constructor(private backtestService: BacktestService,
     private portfolioService: PortfolioService,
@@ -53,7 +54,7 @@ export class PriceTargetService {
     if (current.currentDayCost > 0) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -152,7 +153,29 @@ export class PriceTargetService {
     }, { call: 0, put: 0 });
   }
 
-  calculateOptionChangeOfProfit(delta: number) {
-    return delta;
+  async getCallPutRatio(volatility: number) {
+    if (this.lastCallPutRatio && moment().diff(moment(this.lastCallPutRatio.datetime), 'minutes') < 35) {
+      return this.lastCallPutRatio.value;
+    }
+
+    let putsThreshold = volatility ? (volatility * 0.20) + 0.4 : 0.5;
+    
+    const currentDate = moment().format('YYYY-MM-DD');
+    const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
+    const spyBacktest = await this.backtestService.getBacktestEvaluation('SPY', startDate, currentDate, 'daily-indicators').toPromise();
+    const signals = spyBacktest.signals;
+    const lastSignal = signals[signals.length - 1];
+    
+    if (lastSignal.mfiPrevious > lastSignal.mfiLeft) {
+      putsThreshold += 0.05;
+    }
+    if (lastSignal?.bband80[1][0] > lastSignal.close) {
+      putsThreshold += 0.05;
+    }
+    if (lastSignal?.support[0] > lastSignal.close) {
+      putsThreshold += 0.05;
+    }
+    this.lastCallPutRatio = { datetime: moment().format(), value: putsThreshold };
+    return putsThreshold;
   }
 }

@@ -12,7 +12,7 @@ import { PriceTargetService } from '../autopilot/price-target.service';
 describe('OptionsOrderBuilderService', () => {
   let service: OptionsOrderBuilderService;
   const strategyBuilderServiceSpy = jasmine.createSpyObj('StrategyBuilderService', ['getCallStrangleTrade', 'findOptionsPrice', 'getTradingStrategies', 'getPutStrangleTrade', 'getBacktestData', 'createStrategy', 'addBullishStock']);
-  const cartServiceSpy = jasmine.createSpyObj('CartService', ['addSingleLegOptionOrder', 'getAvailableFunds', 'createOptionOrder', 'addToCart', 'optionsOrderExists', 'getBuyOrders', 'getMaxTradeCount']);
+  const cartServiceSpy = jasmine.createSpyObj('CartService', ['addSingleLegOptionOrder', 'getAvailableFunds', 'createOptionOrder', 'addToCart', 'optionsOrderExists', 'getBuyOrders', 'getMaxTradeCount', 'getSellOrders']);
   const optionsDataServiceSpy = jasmine.createSpyObj('OptionsDataService', ['getImpliedMove']);
   const reportingServiceSpy = jasmine.createSpyObj('ReportingService', ['addAuditLog']);
   const orderHandlingServiceSpy = jasmine.createSpyObj('OrderHandlingService', ['getEstimatedPrice']);
@@ -34,6 +34,7 @@ describe('OptionsOrderBuilderService', () => {
     });
     service = TestBed.inject(OptionsOrderBuilderService);
     cartServiceSpy.getBuyOrders.and.returnValue([]);
+    cartServiceSpy.getSellOrders.and.returnValue([]);
     cartServiceSpy.getMaxTradeCount.and.returnValue(10);
 
   });

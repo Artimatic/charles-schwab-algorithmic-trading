@@ -327,7 +327,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           }
 
           this.boughtAtClose = true;
-          this.hedge();
         } else if (moment().isAfter(moment(this.autopilotService.sessionEnd)) &&
           moment().isBefore(moment(this.autopilotService.sessionEnd).add(5, 'minute'))) {
           if (this.reportingService.logs.length > 6) {
@@ -594,8 +593,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             } else if (callsTotalPrice > putsTotalPrice && backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.7) {
               this.optionsOrderBuilderService.sellStrangle(holding);
             }
-          } else if (!holding.secondaryLegs) {
-            //this.optionsOrderBuilderService.hedgeTrade(holding.name, this.autopilotService.currentHoldings);
           }
         } else if ((backtestResults && (backtestResults.recommendation === 'STRONGSELL' || backtestResults.recommendation === 'SELL' || holding.name === 'TQQQ'))) {
           console.log('Backtest indicates sell', backtestResults);
@@ -797,10 +794,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.portfolioService.getUserPreferences().subscribe(pref => {
       console.log('pref', pref);
     });
-  }
-
-  async hedge() {
-    await this.portfolioMgmtService.hedge(this.autopilotService.currentHoldings, this.optionsOrderBuilderService.getTradingPairs(), this.autopilotService.riskToleranceList[0], this.autopilotService.riskToleranceList[this.autopilotService.riskCounter]);
   }
 
   async sellAll() {
