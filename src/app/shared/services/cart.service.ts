@@ -4,7 +4,6 @@ import { OrderTypes, SmartOrder } from '../models/smart-order';
 import { TradeService, AlgoQueueItem } from './trade.service';
 import { round } from 'lodash-es';
 import { MessageService } from 'primeng/api';
-import { Subject } from 'rxjs';
 import * as moment from 'moment-timezone';
 import { Options } from '@shared/models/options';
 import { ReportingService } from './reporting.service';
@@ -14,7 +13,7 @@ export class CartService {
   sellOrders: SmartOrder[] = [];
   buyOrders: SmartOrder[] = [];
   otherOrders: SmartOrder[] = [];
-  maxTradeCount = 10;
+  maxTradeCount = 5;
   constructor(
     private portfolioService: PortfolioService,
     private tradeService: TradeService,

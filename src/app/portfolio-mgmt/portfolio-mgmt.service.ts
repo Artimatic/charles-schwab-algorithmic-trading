@@ -60,25 +60,4 @@ export class PortfolioMgmtService {
       }
     }
   }
-
-  async hedge(currentHoldings: PortfolioInfoHolding[], tradingPairs: SmartOrder[][], minRiskPct = 0.01, maxRiskPct = 0.05) {
-    const balance = await this.machineDaytradingService.getPortfolioBalance().toPromise();
-    currentHoldings.forEach(async (holding) => {
-      if (!holding.primaryLegs && holding.assetType !== 'collective_investment') {
-        if (holding.netLiq && (holding.netLiq / balance.liquidationValue) > 0.15)
-          console.log('Adding protective put for', holding.name);
-      } 
-      // else {
-      //   if (!this.cartService.isStrangle(holding) && holding.primaryLegs) {
-      //     if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
-      //       this.hedgeCall(holding, currentHoldings, tradingPairs);
-      //     } else if (holding.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
-      //       await this.hedgePut(holding, currentHoldings, tradingPairs, minRiskPct, maxRiskPct);
-      //     }
-      //   }
-      // }
-    });
-
-    return currentHoldings;
-  }
 }
