@@ -342,7 +342,8 @@ export class AutopilotService {
           vxxSignal?.support[0] < vxxSignal.close) {
           this.intradayStrategyTriggered = true;
           this.reportingService.addAuditLog(null, 'Down day, buy the dip');
-          await this.buySpyCall();
+          // await this.buySpyCall();
+          await this.addToCurrentPositions(this.currentHoldings, RiskTolerance.Zero);
         }
       }
     } else if (moment().isAfter(moment().tz('America/New_York').set({ hour: 3, minute: 20 })) &&
@@ -579,11 +580,7 @@ export class AutopilotService {
       if (actualUtilization < targetUtilization) {
         this.reportingService.addAuditLog(null, `Underutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
 
-        currentHoldings.forEach(async (holding) => {
-          if (holding.pnlPercentage > -0.01 && !holding.primaryLegs && holding.shares) {
-            await this.addBuy(holding, RiskTolerance.Zero, 'Catch up utilization');
-          }
-        })
+        await this.addToCurrentPositions(currentHoldings, RiskTolerance.Zero);
       }
     }
     return isOverBalance;
@@ -864,13 +861,11 @@ export class AutopilotService {
     }
   }
 
-  async addToCurrentPositions() {
-    this.currentHoldings = await this.cartService.findCurrentPositions();
-
-    this.currentHoldings.forEach(async (holding) => {
-      if (holding.pnlPercentage > -0.035) {
+  async addToCurrentPositions(currentHoldings = null, allocation = null) {
+    currentHoldings.forEach(async (holding) => {
+      if (holding.pnlPercentage > -0.01) {
         if (!holding.primaryLegs && holding.shares) {
-          await this.addBuy(holding, this.riskToleranceList[this.riskCounter], 'Adding to winners');
+          await this.addBuy(holding, allocation || this.riskToleranceList[this.riskCounter], 'Adding to winners');
         }
       }
     });
@@ -1000,7 +995,8 @@ export class AutopilotService {
         await this.buyWinners();
         break;
       case Strategy.AddToPositions:
-        await this.addToCurrentPositions();
+        this.currentHoldings = await this.cartService.findCurrentPositions();
+        await this.addToCurrentPositions(this.currentHoldings);
         break;
       case Strategy.PerfectPair:
         await this.addPerfectPair();

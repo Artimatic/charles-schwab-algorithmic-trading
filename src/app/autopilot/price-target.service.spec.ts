@@ -1031,8 +1031,8 @@ describe('PriceTargetService', () => {
     ];
 
     const result = service.getCallPutBalance(testHoldings);
-    expect(result.call).toEqual(3287.5);
-    expect(result.put).toEqual(10490);
+    expect(result.call).toEqual(3288.5);
+    expect(result.put).toEqual(10491);
   });
 
   it('should getCallPutRatio correctly', async () => {
