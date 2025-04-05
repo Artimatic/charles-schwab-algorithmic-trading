@@ -145,11 +145,11 @@ export class AutopilotService {
 
   private processes = [
     async () => await this.priceTargetService.setTargetDiff(),
-    // async () => {
-    //   this.currentHoldings = await this.cartService.findCurrentPositions();
-    //   await this.handleBalanceUtilization(this.currentHoldings);
-    // },
-    // async () => await this.checkIntradayStrategies(),
+    async () => {
+      this.currentHoldings = await this.cartService.findCurrentPositions();
+      await this.handleBalanceUtilization(this.currentHoldings);
+    },
+    async () => await this.checkIntradayStrategies(),
     // async () => {
     //   this.currentHoldings = await this.cartService.findCurrentPositions();
     //   const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
@@ -324,18 +324,30 @@ export class AutopilotService {
     if (this.intradayStrategyTriggered) {
       return;
     }
-    console.log('next spy ml', this.getLastSpyMl());
-    if (this.getLastSpyMl() > 0.4 && moment().isAfter(moment().tz('America/New_York').set({ hour: 10, minute: 35 })) &&
+    if (this.getLastSpyMl() > 0.5 && moment().isAfter(moment().tz('America/New_York').set({ hour: 10, minute: 35 })) &&
       moment().isBefore(moment().tz('America/New_York').set({ hour: 11, minute: 15 }))) {
       const isDown = await this.priceTargetService.isDownDay();
       if (isDown) {
-        this.intradayStrategyTriggered = true;
-        this.reportingService.addAuditLog(null, 'Down day, buy the dip');
-        await this.buySpyCall();
-        setTimeout(() => {
-          this.intradayStrategyTriggered = false;
-        }, 25200000);
+        const currentDate = moment().format('YYYY-MM-DD');
+        const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
+        const spyBacktest = await this.backtestService.getBacktestEvaluation('SPY', startDate, currentDate, 'daily-indicators').toPromise();
+        const vxxBacktest = await this.backtestService.getBacktestEvaluation('VXX', startDate, currentDate, 'daily-indicators').toPromise();
+        const spySignal = spyBacktest.signals[spyBacktest.signals.length - 1];
+        const vxxSignal = vxxBacktest.signals[vxxBacktest.signals.length - 1];
+        if (spySignal.mfiPrevious < spySignal.mfiLeft &&
+          spySignal?.bband80[1][0] < spySignal.close &&
+          spySignal?.support[0] < spySignal.close &&
+          vxxSignal.mfiPrevious < vxxSignal.mfiLeft &&
+          vxxSignal?.bband80[1][0] < vxxSignal.close &&
+          vxxSignal?.support[0] < vxxSignal.close) {
+          this.intradayStrategyTriggered = true;
+          this.reportingService.addAuditLog(null, 'Down day, buy the dip');
+          await this.buySpyCall();
+        }
       }
+    } else if (moment().isAfter(moment().tz('America/New_York').set({ hour: 3, minute: 20 })) &&
+      moment().isBefore(moment().tz('America/New_York').set({ hour: 3, minute: 45 }))) {
+      this.intradayStrategyTriggered = false;
     }
   }
 
@@ -559,24 +571,19 @@ export class AutopilotService {
     const isOverBalance = Boolean(Number(balance.cashBalance) < 0);
     if (isOverBalance) {
       this.reportingService.addAuditLog(null, 'Over balance');
-
-      currentHoldings = await this.cartService.findCurrentPositions();
       this.sellLoser(currentHoldings, 'Over balance');
     } else {
-      let targetUtilization = 1 - this.getVolatilityMl() - (1 - this.getLastSpyMl());
+      let targetUtilization = 1.618034 - this.getVolatilityMl() - (1 - this.getLastSpyMl());
       targetUtilization = targetUtilization > 1 ? 1 : targetUtilization;
       const actualUtilization = (1 - (balance.cashBalance / balance.liquidationValue));
       if (actualUtilization < targetUtilization) {
         this.reportingService.addAuditLog(null, `Underutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
 
-        if (this.lastBuyList.length) {
-          const buySym = this.lastBuyList.pop();
-          this.reportingService.addAuditLog(null, `Underutilized Buying: ${buySym}`);
-
-          await this.addBuy(this.createHoldingObj(buySym), this.riskToleranceList[0], 'Balance underutilized');
-        } else {
-          this.lastBuyList = this.getBuyList();
-        }
+        currentHoldings.forEach(async (holding) => {
+          if (holding.pnlPercentage > -0.01 && !holding.primaryLegs && holding.shares) {
+            await this.addBuy(holding, RiskTolerance.Zero, 'Catch up utilization');
+          }
+        })
       }
     }
     return isOverBalance;
@@ -734,40 +741,38 @@ export class AutopilotService {
 
   async balanceCallPutRatio(holdings: PortfolioInfoHolding[]) {
     const results = this.priceTargetService.getCallPutBalance(holdings);
-    if (results.put > 0 && results.call > 0) {
-      const threshold = await this.priceTargetService.getCallPutRatio(this.volatility);
-      const putPct = results.put / (results.call + results.put);
-      this.reportingService.addAuditLog(null, `Calls: ${results.call}, Puts: ${results.put}, ratio: ${results.call / results.put}`);
+    const threshold = await this.priceTargetService.getCallPutRatio(this.volatility);
+    const putPct = results.put / (results.call + results.put);
+    this.reportingService.addAuditLog(null, `Call put ratio: ${results.call / results.put}`);
 
-      //if (results.put + (results.put * this.getLastSpyMl() * (this.riskToleranceList[this.riskCounter] * 3) * (1 - this.volatility)) > results.call) {
-      if (putPct > threshold + this.callPutBuffer) {
-        const sqqqHolding = holdings.find(h => h.name.toUpperCase() === 'SQQQ');
-        if (sqqqHolding) {
-          await this.sellRightAway(sqqqHolding.name, sqqqHolding.shares);
-        }
-        await this.buyRightAway('TQQQ', RiskTolerance.None);
-        //this.optionsOrderBuilderService.addOptionByBalance('SPY', threshold, 'Balance call put ratio', true);
-
-        // this.currentHoldings = await this.cartService.findCurrentPositions();
-        //await this.sellLoser(this.currentHoldings);
-        //const currentHoldings = await this.cartService.findCurrentPositions();
-        // await this.sellPutLoser(currentHoldings);
-        //} else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
-      } else if (putPct < threshold - this.callPutBuffer) {
-        const tqqqHolding = holdings.find(h => h.name.toUpperCase() === 'TQQQ');
-        const uproHolding = holdings.find(h => h.name.toUpperCase() === 'UPRO');
-        if (tqqqHolding) {
-          await this.sellRightAway(tqqqHolding.name, tqqqHolding.shares);
-        }
-        if (uproHolding) {
-          await this.sellRightAway(uproHolding.name, uproHolding.shares);
-        }
-        await this.buyRightAway('SQQQ', RiskTolerance.None);
-        // this.currentHoldings = await this.cartService.findCurrentPositions();
-        // await this.sellLoser(this.currentHoldings);
-        // await this.sellCallLoser(currentHoldings);
-
+    //if (results.put + (results.put * this.getLastSpyMl() * (this.riskToleranceList[this.riskCounter] * 3) * (1 - this.volatility)) > results.call) {
+    if (putPct > threshold + this.callPutBuffer) {
+      const sqqqHolding = holdings.find(h => h.name.toUpperCase() === 'SQQQ');
+      if (sqqqHolding) {
+        await this.sellRightAway(sqqqHolding.name, sqqqHolding.shares);
       }
+      await this.buyRightAway('TQQQ', RiskTolerance.None);
+      //this.optionsOrderBuilderService.addOptionByBalance('SPY', threshold, 'Balance call put ratio', true);
+
+      // this.currentHoldings = await this.cartService.findCurrentPositions();
+      //await this.sellLoser(this.currentHoldings);
+      //const currentHoldings = await this.cartService.findCurrentPositions();
+      // await this.sellPutLoser(currentHoldings);
+      //} else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskToleranceList[this.riskCounter])) {
+    } else if (putPct < threshold - this.callPutBuffer) {
+      const tqqqHolding = holdings.find(h => h.name.toUpperCase() === 'TQQQ');
+      const uproHolding = holdings.find(h => h.name.toUpperCase() === 'UPRO');
+      if (tqqqHolding) {
+        await this.sellRightAway(tqqqHolding.name, tqqqHolding.shares);
+      }
+      if (uproHolding) {
+        await this.sellRightAway(uproHolding.name, uproHolding.shares);
+      }
+      await this.buyRightAway('SQQQ', RiskTolerance.None);
+      // this.currentHoldings = await this.cartService.findCurrentPositions();
+      // await this.sellLoser(this.currentHoldings);
+      // await this.sellCallLoser(currentHoldings);
+
     }
   }
 
@@ -882,7 +887,7 @@ export class AutopilotService {
     }
   }
 
-  private async intradayProcess() {
+  private async runIntradayProcess() {
     if (this.intradayProcessCounter >= this.processes.length) {
       this.intradayProcessCounter = 0;
     }
@@ -899,7 +904,7 @@ export class AutopilotService {
         if (isOpen) {
           if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 9) {
             this.lastOptionsCheckCheck = moment();
-            await this.intradayProcess();
+            await this.runIntradayProcess();
           } else {
             await this.executeOrderList();
           }

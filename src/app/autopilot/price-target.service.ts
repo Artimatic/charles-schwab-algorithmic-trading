@@ -140,17 +140,19 @@ export class PriceTargetService {
     return retrievedHoldings.reduce((previousValue, portItem: PortfolioInfoHolding) => {
       if (portItem.primaryLegs && !portItem.secondaryLegs) {
         if (portItem.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
-          previousValue.call += portItem.netLiq;
+          previousValue.call += (portItem.netLiq * 5);
         } else if (portItem.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
-          previousValue.put += portItem.netLiq;
+          previousValue.put += (portItem.netLiq * 5);
         }
       } else if (portItem.name === 'TQQQ') {
-        previousValue.call += portItem.netLiq;
+        previousValue.call += (portItem.netLiq * 3);
       } else if (portItem.name === 'SQQQ') {
-        previousValue.put += portItem.netLiq;
+        previousValue.put += (portItem.netLiq * 3);
+      } else {
+        previousValue.call += portItem.netLiq;
       }
       return previousValue
-    }, { call: 0, put: 0 });
+    }, { call: 1, put: 1 });
   }
 
   async getCallPutRatio(volatility: number) {
