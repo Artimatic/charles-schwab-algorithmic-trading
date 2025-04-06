@@ -97,5 +97,12 @@ export class StrategyDeciderService {
     Strategy.TrimHoldings
     //Strategy.None
   ];
+
+  strategyCounter = 0;
+
   constructor() { }
+  
+  handleStrategy() {
+
+  }
 }

@@ -14,7 +14,7 @@ import { of } from 'rxjs';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
 import { Balance } from '@shared/services/portfolio.service';
-import { StrategyDeciderService } from '../strategies/strategy-decider.service';
+import { RiskTolerance, StrategyDeciderService } from '../strategies/strategy-decider.service';
 
 export enum SwingtradeAlgorithms {
   demark9 = 'demark9',
@@ -46,7 +46,6 @@ export class AutopilotService {
   lastOptionsCheckCheck = null;
   currentHoldings: PortfolioInfoHolding[] = [];
 
-  strategyCounter = 0;
   callPutBuffer = 0.05;
   intradayProcessCounter = 0;
   intradayStrategyTriggered = false;
@@ -110,7 +109,7 @@ export class AutopilotService {
       .subscribe(() => {
         const lastStrategy = JSON.parse(localStorage.getItem('profitLoss'));
         if (lastStrategy && lastStrategy.lastStrategy) {
-          const lastStrategyCount = this.strategyList.findIndex(strat => strat.toLowerCase() === lastStrategy.lastStrategy.toLowerCase());
+          const lastStrategyCount = this.strategyDeciderService.strategyList.findIndex(strat => strat.toLowerCase() === lastStrategy.lastStrategy.toLowerCase());
           this.strategyCounter = lastStrategyCount >= 0 ? lastStrategyCount : 0;
           this.riskCounter = lastStrategy.lastRiskTolerance || 0;
           console.log('Previous profit loss', lastStrategy);
@@ -124,7 +123,7 @@ export class AutopilotService {
   async getMinMaxCashForOptions(modifier = 1) {
     const cash = await this.cartService.getAvailableFunds(false);
     const minConstant = modifier ? (cash * RiskTolerance.Zero * modifier) : 1000;
-    const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
+    const maxCash = round(this.strategyDeciderService.riskToleranceList[this.riskCounter] * cash, 2);
     const minCash = maxCash - minConstant;
     return {
       maxCash,
@@ -296,7 +295,7 @@ export class AutopilotService {
         const indicator = allIndicators.signals[allIndicators.signals.length - 1];
         const thresholds = this.getStopLoss(indicator.low, indicator.high);
         await this.cartService.portfolioBuy(holding,
-          allocation || (this.riskToleranceList[this.riskCounter]),
+          allocation || (this.strategyDeciderService.riskToleranceList[this.riskCounter]),
           thresholds.profitTakingThreshold,
           thresholds.stopLoss, reason);
       } catch (error) {
@@ -447,7 +446,7 @@ export class AutopilotService {
     console.log(`${indicator} ${direction}`, buys);
     if (buys.length) {
       const candidate = buys.pop();
-      await this.addBuy(this.createHoldingObj(candidate), this.riskToleranceList[this.riskCounter], `${direction} ${indicator}`);
+      await this.addBuy(this.createHoldingObj(candidate), this.strategyDeciderService.riskToleranceList[this.riskCounter], `${direction} ${indicator}`);
     }
   }
 
@@ -775,7 +774,7 @@ export class AutopilotService {
     currentHoldings.forEach(async (holding) => {
       if (holding.pnlPercentage > -0.01) {
         if (!holding.primaryLegs && holding.shares) {
-          await this.addBuy(holding, allocation || this.riskToleranceList[this.riskCounter], 'Adding to winners');
+          await this.addBuy(holding, allocation || this.strategyDeciderService.riskToleranceList[this.riskCounter], 'Adding to winners');
         }
       }
     });
