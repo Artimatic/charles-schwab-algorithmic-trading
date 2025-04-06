@@ -73,6 +73,7 @@ export enum Strategy {
   SellMfiDiv = 'Buy by mfi divergence sell signal',
   BuyMfiDiv = 'Buy by mfi divergence buy signal',
   BuyMfiDiv2 = 'Buy by mfi divergence2 buy signal',
+  SellMfiDiv2 = 'Sell by mfi divergence2 buy signal',
   BuyMfi = 'Buy by mfi buy signal',
   BuyMacd = 'Buy by macd buy signal',
   BuyFlag = 'Buy by flag pennant buy signal',
@@ -103,7 +104,8 @@ export class AutopilotService {
     RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,
-    RiskTolerance.Neutral
+    RiskTolerance.Neutral,
+    RiskTolerance.Greed
   ];
   isOpened = false;
   maxHoldings = 30;
@@ -113,26 +115,26 @@ export class AutopilotService {
   strategyList = [
     Strategy.Default,
     Strategy.InverseDispersion,
+    Strategy.BuyFlag,
     Strategy.BuyMfiTrade,
-    Strategy.BuyMfiDiv,
-    Strategy.BuyMfi,
     Strategy.AddToPositions,
+    Strategy.BuyMfiDiv,
     Strategy.PerfectPair,
+    Strategy.SellBband,
+    Strategy.MLPairs,
+    Strategy.BuyMacd,
+    Strategy.BuyMfi,
     Strategy.BuyCalls,
     Strategy.Hedge,
-    Strategy.BuyMacd,
     Strategy.BuyBband,
     Strategy.Short,
     Strategy.SellMfi,
-    Strategy.BuyFlag,
-    Strategy.BuyML,
-    Strategy.SellBband,
-    Strategy.BuySnP,
-    Strategy.MLPairs,
+    Strategy.BuyMfiDiv2,
     Strategy.TradingPairs,
     Strategy.BuyDemark,
     Strategy.VolatilityPairs,
     Strategy.BuyWinners,
+    Strategy.SellMfiDiv2,
     Strategy.TrimHoldings
     //Strategy.None
   ];
@@ -1030,6 +1032,13 @@ export class AutopilotService {
           await this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
+        }
+        break;
+      case Strategy.SellMfiDiv2:
+        if (this.isVolatilityHigh()) {
+          await this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'sell');
+        } else {
+          await this.buyOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'sell');
         }
         break;
       case Strategy.BuyMfiDiv:
