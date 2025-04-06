@@ -454,11 +454,11 @@ export class OptionsOrderBuilderService {
     return false;
   }
 
-  async hedge(currentHoldings: PortfolioInfoHolding[], balance: Balance) {
+  async hedge(currentHoldings: PortfolioInfoHolding[], balance: Balance, min = 0.15) {
     currentHoldings.forEach(async (holding) => {
       const shouldBuy = await this.shouldBuyOption(holding.name);
       if (shouldBuy && holding.assetType !== 'collective_investment') {
-        if (holding.netLiq && (holding.netLiq / balance.liquidationValue) > 0.1)
+        if (holding.netLiq && (holding.netLiq / balance.liquidationValue) > min)
           console.log('Adding protective put for', holding.name);
         await this.createProtectivePutOrder(holding, balance.cashBalance);
       }

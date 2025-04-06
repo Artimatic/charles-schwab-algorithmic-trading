@@ -19,7 +19,6 @@ import { StrategyBuilderService } from '../backtest-table/strategy-builder.servi
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
 import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
-import { PortfolioMgmtService } from '../portfolio-mgmt/portfolio-mgmt.service';
 import { PricingService } from '../pricing/pricing.service';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { StockListDialogComponent } from '../stock-list-dialog/stock-list-dialog.component';
@@ -27,7 +26,7 @@ import { FindPatternService } from '../strategies/find-pattern.service';
 import { AddOptionsTradeComponent } from './add-options-trade/add-options-trade.component';
 import { FindDaytradeService } from './find-daytrade.service';
 import { PriceTargetService } from './price-target.service';
-import { AutopilotService, RiskTolerance, Strategy, SwingtradeAlgorithms } from './autopilot.service';
+import { AutopilotService, RiskTolerance } from './autopilot.service';
 import { BacktestAggregatorService } from '../backtest-table/backtest-aggregator.service';
 import { OrderingService } from '@shared/ordering.service';
 import { NewStockFinderService } from '../backtest-table/new-stock-finder.service';
@@ -126,7 +125,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private pricingService: PricingService,
     private orderHandlingService: OrderHandlingService,
     private optionsOrderBuilderService: OptionsOrderBuilderService,
-    private portfolioMgmtService: PortfolioMgmtService,
     public priceTargetService: PriceTargetService,
     public autopilotService: AutopilotService,
     private backtestAggregatorService: BacktestAggregatorService,

@@ -150,11 +150,11 @@ export class AutopilotService {
       await this.handleBalanceUtilization(this.currentHoldings);
     },
     async () => await this.checkIntradayStrategies(),
-    // async () => {
-    //   this.currentHoldings = await this.cartService.findCurrentPositions();
-    //   const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
-    //   await this.optionsOrderBuilderService.hedge(this.currentHoldings, balance);
-    // },
+    async () => {
+      this.currentHoldings = await this.cartService.findCurrentPositions();
+      const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
+      await this.optionsOrderBuilderService.hedge(this.currentHoldings, balance, 0.2);
+    },
     async () => await this.optionsOrderBuilderService.addOptionsStrategiesToCart(),
     async () => {
       this.currentHoldings = await this.cartService.findCurrentPositions();
