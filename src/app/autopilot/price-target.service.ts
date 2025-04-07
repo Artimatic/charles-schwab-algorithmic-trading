@@ -144,10 +144,6 @@ export class PriceTargetService {
         } else if (portItem.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
           previousValue.put += portItem.netLiq;
         }
-      } else if (portItem.name === 'TQQQ') {
-        previousValue.call += portItem.netLiq;
-      } else if (portItem.name === 'SQQQ') {
-        previousValue.put += portItem.netLiq;
       }
       return previousValue
     }, { call: 1, put: 1 });
