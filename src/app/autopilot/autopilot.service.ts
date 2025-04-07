@@ -388,7 +388,7 @@ export class AutopilotService {
         const indicator = allIndicators.signals[allIndicators.signals.length - 1];
         const thresholds = this.getStopLoss(indicator.low, indicator.high);
         await this.cartService.portfolioBuy(holding,
-          allocation || (this.riskToleranceList[this.riskCounter]),
+          allocation || (this.riskToleranceList[this.riskCounter]) * 2,
           thresholds.profitTakingThreshold,
           thresholds.stopLoss, reason);
       } catch (error) {
