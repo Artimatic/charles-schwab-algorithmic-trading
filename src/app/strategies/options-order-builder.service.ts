@@ -415,11 +415,10 @@ export class OptionsOrderBuilderService {
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
     const lastPrice = price[symbol].quote.lastPrice;
     const closePrice = price[symbol].quote.closePrice;
-
-    //const impliedMove = await this.getImpliedMove(symbol, backtestResults)
+    const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
+    const impliedMove = await this.getImpliedMove(symbol, backtestResults)
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
-    //if (currentDiff < (((1 / (impliedMove + 0.01)) * 0.01))) {
-    if (Math.abs(currentDiff) < 0.015) {
+    if (Math.abs(currentDiff) < 0.016 || Math.abs(currentDiff) < (((1 / (impliedMove)) * 0.002))) {
       return true;
     }
 
