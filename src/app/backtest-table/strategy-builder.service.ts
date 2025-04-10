@@ -10,8 +10,8 @@ import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
 import { Indicators } from '@shared/stock-backtest.interface';
 import { MessageService } from 'primeng/api';
 import { AlwaysBuy } from '../rh-table/backtest-stocks.constant';
-import { SchedulerService } from '@shared/service/scheduler.service';
 import { StrategyStoreService } from './strategy-store.service';
+import { AllocationService } from '../allocation/allocation.service';
 
 export interface ComplexStrategy {
   state: 'assembling' | 'assembled' | 'disassembling' | 'disassembled';
@@ -36,7 +36,8 @@ export class StrategyBuilderService {
     private messageService: MessageService,
     private reportingService: ReportingService,
     private strategyStoreService: StrategyStoreService,
-    private cartService: CartService) { }
+    private cartService: CartService,
+    private allocationService: AllocationService) { }
 
   addBullishStock(symbol: string) {
     this.bullishStocks.push(symbol);
@@ -82,7 +83,11 @@ export class StrategyBuilderService {
       const results = await this.backtestService.getBacktestData(symbol, start, current).toPromise();
       // this.backtestAggregatorService.analyseBacktest(results);
       this.addToOrderHistoryStorage(symbol, results.orderHistory);
-
+      const pop = this.allocationService.determineProbabilityOfProfit(results.buySignals.length,
+        results.sellSignals.length,
+        results.impliedMovement,
+        results.ml);
+      const kellyCriterion = this.allocationService.calculateKellyCriterion(pop, 1);
       const tableObj = {
         recommendation: results.recommendation,
         stock: results.symbol,
@@ -100,7 +105,9 @@ export class StrategyBuilderService {
         impliedMovement: results.impliedMovement,
         buySignals: results.buySignals,
         sellSignals: results.sellSignals,
-        backtestDate: results.backtestDate
+        backtestDate: results.backtestDate,
+        pop: pop,
+        kellyCriterion: kellyCriterion
       };
       if (results.buySignals.find(s => s.includes('pennant')) || results.sellSignals.find(s => s.includes('pennant'))) {
         this.messageService.add({ severity: 'info', summary: `${symbol} found flag pennant`, sticky: true });

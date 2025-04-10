@@ -15,7 +15,10 @@ describe('AlgoEvaluationComponent', () => {
   let aiPicksServiceSpy: jasmine.SpyObj<AiPicksService>;
   let optionsOrderBuilderServiceSpy: jasmine.SpyObj<OptionsOrderBuilderService>;
   let mlNeutralResultsSubject: Subject<void>;
-
+  let mockStrategyBuilderService = { 
+    bullishStocks: [], 
+    addBullishStock: () => {}
+  };
   beforeEach(() => {
     mlNeutralResultsSubject = new Subject<void>();
     const spyOptionsOrderBuilderService = jasmine.createSpyObj('OptionsOrderBuilderService', ['addCallToCurrentTrades', 'addPutToCurrentTrades']);
@@ -25,7 +28,7 @@ describe('AlgoEvaluationComponent', () => {
       providers: [
         { provide: AiPicksService, useValue: mockAiPicksService },
         { provide: OptionsOrderBuilderService, useValue: spyOptionsOrderBuilderService },
-        { provide: StrategyBuilderService, useValue: { bullishStocks: []} },
+        { provide: StrategyBuilderService, useValue: mockStrategyBuilderService },
       ],
     });
 
