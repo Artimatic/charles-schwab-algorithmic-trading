@@ -100,8 +100,8 @@ xdescribe('AutopilotComponent', () => {
     mockFindDaytradeService.getTradeObserver.and.returnValue(new Subject());
     mockFindDaytradeService.getRefreshObserver.and.returnValue(new Subject());
     mockAutopilotService.handleBalanceUtilization.and.returnValue(false);
-    mockAutopilotService.getTechnicalIndicators.and.returnValue({ low: 1, high: 10 });
-    mockAutopilotService.getStopLoss.and.returnValue({ profitTakingThreshold: 0.1, stopLoss: 0.05 });
+    mockOrderHandlingService.getTechnicalIndicators.and.returnValue({ low: 1, high: 10 });
+    mockOrderHandlingService.getStopLoss.and.returnValue({ profitTakingThreshold: 0.1, stopLoss: 0.05 });
     mockCartService.getAvailableFunds.and.returnValue(100000);
     mockAutopilotService.getBuyList.and.returnValue(['AAPL']);
     mockAutopilotService.isVolatilityHigh.and.returnValue(false);

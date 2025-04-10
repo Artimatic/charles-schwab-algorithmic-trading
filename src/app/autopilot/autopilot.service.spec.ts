@@ -9,7 +9,6 @@ import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { of } from 'rxjs';
 import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
-import { PortfolioInfoHolding } from '@shared/services';
 
 describe('AutopilotService', () => {
   let service: AutopilotService;
@@ -34,7 +33,7 @@ describe('AutopilotService', () => {
     mockCartService = jasmine.createSpyObj('CartService', ['getAvailableFunds', 'portfolioBuy', 'portfolioSell', 'addSingleLegOptionOrder', 'isStrangle', 'findCurrentPositions', 'buildOrderWithAllocation', 'getSellOrders', 'getBuyOrders', 'getOtherOrders', 'getMaxTradeCount']);
     mockBacktestService = jasmine.createSpyObj('BacktestService', ['getBacktestEvaluation']);
     mockPriceTargetService = jasmine.createSpyObj('PriceTargetService', ['isDownDay', 'isProfitable', 'notProfitable', 'getDiff', 'getCallPutBalance']);
-    mockOrderHandlingService = jasmine.createSpyObj('OrderHandlingService', ['getEstimatedPrice', 'intradayStep']);
+    mockOrderHandlingService = jasmine.createSpyObj('OrderHandlingService', ['getEstimatedPrice', 'intradayStep', 'addBuy']);
     mockReportingService = jasmine.createSpyObj('ReportingService', ['addAuditLog']);
     mockPortfolioService = jasmine.createSpyObj('PortfolioService', ['getEquityMarketHours', 'getProfitLoss', 'getStrategy', 'getTdBalance', 'getPrice']);
     mockGlobalSettingsService = jasmine.createSpyObj('GlobalSettingsService', ['getStartStopTime']);
@@ -169,30 +168,6 @@ describe('AutopilotService', () => {
     expect(mockCartService.addSingleLegOptionOrder).toHaveBeenCalled();
   });
 
-  it('should get technical indicators', async () => {
-    await service.getTechnicalIndicators('AAPL', '2023-01-01', '2023-10-10');
-    expect(mockBacktestService.getBacktestEvaluation).toHaveBeenCalledWith('AAPL', '2023-01-01', '2023-10-10', 'daily-indicators');
-  });
-
-  it('should get stop loss', () => {
-    const result = service.getStopLoss(1, 10);
-    expect(result.profitTakingThreshold).toEqual(4.5);
-    expect(result.stopLoss).toEqual(-4.5);
-  });
-  it('should add buy', async () => {
-    mockCartService.portfolioBuy.and.callFake(() => { });;
-    await service.addBuy({ name: 'AAPL' } as PortfolioInfoHolding, 0.1, 'reason');
-    expect(mockBacktestService.getBacktestEvaluation).toHaveBeenCalled();
-    expect(mockCartService.portfolioBuy).toHaveBeenCalled();
-  });
-  it('should handle error add buy', async () => {
-    mockBacktestService.getBacktestEvaluation.and.returnValue(of(null));
-    mockCartService.portfolioBuy.and.callFake(() => { });;
-    await service.addBuy({ name: 'AAPL' } as PortfolioInfoHolding, 0.1, 'reason');
-    expect(mockBacktestService.getBacktestEvaluation).toHaveBeenCalled();
-    expect(mockCartService.portfolioBuy).not.toHaveBeenCalled();
-  });
-
   it('should create holding obj', () => {
     const holding = service.createHoldingObj('AAPL');
     expect(holding.name).toEqual('AAPL');
@@ -202,7 +177,7 @@ describe('AutopilotService', () => {
   it('should call find swing stock callback buy', async () => {
     mockCartService.portfolioBuy.and.callFake(() => { });
     await service.findSwingStockCallback('AAPL', 0.8, { recommendation: 'STRONGBUY', impliedMovement: 0.1, net: 10, invested: 100 });
-    expect(mockCartService.portfolioBuy).toHaveBeenCalled();
+    expect(mockOrderHandlingService.addBuy).toHaveBeenCalled();
   });
   it('should call find swing stock callback sell', async () => {
     mockCartService.portfolioBuy.and.callFake(() => { });

@@ -62,8 +62,8 @@ export interface ProfitLossRecord {
 export class AutopilotComponent implements OnInit, OnDestroy {
   display = false;
   isLoading = true;
-  defaultInterval = 160000;
-  interval = 160000;
+  defaultInterval = 60000;
+  interval = 60000;
   oneDayInterval;
   timer: Subscription;
   alive = false;
@@ -553,8 +553,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       const currentDate = moment().format('YYYY-MM-DD');
       const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
       try {
-        const indicators = await this.autopilotService.getTechnicalIndicators(stock, startDate, currentDate).toPromise();
-        const thresholds = this.autopilotService.getStopLoss(indicators.low, indicators.high);
+        const indicators = await this.orderHandlingService.getTechnicalIndicators(stock, startDate, currentDate).toPromise();
+        const thresholds = this.orderHandlingService.getStopLoss(indicators.low, indicators.high);
         await this.portfolioDaytrade(stock,
           round(this.dayTradingRiskToleranceList[this.dayTradeRiskCounter], 2),
           thresholds.profitTakingThreshold,
@@ -597,7 +597,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.cartService.portfolioSell(holding, 'Backtest indicates sell');
         } else if (backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.7 && (backtestResults.recommendation === 'STRONGBUY' || backtestResults.recommendation === 'BUY')) {
           console.log('Backtest indicates buying', backtestResults);
-          await this.autopilotService.addBuy(this.autopilotService.createHoldingObj(holding.name), RiskTolerance.Zero, 'Backtest indicates buying');
+          await this.orderHandlingService.addBuy(this.autopilotService.createHoldingObj(holding.name), RiskTolerance.Zero, 'Backtest indicates buying');
         }
       } catch (error) {
         console.log('Backtest error', error);
@@ -639,7 +639,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async analyseRecommendations(holding: PortfolioInfoHolding) {
     if (holding.recommendation.toLowerCase() === 'buy') {
-      await this.autopilotService.addBuy(holding, null, 'Recommendated buy');
+      await this.orderHandlingService.addBuy(holding, (this.autopilotService.riskToleranceList[this.autopilotService.riskCounter]) * 2, 'Recommendated buy');
     } else if (holding.recommendation.toLowerCase() === 'sell') {
       await this.cartService.portfolioSell(holding, 'Recommended sell');
     }
@@ -951,7 +951,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     });
 
     // Testing buy stock
-    await this.autopilotService.addBuy(this.autopilotService.createHoldingObj('GOOG'), null, 'Testing buy stock');
+    await this.orderHandlingService.addBuy(this.autopilotService.createHoldingObj('GOOG'), 0.01, 'Testing buy stock');
 
     // Testing buy put
     await this.testPut();
@@ -991,6 +991,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.optionsOrderBuilderService.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Testing pair trading');
 
     setTimeout(async () => {
+      await this.autopilotService.executeOrderList();
+    }, 5000);
+
+    setTimeout(async () => {
       const buyAndSellList = this.cartService.sellOrders.concat(this.cartService.buyOrders);
       const orders = buyAndSellList.concat(this.cartService.otherOrders);
       for (let i = 0; i < orders.length; i++) {
@@ -998,7 +1002,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.orderHandlingService.handleIntradayRecommendation(orders[i], { recommendation: OrderType.Sell } as any);
       }
       this.testAddTradingPairsToCart()
-    }, 30000);
+    }, 10000);
 
   }
 

@@ -4,7 +4,7 @@ import { Recommendation } from '@shared/stock-backtest.interface';
 import { PricingService } from '../pricing/pricing.service';
 import * as moment from 'moment-timezone';
 import { GlobalSettingsService } from '../settings/global-settings.service';
-import { BacktestService, CartService, DaytradeService, PortfolioService, TradeService } from '@shared/services';
+import { BacktestService, CartService, DaytradeService, PortfolioInfoHolding, PortfolioService } from '@shared/services';
 import { Options } from '@shared/models/options';
 import { AlgoQueueItem } from '@shared/services/trade.service';
 import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
@@ -12,6 +12,7 @@ import { StrategyBuilderService } from '../backtest-table/strategy-builder.servi
 import { round } from 'lodash-es';
 import { OrderTypes } from '@shared/models/smart-order';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
+import { HighriskSpecialPrefixInstance } from 'twilio/lib/rest/voice/v1/dialingPermissions/country/highriskSpecialPrefix';
 
 @Injectable({
   providedIn: 'root'
@@ -25,13 +26,52 @@ export class OrderHandlingService {
     private globalSettingsService: GlobalSettingsService,
     private cartService: CartService,
     private portfolioService: PortfolioService,
-    private tradeService: TradeService,
     private daytradeStrategiesService: DaytradeStrategiesService,
     private backtestService: BacktestService,
     private strategyBuilderService: StrategyBuilderService,
     private daytradeService: DaytradeService,
     private machineDaytradingService: MachineDaytradingService,
   ) { }
+
+  getStopLoss(low: number, high: number) {
+    if (!low || !high) {
+      return {
+        profitTakingThreshold: 10000,
+        stopLoss: -10000
+      }
+    }
+    const profitTakingThreshold = round(((high / low) - 1) / 2, 4);
+    const stopLoss = profitTakingThreshold * -1;
+    return {
+      profitTakingThreshold,
+      stopLoss
+    }
+  }
+
+  getTechnicalIndicators(stock: string, startDate: string, currentDate: string) {
+    return this.backtestService.getBacktestEvaluation(stock, startDate, currentDate, 'daily-indicators');
+  }
+
+  async addBuy(holding: PortfolioInfoHolding, allocation, reason) {
+    if (!holding.name) {
+      throw Error('Ticker is missing')
+    }
+    if ((this.cartService.getBuyOrders().length + this.cartService.getOtherOrders().length) < this.cartService.getMaxTradeCount()) {
+      const currentDate = moment().format('YYYY-MM-DD');
+      const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
+      try {
+        const allIndicators = await this.getTechnicalIndicators(holding.name, startDate, currentDate).toPromise();
+        const indicator = allIndicators.signals[allIndicators.signals.length - 1];
+        const thresholds = this.getStopLoss(indicator.low, indicator.high);
+        await this.cartService.portfolioBuy(holding,
+          allocation || 0.01,
+          thresholds.profitTakingThreshold,
+          thresholds.stopLoss, reason);
+      } catch (error) {
+        console.log('Error getting backtest data for ', holding.name, error);
+      }
+    }
+  }
 
   async hasPositions(symbols: string[]) {
     const portfolioHolding = await this.portfolioService.getTdPortfolio().toPromise();
@@ -98,7 +138,7 @@ export class OrderHandlingService {
     const balance = await this.machineDaytradingService.getPortfolioBalance().toPromise();
     const cashBalance = balance.cashBalance;
     const primaryLegPrice = await this.getEstimatedPrice(order.primaryLegs[0].symbol);
-    if (order.secondaryLegs) {
+    if (order.secondaryLegs && order.secondaryLegs.length > 0) {
       const secondaryLegPrice = await this.getEstimatedPrice(order.secondaryLegs[0].symbol);
       const totalPrice = (primaryLegPrice * order.primaryLegs[0].quantity) + (secondaryLegPrice * order.secondaryLegs[0].quantity);
       this.reportingService.addAuditLog(order.holding.symbol, `Total Price with secondary leg ${totalPrice}, balance: ${cashBalance}`);
@@ -320,7 +360,6 @@ export class OrderHandlingService {
       analysis: analysis,
       ml: ml.nextOutput[0]
     };
-    this.tradeService.algoQueue.next(queueItem);
   }
 
   async getEstimatedPrice(symbol: string) {
