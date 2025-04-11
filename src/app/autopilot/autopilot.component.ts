@@ -500,7 +500,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     console.log('Setting up strategy')
     const backtestData = await this.strategyBuilderService.getBacktestData('SPY');
 
-    this.autopilotService.setLastSpyMl(backtestData.ml);
+    this.autopilotService.setLastSpyMl(backtestData?.ml);
     this.autopilotService.updateVolatility();
     await this.priceTargetService.setTargetDiff();
     this.backtestAggregatorService.clearTimeLine();
