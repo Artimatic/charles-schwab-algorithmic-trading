@@ -10,7 +10,9 @@ export class AllocationService {
 
   determineProbabilityOfProfit(buySignalCount: number, sellSignalCount: number,
     impliedMovement: number, ml: number) {
-    return round(Math.ceil((buySignalCount * (1 / impliedMovement) * 0.07) + ml) / (buySignalCount + sellSignalCount), 4);
+      const pop = round(Math.ceil((buySignalCount * (1 / impliedMovement) * 0.07) + ml) / (buySignalCount + sellSignalCount), 4);
+      console.log('calculating pop', buySignalCount, sellSignalCount, impliedMovement, ml, pop);
+    return pop;
   }
 
   calculateKellyCriterion(probabilityOfProfit: number, betGain: number): number {

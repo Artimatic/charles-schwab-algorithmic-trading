@@ -152,7 +152,7 @@ export class OrderHandlingService {
       }
     } else {
       const totalPrice = primaryLegPrice * order.primaryLegs[0].quantity;
-      if (totalPrice) {
+      if (totalPrice < cashBalance) {
         this.reportingService.addAuditLog(order.holding.symbol, `Option price: ${totalPrice}, balance: ${cashBalance}`);
       } else {
         this.reportingService.addAuditLog(order.holding.symbol, `price: ${primaryLegPrice}, quantity: ${order.primaryLegs[0].quantity}, balance: ${cashBalance}`);

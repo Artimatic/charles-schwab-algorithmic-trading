@@ -502,7 +502,7 @@ describe('OrderHandlingService', () => {
     });
 
     it('should NOT buy single leg option if balance is insufficient', async () => {
-      mockMachineDaytradingService.getPortfolioBalance.and.returnValue(of({ ...mockBalance, cashBalance: 50 })); // Insufficient balance (option price * 100 multiplier)
+      mockMachineDaytradingService.getPortfolioBalance.and.returnValue(of({ ...mockBalance, cashBalance: 5 })); // Insufficient balance (option price * 100 multiplier)
       const returnedOrder = await service.buyOptions(singleLegOrder);
       expect(mockPortfolioService.sendOptionBuy).not.toHaveBeenCalled();
       expect(mockCartService.updateOrder).not.toHaveBeenCalled(); // incrementBuy not called
@@ -922,6 +922,7 @@ describe('OrderHandlingService', () => {
     beforeEach(() => {
       spyOn(service, 'getEstimatedPrice').and.returnValue(5.5);
       mockPortfolioService.sendOptionBuy.and.returnValue(of({ success: true }));
+      mockPortfolioService.sendOptionBuy.calls.reset();
     });
 
     it('should call getEstimatedPrice if price is not provided', async () => {

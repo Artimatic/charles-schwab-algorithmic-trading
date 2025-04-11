@@ -61,4 +61,5 @@ export interface Stock {
   net?: number;
   score?: number;
   sellMlScore?: number;
+  pop?: number;
 }
