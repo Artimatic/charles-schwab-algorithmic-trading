@@ -293,7 +293,9 @@ export class StrategyBuilderService {
         recommendation: result.recommendation,
         stock: result.stock,
         returns: result.returns,
-        impliedMovement: result.impliedMovement
+        impliedMovement: result.impliedMovement,
+        pop: result.pop,
+        kellyCriterion: result.kellyCriterion
       });
     }
   }
