@@ -140,7 +140,7 @@ export class OrderHandlingService {
     const primaryLegPrice = await this.getEstimatedPrice(order.primaryLegs[0].symbol);
     if (order.secondaryLegs && order.secondaryLegs.length > 0) {
       const secondaryLegPrice = await this.getEstimatedPrice(order.secondaryLegs[0].symbol);
-      const totalPrice = (primaryLegPrice * order.primaryLegs[0].quantity) + (secondaryLegPrice * order.secondaryLegs[0].quantity);
+      const totalPrice = ((primaryLegPrice * order.primaryLegs[0].quantity) + (secondaryLegPrice * order.secondaryLegs[0].quantity) * 100);
       this.reportingService.addAuditLog(order.holding.symbol, `Total Price with secondary leg ${totalPrice}, balance: ${cashBalance}`);
       if (totalPrice < cashBalance) {
         order = this.incrementBuy(order);
@@ -151,7 +151,7 @@ export class OrderHandlingService {
         await this.buyOption(order.secondaryLegs[0].symbol, order.secondaryLegs[0].quantity || 1, secondaryLegPrice, () => { });
       }
     } else {
-      const totalPrice = primaryLegPrice * order.primaryLegs[0].quantity;
+      const totalPrice = primaryLegPrice * order.primaryLegs[0].quantity * 100;
 
       if (totalPrice < cashBalance) {
         order = this.incrementBuy(order);

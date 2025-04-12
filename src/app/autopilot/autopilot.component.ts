@@ -752,42 +752,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       secondaryLegs, price).subscribe();
   }
 
-  async sellAllStrangle() {
-    this.autopilotService.currentHoldings.forEach(async (holding) => {
-      if (this.cartService.isStrangle(holding)) {
-        const seenPuts = {};
-        const seenCalls = {};
-        holding.primaryLegs.concat(holding.secondaryLegs).forEach((option: Options) => {
-          const putCall = option.putCallInd;
-          const expiry = option.description.match(/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/)[0];
-          if (putCall === 'C') {
-            if (!seenCalls[expiry]) {
-              seenCalls[expiry] = [];
-            }
-            seenCalls[expiry].push(option);
-          } else if (putCall === 'P') {
-            if (!seenPuts[expiry]) {
-              seenPuts[expiry] = [];
-            }
-            seenPuts[expiry].push(option);
-          }
-        });
-
-        for (const key in seenCalls) {
-          if (seenPuts[key]) {
-            const fullOrderList = seenCalls[key].concat(seenPuts[key]);
-            let fullPrice = 0;
-            for (let i = 0; i < fullOrderList.length; i++) {
-              fullPrice += await this.orderHandlingService.getEstimatedPrice(fullOrderList[i].symbol);
-            }
-
-            this.cartService.addSellStrangleOrder(holding.name, holding.primaryLegs, holding.secondaryLegs, fullPrice, holding.primaryLegs[0].quantity);
-          }
-        }
-      }
-    });
-  }
-
   getPreferences() {
     this.portfolioService.getUserPreferences().subscribe(pref => {
       console.log('pref', pref);
@@ -800,31 +764,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       if (!this.cartService.isStrangle(holding)) {
         if (!holding?.primaryLegs?.length) {
           await this.cartService.portfolioSell(holding, 'Sell all command');
-        }
-      }
-    });
-  }
-
-  async sellAllOptions() {
-    this.autopilotService.currentHoldings.forEach(async (holding) => {
-      if (holding.primaryLegs) {
-        const callPutInd = holding.primaryLegs[0].putCallInd.toLowerCase();
-        const isStrangle = this.cartService.isStrangle(holding);
-
-        if (isStrangle) {
-          this.optionsOrderBuilderService.sellStrangle(holding);
-        } else {
-          const estPrice = await this.orderHandlingService.getEstimatedPrice(holding.primaryLegs[0].symbol);
-          let orderType = null;
-          if (callPutInd === 'c') {
-            orderType = OrderTypes.call;
-          } else if (callPutInd === 'p') {
-            orderType = OrderTypes.put;
-          }
-
-          this.cartService.addSingleLegOptionOrder(holding.name, [holding.primaryLegs[0]],
-            estPrice, holding.primaryLegs[0].quantity,
-            orderType, 'Sell', 'Manual command to sell all options');
         }
       }
     });
