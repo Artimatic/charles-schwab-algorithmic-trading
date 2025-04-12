@@ -82,6 +82,15 @@ export class OptionsOrderBuilderService {
     return true;
   }
 
+  private async adjustOptionsQuantity(symbol: string,
+    quantity: number) : Promise<number> {
+      const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
+      if (backtestResults?.kellyCriterion && backtestResults.kellyCriterion > 0) {
+        return Promise.resolve(Math.floor(backtestResults.kellyCriterion * quantity));
+      }
+    return Promise.resolve(0);
+  }
+
   getCurrentTradeIdeas() {
     return this.currentTradeIdeas;
   }
@@ -250,6 +259,10 @@ export class OptionsOrderBuilderService {
             let initialCallQuantity = (callPrice > putPrice) ? 1 : multiple;
             let initialPutQuantity = (callPrice > putPrice) ? multiple : 1;
             const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple, minCashAllocation, maxCashAllocation);
+            const modifiedCallQuantity = this.adjustOptionsQuantity(buy, callQuantity);
+            const modifiedPutQuantity = this.adjustOptionsQuantity(sell, putQuantity)
+            console.warn(`Modified call quantity ${buy} ${callQuantity} ${modifiedCallQuantity}`);
+            console.warn(`Modified put quantity ${sell} ${putQuantity} ${modifiedPutQuantity}`);
             if (callQuantity + putQuantity > 35) {
               this.strategyBuilderService.addBullishStock(buy);
               this.reportingService.addAuditLog(null,
