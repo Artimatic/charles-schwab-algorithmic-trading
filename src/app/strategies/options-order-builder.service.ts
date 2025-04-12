@@ -431,7 +431,7 @@ export class OptionsOrderBuilderService {
     const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
     const impliedMove = await this.getImpliedMove(symbol, backtestResults)
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
-    if (Math.abs(currentDiff) < 0.016 || Math.abs(currentDiff) < (((1 / (impliedMove)) * 0.002))) {
+    if (Math.abs(currentDiff) < 0.018 || Math.abs(currentDiff) < (((1 / (impliedMove)) * 0.002))) {
       return true;
     }
 
