@@ -958,7 +958,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     // Testing buy call
     await this.testCall();
     // Testing buy pair
-    const buy = 'INTC';
+    const buy = 'CSCO';
     const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(buy);
     const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
 
