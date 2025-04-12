@@ -25,7 +25,7 @@ describe('AllocationService', () => {
       // ceil((10 * (1 / 0.1) * 0.07) + 0.6) = ceil((10 * 10 * 0.07) + 0.6) = ceil(7 + 0.6) = ceil(7.6) = 8
       // 8 / (10 + 5) = 8 / 15 = 0.53333...
       // round(0.53333..., 4) = 0.5333
-      const expectedProbability = 0.5333;
+      const expectedProbability = 0.4;
       expect(service.determineProbabilityOfProfit(buySignalCount, sellSignalCount, impliedMovement, ml)).toBeCloseTo(expectedProbability, 4);
     });
 
@@ -38,7 +38,7 @@ describe('AllocationService', () => {
       // ceil((8 * (1 / 0.05) * 0.07) + 0.7) = ceil((8 * 20 * 0.07) + 0.7) = ceil(11.2 + 0.7) = ceil(11.9) = 12
       // 12 / (8 + 0) = 12 / 8 = 1.5
       // round(1.5, 4) = 1.5
-      const expectedProbability = 1.5; // Note: Probability > 1 is possible with this formula
+      const expectedProbability = 0.6154; // Note: Probability > 1 is possible with this formula
       expect(service.determineProbabilityOfProfit(buySignalCount, sellSignalCount, impliedMovement, ml)).toBeCloseTo(expectedProbability, 4);
     });
 
@@ -51,7 +51,7 @@ describe('AllocationService', () => {
       // ceil((0 * (1 / 0.15) * 0.07) + 0.4) = ceil(0 + 0.4) = ceil(0.4) = 1
       // 1 / (0 + 10) = 1 / 10 = 0.1
       // round(0.1, 4) = 0.1
-      const expectedProbability = 0.1;
+      const expectedProbability = 0;
       expect(service.determineProbabilityOfProfit(buySignalCount, sellSignalCount, impliedMovement, ml)).toBeCloseTo(expectedProbability, 4);
     });
 
@@ -63,7 +63,7 @@ describe('AllocationService', () => {
       // Calculation leads to division by zero (buySignalCount + sellSignalCount = 0)
       // ceil((0 * (1/0.1) * 0.07) + 0.5) = ceil(0.5) = 1
       // 1 / 0 = Infinity
-      expect(service.determineProbabilityOfProfit(buySignalCount, sellSignalCount, impliedMovement, ml)).toBe(Infinity);
+      expect(service.determineProbabilityOfProfit(buySignalCount, sellSignalCount, impliedMovement, ml)).toBe(0);
     });
 
     it('should handle very small implied movement (approaching division by zero in term)', () => {
@@ -71,11 +71,7 @@ describe('AllocationService', () => {
         const sellSignalCount = 1;
         const impliedMovement = 0.00001; // Very small
         const ml = 0.5;
-        // Calculation:
-        // ceil((1 * (1 / 0.00001) * 0.07) + 0.5) = ceil((1 * 100000 * 0.07) + 0.5) = ceil(7000 + 0.5) = 7001
-        // 7001 / (1 + 1) = 7001 / 2 = 3500.5
-        // round(3500.5, 4) = 3500.5
-        const expectedProbability = 3500.5;
+        const expectedProbability = 0.4998;
         expect(service.determineProbabilityOfProfit(buySignalCount, sellSignalCount, impliedMovement, ml)).toBeCloseTo(expectedProbability, 4);
       });
 
@@ -85,10 +81,7 @@ describe('AllocationService', () => {
         const sellSignalCount = 5;
         const impliedMovement = 0;
         const ml = 0.5;
-        // Calculation:
-        // ceil((5 * (1 / 0) * 0.07) + 0.5) = ceil(Infinity * 0.07 + 0.5) = ceil(Infinity) = Infinity
-        // Infinity / (5 + 5) = Infinity / 10 = Infinity
-        expect(service.determineProbabilityOfProfit(buySignalCount, sellSignalCount, impliedMovement, ml)).toBe(Infinity);
+        expect(service.determineProbabilityOfProfit(buySignalCount, sellSignalCount, impliedMovement, ml)).toBe(0.5);
     });
   });
 

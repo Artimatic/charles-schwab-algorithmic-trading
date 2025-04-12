@@ -144,24 +144,21 @@ export class OrderHandlingService {
       this.reportingService.addAuditLog(order.holding.symbol, `Total Price with secondary leg ${totalPrice}, balance: ${cashBalance}`);
       if (totalPrice < cashBalance) {
         order = this.incrementBuy(order);
-        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.primaryLegs[0].quantity} ${order.primaryLegs[0].symbol}`);
-        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.secondaryLegs[0].quantity} ${order.secondaryLegs[0].symbol}`);
+        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.primaryLegs[0].quantity} ${order.primaryLegs[0].symbol} $${totalPrice}`);
+        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.secondaryLegs[0].quantity} ${order.secondaryLegs[0].symbol} $${totalPrice}`);
 
         await this.buyOption(order.primaryLegs[0].symbol, order.primaryLegs[0].quantity || 1, primaryLegPrice, () => { });
         await this.buyOption(order.secondaryLegs[0].symbol, order.secondaryLegs[0].quantity || 1, secondaryLegPrice, () => { });
       }
     } else {
       const totalPrice = primaryLegPrice * order.primaryLegs[0].quantity;
-      if (totalPrice < cashBalance) {
-        this.reportingService.addAuditLog(order.holding.symbol, `Option price: ${totalPrice}, balance: ${cashBalance}`);
-      } else {
-        this.reportingService.addAuditLog(order.holding.symbol, `price: ${primaryLegPrice}, quantity: ${order.primaryLegs[0].quantity}, balance: ${cashBalance}`);
-      }
 
       if (totalPrice < cashBalance) {
         order = this.incrementBuy(order);
-        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.quantity} ${order.primaryLegs[0].symbol}`);
+        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.quantity} ${order.primaryLegs[0].symbol} $${totalPrice}`);
         await this.buyOption(order.primaryLegs[0].symbol, order.quantity || 1);
+      } else {
+        this.reportingService.addAuditLog(order.holding.symbol, 'Balance is too low.');
       }
     }
     return order;
@@ -367,6 +364,8 @@ export class OrderHandlingService {
       const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
       const askPrice = Number(price[symbol].quote.askPrice);
       const bidPrice = Number(price[symbol].quote.bidPrice);
+      console.log(`Getting estimated price for ${symbol}, bidPrice: ${bidPrice}, askPrice: ${askPrice}`)
+
       return this.strategyBuilderService.findOptionsPrice(bidPrice, askPrice);
     } catch (error) {
       console.log('Error getting estimated price', error);

@@ -14,7 +14,6 @@ import { of } from 'rxjs';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
 import { Balance } from '@shared/services/portfolio.service';
-import { AllocationService } from '../allocation/allocation.service';
 import { IntradayStrategyService } from '../strategies/intraday-strategy.service';
 
 export enum SwingtradeAlgorithms {

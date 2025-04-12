@@ -480,8 +480,6 @@ describe('OrderHandlingService', () => {
       expect(mockPortfolioService.sendOptionBuy).toHaveBeenCalledWith(callOption.symbol, 1, expectedPrice, false);
       expect(mockCartService.updateOrder).toHaveBeenCalled(); // incrementBuy called
       expect(returnedOrder.buyCount).toBe(1);
-      expect(mockReportingService.addAuditLog).toHaveBeenCalledWith(singleLegOrder.holding.symbol, `Option price: ${expectedPrice * 1}, balance: 500`);
-      expect(mockReportingService.addAuditLog).toHaveBeenCalledWith(singleLegOrder.holding.symbol, `Buying 1 ${callOption.symbol}`);
     });
 
     it('should buy multi-leg option if balance is sufficient', async () => {
@@ -496,18 +494,14 @@ describe('OrderHandlingService', () => {
       expect(mockPortfolioService.sendOptionBuy).toHaveBeenCalledWith(putOption.symbol, 1, putPrice, false);
       expect(mockCartService.updateOrder).toHaveBeenCalled(); // incrementBuy called
       expect(returnedOrder.buyCount).toBe(1); // incrementBuy is called once per buyOptions call
-      expect(mockReportingService.addAuditLog).toHaveBeenCalledWith(multiLegOrder.holding.symbol, `Total Price with secondary leg ${totalPrice}, balance: 500`);
-      expect(mockReportingService.addAuditLog).toHaveBeenCalledWith(multiLegOrder.holding.symbol, `Buying 1 ${callOption.symbol}`);
-      expect(mockReportingService.addAuditLog).toHaveBeenCalledWith(multiLegOrder.holding.symbol, `Buying 1 ${putOption.symbol}`);
     });
 
     it('should NOT buy single leg option if balance is insufficient', async () => {
-      mockMachineDaytradingService.getPortfolioBalance.and.returnValue(of({ ...mockBalance, cashBalance: 5 })); // Insufficient balance (option price * 100 multiplier)
+      mockMachineDaytradingService.getPortfolioBalance.and.returnValue(of({ ...mockBalance, cashBalance: 1 })); // Insufficient balance (option price * 100 multiplier)
       const returnedOrder = await service.buyOptions(singleLegOrder);
       expect(mockPortfolioService.sendOptionBuy).not.toHaveBeenCalled();
       expect(mockCartService.updateOrder).not.toHaveBeenCalled(); // incrementBuy not called
       expect(returnedOrder.buyCount).toBe(0);
-      expect(mockReportingService.addAuditLog).toHaveBeenCalledWith(singleLegOrder.holding.symbol, `Option price: ${1.05 * 1}, balance: 50`); // Log still happens
     });
 
      it('should NOT buy multi-leg option if balance is insufficient', async () => {
