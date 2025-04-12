@@ -259,8 +259,8 @@ export class OptionsOrderBuilderService {
             let initialCallQuantity = (callPrice > putPrice) ? 1 : multiple;
             let initialPutQuantity = (callPrice > putPrice) ? multiple : 1;
             const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple, minCashAllocation, maxCashAllocation);
-            const modifiedCallQuantity = this.adjustOptionsQuantity(buy, callQuantity);
-            const modifiedPutQuantity = this.adjustOptionsQuantity(sell, putQuantity)
+            const modifiedCallQuantity = await this.adjustOptionsQuantity(buy, callQuantity);
+            const modifiedPutQuantity = await this.adjustOptionsQuantity(sell, putQuantity)
             console.warn(`Modified call quantity ${buy} ${callQuantity} ${modifiedCallQuantity}`);
             console.warn(`Modified put quantity ${sell} ${putQuantity} ${modifiedPutQuantity}`);
             if (callQuantity + putQuantity > 35) {
