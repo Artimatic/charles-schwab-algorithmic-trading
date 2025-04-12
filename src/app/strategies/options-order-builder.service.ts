@@ -260,17 +260,17 @@ export class OptionsOrderBuilderService {
             let initialPutQuantity = (callPrice > putPrice) ? multiple : 1;
             const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple, minCashAllocation, maxCashAllocation);
             const modifiedCallQuantity = await this.adjustOptionsQuantity(buy, callQuantity);
-            const modifiedPutQuantity = await this.adjustOptionsQuantity(sell, putQuantity)
+            const modifiedPutQuantity = await this.adjustOptionsQuantity(sell, putQuantity);
             console.warn(`Modified call quantity ${buy} ${callQuantity} ${modifiedCallQuantity}`);
             console.warn(`Modified put quantity ${sell} ${putQuantity} ${modifiedPutQuantity}`);
-            if (callQuantity + putQuantity > 35) {
-              this.strategyBuilderService.addBullishStock(buy);
-              this.reportingService.addAuditLog(null,
-                `Options quantity too high ${buy} ${callQuantity} ${sell} ${putQuantity}`);
-              break;
+            if (callQuantity + putQuantity > 15) {
+              bullishStrangle.call.quantity = modifiedCallQuantity < 10 ? modifiedCallQuantity : 10;
+              bearishStrangle.put.quantity = modifiedPutQuantity < 10 ? modifiedCallQuantity : 10;
+            } else {
+              bullishStrangle.call.quantity = callQuantity;
+              bearishStrangle.put.quantity = putQuantity;
             }
-            bullishStrangle.call.quantity = callQuantity;
-            bearishStrangle.put.quantity = putQuantity;
+
             const availableFunds = await this.cartService.getAvailableFunds(true);
             if (availableFunds >= (callPrice * callQuantity + putPrice * putQuantity)) {
               if (!currentPut || (currentCall.quantity * currentCall.price +
