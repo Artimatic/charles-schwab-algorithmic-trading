@@ -10,7 +10,7 @@ export class AllocationService {
 
   determineProbabilityOfProfit(buySignalCount: number, sellSignalCount: number,
     impliedMovement: number, ml: number) {
-      const pop = round((buySignalCount) / (buySignalCount + sellSignalCount + impliedMovement), 4);
+      const pop = round((buySignalCount) / (buySignalCount + sellSignalCount + (impliedMovement * 100)), 4);
       console.log('calculating pop', buySignalCount, sellSignalCount, impliedMovement, ml, pop);
     return pop;
   }
@@ -25,12 +25,10 @@ export class AllocationService {
      * @throws Error if probabilityOfProfit is not between 0 and 1 or if betGain is not positive.
      */
     if (probabilityOfProfit < 0 || probabilityOfProfit > 1) {
-      console.warn(`Invalid probability of profit: ${probabilityOfProfit}. Probability of profit must be between 0 and 1.`);
-      return 0.1;
+      throw new Error("Probability of profit must be between 0 and 1.");
     }
     if (betGain <= 0) {
-      console.warn("Bet gain must be a positive number.");
-      return 0.1;
+      throw new Error("Bet gain must be a positive number.");
     }
 
     const probabilityOfLoss = 1 - probabilityOfProfit;
