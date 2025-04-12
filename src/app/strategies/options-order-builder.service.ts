@@ -113,19 +113,19 @@ export class OptionsOrderBuilderService {
     return this.tradingPairs;
   }
 
-  addCallToCurrentTrades(symbol: string) {
+  addCallToCurrentTrades(symbol: string, createPair = false) {
     this.getCurrentTradeIdeas().calls.push(symbol);
-    if (this.getCurrentTradeIdeas().puts.length) {
-      // this.strategyBuilderService.createStrategy('Pair', this.getCurrentTradeIdeas().calls[0], this.getCurrentTradeIdeas().calls, this.getCurrentTradeIdeas().puts, 'Orphaned pair');
-      // this.clearCurrentTradeIdeas();
+    if (createPair && this.getCurrentTradeIdeas().puts.length) {
+      this.strategyBuilderService.createStrategy('Pair', this.getCurrentTradeIdeas().calls[0], this.getCurrentTradeIdeas().calls, this.getCurrentTradeIdeas().puts, 'Orphaned pair');
+      this.clearCurrentTradeIdeas();
     }
   }
 
-  addPutToCurrentTrades(symbol: string) {
+  addPutToCurrentTrades(symbol: string, createPair = false) {
     this.getCurrentTradeIdeas().puts.push(symbol);
-    if (this.getCurrentTradeIdeas().calls.length) {
-      // this.strategyBuilderService.createStrategy('Pair', this.getCurrentTradeIdeas().calls[0], this.getCurrentTradeIdeas().calls, this.getCurrentTradeIdeas().puts, 'Orphaned pair');
-      // this.clearCurrentTradeIdeas();
+    if (createPair && this.getCurrentTradeIdeas().calls.length) {
+      this.strategyBuilderService.createStrategy('Pair', this.getCurrentTradeIdeas().calls[0], this.getCurrentTradeIdeas().calls, this.getCurrentTradeIdeas().puts, 'Orphaned pair');
+      this.clearCurrentTradeIdeas();
     }
   }
 
