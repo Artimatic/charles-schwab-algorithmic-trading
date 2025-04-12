@@ -992,17 +992,28 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     setTimeout(async () => {
       await this.autopilotService.executeOrderList();
-    }, 5000);
+    }, 10000);
 
     setTimeout(async () => {
       const buyAndSellList = this.cartService.sellOrders.concat(this.cartService.buyOrders);
       const orders = buyAndSellList.concat(this.cartService.otherOrders);
       for (let i = 0; i < orders.length; i++) {
-        await this.orderHandlingService.handleIntradayRecommendation(orders[i], { recommendation: OrderType.Buy } as any);
-        await this.orderHandlingService.handleIntradayRecommendation(orders[i], { recommendation: OrderType.Sell } as any);
+        orders[i].priceLowerBound = 0.01
+        const buyOrder = orders[i];
+        await this.orderHandlingService.handleIntradayRecommendation(buyOrder, { recommendation: OrderType.Buy } as any);
       }
       this.testAddTradingPairsToCart()
-    }, 10000);
+    }, 20000);
+    setTimeout(async () => {
+      const buyAndSellList = this.cartService.sellOrders.concat(this.cartService.buyOrders);
+      const orders = buyAndSellList.concat(this.cartService.otherOrders);
+      for (let i = 0; i < orders.length; i++) {
+        orders[i].priceLowerBound = 100000
+        const buyOrder = orders[i];
+        await this.orderHandlingService.handleIntradayRecommendation(buyOrder, { recommendation: OrderType.Sell } as any);
+      }
+      this.testAddTradingPairsToCart()
+    }, 25000);
 
   }
 
