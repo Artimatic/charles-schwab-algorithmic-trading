@@ -551,7 +551,7 @@ export class OptionsOrderBuilderService {
         ) {
           const shouldBuyCall = await this.shouldBuyOption(trade[0].holding.symbol);
           const shouldBuyPut = await this.shouldBuyOption(trade[1].holding.symbol);
-          console.log('Should buy ', trade[0].holding.symbol, trade[1].holding.symbol, shouldBuyCall, shouldBuyPut);
+          console.log('Should buy ', trade, shouldBuyCall, shouldBuyPut);
           if (shouldBuyCall && shouldBuyPut) {
             this.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Low volatility');
             foundTrade = true;
