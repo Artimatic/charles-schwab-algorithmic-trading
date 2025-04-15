@@ -431,7 +431,9 @@ export class OptionsOrderBuilderService {
     const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
     const impliedMove = await this.getImpliedMove(symbol, backtestResults)
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
-    if (Math.abs(currentDiff) < 0.018 || Math.abs(currentDiff) < (((1 / (impliedMove)) * 0.002))) {
+    const imThreshold = (1 / (impliedMove) * 0.002);
+    console.log(`${symbol} current diff: ${currentDiff}, threshold: ${imThreshold}`);
+    if (Math.abs(currentDiff) < Math.min(0.019, imThreshold)) {
       return true;
     }
 
