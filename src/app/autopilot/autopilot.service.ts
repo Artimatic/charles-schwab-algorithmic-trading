@@ -668,7 +668,7 @@ export class AutopilotService {
   async addShort() {
     const sells = this.getSellList()
     if (sells.length) {
-      this.optionsOrderBuilderService.addPutToCurrentTrades(sells.pop());
+      this.optionsOrderBuilderService.addPutToCurrentTrades(sells.pop(), true);
     }
   }
 

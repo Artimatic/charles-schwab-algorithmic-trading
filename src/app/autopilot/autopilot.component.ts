@@ -215,7 +215,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           console.log('buyFeatures', buyFeatures);
           console.log('featuresToTry', featuresToTry);
           const endDate = moment().format('YYYY-MM-DD');
-          const list = ['AMD', 'GOOG', 'CRWD', 'DELL', 'META', 'NVDA'];
+          const list = ['AMD', 'GOOGL', 'CRWD', 'DELL', 'META', 'NVDA'];
           const allScores = [];
           const parameters = [
             // { days: 700, range: 4, limit: 0.08, trainingSize: 0.9 },
@@ -867,7 +867,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.modifyCurrentHoldings();
     console.log(this.autopilotService.currentHoldings);
     //await this.orderHandlingService.intradayStep('SPY');
-    await this.optionsOrderBuilderService.balanceTrades(['GOOG'], ['AAPL'], 1000, 5000, 'Test');
+    await this.optionsOrderBuilderService.balanceTrades(['GOOGL'], ['AAPL'], 1000, 5000, 'Test');
     if (!this.tradingPairs.length) {
       console.error('TRADING PAIR NOT ADDED');
     }
@@ -890,7 +890,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     });
 
     // Testing buy stock
-    await this.orderHandlingService.addBuy(this.autopilotService.createHoldingObj('GOOG'), 0.01, 'Testing buy stock');
+    await this.orderHandlingService.addBuy(this.autopilotService.createHoldingObj('GOOGL'), 0.01, 'Testing buy stock');
 
     // Testing buy put
     await this.testPut();

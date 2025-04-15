@@ -313,7 +313,7 @@ describe('OrderHandlingService', () => {
     });
 
     it('should return false if no position exists in the portfolio', async () => {
-      mockPortfolioService.getTdPortfolio.and.returnValue(of([{ instrument: { symbol: 'GOOG' } } as any]));
+      mockPortfolioService.getTdPortfolio.and.returnValue(of([{ instrument: { symbol: 'GOOGL' } } as any]));
       const result = await service.hasPositions(['AAPL', 'MSFT']);
       expect(result).toBeFalsy();
       expect(mockPortfolioService.getTdPortfolio).toHaveBeenCalled();
@@ -837,7 +837,7 @@ describe('OrderHandlingService', () => {
     let order: SmartOrder;
 
     beforeEach(() => {
-      order = createMockOrder({ holding: { symbol: 'GOOG' } });
+      order = createMockOrder({ holding: { symbol: 'GOOGL' } });
       mockDaytradeStrategiesService.shouldSkip.and.returnValue(false);
       mockBacktestService.getDaytradeRecommendation.and.returnValue(of({ recommendation: 'Buy' } as Recommendation));
       mockDaytradeStrategiesService.isPotentialBuy.and.returnValue(true);
@@ -855,7 +855,7 @@ describe('OrderHandlingService', () => {
 
     it('should call getDaytradeRecommendation if not skipped', async () => {
       await service.intradayStep(order);
-      expect(mockBacktestService.getDaytradeRecommendation).toHaveBeenCalledWith('GOOG', null, null, { minQuotes: 81 });
+      expect(mockBacktestService.getDaytradeRecommendation).toHaveBeenCalledWith('GOOGL', null, null, { minQuotes: 81 });
     });
 
     it('should call handleIntradayRecommendation if potential buy/sell exists', async () => {

@@ -92,7 +92,7 @@ describe('AlgoEvaluationComponent', () => {
     const mockStockData = {
       'AAPL': { stock: 'AAPL', ml: 0.6, recommendation: 'Strongbuy', impliedMovement: 0.05 } as Stock,
       'MSFT': { stock: 'MSFT', ml: 0.4, recommendation: 'none', impliedMovement: 0.1 } as Stock,
-      'GOOG': { stock: 'GOOG', sellMl: 0.7, recommendation: 'strongSell', impliedMovement: 0.06 } as Stock,
+      'GOOGL': { stock: 'GOOGL', sellMl: 0.7, recommendation: 'strongSell', impliedMovement: 0.06 } as Stock,
       'TSLA': { stock: 'TSLA', sellMl: 0.4, recommendation: 'none', impliedMovement: 0.1 } as Stock,
       'AMD': { stock: 'AMD', ml: 0.6, recommendation: 'none', impliedMovement: 0.15 } as Stock,
       'NVDA': { stock: 'NVDA', sellMl: 0.6, recommendation: 'none', impliedMovement: 0.15 } as Stock
@@ -104,7 +104,7 @@ describe('AlgoEvaluationComponent', () => {
     expect(component.currentList.length).toBe(2);
     expect(component.currentList[0].stock).toEqual('AAPL');
     expect(component.currentList[0].recommendation).toEqual('Strong buy');
-    expect(component.currentList[1].stock).toEqual('GOOG');
+    expect(component.currentList[1].stock).toEqual('GOOGL');
     expect(component.currentList[1].recommendation).toEqual('Strong sell');
   });
   it('should add call to current trade if all conditions are met', () => {

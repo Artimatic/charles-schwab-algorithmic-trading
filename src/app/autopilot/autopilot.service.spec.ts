@@ -117,7 +117,7 @@ describe('AutopilotService', () => {
 
   it('should add pairs from hash map', async () => {
     const MlBuys = { 'key1': ['AAPL'], 'key2': ['MSFT'] };
-    const MlSells = { 'key1': ['TSLA'], 'key2': ['GOOG'] };
+    const MlSells = { 'key1': ['TSLA'], 'key2': ['GOOGL'] };
     await service.addPairsFromHashMap(MlBuys, MlSells, 'Test Reason');
     expect(mockStrategyBuilderService.createStrategy).toHaveBeenCalledTimes(2);
     expect(mockStrategyBuilderService.createStrategy).toHaveBeenCalledWith('Test Reason Pair trade', 'Test Reason', ['AAPL'], ['TSLA'], 'Test Reason');
@@ -126,37 +126,37 @@ describe('AutopilotService', () => {
   it('should handle volatility pairs', async () => {
     spyOn(localStorage, 'getItem').and.returnValue(JSON.stringify({ 
       test0: { stock: 'AAPL', ml: 0.6, recommendation: 'STRONGBUY', impliedMovement: 0.1, sellMl: 0.2 },
-      test1: { stock: 'GOOG', ml: 0.1, recommendation: 'STRONGSELL', impliedMovement: 0.1, sellMl: 0.6 } 
+      test1: { stock: 'GOOGL', ml: 0.1, recommendation: 'STRONGSELL', impliedMovement: 0.1, sellMl: 0.6 } 
     }));
     await service.addVolatilityPairs();
     expect(mockStrategyBuilderService.createStrategy).toHaveBeenCalled();
-    expect(mockStrategyBuilderService.createStrategy).toHaveBeenCalledWith('Volatility pairs Pair trade', 'Volatility pairs', ['AAPL'], ['GOOG'], 'Volatility pairs');
+    expect(mockStrategyBuilderService.createStrategy).toHaveBeenCalledWith('Volatility pairs Pair trade', 'Volatility pairs', ['AAPL'], ['GOOGL'], 'Volatility pairs');
   });
 
   it('should handle perfect pair', async () => {
     spyOn(localStorage, 'getItem').and.returnValue(JSON.stringify({ 
       test0: { stock: 'AAPL', ml: 0.6, recommendation: 'STRONgsell', impliedMovement: 0.1, sellMl: 0.6, sellSignals: ['macd', 'bband'], buySignals: ['mfi'] },
-      test1: { stock: 'GOOG', ml: 0.6, recommendation: 'STRONGbuy', impliedMovement: 0.1, sellMl: 0.6, sellSignals: ['bband', 'macd'], buySignals: ['mfi'] }
+      test1: { stock: 'GOOGL', ml: 0.6, recommendation: 'STRONGbuy', impliedMovement: 0.1, sellMl: 0.6, sellSignals: ['bband', 'macd'], buySignals: ['mfi'] }
     }));
     spyOn(service, 'addPairsFromHashMap').and.callThrough();
     await service.addPerfectPair();
-    expect(service.addPairsFromHashMap).toHaveBeenCalledWith({ 'bband,macd-mfi10': [ 'GOOG' ] }, { 'bband,macd-mfi10': [ 'AAPL' ] }, 'Perfect pair');
+    expect(service.addPairsFromHashMap).toHaveBeenCalledWith({ 'bband,macd-mfi10': [ 'GOOGL' ] }, { 'bband,macd-mfi10': [ 'AAPL' ] }, 'Perfect pair');
 
-    expect(mockStrategyBuilderService.createStrategy).toHaveBeenCalledWith('Perfect pair Pair trade', 'Perfect pair', ['GOOG'], ['AAPL'], 'Perfect pair');
+    expect(mockStrategyBuilderService.createStrategy).toHaveBeenCalledWith('Perfect pair Pair trade', 'Perfect pair', ['GOOGL'], ['AAPL'], 'Perfect pair');
   });
 
   xit('should handle ML pairs', async () => {
     spyOn(localStorage, 'getItem').and.returnValue(JSON.stringify({ 
       test0: { stock: 'AAPL', ml: 0.6, recommendation: 'STRONGBUY', impliedMovement: 0.1, sellMl: 0.2 },
-      test1: { stock: 'GOOG', ml: 0.1, recommendation: 'STRONGSELL', impliedMovement: 0.1, sellMl: 0.6 } 
+      test1: { stock: 'GOOGL', ml: 0.1, recommendation: 'STRONGSELL', impliedMovement: 0.1, sellMl: 0.6 } 
     }));
 
     spyOn(service, 'addPairsFromHashMap').and.callThrough();
 
     await service.addMLPairs();
-    expect(service.addPairsFromHashMap).toHaveBeenCalledWith({ 'key': [ 'GOOG' ] }, { 'key': [ 'AAPL' ] }, 'ML pair');
+    expect(service.addPairsFromHashMap).toHaveBeenCalledWith({ 'key': [ 'GOOGL' ] }, { 'key': [ 'AAPL' ] }, 'ML pair');
 
-    expect(mockStrategyBuilderService.createStrategy).toHaveBeenCalledWith('ML pairs Pair trade', 'ML pairs', ['GOOG'], ['AAPL'], 'ML pairs');
+    expect(mockStrategyBuilderService.createStrategy).toHaveBeenCalledWith('ML pairs Pair trade', 'ML pairs', ['GOOGL'], ['AAPL'], 'ML pairs');
   });
 
   xit('should check intraday strategies', async () => {

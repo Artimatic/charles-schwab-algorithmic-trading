@@ -82,6 +82,15 @@ export class OptionsOrderBuilderService {
     return true;
   }
 
+  private async adjustOptionsQuantity(symbol: string,
+    quantity: number) : Promise<number> {
+      const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
+      if (backtestResults?.kellyCriterion && backtestResults.kellyCriterion > 0) {
+        return Promise.resolve(Math.floor(backtestResults.kellyCriterion * quantity));
+      }
+    return Promise.resolve(0);
+  }
+
   getCurrentTradeIdeas() {
     return this.currentTradeIdeas;
   }
@@ -104,19 +113,19 @@ export class OptionsOrderBuilderService {
     return this.tradingPairs;
   }
 
-  addCallToCurrentTrades(symbol: string) {
+  addCallToCurrentTrades(symbol: string, createPair = false) {
     this.getCurrentTradeIdeas().calls.push(symbol);
-    if (this.getCurrentTradeIdeas().puts.length) {
-      // this.strategyBuilderService.createStrategy('Pair', this.getCurrentTradeIdeas().calls[0], this.getCurrentTradeIdeas().calls, this.getCurrentTradeIdeas().puts, 'Orphaned pair');
-      // this.clearCurrentTradeIdeas();
+    if (createPair && this.getCurrentTradeIdeas().puts.length) {
+      this.strategyBuilderService.createStrategy('Pair', this.getCurrentTradeIdeas().calls[0], this.getCurrentTradeIdeas().calls, this.getCurrentTradeIdeas().puts, 'Orphaned pair');
+      this.clearCurrentTradeIdeas();
     }
   }
 
-  addPutToCurrentTrades(symbol: string) {
+  addPutToCurrentTrades(symbol: string, createPair = false) {
     this.getCurrentTradeIdeas().puts.push(symbol);
-    if (this.getCurrentTradeIdeas().calls.length) {
-      // this.strategyBuilderService.createStrategy('Pair', this.getCurrentTradeIdeas().calls[0], this.getCurrentTradeIdeas().calls, this.getCurrentTradeIdeas().puts, 'Orphaned pair');
-      // this.clearCurrentTradeIdeas();
+    if (createPair && this.getCurrentTradeIdeas().calls.length) {
+      this.strategyBuilderService.createStrategy('Pair', this.getCurrentTradeIdeas().calls[0], this.getCurrentTradeIdeas().calls, this.getCurrentTradeIdeas().puts, 'Orphaned pair');
+      this.clearCurrentTradeIdeas();
     }
   }
 
@@ -250,14 +259,18 @@ export class OptionsOrderBuilderService {
             let initialCallQuantity = (callPrice > putPrice) ? 1 : multiple;
             let initialPutQuantity = (callPrice > putPrice) ? multiple : 1;
             const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple, minCashAllocation, maxCashAllocation);
-            if (callQuantity + putQuantity > 35) {
-              this.strategyBuilderService.addBullishStock(buy);
-              this.reportingService.addAuditLog(null,
-                `Options quantity too high ${buy} ${callQuantity} ${sell} ${putQuantity}`);
-              break;
+            const modifiedCallQuantity = await this.adjustOptionsQuantity(buy, callQuantity);
+            const modifiedPutQuantity = await this.adjustOptionsQuantity(sell, putQuantity);
+            console.warn(`Modified call quantity ${buy} ${callQuantity} ${modifiedCallQuantity}`);
+            console.warn(`Modified put quantity ${sell} ${putQuantity} ${modifiedPutQuantity}`);
+            if (callQuantity + putQuantity > 15) {
+              bullishStrangle.call.quantity = modifiedCallQuantity < 10 ? modifiedCallQuantity : 10;
+              bearishStrangle.put.quantity = modifiedPutQuantity < 10 ? modifiedCallQuantity : 10;
+            } else {
+              bullishStrangle.call.quantity = callQuantity;
+              bearishStrangle.put.quantity = putQuantity;
             }
-            bullishStrangle.call.quantity = callQuantity;
-            bearishStrangle.put.quantity = putQuantity;
+
             const availableFunds = await this.cartService.getAvailableFunds(true);
             if (availableFunds >= (callPrice * callQuantity + putPrice * putQuantity)) {
               if (!currentPut || (currentCall.quantity * currentCall.price +
@@ -418,7 +431,9 @@ export class OptionsOrderBuilderService {
     const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
     const impliedMove = await this.getImpliedMove(symbol, backtestResults)
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
-    if (Math.abs(currentDiff) < 0.016 || Math.abs(currentDiff) < (((1 / (impliedMove)) * 0.002))) {
+    const imThreshold = (1 / (impliedMove) * 0.002);
+    console.log(`${symbol} current diff: ${currentDiff}, threshold: ${imThreshold}`);
+    if (Math.abs(currentDiff) < Math.min(0.019, imThreshold)) {
       return true;
     }
 
