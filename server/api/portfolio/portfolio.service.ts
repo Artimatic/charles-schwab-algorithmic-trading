@@ -817,12 +817,12 @@ class PortfolioService {
       });
   }
 
-  addProfitLoss(accountId: string,
+  async addProfitLoss(accountId: string,
     date,
     lastRiskTolerance,
     lastStrategy,
     profit) {
-    DatabaseService.update({
+    return await DatabaseService.update({
       accountId,
       date,
       lastRiskTolerance,
@@ -839,8 +839,8 @@ class PortfolioService {
     return DatabaseService.deleteOldRecords('stock_portfolio', 'profitLoss');
   }
 
-  addStrategy(date, type, key, strategy, reason) {
-    DatabaseService.update({
+  async addStrategy(date, type, key, strategy, reason) {
+    return await DatabaseService.update({
       date,
       type,
       key,

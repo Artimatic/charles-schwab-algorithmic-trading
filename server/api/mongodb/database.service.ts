@@ -41,9 +41,9 @@ class DatabaseService {
             // document to be returned. By default, we get the document as it was *before*
             // the update.
             const updateOptions = { upsert: true };
-
+            let items;
             try {
-                await collection.findOneAndUpdate(
+                items = await collection.findOneAndUpdate(
                     findOneQuery,
                     updateDoc,
                     updateOptions,
@@ -56,6 +56,7 @@ class DatabaseService {
             // Ensures that the client will close when you finish/error
             await client.close();
         }
+        return items;
     }
 
     async deleteOldRecords(dbName, collectionName) {
