@@ -71,7 +71,6 @@ export class PriceTargetService {
       acc.total += curr.marketValue;
       return acc;
     }, { profitLoss: 0, total: 0 });
-    console.log('todayPl', todayPl);
 
     return round(this.getDiff(todayPl.total, todayPl.total + todayPl.profitLoss), 4);
   }

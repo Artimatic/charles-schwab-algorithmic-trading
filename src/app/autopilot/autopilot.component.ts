@@ -382,24 +382,24 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.modifyRisk();
 
     const tempProfitRecord = this.scoreKeeperService.profitLossHash;
-
+    let profit = 0;
     if (tempProfitRecord) {
-      const profit = this.calculatePl(tempProfitRecord);
-
-      const profitObj: ProfitLossRecord = {
-        'date': moment().format(),
-        profit: profit,
-        lastStrategy: this.autopilotService.strategyList[this.autopilotService.strategyCounter],
-        lastRiskTolerance: this.autopilotService.riskCounter,
-        profitRecord: tempProfitRecord
-      };
-      localStorage.setItem('profitLoss', JSON.stringify(profitObj));
-      const accountId = sessionStorage.getItem('accountId');
-      this.portfolioService.updatePortfolioProfitLoss(accountId || null, profitObj.date,
-        profitObj.lastRiskTolerance,
-        profitObj.lastStrategy,
-        profitObj.profit).subscribe();
+      profit = this.calculatePl(tempProfitRecord);
     }
+    const profitObj: ProfitLossRecord = {
+      'date': moment().format(),
+      profit: profit,
+      lastStrategy: this.autopilotService.strategyList[this.autopilotService.strategyCounter],
+      lastRiskTolerance: this.autopilotService.riskCounter,
+      profitRecord: tempProfitRecord
+    };
+    localStorage.setItem('profitLoss', JSON.stringify(profitObj));
+    const accountId = sessionStorage.getItem('accountId');
+    this.portfolioService.updatePortfolioProfitLoss(accountId || null, profitObj.date,
+      profitObj.lastRiskTolerance,
+      profitObj.lastStrategy,
+      profitObj.profit).subscribe();
+
   }
 
   stop() {

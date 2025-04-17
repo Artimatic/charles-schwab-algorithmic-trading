@@ -158,7 +158,9 @@ export class AutopilotService {
       const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
       await this.optionsOrderBuilderService.hedge(this.currentHoldings, balance, 0.2);
     },
-    async () => await this.optionsOrderBuilderService.addOptionsStrategiesToCart(),
+    async () => {
+      await this.optionsOrderBuilderService.addOptionsStrategiesToCart();
+    },
     async () => {
       this.currentHoldings = await this.cartService.findCurrentPositions();
       await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
