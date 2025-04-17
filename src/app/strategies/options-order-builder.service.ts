@@ -530,9 +530,9 @@ export class OptionsOrderBuilderService {
     }
     const tradeList = this.getTradingPairs();
     let foundTrade = false;
-    for (const trade of tradeList) {
-      console.log('options trade trade', trade);
+    console.log('trade list', tradeList);
 
+    for (const trade of tradeList) {
       if (foundTrade) {
         this.reportingService.addAuditLog(null, 'Found a trade.');
         break;

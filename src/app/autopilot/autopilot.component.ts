@@ -204,6 +204,18 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       },
       {
+        label: 'Test upload profit loss',
+        command: async () => {
+          const lastProfitLoss = JSON.parse(sessionStorage.getItem('profitLoss'));
+
+          const accountId = sessionStorage.getItem('accountId');
+          this.portfolioService.updatePortfolioProfitLoss(accountId || null, lastProfitLoss.date,
+            lastProfitLoss.lastRiskTolerance,
+            lastProfitLoss.lastStrategy,
+            lastProfitLoss.profit).subscribe();
+        }
+      },
+      {
         label: 'Test ml',
         command: async () => {
           const buyFeatures = Array(66).fill(1);
