@@ -523,6 +523,7 @@ export class OptionsOrderBuilderService {
   }
 
   async addOptionsStrategiesToCart() {
+    console.log('addOptionsStrategiesToCart');
     if (this.cartService.getSellOrders().length + this.cartService.getBuyOrders().length > this.cartService.getMaxTradeCount()) {
       console.log('Too many orders. Skipping adding strategies.');
       return null;
@@ -530,6 +531,8 @@ export class OptionsOrderBuilderService {
     const tradeList = this.getTradingPairs();
     let foundTrade = false;
     for (const trade of tradeList) {
+      console.log('options trade trade', trade);
+
       if (foundTrade) {
         this.reportingService.addAuditLog(null, 'Found a trade.');
         break;
