@@ -83,11 +83,11 @@ export class OptionsOrderBuilderService {
   }
 
   private async adjustOptionsQuantity(symbol: string,
-    quantity: number) : Promise<number> {
-      const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
-      if (backtestResults?.kellyCriterion && backtestResults.kellyCriterion > 0) {
-        return Promise.resolve(Math.floor(backtestResults.kellyCriterion * quantity));
-      }
+    quantity: number): Promise<number> {
+    const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
+    if (backtestResults?.kellyCriterion && backtestResults.kellyCriterion > 0) {
+      return Promise.resolve(Math.floor(backtestResults.kellyCriterion * quantity));
+    }
     return Promise.resolve(0);
   }
 
@@ -470,11 +470,12 @@ export class OptionsOrderBuilderService {
 
   async hedge(currentHoldings: PortfolioInfoHolding[], balance: Balance, min = 0.15) {
     currentHoldings.forEach(async (holding) => {
-      const shouldBuy = await this.shouldBuyOption(holding.name);
-      if (shouldBuy && holding.assetType !== 'collective_investment') {
-        if (holding.netLiq && (holding.netLiq / balance.liquidationValue) > min)
+      if (holding.netLiq && (holding.netLiq / balance.liquidationValue) > min) {
+        const shouldBuy = await this.shouldBuyOption(holding.name);
+        if (shouldBuy && holding.assetType !== 'collective_investment') {
           console.log('Adding protective put for', holding.name);
-        await this.createProtectivePutOrder(holding, balance.cashBalance);
+          await this.createProtectivePutOrder(holding, balance.cashBalance);
+        }
       }
     });
 
@@ -522,7 +523,8 @@ export class OptionsOrderBuilderService {
   }
 
   async addOptionsStrategiesToCart() {
-    if (this.cartService.getSellOrders().length + this.cartService.getBuyOrders().length >= this.cartService.getMaxTradeCount()) {
+    if (this.cartService.getSellOrders().length + this.cartService.getBuyOrders().length > this.cartService.getMaxTradeCount()) {
+      console.log('Too many orders. Skipping adding strategies.');
       return null;
     }
     const tradeList = this.getTradingPairs();

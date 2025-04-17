@@ -11,7 +11,6 @@ export class AllocationService {
   determineProbabilityOfProfit(buySignalCount: number, sellSignalCount: number,
     impliedMovement: number, ml: number) {
       const pop = round((buySignalCount) / (buySignalCount + sellSignalCount + (impliedMovement * 100)), 4);
-      console.log('calculating pop', buySignalCount, sellSignalCount, impliedMovement, ml, pop);
     return pop;
   }
 
