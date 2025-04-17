@@ -193,13 +193,17 @@ export class AutopilotService {
 
   setPreferencesFromDB() {
     this.portfolioService.getProfitLoss().pipe(tap(plArray => {
+      const currentPl =  JSON.parse(localStorage.getItem('profitLoss'));
       if (plArray && plArray.length) {
         plArray.sort((a, b) => {
           const dateA = new Date(a.date);
           const dateB = new Date(b.date);
           return dateB.getTime() - dateA.getTime(); // Sort in descending order (latest first)
         });
-        localStorage.setItem('profitLoss', JSON.stringify(plArray[0]));
+        const dbPl = plArray[0];
+        if (moment(dbPl.date).isAfter(moment(currentPl.date))) {
+          localStorage.setItem('profitLoss', JSON.stringify(dbPl));
+        }
       }
     }))
       .subscribe(() => {
