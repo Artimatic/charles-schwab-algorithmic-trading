@@ -207,7 +207,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         label: 'Test upload profit loss',
         command: async () => {
           const lastProfitLoss = JSON.parse(sessionStorage.getItem('profitLoss'));
-
+          console.log(sessionStorage.getItem('profitLoss'));
           const accountId = sessionStorage.getItem('accountId');
           this.portfolioService.updatePortfolioProfitLoss(accountId || null, lastProfitLoss.date,
             lastProfitLoss.lastRiskTolerance,

@@ -1043,13 +1043,12 @@ export class AutopilotService {
         await this.optionsOrderBuilderService.hedge(this.currentHoldings, balance);
         break;
       default: {
-        await this.sellLoser(this.currentHoldings);
+        await this.findTopBuy();
         break;
       }
     }
 
     await this.createTradingPairs();
     await this.findStock();
-    await this.findTopBuy();
   }
 }
