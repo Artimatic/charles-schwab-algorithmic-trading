@@ -524,7 +524,7 @@ export class OptionsOrderBuilderService {
 
   async addOptionsStrategiesToCart() {
     console.log('addOptionsStrategiesToCart');
-    if (this.cartService.getSellOrders().length + this.cartService.getBuyOrders().length > this.cartService.getMaxTradeCount()) {
+    if (this.cartService.getBuyOrders().find(order => order.primaryLegs)) {
       console.log('Too many orders. Skipping adding strategies.');
       return null;
     }
