@@ -136,8 +136,8 @@ export class AutopilotService {
     Strategy.VolatilityPairs,
     Strategy.BuyWinners,
     Strategy.SellMfiDiv2,
-    Strategy.TrimHoldings
-    //Strategy.None
+    Strategy.TrimHoldings,
+    Strategy.Swingtrade
   ];
 
   strategyCounter = 0;
@@ -908,12 +908,6 @@ export class AutopilotService {
   }
 
   async handleStrategy() {
-    const balance = await this.machineDaytradingService.getPortfolioBalance().toPromise();
-    if (balance.liquidationValue < 26000) {
-      await this.findTopBuy();
-      return;
-    }
-
     this.strategyBuilderService.findTrades();
     this.strategies = this.strategyBuilderService.getTradingStrategies();
 
