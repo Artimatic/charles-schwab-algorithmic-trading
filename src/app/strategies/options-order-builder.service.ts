@@ -523,11 +523,6 @@ export class OptionsOrderBuilderService {
   }
 
   async addOptionsStrategiesToCart() {
-    console.log('addOptionsStrategiesToCart');
-    if (this.cartService.getBuyOrders().find(order => order.primaryLegs)) {
-      console.log('Too many orders. Skipping adding strategies.');
-      return null;
-    }
     const tradeList = this.getTradingPairs();
     let foundTrade = false;
     console.log('trade list', tradeList);

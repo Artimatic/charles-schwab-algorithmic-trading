@@ -87,6 +87,7 @@ export enum Strategy {
   BuyDemark = 'Buy demark',
   AddToPositions = 'Add to current positions',
   Hedge = 'Hedge',
+  Gold = 'Gold',
   None = 'None'
 }
 
@@ -137,7 +138,8 @@ export class AutopilotService {
     Strategy.BuyWinners,
     Strategy.SellMfiDiv2,
     Strategy.TrimHoldings,
-    Strategy.Swingtrade
+    Strategy.Swingtrade,
+    Strategy.Gold
   ];
 
   strategyCounter = 0;
@@ -193,7 +195,7 @@ export class AutopilotService {
 
   setPreferencesFromDB() {
     this.portfolioService.getProfitLoss().pipe(tap(plArray => {
-      const currentPl =  JSON.parse(localStorage.getItem('profitLoss'));
+      const currentPl = JSON.parse(localStorage.getItem('profitLoss'));
       if (plArray && plArray.length) {
         plArray.sort((a, b) => {
           const dateA = new Date(a.date);
@@ -439,15 +441,15 @@ export class AutopilotService {
   async findTopBuy() {
     const buys = this.getBuyList();
     for (const b of buys) {
-      await this.orderHandlingService.addBuy(this.createHoldingObj(b), 
-      (this.riskToleranceList[this.riskCounter]) * 2, 'Buy top stock');
+      await this.orderHandlingService.addBuy(this.createHoldingObj(b),
+        (this.riskToleranceList[this.riskCounter]) * 2, 'Buy top stock');
     }
   }
 
   async findStock() {
     if (this.strategyBuilderService.bullishStocks.length) {
-      await this.orderHandlingService.addBuy(this.createHoldingObj(this.strategyBuilderService.bullishStocks.pop()), 
-      (this.riskToleranceList[this.riskCounter]) * 2, 'Buy bullish stock');
+      await this.orderHandlingService.addBuy(this.createHoldingObj(this.strategyBuilderService.bullishStocks.pop()),
+        (this.riskToleranceList[this.riskCounter]) * 2, 'Buy bullish stock');
     }
   }
 
@@ -1035,6 +1037,10 @@ export class AutopilotService {
         this.currentHoldings = await this.cartService.findCurrentPositions();
         const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
         await this.optionsOrderBuilderService.hedge(this.currentHoldings, balance);
+        break;
+      case Strategy.Gold:
+        await this.orderHandlingService.addBuy(this.createHoldingObj('GLD'),
+          (this.riskToleranceList[this.riskCounter]) * 2, 'Buy gold');
         break;
       default: {
         await this.findTopBuy();
