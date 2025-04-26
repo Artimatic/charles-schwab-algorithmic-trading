@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { AuthenticationService, BacktestService, CartService, DaytradeService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService } from '@shared/services';
+import { AuthenticationService, CartService, DaytradeService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService } from '@shared/services';
 import { round } from 'lodash-es';
 import * as moment from 'moment-timezone';
 import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';
@@ -677,10 +677,8 @@ export class AutopilotService {
   }
 
   async addShort() {
-    const sells = this.getSellList()
-    if (sells.length) {
-      this.optionsOrderBuilderService.addPutToCurrentTrades(sells.pop(), true);
-    }
+    await this.orderHandlingService.addBuy(this.createHoldingObj('SH'),
+    (this.riskToleranceList[this.riskCounter]) * 2, 'Short');
   }
 
   async balanceCallPutRatio(holdings: PortfolioInfoHolding[]) {

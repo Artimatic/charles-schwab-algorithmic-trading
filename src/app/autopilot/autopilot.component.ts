@@ -872,6 +872,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async testAddTradingPairsToCart() {
     await this.optionsOrderBuilderService.addOptionsStrategiesToCart();
   }
+  
   async test() {
     this.cartService.deleteCart();
     this.cartService.removeCompletedOrders();
