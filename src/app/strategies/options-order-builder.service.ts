@@ -393,7 +393,7 @@ export class OptionsOrderBuilderService {
   isExpiring(holding: PortfolioInfoHolding) {
     return (holding.primaryLegs ? holding.primaryLegs : []).concat(holding.secondaryLegs ? holding.secondaryLegs : []).find((option: Options) => {
       const expiry = option.description.match(/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/)[0];
-      return moment(expiry).diff(moment(), 'days') < 30;
+      return moment(expiry).diff(moment(), 'days') < 21;
     });
   }
 
@@ -431,9 +431,9 @@ export class OptionsOrderBuilderService {
     const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
     const impliedMove = await this.getImpliedMove(symbol, backtestResults)
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
-    const imThreshold = (1 / (impliedMove) * 0.002);
+    const imThreshold = (1 / (impliedMove || 1) * 0.002);
     console.log(`${symbol} current diff: ${currentDiff}, threshold: ${imThreshold}`);
-    if (Math.abs(currentDiff) < Math.min(0.019, imThreshold)) {
+    if (Math.abs(currentDiff) < Math.max(0.019, imThreshold)) {
       return true;
     }
 
@@ -525,7 +525,6 @@ export class OptionsOrderBuilderService {
   async addOptionsStrategiesToCart() {
     const tradeList = this.getTradingPairs();
     let foundTrade = false;
-    console.log('trade list', tradeList);
 
     for (const trade of tradeList) {
       if (foundTrade) {

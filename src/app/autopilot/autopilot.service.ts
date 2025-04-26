@@ -198,12 +198,15 @@ export class AutopilotService {
       const currentPl = JSON.parse(localStorage.getItem('profitLoss'));
       if (plArray && plArray.length) {
         plArray.sort((a, b) => {
+          if (!a || !b || !a.date || !b.date) {
+            return 0;
+          };
           const dateA = new Date(a.date);
           const dateB = new Date(b.date);
           return dateB.getTime() - dateA.getTime(); // Sort in descending order (latest first)
         });
         const dbPl = plArray[0];
-        if (moment(dbPl.date).isAfter(moment(currentPl.date))) {
+        if (!currentPl || (dbPl && dbPl.date && moment(dbPl.date).isAfter(moment(currentPl.date)))) {
           localStorage.setItem('profitLoss', JSON.stringify(dbPl));
         }
       }

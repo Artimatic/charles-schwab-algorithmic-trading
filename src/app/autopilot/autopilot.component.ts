@@ -373,7 +373,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   private async padOrders() {
-    if ((this.cartService.getSellOrders().length + this.cartService.getBuyOrders().length) < 1 + ((1 - this.autopilotService.getVolatilityMl()) * 5)) {
+    if ((this.optionsOrderBuilderService.tradingPairs.length + this.cartService.getSellOrders().length + this.cartService.getBuyOrders().length) < 1 + ((1 - this.autopilotService.getVolatilityMl()) * 5)) {
       this.changeStrategy();
       await this.autopilotService.handleStrategy();
     }
