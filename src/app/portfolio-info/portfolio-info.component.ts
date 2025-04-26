@@ -371,7 +371,7 @@ export class PortfolioInfoComponent implements OnInit, OnDestroy {
   }
 
   determineMachineDaytradingPct() {
-    const lastProfitLoss = JSON.parse(sessionStorage.getItem('profitLoss'));
+    const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
     if (lastProfitLoss && lastProfitLoss.profit < 0) {
       this.scoreKeeperService.bettingIndex++;
     } else {
