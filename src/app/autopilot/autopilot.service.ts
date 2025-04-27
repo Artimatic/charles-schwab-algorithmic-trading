@@ -678,7 +678,7 @@ export class AutopilotService {
 
   async addShort() {
     await this.orderHandlingService.addBuy(this.createHoldingObj('SH'),
-    (this.riskToleranceList[this.riskCounter]) * 2, 'Short');
+      (this.riskToleranceList[this.riskCounter]) * 2, 'Short');
   }
 
   async balanceCallPutRatio(holdings: PortfolioInfoHolding[]) {
