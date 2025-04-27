@@ -78,6 +78,7 @@ export enum Strategy {
   BuyMfi = 'Buy by mfi buy signal',
   BuyMacd = 'Buy by macd buy signal',
   BuyFlag = 'Buy by flag pennant buy signal',
+  SellFlag = 'Sell by flag pennant buy signal',
   SellMfi = 'Buy by mfi sell signal',
   BuyBband = 'Buy by bband buy signal',
   SellBband = 'Buy by bband sell signal',
@@ -139,7 +140,8 @@ export class AutopilotService {
     Strategy.SellMfiDiv2,
     Strategy.TrimHoldings,
     Strategy.Swingtrade,
-    Strategy.Gold
+    Strategy.Gold,
+    Strategy.SellFlag
   ];
 
   strategyCounter = 0;
@@ -990,6 +992,13 @@ export class AutopilotService {
           await this.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
+        }
+        break;
+      case Strategy.SellFlag:
+        if (this.isVolatilityHigh()) {
+          await this.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'sell');
+        } else {
+          await this.buyOnSignal(SwingtradeAlgorithms.flagPennant, 'sell');
         }
         break;
       case Strategy.BuyDemark:
