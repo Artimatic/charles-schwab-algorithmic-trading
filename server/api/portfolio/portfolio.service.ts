@@ -201,15 +201,6 @@ class PortfolioService {
   }
 
   renewAuth(accountId, reply = null) {
-    if (accountId === null) {
-      for (const id in this.access_token) {
-        if (id && id !== 'null' && this.access_token[id]) {
-          console.log('Account ID: ', id);
-          accountId = id;
-        }
-      }
-    }
-
     if (!accountId) {
       return Promise.reject(new Error('Missing accountId'));
     }
@@ -257,9 +248,7 @@ class PortfolioService {
   getIntraday(symbol, accountId, reply) {
     console.log(moment().format(), 'Retrieving intraday quotes ');
     if (!accountId || !this.access_token[accountId]) {
-      console.log('missing access token for ', accountId, this.access_token);
-      return this.renewAuth(accountId, reply)
-        .then(() => this.getIntradayPriceHistory(symbol, accountId));
+      return Promise.reject(new Error('Missing accountId or access token'));
     } else {
       return this.getIntradayPriceHistory(symbol, accountId)
         .catch((error) => {
@@ -300,7 +289,7 @@ class PortfolioService {
   }
 
   getIntradayV2(symbol, period = 2, frequencyType = 'minute', frequency = 1, reply = null) {
-    return this.renewAuth(null, reply)
+    return this.renewAuth(this.getAccountId(), reply)
       .then(() => this.getIntradayPriceHistoryV2(symbol, period, frequencyType, frequency));
   }
 
@@ -346,7 +335,7 @@ class PortfolioService {
   }
 
   getIntradayV3(symbol, startDate = moment().subtract({ days: 1 }).valueOf(), endDate = moment().valueOf(), reply = null) {
-    return this.renewAuth(null, reply)
+    return this.renewAuth(this.getAccountId(), reply)
       .then(() => this.getIntradayPriceHistoryV3(symbol, moment(startDate).valueOf(), moment(endDate).valueOf()));
   }
 
@@ -868,9 +857,6 @@ class PortfolioService {
   }
 
   sendPositionRequest(accountId) {
-    if (!accountId) {
-      accountId = this.getAccountId();
-    }
     const query = `${charlesSchwabTraderUrl}accounts/${this.accountIdToHash[accountId]}`;
     const options = {
       uri: query,
