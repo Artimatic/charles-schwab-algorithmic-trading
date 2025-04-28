@@ -12,7 +12,7 @@ import { PriceTargetService } from '../autopilot/price-target.service';
 describe('OptionsOrderBuilderService', () => {
   let service: OptionsOrderBuilderService;
   const strategyBuilderServiceSpy = jasmine.createSpyObj('StrategyBuilderService', ['getCallStrangleTrade', 'findOptionsPrice', 'getTradingStrategies', 'getPutStrangleTrade', 'getBacktestData', 'createStrategy', 'addBullishStock']);
-  const cartServiceSpy = jasmine.createSpyObj('CartService', ['addSingleLegOptionOrder', 'getAvailableFunds', 'createOptionOrder', 'addToCart', 'optionsOrderExists', 'getBuyOrders', 'getMaxTradeCount']);
+  const cartServiceSpy = jasmine.createSpyObj('CartService', ['addSingleLegOptionOrder', 'getAvailableFunds', 'createOptionOrder', 'addToCart', 'optionsOrderExists', 'getBuyOrders', 'getMaxTradeCount', 'getSellOrders']);
   const optionsDataServiceSpy = jasmine.createSpyObj('OptionsDataService', ['getImpliedMove']);
   const reportingServiceSpy = jasmine.createSpyObj('ReportingService', ['addAuditLog']);
   const orderHandlingServiceSpy = jasmine.createSpyObj('OrderHandlingService', ['getEstimatedPrice']);
@@ -34,6 +34,7 @@ describe('OptionsOrderBuilderService', () => {
     });
     service = TestBed.inject(OptionsOrderBuilderService);
     cartServiceSpy.getBuyOrders.and.returnValue([]);
+    cartServiceSpy.getSellOrders.and.returnValue([]);
     cartServiceSpy.getMaxTradeCount.and.returnValue(10);
 
   });
@@ -677,11 +678,11 @@ describe('OptionsOrderBuilderService', () => {
           }
         }
       }));
-      priceTargetServiceSpy.getDiff.and.returnValue(0.01);
-      strategyBuilderServiceSpy.getBacktestData.and.returnValue(Promise.resolve({ml: 1}));
-  
+      priceTargetServiceSpy.getDiff.and.returnValue(0.001);
+      strategyBuilderServiceSpy.getBacktestData.and.returnValue(Promise.resolve({ ml: 1 }));
+
       await service.addOptionsStrategiesToCart();
-  
+
       expect(cartServiceSpy.addToCart).toHaveBeenCalledWith(mockTrade, true, 'Test Reason');
       expect(service.tradingPairs.length).toBe(0);
     });
@@ -705,12 +706,13 @@ describe('OptionsOrderBuilderService', () => {
         }
       }));
       priceTargetServiceSpy.getDiff.and.returnValue(0.05);
-      strategyBuilderServiceSpy.getBacktestData.and.returnValue(Promise.resolve({ml: 1}));
+      strategyBuilderServiceSpy.getBacktestData.and.returnValue(Promise.resolve({ ml: 1 }));
       await service.addOptionsStrategiesToCart();
-  
+
       expect(cartServiceSpy.addToCart).not.toHaveBeenCalled();
       expect(service.tradingPairs.length).toBe(1);
-    });  
+    });
+
     it('should add trading pair to cart if shouldBuyOption returns true for both', async () => {
       const mockTrade1 = {
         holding: {
@@ -734,33 +736,34 @@ describe('OptionsOrderBuilderService', () => {
           return of({
             'AAPL': {
               quote: {
-                lastPrice: 150,
-                closePrice: 145
+                lastPrice: 350,
+                closePrice: 351
               }
             }
           });
         }
         return of({
-            'MSFT': {
-              quote: {
-                lastPrice: 250,
-                closePrice: 245
-              }
+          'MSFT': {
+            quote: {
+              lastPrice: 250,
+              closePrice: 251
             }
-          });
+          }
+        });
       });
-      priceTargetServiceSpy.getDiff.and.returnValue(0.01);
-      strategyBuilderServiceSpy.getBacktestData.and.returnValue(Promise.resolve({ml: 1}));
+      priceTargetServiceSpy.getDiff.and.returnValue(0.001);
+      strategyBuilderServiceSpy.getBacktestData.and.returnValue(Promise.resolve({ ml: 1 }));
       spyOn(service, 'addTradingPair').and.callThrough();
-  
+      cartServiceSpy.optionsOrderExists.and.returnValue(false);
+
       await service.addOptionsStrategiesToCart();
-  
+
       expect(service.addTradingPair).toHaveBeenCalledWith([mockTrade1, mockTrade2], 'Test Reason 1');
       expect(cartServiceSpy.addToCart).toHaveBeenCalledTimes(1);
       expect(service.tradingPairs.length).toBe(0);
     });
-  
-      it('should not add trading pair to cart if shouldBuyOption returns false for call', async () => {
+
+    it('should not add trading pair to cart if shouldBuyOption returns false for call', async () => {
       const mockTrade1 = {
         holding: {
           symbol: 'AAPL',
@@ -778,7 +781,7 @@ describe('OptionsOrderBuilderService', () => {
         type: OrderTypes.put
       };
       service.tradingPairs = [[mockTrade1 as any, mockTrade2 as any]];
-          backtestServiceSpy.getLastPriceTiingo.and.callFake((symbol) => {
+      backtestServiceSpy.getLastPriceTiingo.and.callFake((symbol) => {
         if (symbol.symbol === 'AAPL') {
           return of({
             'AAPL': {
@@ -790,26 +793,26 @@ describe('OptionsOrderBuilderService', () => {
           });
         }
         return of({
-            'MSFT': {
-              quote: {
-                lastPrice: 250,
-                closePrice: 245
-              }
+          'MSFT': {
+            quote: {
+              lastPrice: 250,
+              closePrice: 245
             }
-          });
+          }
+        });
       });
       priceTargetServiceSpy.getDiff.and.callFake((closePrice, lastPrice) => {
-        if(lastPrice === 150){
+        if (lastPrice === 150) {
           return 0.05;
         }
         return 0.01
       });
-      strategyBuilderServiceSpy.getBacktestData.and.returnValue(Promise.resolve({ml: 1}));
+      strategyBuilderServiceSpy.getBacktestData.and.returnValue(Promise.resolve({ ml: 1 }));
       spyOn(service, 'addTradingPair').and.callThrough();
       cartServiceSpy.optionsOrderExists.and.returnValue(false);
 
       await service.addOptionsStrategiesToCart();
-  
+
       expect(service.addTradingPair).not.toHaveBeenCalled();
       expect(cartServiceSpy.addToCart).not.toHaveBeenCalled();
       expect(service.tradingPairs.length).toBe(1);

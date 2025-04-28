@@ -16,6 +16,7 @@ export class PriceTargetService {
   startingBalance: { date: string, balance: number } = null;
   lastTargetMet = null;
   portfolioVolatility = 0;
+  lastCallPutRatio: { datetime: string, value: number } = null; 
 
   constructor(private backtestService: BacktestService,
     private portfolioService: PortfolioService,
@@ -35,8 +36,8 @@ export class PriceTargetService {
     let portfolioVolatility = await this.portfolioWeightsService.getPortfolioVolatility(holdings);
     this.portfolioVolatility = round(portfolioVolatility, 2);
     const tenYrYield = await this.globalSettingsService.get10YearYield();
-    const target = ((tenYrYield + 1.618034) * 0.01 * this.portfolioVolatility) + 0.01;
-    this.targetDiff = round((!target || target < 0.01 || target > 0.04) ? this.targetDiff : target, 4);
+    const target = ((tenYrYield + 1.618034) * 0.01 * this.portfolioVolatility) + 0.018;
+    this.targetDiff = round((!target) ? this.targetDiff : target, 4);
     this.reportingService.addAuditLog(null, `Target set to ${this.targetDiff}`);
     this.reportingService.addAuditLog(null, `Current portfolio volatility: ${this.portfolioVolatility}`);
   }
@@ -53,7 +54,7 @@ export class PriceTargetService {
     if (current.currentDayCost > 0) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -70,7 +71,6 @@ export class PriceTargetService {
       acc.total += curr.marketValue;
       return acc;
     }, { profitLoss: 0, total: 0 });
-    console.log('todayPl', todayPl);
 
     return round(this.getDiff(todayPl.total, todayPl.total + todayPl.profitLoss), 4);
   }
@@ -83,7 +83,7 @@ export class PriceTargetService {
     const symbol = 'SPY';
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
     const diff = this.getDiff(price[symbol].quote.closePrice, price[symbol].quote.lastPrice);
-    return diff < 0.002;
+    return diff < 0;
   }
 
   async hasMetPriceTarget(target = null) {
@@ -103,14 +103,6 @@ export class PriceTargetService {
     const priceTarget = this.getDiff(price[symbol].quote.closePrice, price[symbol].quote.lastPrice) + target;
     this.portfolioPl = round(portfolioPl, 4);
     this.reportingService.addAuditLog(null, `Portfolio PnL: ${portfolioPl}. target: ${priceTarget}`);
-
-    const balance = await this.portfolioService.getTdBalance().toPromise();
-    const targetUtilization = new Date().getDate() * 0.005;
-    const actualUtilization = (1 - (balance.cashBalance / balance.liquidationValue));
-    if (actualUtilization < targetUtilization) {
-      this.reportingService.addAuditLog(null, `Utilization requirements not met. Target ${targetUtilization}, Actual ${actualUtilization}`);
-      return false;
-    }
 
     if (portfolioPl && portfolioPl > priceTarget) {
       this.reportingService.addAuditLog(null, `Profit target met.`);
@@ -153,10 +145,32 @@ export class PriceTargetService {
         }
       }
       return previousValue
-    }, { call: 0, put: 0 });
+    }, { call: 1, put: 1 });
   }
 
-  calculateOptionChangeOfProfit(delta: number) {
-    return delta;
+  async getCallPutRatio(volatility: number) {
+    if (this.lastCallPutRatio && moment().diff(moment(this.lastCallPutRatio.datetime), 'minutes') < 35) {
+      return this.lastCallPutRatio.value;
+    }
+
+    let putsThreshold = volatility ? (volatility * 0.20) + 0.4 : 0.5;
+    
+    const currentDate = moment().format('YYYY-MM-DD');
+    const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
+    const spyBacktest = await this.backtestService.getBacktestEvaluation('SPY', startDate, currentDate, 'daily-indicators').toPromise();
+    const signals = spyBacktest.signals;
+    const lastSignal = signals[signals.length - 1];
+    
+    if (lastSignal.mfiPrevious > lastSignal.mfiLeft) {
+      putsThreshold += 0.05;
+    }
+    if (lastSignal?.bband80[1][0] > lastSignal.close) {
+      putsThreshold += 0.05;
+    }
+    if (lastSignal?.support[0] > lastSignal.close) {
+      putsThreshold += 0.05;
+    }
+    this.lastCallPutRatio = { datetime: moment().format(), value: putsThreshold };
+    return putsThreshold;
   }
 }

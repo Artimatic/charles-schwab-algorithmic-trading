@@ -17,6 +17,8 @@ export interface Recommendation {
     data?: any;
     bbandBreakout?: DaytradeRecommendation;
     flagPennant?: DaytradeRecommendation;
+    breakSupport?: DaytradeRecommendation;
+    breakResistance?: DaytradeRecommendation;
 }
 
 export enum DaytradeRecommendation {
@@ -60,4 +62,5 @@ export interface Indicators {
     resistance: number[];
     sma10: number;
     sma50: number;
+    flagPennant
 }

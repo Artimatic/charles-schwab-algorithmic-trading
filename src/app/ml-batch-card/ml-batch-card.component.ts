@@ -99,7 +99,7 @@ export class MlBatchCardComponent implements OnInit, OnDestroy {
       { stock: 'AAPL', allocation: 0.1 },
       { stock: 'AMZN', allocation: 0.1 },
       { stock: 'NFLX', allocation: 0.1 },
-      { stock: 'GOOG', allocation: 0.1 },
+      { stock: 'GOOGL', allocation: 0.1 },
       { stock: 'MSFT', allocation: 0.1 },
       { stock: 'AMD', allocation: 0.1 },
       { stock: 'NVDA', allocation: 0.1 },

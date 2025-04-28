@@ -334,7 +334,6 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
       this.order.stopped = true;
     }
     this.cartService.updateOrder(this.order);
-    this.cartService.removeCompletedOrders();
     if (this.sub) {
       this.sub.unsubscribe();
     }
@@ -871,7 +870,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     const primaryLegPrice = await this.orderHandlingService.getEstimatedPrice(this.order.primaryLegs[0].symbol);
     if (this.order.secondaryLegs) {
       const secondaryLegPrice = await this.orderHandlingService.getEstimatedPrice(this.order.secondaryLegs[0].symbol);
-      const totalPrice = (primaryLegPrice * this.order.primaryLegs[0].quantity) + (secondaryLegPrice * this.order.secondaryLegs[0].quantity);
+      const totalPrice = ((primaryLegPrice * this.order.primaryLegs[0].quantity) + (secondaryLegPrice * this.order.secondaryLegs[0].quantity)) * 100;
       this.reportingService.addAuditLog(this.order.holding.symbol, `Total Price with secondary leg ${totalPrice}, balance: ${cashBalance}`);
       if (totalPrice < cashBalance) {
         if (this.incrementBuy()) {
@@ -885,7 +884,7 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
         }
       }
     } else {
-      const totalPrice = primaryLegPrice * this.order.primaryLegs[0].quantity;
+      const totalPrice = (primaryLegPrice * this.order.primaryLegs[0].quantity) * 100;
       if (totalPrice) {
         this.reportingService.addAuditLog(this.order.holding.symbol, `Option price: ${totalPrice}, balance: ${cashBalance}`);
       } else {

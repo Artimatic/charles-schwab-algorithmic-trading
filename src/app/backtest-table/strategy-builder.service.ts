@@ -10,8 +10,8 @@ import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
 import { Indicators } from '@shared/stock-backtest.interface';
 import { MessageService } from 'primeng/api';
 import { AlwaysBuy } from '../rh-table/backtest-stocks.constant';
-import { SchedulerService } from '@shared/service/scheduler.service';
 import { StrategyStoreService } from './strategy-store.service';
+import { AllocationService } from '../allocation/allocation.service';
 
 export interface ComplexStrategy {
   state: 'assembling' | 'assembled' | 'disassembling' | 'disassembled';
@@ -29,15 +29,15 @@ export class StrategyBuilderService {
   countNet = 0;
   defaultMinExpiration = 45;
   bullishStocks = [];
-  maxImpliedMovement = 0.11;
+  maxImpliedMovement = 0.15;
   constructor(private backtestService: BacktestService,
     private optionsDataService: OptionsDataService,
     private portfolioService: PortfolioService,
     private messageService: MessageService,
-    private schedulerService: SchedulerService,
     private reportingService: ReportingService,
     private strategyStoreService: StrategyStoreService,
-    private cartService: CartService) { }
+    private cartService: CartService,
+    private allocationService: AllocationService) { }
 
   addBullishStock(symbol: string) {
     this.bullishStocks.push(symbol);
@@ -83,7 +83,11 @@ export class StrategyBuilderService {
       const results = await this.backtestService.getBacktestData(symbol, start, current).toPromise();
       // this.backtestAggregatorService.analyseBacktest(results);
       this.addToOrderHistoryStorage(symbol, results.orderHistory);
-
+      const pop = this.allocationService.determineProbabilityOfProfit(results.buySignals.length,
+        results.sellSignals.length,
+        results.impliedMovement,
+        results.ml);
+      const kellyCriterion = this.allocationService.calculateKellyCriterion(pop, 1);
       const tableObj = {
         recommendation: results.recommendation,
         stock: results.symbol,
@@ -101,7 +105,9 @@ export class StrategyBuilderService {
         impliedMovement: results.impliedMovement,
         buySignals: results.buySignals,
         sellSignals: results.sellSignals,
-        backtestDate: results.backtestDate
+        backtestDate: results.backtestDate,
+        pop: pop,
+        kellyCriterion: kellyCriterion
       };
       if (results.buySignals.find(s => s.includes('pennant')) || results.sellSignals.find(s => s.includes('pennant'))) {
         this.messageService.add({ severity: 'info', summary: `${symbol} found flag pennant`, sticky: true });
@@ -111,10 +117,6 @@ export class StrategyBuilderService {
       return results;
     } catch (error) {
       console.log(`Backtest table error ${symbol}`, new Date().toString(), error);
-      const lastBacktest = this.getRecentBacktest(symbol, 30);
-      if (lastBacktest && lastBacktest.net && lastBacktest.net > 10) {
-        this.schedulerService.schedule(() => this.getBacktestData(symbol), 'Rebacktest');
-      }
     }
     return null;
   }
@@ -291,7 +293,9 @@ export class StrategyBuilderService {
         recommendation: result.recommendation,
         stock: result.stock,
         returns: result.returns,
-        impliedMovement: result.impliedMovement
+        impliedMovement: result.impliedMovement,
+        pop: result.pop,
+        kellyCriterion: result.kellyCriterion
       });
     }
   }
@@ -442,7 +446,7 @@ export class StrategyBuilderService {
       if (bObj !== undefined && bObj !== null && bObj.ml !== null && bObj.buySignals) {
         if (bObj.ml > 0.5 && bObj.recommendation.toLowerCase() === 'strongbuy') {
           for (const pairVal of pairs) {
-            if (pairVal !== null && backtests[pairVal.symbol] && backtests[pairVal.symbol].ml !== null && (!backtests[pairVal.symbol].optionsChainLength || backtests[pairVal.symbol].optionsChainLength > 10)) {
+            if (pairVal !== null && backtests[pairVal.symbol] && backtests[pairVal.symbol].ml !== null) {
               if (backtests[pairVal.symbol]?.sellMl > 0.5 && (backtests[pairVal.symbol].recommendation.toLowerCase() === 'strongsell')) {
                 this.createStrategy(`${bObj.stock} Pair trade`, bObj.stock, [bObj.stock], [pairVal.symbol], 'Correlated pairs');
               }

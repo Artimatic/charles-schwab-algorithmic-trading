@@ -2,10 +2,8 @@
 import * as _ from 'lodash';
 import { Order } from './order.interface';
 import backtestService from '../backtest/backtest.service';
-import intradayPredicationService from '../machine-learning/intraday-prediction.service';
 
 import { Indicators } from '../backtest/backtest.constants';
-import * as moment from 'moment-timezone';
 import portfolioService from '../portfolio/portfolio.service';
 
 class OrderingService {
@@ -86,7 +84,7 @@ class OrderingService {
   private handleBuyStock(symbol: string, order: Order, analysis) {
     return portfolioService.getTdBalance(null, null)
       .then((balance) => {
-        order.orderSize = this.getOrderSize(order.orderSize, order.price, balance.cashBalance);
+        order.orderSize = this.getOrderSize(order.orderSize, _.round(order.price, 2), balance.cashBalance);
         order = this.incrementBuy(order);
         return portfolioService.sendBuyOrder(symbol, order.orderSize, order.price, null, true, null, null)
           .then((response) => {

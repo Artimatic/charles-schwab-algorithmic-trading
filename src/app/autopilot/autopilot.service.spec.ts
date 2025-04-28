@@ -9,7 +9,6 @@ import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { of } from 'rxjs';
 import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
-import { PortfolioInfoHolding } from '@shared/services';
 
 describe('AutopilotService', () => {
   let service: AutopilotService;
@@ -34,7 +33,7 @@ describe('AutopilotService', () => {
     mockCartService = jasmine.createSpyObj('CartService', ['getAvailableFunds', 'portfolioBuy', 'portfolioSell', 'addSingleLegOptionOrder', 'isStrangle', 'findCurrentPositions', 'buildOrderWithAllocation', 'getSellOrders', 'getBuyOrders', 'getOtherOrders', 'getMaxTradeCount']);
     mockBacktestService = jasmine.createSpyObj('BacktestService', ['getBacktestEvaluation']);
     mockPriceTargetService = jasmine.createSpyObj('PriceTargetService', ['isDownDay', 'isProfitable', 'notProfitable', 'getDiff', 'getCallPutBalance']);
-    mockOrderHandlingService = jasmine.createSpyObj('OrderHandlingService', ['getEstimatedPrice', 'intradayStep']);
+    mockOrderHandlingService = jasmine.createSpyObj('OrderHandlingService', ['getEstimatedPrice', 'intradayStep', 'addBuy']);
     mockReportingService = jasmine.createSpyObj('ReportingService', ['addAuditLog']);
     mockPortfolioService = jasmine.createSpyObj('PortfolioService', ['getEquityMarketHours', 'getProfitLoss', 'getStrategy', 'getTdBalance', 'getPrice']);
     mockGlobalSettingsService = jasmine.createSpyObj('GlobalSettingsService', ['getStartStopTime']);
@@ -118,7 +117,7 @@ describe('AutopilotService', () => {
 
   it('should add pairs from hash map', async () => {
     const MlBuys = { 'key1': ['AAPL'], 'key2': ['MSFT'] };
-    const MlSells = { 'key1': ['TSLA'], 'key2': ['GOOG'] };
+    const MlSells = { 'key1': ['TSLA'], 'key2': ['GOOGL'] };
     await service.addPairsFromHashMap(MlBuys, MlSells, 'Test Reason');
     expect(mockStrategyBuilderService.createStrategy).toHaveBeenCalledTimes(2);
     expect(mockStrategyBuilderService.createStrategy).toHaveBeenCalledWith('Test Reason Pair trade', 'Test Reason', ['AAPL'], ['TSLA'], 'Test Reason');
@@ -127,37 +126,37 @@ describe('AutopilotService', () => {
   it('should handle volatility pairs', async () => {
     spyOn(localStorage, 'getItem').and.returnValue(JSON.stringify({ 
       test0: { stock: 'AAPL', ml: 0.6, recommendation: 'STRONGBUY', impliedMovement: 0.1, sellMl: 0.2 },
-      test1: { stock: 'GOOG', ml: 0.1, recommendation: 'STRONGSELL', impliedMovement: 0.1, sellMl: 0.6 } 
+      test1: { stock: 'GOOGL', ml: 0.1, recommendation: 'STRONGSELL', impliedMovement: 0.1, sellMl: 0.6 } 
     }));
     await service.addVolatilityPairs();
     expect(mockStrategyBuilderService.createStrategy).toHaveBeenCalled();
-    expect(mockStrategyBuilderService.createStrategy).toHaveBeenCalledWith('Volatility pairs Pair trade', 'Volatility pairs', ['AAPL'], ['GOOG'], 'Volatility pairs');
+    expect(mockStrategyBuilderService.createStrategy).toHaveBeenCalledWith('Volatility pairs Pair trade', 'Volatility pairs', ['AAPL'], ['GOOGL'], 'Volatility pairs');
   });
 
   it('should handle perfect pair', async () => {
     spyOn(localStorage, 'getItem').and.returnValue(JSON.stringify({ 
       test0: { stock: 'AAPL', ml: 0.6, recommendation: 'STRONgsell', impliedMovement: 0.1, sellMl: 0.6, sellSignals: ['macd', 'bband'], buySignals: ['mfi'] },
-      test1: { stock: 'GOOG', ml: 0.6, recommendation: 'STRONGbuy', impliedMovement: 0.1, sellMl: 0.6, sellSignals: ['bband', 'macd'], buySignals: ['mfi'] }
+      test1: { stock: 'GOOGL', ml: 0.6, recommendation: 'STRONGbuy', impliedMovement: 0.1, sellMl: 0.6, sellSignals: ['bband', 'macd'], buySignals: ['mfi'] }
     }));
     spyOn(service, 'addPairsFromHashMap').and.callThrough();
     await service.addPerfectPair();
-    expect(service.addPairsFromHashMap).toHaveBeenCalledWith({ 'bband,macd-mfi10': [ 'GOOG' ] }, { 'bband,macd-mfi10': [ 'AAPL' ] }, 'Perfect pair');
+    expect(service.addPairsFromHashMap).toHaveBeenCalledWith({ 'bband,macd-mfi10': [ 'GOOGL' ] }, { 'bband,macd-mfi10': [ 'AAPL' ] }, 'Perfect pair');
 
-    expect(mockStrategyBuilderService.createStrategy).toHaveBeenCalledWith('Perfect pair Pair trade', 'Perfect pair', ['GOOG'], ['AAPL'], 'Perfect pair');
+    expect(mockStrategyBuilderService.createStrategy).toHaveBeenCalledWith('Perfect pair Pair trade', 'Perfect pair', ['GOOGL'], ['AAPL'], 'Perfect pair');
   });
 
   xit('should handle ML pairs', async () => {
     spyOn(localStorage, 'getItem').and.returnValue(JSON.stringify({ 
       test0: { stock: 'AAPL', ml: 0.6, recommendation: 'STRONGBUY', impliedMovement: 0.1, sellMl: 0.2 },
-      test1: { stock: 'GOOG', ml: 0.1, recommendation: 'STRONGSELL', impliedMovement: 0.1, sellMl: 0.6 } 
+      test1: { stock: 'GOOGL', ml: 0.1, recommendation: 'STRONGSELL', impliedMovement: 0.1, sellMl: 0.6 } 
     }));
 
     spyOn(service, 'addPairsFromHashMap').and.callThrough();
 
     await service.addMLPairs();
-    expect(service.addPairsFromHashMap).toHaveBeenCalledWith({ 'key': [ 'GOOG' ] }, { 'key': [ 'AAPL' ] }, 'ML pair');
+    expect(service.addPairsFromHashMap).toHaveBeenCalledWith({ 'key': [ 'GOOGL' ] }, { 'key': [ 'AAPL' ] }, 'ML pair');
 
-    expect(mockStrategyBuilderService.createStrategy).toHaveBeenCalledWith('ML pairs Pair trade', 'ML pairs', ['GOOG'], ['AAPL'], 'ML pairs');
+    expect(mockStrategyBuilderService.createStrategy).toHaveBeenCalledWith('ML pairs Pair trade', 'ML pairs', ['GOOGL'], ['AAPL'], 'ML pairs');
   });
 
   xit('should check intraday strategies', async () => {
@@ -169,32 +168,6 @@ describe('AutopilotService', () => {
     expect(mockCartService.addSingleLegOptionOrder).toHaveBeenCalled();
   });
 
-  it('should get technical indicators', async () => {
-    await service.getTechnicalIndicators('AAPL', '2023-01-01', '2023-10-10');
-    expect(mockBacktestService.getBacktestEvaluation).toHaveBeenCalledWith('AAPL', '2023-01-01', '2023-10-10', 'daily-indicators');
-  });
-
-  it('should get stop loss', () => {
-    const result = service.getStopLoss(1, 10);
-    expect(result.profitTakingThreshold).toEqual(4.5);
-    expect(result.stopLoss).toEqual(-4.5);
-  });
-  it('should add buy', async () => {
-    mockCartService.portfolioBuy.and.callFake(() => { });;
-    await service.addBuy({ name: 'AAPL' } as PortfolioInfoHolding, 0.1, 'reason');
-    expect(mockStrategyBuilderService.getBacktestData).toHaveBeenCalled();
-    expect(mockBacktestService.getBacktestEvaluation).toHaveBeenCalled();
-    expect(mockCartService.portfolioBuy).toHaveBeenCalled();
-  });
-  it('should handle error add buy', async () => {
-    mockBacktestService.getBacktestEvaluation.and.returnValue(of(null));
-    mockCartService.portfolioBuy.and.callFake(() => { });;
-    await service.addBuy({ name: 'AAPL' } as PortfolioInfoHolding, 0.1, 'reason');
-    expect(mockStrategyBuilderService.getBacktestData).toHaveBeenCalled();
-    expect(mockBacktestService.getBacktestEvaluation).toHaveBeenCalled();
-    expect(mockCartService.portfolioBuy).not.toHaveBeenCalled();
-  });
-
   it('should create holding obj', () => {
     const holding = service.createHoldingObj('AAPL');
     expect(holding.name).toEqual('AAPL');
@@ -204,7 +177,7 @@ describe('AutopilotService', () => {
   it('should call find swing stock callback buy', async () => {
     mockCartService.portfolioBuy.and.callFake(() => { });
     await service.findSwingStockCallback('AAPL', 0.8, { recommendation: 'STRONGBUY', impliedMovement: 0.1, net: 10, invested: 100 });
-    expect(mockCartService.portfolioBuy).toHaveBeenCalled();
+    expect(mockOrderHandlingService.addBuy).toHaveBeenCalled();
   });
   it('should call find swing stock callback sell', async () => {
     mockCartService.portfolioBuy.and.callFake(() => { });

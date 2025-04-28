@@ -92,6 +92,7 @@ import { StockListDialogComponent } from './stock-list-dialog/stock-list-dialog.
 import { SimulationChartComponent } from './simulation/simulation-chart/simulation-chart.component';
 import { AlgoEvaluationModule } from './algo-evaluation/algo-evaluation.module';
 import { LiveSimulationComponent } from './simulation/live-simulation/live-simulation.component';
+import { StatsCardComponent } from './stats-card/stats-card.component';
 
 @NgModule({
   declarations: [
@@ -142,6 +143,7 @@ import { LiveSimulationComponent } from './simulation/live-simulation/live-simul
     StockListDialogComponent,
     SimulationChartComponent,
     LiveSimulationComponent,
+    StatsCardComponent,
   ],
   entryComponents: [
     OrderDialogComponent,

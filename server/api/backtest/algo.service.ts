@@ -1,7 +1,7 @@
 import * as _ from 'lodash';
 import { Indicators, DaytradeRecommendation, OrderType } from './backtest.constants';
 import DecisionService from '../mean-reversion/reversion-decision.service';
-import { findStocksMatchingTradingPattern } from './flag-pennant-algo.service';
+import { findStocksMatchingTradingPattern, TradingPatternData } from './flag-pennant-algo.service';
 
 class AlgoService {
   getLowerBBand(bband): number {
@@ -221,6 +221,26 @@ class AlgoService {
     }).recommendation;
   }
 
+  checkSupport(indicator: Indicators): DaytradeRecommendation {
+    if (indicator.high > indicator.support[0] &&
+      indicator.low < indicator.support[0] &&
+      indicator.close < indicator.support[0]) {
+      return DaytradeRecommendation.Bearish;
+    }
+
+    return DaytradeRecommendation.Neutral;
+  }
+
+  checkResistance(indicator: Indicators): DaytradeRecommendation {
+    if (indicator.high > indicator.resistance[0] &&
+      indicator.low < indicator.resistance[0] &&
+      indicator.close > indicator.resistance[0]) {
+      return DaytradeRecommendation.Bullish;
+    }
+
+    return DaytradeRecommendation.Neutral;
+  }
+
   checkMacd(indicator: Indicators, previousIndicator: Indicators): DaytradeRecommendation {
     if (previousIndicator) {
       const macd = indicator.macd[2];
@@ -272,22 +292,24 @@ class AlgoService {
     return isBreakout ? DaytradeRecommendation.Bullish : DaytradeRecommendation.Neutral;
   }
 
-  checkFlagPennant(indicators: Indicators[]): DaytradeRecommendation {
-    const matchBullishResult = findStocksMatchingTradingPattern(indicators, {
+  checkFlagPennant(indicator: Indicators): DaytradeRecommendation {
+    if (indicator.flagPennant && indicator.flagPennant.flagPennantFormation &&
+      indicator.flagPennant.steepPrecedingTrend &&
+      indicator.flagPennant.breakoutOccurred) {
+      return DaytradeRecommendation.Bullish;
+    }
+    return DaytradeRecommendation.Neutral;
+  }
+
+  addFlagPennantData(indicators: Indicators[]): TradingPatternData {
+    const matchResult = findStocksMatchingTradingPattern(indicators, {
       steepPrecedingTrend: false,  // Set by the steep trend analysis
       flagPennantFormation: false,  // Set by the flag/pennant analysis
       breakoutOccurred: false,  //Set by the breakout anlaysis
       breakoutDirection: 'up',
       measuredRuleTargetMet: false,
     }, 10, 20);
-    const matchBearishResult = findStocksMatchingTradingPattern(indicators, {
-      steepPrecedingTrend: false,  // Set by the steep trend analysis
-      flagPennantFormation: false,  // Set by the flag/pennant analysis
-      breakoutOccurred: false,  //Set by the breakout anlaysis
-      breakoutDirection: 'down',
-      measuredRuleTargetMet: false,
-    }, 10, 20);
-    return matchBullishResult ? DaytradeRecommendation.Bullish : (matchBearishResult ? DaytradeRecommendation.Bearish : DaytradeRecommendation.Neutral);
+    return matchResult;
   }
 
   determineFinalRecommendation(indicators: Indicators[]): OrderType {
@@ -306,11 +328,11 @@ class AlgoService {
       }
 
 
-      if (previous.bullishCounter > 4 && previous.bearishCounter < 1) {
+      if (previous.bullishCounter > 4 && previous.bullishCounter - previous.bearishCounter > 3) {
         if (indicators[indicators.length - 3].mfiLeft < indicators[indicators.length - 1].mfiLeft && indicators[indicators.length - 3].close < indicators[indicators.length - 1].close) {
           previous.recommendation = OrderType.Buy;
         }
-      } else if (previous.bearishCounter > 4 && previous.bullishCounter < 1) {
+      } else if (previous.bearishCounter > 4 && previous.bearishCounter - previous.bullishCounter > 3) {
         if (indicators[indicators.length - 3].mfiLeft > indicators[indicators.length - 1].mfiLeft && indicators[indicators.length - 3].close > indicators[indicators.length - 1].close) {
           previous.recommendation = OrderType.Sell;
         }

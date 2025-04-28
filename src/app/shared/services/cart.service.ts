@@ -4,7 +4,6 @@ import { OrderTypes, SmartOrder } from '../models/smart-order';
 import { TradeService, AlgoQueueItem } from './trade.service';
 import { round } from 'lodash-es';
 import { MessageService } from 'primeng/api';
-import { Subject } from 'rxjs';
 import * as moment from 'moment-timezone';
 import { Options } from '@shared/models/options';
 import { ReportingService } from './reporting.service';
@@ -14,8 +13,7 @@ export class CartService {
   sellOrders: SmartOrder[] = [];
   buyOrders: SmartOrder[] = [];
   otherOrders: SmartOrder[] = [];
-  cartObserver: Subject<boolean> = new Subject<boolean>();
-  maxTradeCount = 10;
+  maxTradeCount = 6;
   constructor(
     private portfolioService: PortfolioService,
     private tradeService: TradeService,
@@ -109,25 +107,21 @@ export class CartService {
         summary: `Added ${order.side} ${order.holding.symbol}`
       });
     }
-    this.cartObserver.next(true);
   }
 
   deleteSell(deleteOrder: SmartOrder) {
     console.log('Deleting sell orders that match', deleteOrder.holding.symbol);
     this.sellOrders = this.sellOrders.filter(fullOrder => deleteOrder.primaryLegs && fullOrder.primaryLegs ? deleteOrder.primaryLegs[0].symbol !== fullOrder.primaryLegs[0].symbol : deleteOrder.holding.symbol !== fullOrder.holding.symbol);
-    this.cartObserver.next(true);
   }
 
   deleteBuy(deleteOrder: SmartOrder) {
     console.log('Deleting buy orders that match', deleteOrder.holding.symbol);
     this.buyOrders = this.buyOrders.filter(fullOrder => deleteOrder.primaryLegs && fullOrder.primaryLegs ? deleteOrder.primaryLegs[0].symbol !== fullOrder.primaryLegs[0].symbol : deleteOrder.holding.symbol !== fullOrder.holding.symbol);
-    this.cartObserver.next(true);
   }
 
   deleteDaytrade(deleteOrder: SmartOrder) {
     console.log('Deleting day trades that match', deleteOrder.holding.symbol);
     this.otherOrders = this.otherOrders.filter(fullOrder => fullOrder.holding.symbol !== deleteOrder.holding.symbol);
-    this.cartObserver.next(true);
   }
 
   updateOrder(updatedOrder: SmartOrder) {
@@ -148,7 +142,6 @@ export class CartService {
         this.tradeService.algoQueue.next(queueItem);
       }
     });
-    this.cartObserver.next(true);
   }
 
   searchAllLists(targetOrder: SmartOrder) {
@@ -171,8 +164,6 @@ export class CartService {
         break;
     }
     console.log('Deleted order', order, this.sellOrders);
-
-    this.cartObserver.next(true);
   }
 
   addOrder(order: SmartOrder) {
@@ -192,7 +183,6 @@ export class CartService {
     this.buyOrders = this.removeDuplicates(this.buyOrders);
     this.otherOrders = this.removeDuplicates(this.otherOrders);
     console.log('Added new order', order, this.sellOrders, this.buyOrders, this.otherOrders);
-    this.cartObserver.next(true);
   }
 
   getOrderIndex(orderList: SmartOrder[], targetOrder: SmartOrder) {
@@ -465,7 +455,6 @@ export class CartService {
       const keep = !order.stopped && order.buyCount + order.sellCount < (order.quantity * 2);
       return keep;
     });
-    this.cartObserver.next(true);
   }
 
   createOptionObj(holding): Options {

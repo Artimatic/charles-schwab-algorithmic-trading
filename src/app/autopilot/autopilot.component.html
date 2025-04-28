@@ -42,14 +42,9 @@
         </div>
     </div>
     <div class="p-toolbar">
-        <span *ngIf="daytradeMode">
-            <!-- <app-ai-picks></app-ai-picks> -->
-            <app-daytrade-active-search></app-daytrade-active-search>
-        </span>
-        <span *ngIf="!daytradeMode">
-            <!-- <app-ai-picks></app-ai-picks> -->
-            <app-algo-evaluation></app-algo-evaluation>
-        </span>
+        <!-- <app-ai-picks></app-ai-picks> -->
+        <!-- <app-daytrade-active-search></app-daytrade-active-search> -->
+        <app-algo-evaluation></app-algo-evaluation>
     </div>
     <div class="p-toolbar-group-right">
         <p-splitButton label="Auto Manage" icon="pi pi-play" severity="success" *ngIf="!display" (onClick)="open()"
@@ -65,40 +60,45 @@
 </p-toolbar>
 
 <ng-template #header>
-    <h3>Strategy</h3>
-    <span *ngIf="autopilotService.strategyList[autopilotService.strategyCounter] === 'Daytrade'">
-        <p-tag [value]="autopilotService.strategyList[autopilotService.strategyCounter]" pTooltip="Current strategy"
-            severity="warning"></p-tag>
-    </span>
-    <span *ngIf="autopilotService.strategyList[autopilotService.strategyCounter] !== 'Daytrade'">
-        <p-tag [value]="autopilotService.strategyList[autopilotService.strategyCounter]" pTooltip="Current strategy"
-            severity="danger"></p-tag>
-    </span>
-    <p-tag [value]="autopilotService.volatility * 100 +'%'" *ngIf="autopilotService.volatility >= 0.5" severity="danger"
-        pTooltip="Predicted volatility"></p-tag>
-    <p-tag [value]="autopilotService.volatility * 100 +'%'"
-        *ngIf="autopilotService.volatility >= 0.28 && autopilotService.volatility < 0.5" severity="warning"
-        pTooltip="Predicted volatility"></p-tag>
-    <p-tag [value]="autopilotService.volatility * 100 +'%'" *ngIf="autopilotService.volatility < 0.28"
-        severity="success" pTooltip="Predicted volatility"></p-tag>
+    <div class="grid-container">
+        <div class="grid-item">
+            <h3>Strategy</h3>
+            <span *ngIf="autopilotService.strategyList[autopilotService.strategyCounter] === 'Daytrade'">
+                <p-tag [value]="autopilotService.strategyList[autopilotService.strategyCounter]"
+                    pTooltip="Current strategy" severity="warning"></p-tag>
+            </span>
+            <span *ngIf="autopilotService.strategyList[autopilotService.strategyCounter] !== 'Daytrade'">
+                <p-tag [value]="autopilotService.strategyList[autopilotService.strategyCounter]"
+                    pTooltip="Current strategy" severity="danger"></p-tag>
+            </span>
+            <p-tag [value]="autopilotService.volatility * 100 +'%'" *ngIf="autopilotService.volatility >= 0.5"
+                severity="danger" pTooltip="Predicted volatility"></p-tag>
+            <p-tag [value]="autopilotService.volatility * 100 +'%'"
+                *ngIf="autopilotService.volatility >= 0.28 && autopilotService.volatility < 0.5" severity="warning"
+                pTooltip="Predicted volatility"></p-tag>
+            <p-tag [value]="autopilotService.volatility * 100 +'%'" *ngIf="autopilotService.volatility < 0.28"
+                severity="success" pTooltip="Predicted volatility"></p-tag>
 
-    <p-tag [value]="priceTargetService.portfolioVolatility * 100 +'%'" severity="info"
-        pTooltip="Portfolio volatility"></p-tag>
+            <p-tag [value]="priceTargetService.portfolioVolatility * 100 +'%'" severity="info"
+                pTooltip="Portfolio volatility"></p-tag>
 
-    <p-tag [value]="priceTargetService.portfolioPl * 100 +'%'" severity="info"
-        pTooltip="Estimated portfolio profit and loss"></p-tag>
+            <p-tag [value]="priceTargetService.portfolioPl * 100 +'%'" severity="info"
+                pTooltip="Estimated portfolio profit and loss"></p-tag>
 
-    <p-tag [value]="priceTargetService.targetDiff * 100 +'%'" severity="info"
-        pTooltip="Profit target"></p-tag>
-    <p-tag pTooltip="Trade allocation - percentage of cash balance"
-        [value]="autopilotService.riskToleranceList[autopilotService.riskCounter] * 100 +'%'" severity="danger"></p-tag>
-    <!-- 
+            <p-tag [value]="priceTargetService.targetDiff * 100 +'%'" severity="info" pTooltip="Profit target"></p-tag>
+            <p-tag pTooltip="Trade allocation - percentage of cash balance"
+                [value]="autopilotService.riskToleranceList[autopilotService.riskCounter] * 100 +'%'"
+                severity="danger"></p-tag>
+            <!-- 
     <p-tag [value]="dayTradingRiskToleranceList[dayTradeRiskCounter] * 100 +'%'" severity="warning"
         pTooltip="Day trade allocation - percentage of total bp"></p-tag>
     <label for="daytrade-switch">Daytrade mode</label>
     <p-inputSwitch inputId="daytrade-switch" (onChange)="handleDaytrade()" [(ngModel)]="daytradeMode"></p-inputSwitch>
      -->
-    <label for="trading-switch">Trading is active</label>
-    <p-inputSwitch inputId="trading-switch" [(ngModel)]="autopilotService.isOpened" [readonly]="true"></p-inputSwitch>
 
+            <label for="trading-switch">Trading is active</label>
+            <p-inputSwitch inputId="trading-switch" [(ngModel)]="autopilotService.isOpened"
+                [readonly]="true"></p-inputSwitch>
+        </div>
+    </div>
 </ng-template>

@@ -4,7 +4,7 @@ import { Recommendation } from '@shared/stock-backtest.interface';
 import { PricingService } from '../pricing/pricing.service';
 import * as moment from 'moment-timezone';
 import { GlobalSettingsService } from '../settings/global-settings.service';
-import { BacktestService, CartService, DaytradeService, PortfolioService, TradeService } from '@shared/services';
+import { BacktestService, CartService, DaytradeService, PortfolioInfoHolding, PortfolioService } from '@shared/services';
 import { Options } from '@shared/models/options';
 import { AlgoQueueItem } from '@shared/services/trade.service';
 import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
@@ -12,6 +12,7 @@ import { StrategyBuilderService } from '../backtest-table/strategy-builder.servi
 import { round } from 'lodash-es';
 import { OrderTypes } from '@shared/models/smart-order';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
+import { HighriskSpecialPrefixInstance } from 'twilio/lib/rest/voice/v1/dialingPermissions/country/highriskSpecialPrefix';
 
 @Injectable({
   providedIn: 'root'
@@ -25,13 +26,52 @@ export class OrderHandlingService {
     private globalSettingsService: GlobalSettingsService,
     private cartService: CartService,
     private portfolioService: PortfolioService,
-    private tradeService: TradeService,
     private daytradeStrategiesService: DaytradeStrategiesService,
     private backtestService: BacktestService,
     private strategyBuilderService: StrategyBuilderService,
     private daytradeService: DaytradeService,
     private machineDaytradingService: MachineDaytradingService,
   ) { }
+
+  getStopLoss(low: number, high: number) {
+    if (!low || !high) {
+      return {
+        profitTakingThreshold: 10000,
+        stopLoss: -10000
+      }
+    }
+    const profitTakingThreshold = round(((high / low) - 1) / 2, 4);
+    const stopLoss = profitTakingThreshold * -1;
+    return {
+      profitTakingThreshold,
+      stopLoss
+    }
+  }
+
+  getTechnicalIndicators(stock: string, startDate: string, currentDate: string) {
+    return this.backtestService.getBacktestEvaluation(stock, startDate, currentDate, 'daily-indicators');
+  }
+
+  async addBuy(holding: PortfolioInfoHolding, allocation, reason) {
+    if (!holding.name) {
+      throw Error('Ticker is missing')
+    }
+    if ((this.cartService.getBuyOrders().length + this.cartService.getOtherOrders().length) < this.cartService.getMaxTradeCount()) {
+      const currentDate = moment().format('YYYY-MM-DD');
+      const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
+      try {
+        const allIndicators = await this.getTechnicalIndicators(holding.name, startDate, currentDate).toPromise();
+        const indicator = allIndicators.signals[allIndicators.signals.length - 1];
+        const thresholds = this.getStopLoss(indicator.low, indicator.high);
+        await this.cartService.portfolioBuy(holding,
+          allocation || 0.01,
+          thresholds.profitTakingThreshold,
+          thresholds.stopLoss, reason);
+      } catch (error) {
+        console.log('Error getting backtest data for ', holding.name, error);
+      }
+    }
+  }
 
   async hasPositions(symbols: string[]) {
     const portfolioHolding = await this.portfolioService.getTdPortfolio().toPromise();
@@ -59,12 +99,18 @@ export class OrderHandlingService {
       };
 
       const reject = (error) => {
+        if (!order.errors) {
+          order.errors = [];
+        }
         order.errors.push(error._body);
         order.stopped = true;
         this.reportingService.addAuditLog(order.holding.symbol, JSON.stringify(error._body));
       };
 
       const handleNotFound = () => {
+        if (!order.warnings) {
+          order.warnings = [];
+        }
         order.stopped = true;
         const notFoundMsg = `Trying to sell position that doesn\'t exists ${order.holding.name}`;
         order.warnings.push(notFoundMsg);
@@ -92,30 +138,27 @@ export class OrderHandlingService {
     const balance = await this.machineDaytradingService.getPortfolioBalance().toPromise();
     const cashBalance = balance.cashBalance;
     const primaryLegPrice = await this.getEstimatedPrice(order.primaryLegs[0].symbol);
-    if (order.secondaryLegs) {
+    if (order.secondaryLegs && order.secondaryLegs.length > 0) {
       const secondaryLegPrice = await this.getEstimatedPrice(order.secondaryLegs[0].symbol);
-      const totalPrice = (primaryLegPrice * order.primaryLegs[0].quantity) + (secondaryLegPrice * order.secondaryLegs[0].quantity);
+      const totalPrice = ((primaryLegPrice * order.primaryLegs[0].quantity) + (secondaryLegPrice * order.secondaryLegs[0].quantity) * 100);
       this.reportingService.addAuditLog(order.holding.symbol, `Total Price with secondary leg ${totalPrice}, balance: ${cashBalance}`);
       if (totalPrice < cashBalance) {
         order = this.incrementBuy(order);
-        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.primaryLegs[0].quantity} ${order.primaryLegs[0].symbol}`);
-        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.secondaryLegs[0].quantity} ${order.secondaryLegs[0].symbol}`);
+        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.primaryLegs[0].quantity} ${order.primaryLegs[0].symbol} $${totalPrice}`);
+        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.secondaryLegs[0].quantity} ${order.secondaryLegs[0].symbol} $${totalPrice}`);
 
         await this.buyOption(order.primaryLegs[0].symbol, order.primaryLegs[0].quantity || 1, primaryLegPrice, () => { });
         await this.buyOption(order.secondaryLegs[0].symbol, order.secondaryLegs[0].quantity || 1, secondaryLegPrice, () => { });
       }
     } else {
-      const totalPrice = primaryLegPrice * order.primaryLegs[0].quantity;
-      if (totalPrice) {
-        this.reportingService.addAuditLog(order.holding.symbol, `Option price: ${totalPrice}, balance: ${cashBalance}`);
-      } else {
-        this.reportingService.addAuditLog(order.holding.symbol, `price: ${primaryLegPrice}, quantity: ${order.primaryLegs[0].quantity}, balance: ${cashBalance}`);
-      }
+      const totalPrice = primaryLegPrice * order.primaryLegs[0].quantity * 100;
 
       if (totalPrice < cashBalance) {
         order = this.incrementBuy(order);
-        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.quantity} ${order.primaryLegs[0].symbol}`);
+        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.quantity} ${order.primaryLegs[0].symbol} $${totalPrice}`);
         await this.buyOption(order.primaryLegs[0].symbol, order.quantity || 1);
+      } else {
+        this.reportingService.addAuditLog(order.holding.symbol, 'Balance is too low.');
       }
     }
     return order;
@@ -131,12 +174,18 @@ export class OrderHandlingService {
     };
 
     const reject = (error) => {
+      if (!order.errors) {
+        order.errors = [];
+      }
       order.errors.push(error._body);
       order.stopped = true;
       this.reportingService.addAuditLog(symbol, JSON.stringify(error._body));
     };
 
     const handleNotFound = () => {
+      if (!order.errors) {
+        order.errors = [];
+      }
       const error = `Trying to sell position that doesn\'t exists ${symbol}`;
       order.errors.push(error);
       order.stopped = true;
@@ -153,7 +202,7 @@ export class OrderHandlingService {
       return order;
     }
     const price = await this.backtestService.getLastPriceTiingo({ symbol: order.holding.symbol }).toPromise();
-    order.price = price[order.holding.symbol].quote.lastPrice;
+    order.price = round(price[order.holding.symbol].quote.lastPrice, 2);
 
     if (analysis.recommendation.toLowerCase() === 'none') {
       return order;
@@ -161,13 +210,33 @@ export class OrderHandlingService {
       order.stopped = true;
     } else if (order.type === OrderTypes.call) {
       if (order.side.toLowerCase() === 'buy' && (analysis.recommendation.toLowerCase() === 'buy')) {
-        order = await this.buyOptions(order);
+        if (!order.priceLowerBound) {
+          order.priceLowerBound = order.price;
+          return order;
+        }
+
+        if (Number(order.price) > Number(order.priceLowerBound)) {
+          order = await this.buyOptions(order);
+        } else {
+          const log = 'Price too low. Current:' + Number(order.price) + ' Expected:' + Number(order.priceLowerBound);
+          this.reportingService.addAuditLog(order.holding.symbol, log);
+        }
       } else if (order.side.toLowerCase() === 'sell' && (analysis.recommendation.toLowerCase() === 'sell')) {
         order = await this.sellOptions(order);
       }
     } else if (order.type === OrderTypes.put) {
       if (order.side.toLowerCase() === 'buy' && (analysis.recommendation.toLowerCase() === 'sell')) {
-        order = await this.buyOptions(order);
+        if (!order.priceLowerBound) {
+          order.priceLowerBound = order.price;
+          return order;
+        }
+
+        if (Number(order.price) < Number(order.priceLowerBound)) {
+          order = await this.buyOptions(order);
+        } else {
+          const log = 'Price too low. Current:' + Number(order.price) + ' Expected' + Number(order.priceLowerBound);
+          this.reportingService.addAuditLog(order.holding.symbol, log);
+        }
       } else if (order.side.toLowerCase() === 'sell' && (analysis.recommendation.toLowerCase() === 'buy')) {
         order = await this.sellOptions(order);
       }
@@ -188,7 +257,7 @@ export class OrderHandlingService {
           order = this.incrementBuy(order);
           this.daytradeService.sendBuy(order, 'limit', () => { }, () => { });
         } else {
-          const log = 'Price too low ' + Number(order.price) + ' vs ' + Number(order.priceLowerBound);
+          const log = 'Price too low. Current:' + Number(order.price) + ' Expected:' + Number(order.priceLowerBound);
           this.reportingService.addAuditLog(order.holding.symbol, log);
         }
       }
@@ -288,7 +357,6 @@ export class OrderHandlingService {
       analysis: analysis,
       ml: ml.nextOutput[0]
     };
-    this.tradeService.algoQueue.next(queueItem);
   }
 
   async getEstimatedPrice(symbol: string) {
@@ -296,6 +364,8 @@ export class OrderHandlingService {
       const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
       const askPrice = Number(price[symbol].quote.askPrice);
       const bidPrice = Number(price[symbol].quote.bidPrice);
+      console.log(`Getting estimated price for ${symbol}, bidPrice: ${bidPrice}, askPrice: ${askPrice}`)
+
       return this.strategyBuilderService.findOptionsPrice(bidPrice, askPrice);
     } catch (error) {
       console.log('Error getting estimated price', error);

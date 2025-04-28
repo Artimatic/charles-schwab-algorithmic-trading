@@ -7,6 +7,7 @@ import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { of } from 'rxjs';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { PortfolioWeightsService } from './portfolio-weights.service';
+import * as moment from 'moment-timezone';
 
 const mockPortfolioData = [
   {
@@ -116,7 +117,7 @@ describe('PriceTargetService', () => {
   const cartServiceSpy = jasmine.createSpyObj('CartService', ['addSingleLegOptionOrder', 'getAvailableFunds', 'createOptionOrder', 'portfolioSell', 'isStrangle']);
   const orderHandlingServiceSpy = jasmine.createSpyObj('OrderHandlingService', ['getEstimatedPrice']);
   const portfolioServiceSpy = jasmine.createSpyObj('PortfolioService', ['getTdPortfolio', 'getTdBalance']);
-  const backtestServiceSpy = jasmine.createSpyObj('BacktestService', ['getLastPriceTiingo']);
+  const backtestServiceSpy = jasmine.createSpyObj('BacktestService', ['getLastPriceTiingo', 'getBacktestEvaluation']);
   const reportingServiceSpy = jasmine.createSpyObj('ReportingService', ['addAuditLog']);
   const globalSettingsServiceSpy = jasmine.createSpyObj('GlobalSettingsService', ['get10YearYield']);
   const portfolioWeightsServiceSpy = jasmine.createSpyObj('PortfolioWeightsService', ['getPortfolioVolatility']);
@@ -140,7 +141,7 @@ describe('PriceTargetService', () => {
       resolve(0.1);
     }));
 
-    portfolioServiceSpy.getTdBalance.and.returnValue(of({cashBalance: 80000, liquidationValue: 100000}));
+    portfolioServiceSpy.getTdBalance.and.returnValue(of({ cashBalance: 80000, liquidationValue: 100000 }));
   });
 
   it('should be created', () => {
@@ -1030,7 +1031,34 @@ describe('PriceTargetService', () => {
     ];
 
     const result = service.getCallPutBalance(testHoldings);
-    expect(result.call).toEqual(3287.5);
-    expect(result.put).toEqual(10490);
+    expect(result.call).toEqual(3288.5);
+    expect(result.put).toEqual(10491);
+  });
+
+  it('should getCallPutRatio correctly', async () => {
+    const mockSignals = {
+      signals: [
+        { mfiPrevious: 50, mfiLeft: 40, bband80: [[100], [90]], close: 95, support: [92] },
+        { mfiPrevious: 40, mfiLeft: 50, bband80: [[100], [110]], close: 105, support: [107] },
+      ]
+    };
+    backtestServiceSpy.getBacktestEvaluation.and.returnValue(of(mockSignals));
+    service.lastCallPutRatio = null;
+
+    const result = await service.getCallPutRatio(0.1);
+
+    expect(backtestServiceSpy.getBacktestEvaluation).toHaveBeenCalled();
+    expect(result).toBe(0.52);
+    expect(service.lastCallPutRatio.value).toBe(0.52);
+  });
+  it('should getCallPutRatio correctly when using cache', async () => {
+    backtestServiceSpy.getBacktestEvaluation.calls.reset();
+    service.lastCallPutRatio = { datetime: moment().format(), value: 0.71 };
+
+    const result = await service.getCallPutRatio(0.1);
+
+    expect(backtestServiceSpy.getBacktestEvaluation).not.toHaveBeenCalled();
+    expect(result).toBe(0.71);
+    expect(service.lastCallPutRatio.value).toBe(0.71);
   });
 });
