@@ -393,7 +393,7 @@ export class OptionsOrderBuilderService {
   isExpiring(holding: PortfolioInfoHolding) {
     return (holding.primaryLegs ? holding.primaryLegs : []).concat(holding.secondaryLegs ? holding.secondaryLegs : []).find((option: Options) => {
       const expiry = option.description.match(/[0-9]{2}\/[0-9]{2}\/[0-9]{4}/)[0];
-      return moment(expiry).diff(moment(), 'days') < 30;
+      return moment(expiry).diff(moment(), 'days') < 21;
     });
   }
 
@@ -431,9 +431,9 @@ export class OptionsOrderBuilderService {
     const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
     const impliedMove = await this.getImpliedMove(symbol, backtestResults)
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
-    const imThreshold = (1 / (impliedMove) * 0.002);
+    const imThreshold = (1 / (impliedMove || 1) * 0.002);
     console.log(`${symbol} current diff: ${currentDiff}, threshold: ${imThreshold}`);
-    if (Math.abs(currentDiff) < Math.min(0.019, imThreshold)) {
+    if (Math.abs(currentDiff) < Math.max(0.019, imThreshold)) {
       return true;
     }
 
@@ -523,16 +523,10 @@ export class OptionsOrderBuilderService {
   }
 
   async addOptionsStrategiesToCart() {
-    console.log('addOptionsStrategiesToCart');
-    if (this.cartService.getSellOrders().length + this.cartService.getBuyOrders().length > this.cartService.getMaxTradeCount()) {
-      console.log('Too many orders. Skipping adding strategies.');
-      return null;
-    }
     const tradeList = this.getTradingPairs();
     let foundTrade = false;
-    for (const trade of tradeList) {
-      console.log('options trade trade', trade);
 
+    for (const trade of tradeList) {
       if (foundTrade) {
         this.reportingService.addAuditLog(null, 'Found a trade.');
         break;

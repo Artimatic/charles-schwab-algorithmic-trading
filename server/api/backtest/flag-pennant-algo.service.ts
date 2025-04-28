@@ -33,7 +33,6 @@ function isFlagPennantFormation(
     convergenceThreshold: number
 ): FlagPennantFormationResult | null {
     if (formationStartIndex + formationPeriod > historicalData.length) {
-        console.warn("Not enough data to analyze flag/pennant formation.");
         return { status: false}; // Not enough data
     }
 
@@ -91,7 +90,6 @@ function isBreakoutOccurred(
 ): boolean | null {
 
     if (formationStartIndex + formationPeriod >= historicalData.length) {
-        console.warn("Not enough data to analyze breakout.");
         return null; // Not enough data.  Need data *after* formation.
     }
 
@@ -240,7 +238,6 @@ function isSteepPrecedingTrend(
     steepnessThreshold: number
 ): boolean | null {
     if (startIndex + period > historicalData.length) {
-        console.warn(`Not enough data to analyze trend. Data size: ${historicalData.length}`);
         return null; // Not enough data
     }
 

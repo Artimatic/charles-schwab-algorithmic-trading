@@ -166,13 +166,13 @@ class PortfolioController extends BaseController {
       response);
   }
 
-  addProfitLoss(request, response) {
-    PortfolioService.addProfitLoss(request.body.accountId,
+  async addProfitLoss(request, response) {
+    const pnl = await PortfolioService.addProfitLoss(request.body.accountId,
       request.body.date,
       request.body.lastRiskTolerance,
       request.body.lastStrategy,
       request.body.profit)
-    BaseController.requestGetSuccessHandler(response, { success: true })
+    BaseController.requestGetSuccessHandler(response, { data: pnl })
   }
 
   async getProfitLoss(request, response) {
@@ -185,13 +185,13 @@ class PortfolioController extends BaseController {
     BaseController.requestGetSuccessHandler(response, { success: true })
   }
 
-  addStrategy(request, response) {
-    PortfolioService.addStrategy(request.body.date,
+  async addStrategy(request, response) {
+    const strategies = await PortfolioService.addStrategy(request.body.date,
       request.body.type,
       request.body.key,
       request.body.strategy,
       request.body.reason)
-    BaseController.requestGetSuccessHandler(response, { success: true })
+    BaseController.requestGetSuccessHandler(response, { data: strategies })
   }
 
   async getStrategy(request, response) {

@@ -17,50 +17,44 @@ const client = new MongoClient(uri, {
 
 class DatabaseService {
 
-    constructor() { }
+    constructor() { 
+        // Connect the client to the server	(optional starting in v4.7)
+        client.connect();
+    }
 
     async update(data, dbName, collectionName, findOneQuery) {
-        try {
-            // Connect the client to the server	(optional starting in v4.7)
-            await client.connect();
+        let items = null;
+        // Create references to the database and collection in order to run
+        // operations on them.
+        const database = client.db(dbName);
+        const collection = database.collection(collectionName);
 
-            // Create references to the database and collection in order to run
-            // operations on them.
-            const database = client.db(dbName);
-            const collection = database.collection(collectionName);
-
-            const updateDoc = {
-                $set: {
-                    createdAt: new Date(),
-                    date: new Date().toString(),
-                    ...data
-                }
-            };
-
-            // The following updateOptions document specifies that we want the *updated*
-            // document to be returned. By default, we get the document as it was *before*
-            // the update.
-            const updateOptions = { upsert: true };
-
-            try {
-                await collection.findOneAndUpdate(
-                    findOneQuery,
-                    updateDoc,
-                    updateOptions,
-                );
-            } catch (err) {
-                console.error(`Something went wrong trying to update one document: ${err}\n`);
+        const updateDoc = {
+            $set: {
+                createdAt: new Date(),
+                date: new Date().toString(),
+                ...data
             }
+        };
 
-        } finally {
-            // Ensures that the client will close when you finish/error
-            await client.close();
+        // The following updateOptions document specifies that we want the *updated*
+        // document to be returned. By default, we get the document as it was *before*
+        // the update.
+        const updateOptions = { upsert: true };
+        try {
+            items = await collection.findOneAndUpdate(
+                findOneQuery,
+                updateDoc,
+                updateOptions,
+            );
+        } catch (err) {
+            console.error(`Something went wrong trying to update one document: ${err}\n`);
         }
+        return items;
     }
 
     async deleteOldRecords(dbName, collectionName) {
         try {
-            await client.connect();
             const db = client.db(dbName);
             const collection = db.collection(collectionName);
 
@@ -79,15 +73,11 @@ class DatabaseService {
         } catch (error) {
             console.error("Error deleting records:", error);
             throw error;
-        } finally {
-            await client.close();
-            console.log("Connection closed.");
         }
     }
 
     async getRecords(dbName, collectionName, filter = {}, projection = {}) { // Added filter and projection parameters
         try {
-          await client.connect();
           const db = client.db(dbName);
           const collection = db.collection(collectionName);
       
@@ -101,9 +91,6 @@ class DatabaseService {
         } catch (error) {
           console.error("Error getting records:", error);
           throw error;
-        } finally {
-          await client.close();
-          console.log("Connection closed.");
         }
       }
       

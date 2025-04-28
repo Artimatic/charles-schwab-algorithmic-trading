@@ -27,7 +27,7 @@ export class StrategyBuilderService {
   correlationThreshold = 0.55;
   sumNet = 0;
   countNet = 0;
-  defaultMinExpiration = 45;
+  defaultMinExpiration = 30;
   bullishStocks = [];
   maxImpliedMovement = 0.15;
   constructor(private backtestService: BacktestService,
@@ -467,7 +467,7 @@ export class StrategyBuilderService {
   }
 
   addAndRemoveOldStrategies(storage) {
-    storage = storage.filter(s => moment().diff(moment(s.date), 'days') < 5);
+    storage = storage.filter(s => moment().diff(moment(s.date), 'days') < 6);
     this.setTradingStrategies(storage);
   }
 

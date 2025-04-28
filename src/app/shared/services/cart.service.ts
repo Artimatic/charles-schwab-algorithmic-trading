@@ -13,7 +13,7 @@ export class CartService {
   sellOrders: SmartOrder[] = [];
   buyOrders: SmartOrder[] = [];
   otherOrders: SmartOrder[] = [];
-  maxTradeCount = 6;
+  maxTradeCount = 5;
   constructor(
     private portfolioService: PortfolioService,
     private tradeService: TradeService,

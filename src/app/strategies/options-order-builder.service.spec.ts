@@ -664,8 +664,8 @@ describe('OptionsOrderBuilderService', () => {
       const mockTrade = {
         holding: {
           symbol: 'AAPL',
-          primaryLegs: [{ symbol: 'AAPL Call' }]
         },
+        primaryLegs: [{ symbol: 'AAPL Call' }],
         reason: 'Test Reason',
         type: OrderTypes.call
       };
@@ -674,7 +674,7 @@ describe('OptionsOrderBuilderService', () => {
         'AAPL': {
           quote: {
             lastPrice: 150,
-            closePrice: 145
+            closePrice: 149
           }
         }
       }));
