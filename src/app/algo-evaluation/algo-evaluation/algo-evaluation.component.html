@@ -1,6 +1,8 @@
 <p-table [columns]="selectedColumns" [value]="currentList" [paginator]="true" [rows]="3" selectionMode="single"
   [(selection)]="selectedStock" dataKey="stock">
   <ng-template pTemplate="caption">
+    <label for="portfolio-switch">{{ showPortfolio ? 'Portfolio' : 'Recommendations'}}</label>
+    <p-inputSwitch inputId="portfolio-switch" [(ngModel)]="showPortfolio" (onChange)="setTable($event)"></p-inputSwitch>
   </ng-template>
   <ng-template pTemplate="header" let-columns>
     <tr>
@@ -16,11 +18,17 @@
         <span *ngSwitchCase="'returns'">
           {{element[col.field] | percent}}
         </span>
+        <span *ngSwitchCase="'pnlPercentage'">
+          {{element[col.field] | percent}}
+        </span>
         <span *ngSwitchCase="'lastVolume'">
           {{element.lastVolume | number}}
         </span>
         <span *ngSwitchCase="'lastPrice'">
           {{element.lastVolume | currency}}
+        </span>
+        <span *ngSwitchCase="'pl'">
+          {{element.pl | currency}}
         </span>
         <span *ngSwitchCase="'impliedMovement'">
           {{element?.impliedMovement | percent}}
@@ -34,7 +42,8 @@
           <span *ngIf=element.kellyCriterion>{{element.kellyCriterion}}</span>
         </span>
         <span *ngSwitchDefault>
-          <div [ngClass]="{'bullish-title': element[col.field] === 'Buy' || element[col.field] === 'Strong buy', 'bearish-title': element[col.field] === 'Sell' || element[col.field] === 'Strong sell' }">
+          <div
+            [ngClass]="{'bullish-title': element[col.field] === 'Buy' || element[col.field] === 'Strong buy', 'bearish-title': element[col.field] === 'Sell' || element[col.field] === 'Strong sell' }">
             {{element[col.field]}}
           </div>
         </span>
