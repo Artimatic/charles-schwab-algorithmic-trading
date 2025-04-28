@@ -1,10 +1,10 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { AutopilotComponent, PositionHoldings, ProfitLossRecord } from './autopilot.component';
+import { AutopilotComponent } from './autopilot.component';
 import { BacktestAggregatorService } from '../backtest-table/backtest-aggregator.service';
 import { CartService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
 import { DailyBacktestService } from '@shared/daily-backtest.service';
 import { MessageService } from 'primeng/api';
-import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
+import { DialogService } from 'primeng/dynamicdialog';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
 import { FindPatternService } from '../strategies/find-pattern.service';
@@ -15,8 +15,8 @@ import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';
 import { PortfolioMgmtService } from '../portfolio-mgmt/portfolio-mgmt.service';
 import { PriceTargetService } from './price-target.service';
-import { AutopilotService, RiskTolerance, Strategy } from './autopilot.service';
-import { of, Subject, throwError } from 'rxjs';
+import { AutopilotService } from './autopilot.service';
+import { of, Subject } from 'rxjs';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { AiPicksService } from '@shared/services/ai-picks.service';
 import * as moment from 'moment-timezone';
@@ -233,15 +233,6 @@ xdescribe('AutopilotComponent', () => {
     component.dayTradeRiskCounter = 0;
     component.increaseDayTradeRiskTolerance();
     expect(component.dayTradeRiskCounter).toBe(1);
-  });
-  it('should change strategy', () => {
-    component.autopilotService.strategyCounter = 0;
-    component.autopilotService.strategyList = [Strategy.BuyCalls, Strategy.Daytrade];
-    component.changeStrategy();
-    expect(component.autopilotService.strategyCounter).toBe(1);
-    expect(component.daytradeMode).toBe(true);
-    expect(mockMessageService.add).toHaveBeenCalled();
-    expect(mockReportingService.addAuditLog).toHaveBeenCalled();
   });
 
   it('should call setupStrategy', fakeAsync(() => {

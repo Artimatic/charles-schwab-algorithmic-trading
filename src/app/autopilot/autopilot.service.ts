@@ -15,6 +15,15 @@ import { GlobalSettingsService } from '../settings/global-settings.service';
 import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
 import { Balance } from '@shared/services/portfolio.service';
 import { IntradayStrategyService } from '../strategies/intraday-strategy.service';
+import { ScoringIndex } from '@shared/services/score-keeper.service';
+
+export interface ProfitLossRecord {
+  date: string;
+  profit: number;
+  lastStrategy: string;
+  profitRecord: ScoringIndex<number>;
+  lastRiskTolerance: number;
+}
 
 export enum SwingtradeAlgorithms {
   demark9 = 'demark9',
@@ -172,6 +181,9 @@ export class AutopilotService {
     async () => {
       this.currentHoldings = await this.cartService.findCurrentPositions();
       await this.balanceCallPutRatio(this.currentHoldings);
+    },
+    async () => {
+      await this.padOrders();
     }
   ];
 
@@ -1060,5 +1072,44 @@ export class AutopilotService {
 
     await this.createTradingPairs();
     await this.findStock();
+  }
+
+  saveRisk() {
+    const profitObj: ProfitLossRecord = {
+      'date': moment().format(),
+      profit: 0,
+      lastStrategy: this.strategyList[this.strategyCounter],
+      lastRiskTolerance: this.riskCounter,
+      profitRecord: {}
+    };
+    const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
+    if (lastProfitLoss && lastProfitLoss.profit) {
+      profitObj.date = lastProfitLoss.date;
+      profitObj.profit = lastProfitLoss.profit;
+      profitObj.profitRecord = lastProfitLoss.profitRecord;
+    }
+
+    localStorage.setItem('profitLoss', JSON.stringify(profitObj));
+  }
+
+  changeStrategy(saveOption = false) {
+    if (this.strategyCounter < this.strategyList.length - 1) {
+      this.strategyCounter++;
+    } else {
+      this.strategyCounter = 0;
+    }
+    const strat = this.strategyList[this.strategyCounter];
+    const msg = `Strategy changed to ${strat}. Risk tolerance ${this.riskCounter}`;
+    this.reportingService.addAuditLog(null, msg);
+
+    if (saveOption) {
+      this.saveRisk();
+    }
+  }
+  private async padOrders() {
+    if ((this.cartService.getSellOrders().length + this.cartService.getBuyOrders().length) < 1 + (this.getVolatilityMl() * 5)) {
+      this.changeStrategy();
+      await this.handleStrategy();
+    }
   }
 }

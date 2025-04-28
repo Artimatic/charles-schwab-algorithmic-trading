@@ -7,7 +7,6 @@ import { OrderTypes } from '@shared/models/smart-order';
 import { Trade } from '@shared/models/trade';
 import { CartService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
 import { AiPicksPredictionData, AiPicksService } from '@shared/services/ai-picks.service';
-import { ScoringIndex } from '@shared/services/score-keeper.service';
 import { divide, round } from 'lodash';
 import { MenuItem, MessageService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
@@ -26,7 +25,7 @@ import { FindPatternService } from '../strategies/find-pattern.service';
 import { AddOptionsTradeComponent } from './add-options-trade/add-options-trade.component';
 import { FindDaytradeService } from './find-daytrade.service';
 import { PriceTargetService } from './price-target.service';
-import { AutopilotService, RiskTolerance } from './autopilot.service';
+import { AutopilotService, ProfitLossRecord, RiskTolerance } from './autopilot.service';
 import { BacktestAggregatorService } from '../backtest-table/backtest-aggregator.service';
 import { OrderingService } from '@shared/ordering.service';
 import { NewStockFinderService } from '../backtest-table/new-stock-finder.service';
@@ -44,14 +43,6 @@ export interface PositionHoldings {
   buyConfidence: number;
   sellConfidence: number;
   prediction: number;
-}
-
-export interface ProfitLossRecord {
-  date: string;
-  profit: number;
-  lastStrategy: string;
-  profitRecord: ScoringIndex<number>;
-  lastRiskTolerance: number;
 }
 
 @Component({
@@ -166,7 +157,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       },
       {
         label: 'Change strategy',
-        command: () => this.changeStrategy(true)
+        command: () => this.autopilotService.changeStrategy(true)
       },
     ];
 
@@ -357,7 +348,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             if (metTarget) {
               this.decreaseRiskTolerance();
             }
-            await this.padOrders();
           }
         } else if (!this.developedStrategy && moment().isAfter(moment(this.autopilotService.sessionStart).subtract(this.interval * 2, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionStart))) {
@@ -370,13 +360,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           // await this.newStockFinderService.processOneStock();
         }
       });
-  }
-
-  private async padOrders() {
-    if ((this.cartService.getSellOrders().length + this.cartService.getBuyOrders().length) < 1 + (this.autopilotService.getVolatilityMl() * 5)) {
-      this.changeStrategy();
-      await this.autopilotService.handleStrategy();
-    }
   }
 
   calculatePl(records) {
@@ -438,73 +421,31 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const msg = `Decrease risk to ${this.autopilotService.riskToleranceList[this.autopilotService.riskCounter]}`;
     console.log(msg);
     this.reportingService.addAuditLog(this.autopilotService.strategyList[this.autopilotService.strategyCounter], msg);
-    this.saveRisk();
+    this.autopilotService.saveRisk();
   }
 
   decreaseDayTradeRiskTolerance() {
     if (this.dayTradeRiskCounter > 0) {
       this.dayTradeRiskCounter = 0;
     }
-    this.changeStrategy();
+    this.autopilotService.changeStrategy();
   }
 
   increaseRiskTolerance() {
     if (this.autopilotService.riskCounter < this.autopilotService.riskToleranceList.length - 1) {
       this.autopilotService.riskCounter++;
     }
-    this.changeStrategy();
+    this.autopilotService.changeStrategy();
 
     const msg = `Increase risk to ${this.autopilotService.riskToleranceList[this.autopilotService.riskCounter]}`;
     console.log(msg);
     this.reportingService.addAuditLog(this.autopilotService.strategyList[this.autopilotService.strategyCounter], msg);
-    this.saveRisk();
+    this.autopilotService.saveRisk();
   }
 
   increaseDayTradeRiskTolerance() {
     if (this.dayTradeRiskCounter < this.dayTradingRiskToleranceList.length - 1) {
       this.dayTradeRiskCounter++;
-    }
-  }
-
-  saveRisk() {
-    const profitObj: ProfitLossRecord = {
-      'date': moment().format(),
-      profit: 0,
-      lastStrategy: this.autopilotService.strategyList[this.autopilotService.strategyCounter],
-      lastRiskTolerance: this.autopilotService.riskCounter,
-      profitRecord: {}
-    };
-    const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
-    if (lastProfitLoss && lastProfitLoss.profit) {
-      profitObj.date = lastProfitLoss.date;
-      profitObj.profit = lastProfitLoss.profit;
-      profitObj.profitRecord = lastProfitLoss.profitRecord;
-    }
-
-    localStorage.setItem('profitLoss', JSON.stringify(profitObj));
-  }
-
-  changeStrategy(saveOption = false) {
-    if (this.autopilotService.strategyCounter < this.autopilotService.strategyList.length - 1) {
-      this.autopilotService.strategyCounter++;
-    } else {
-      this.autopilotService.strategyCounter = 0;
-    }
-    const strat = this.autopilotService.strategyList[this.autopilotService.strategyCounter];
-    const msg = `Strategy changed to ${strat}. Risk tolerance ${this.autopilotService.riskCounter}`;
-    this.messageService.add({
-      severity: 'info',
-      summary: msg
-    });
-
-    this.reportingService.addAuditLog(null, msg);
-
-    if (this.autopilotService.strategyList[this.autopilotService.strategyCounter] === 'Daytrade') {
-      this.daytradeMode = true;
-    }
-
-    if (saveOption) {
-      this.saveRisk();
     }
   }
 
