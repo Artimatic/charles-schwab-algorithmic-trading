@@ -95,8 +95,8 @@ export class AlgoEvaluationComponent implements OnInit {
           pl: pos.pl,
           netLiq: pos.netLiq,
           shares: pos.shares,
-          primaryLegs: pos.primaryLegs.map(leg => leg.description).join(','),
-          secondaryLegs: pos.secondaryLegs.map(leg => leg.description).join(','),
+          primaryLegs: pos.primaryLegs ? pos.primaryLegs.map(leg => `${leg.quantity} ${leg.description}`).join(',') : '',
+          secondaryLegs: pos.secondaryLegs ? pos.secondaryLegs.map(leg => `${leg.quantity} ${leg.description}`).join(',') : '',
           recommendation: pos.recommendation
         };
       });
