@@ -87,7 +87,7 @@ export class AlgoEvaluationComponent implements OnInit {
   async setTable(ev = null) {
     this.showPortfolio = ev?.checked;
     if (this.showPortfolio) {
-      this.setColumnsForPortfolio
+      this.setColumnsForPortfolio();
       const positions = await this.cartService.findCurrentPositions();
       this.currentList = positions.map((pos: PortfolioInfoHolding) => {
         return {
