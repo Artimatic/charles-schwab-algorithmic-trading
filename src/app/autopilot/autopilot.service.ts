@@ -613,11 +613,11 @@ export class AutopilotService {
   }
 
   setLastSpyMl(val: number) {
-    this.lastSpyMl = val;
+    this.lastSpyMl = round(val, 2);
   }
 
   getLastSpyMl() {
-    return this.lastSpyMl;
+    return round(this.lastSpyMl, 2);
   }
 
   setVolatilityMl(val: number) {
@@ -774,12 +774,12 @@ export class AutopilotService {
 
   async updateBtcPrediction() {
     const backtestData = await this.strategyBuilderService.getBacktestData('BTC');
-    this.lastBtcMl = backtestData.ml;
+    this.lastBtcMl = round(backtestData.ml, 2);
   }
 
   async updateGldPrediction() {
     const backtestData = await this.strategyBuilderService.getBacktestData('GLD');
-    this.lastGldMl = backtestData.ml;
+    this.lastGldMl = round(backtestData.ml, 2);
   }
 
   updateVolatility() {

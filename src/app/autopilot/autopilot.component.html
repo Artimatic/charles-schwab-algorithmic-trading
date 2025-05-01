@@ -37,7 +37,7 @@
 
 <p-card>
     <span *ngIf="autopilotService.strategyList[autopilotService.strategyCounter] === 'Daytrade'">
-        <p-tag [value]="'Strategy: ' + autopilotService.strategyList[autopilotService.strategyCounter]"
+        <p-tag [value]="autopilotService.strategyList[autopilotService.strategyCounter]"
             pTooltip="Current strategy" severity="warning"></p-tag>
     </span>
     <span *ngIf="autopilotService.strategyList[autopilotService.strategyCounter] !== 'Daytrade'">
