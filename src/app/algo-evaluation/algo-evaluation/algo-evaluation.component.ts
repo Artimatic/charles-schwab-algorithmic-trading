@@ -78,8 +78,7 @@ export class AlgoEvaluationComponent implements OnInit {
       { field: 'primaryLegs', header: 'Primary Options' },
       { field: 'secondaryLegs', header: 'Secondary Options' },
       { field: 'pl', header: 'PnL' },
-      { field: 'netLiq', header: 'NetLiq' },
-      { field: 'recommendation', header: 'Recommendation' }
+      { field: 'netLiq', header: 'NetLiq' }
     ];
   }
 
@@ -95,8 +94,9 @@ export class AlgoEvaluationComponent implements OnInit {
           netLiq: pos.netLiq,
           shares: pos.shares,
           primaryLegs: pos.primaryLegs ? pos.primaryLegs.map(leg => `${leg.quantity} ${leg.description}`).join(',') : '',
+          primaryLegsSymbol: pos.primaryLegs ? pos.primaryLegs[0].putCallInd : '',
           secondaryLegs: pos.secondaryLegs ? pos.secondaryLegs.map(leg => `${leg.quantity} ${leg.description}`).join(',') : '',
-          recommendation: pos.recommendation
+          secondaryLegsSymbol: pos.secondaryLegs ? pos.secondaryLegs[0].putCallInd : ''
         };
       });
     } else {

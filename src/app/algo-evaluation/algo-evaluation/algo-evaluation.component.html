@@ -1,5 +1,5 @@
 <p-table [columns]="selectedColumns" [value]="currentList" [paginator]="true" [rows]="3" selectionMode="single"
-  [(selection)]="selectedStock" dataKey="stock">
+  [(selection)]="selectedStock" dataKey="stock" [tableStyle]="{ 'min-width': '50rem' }">
   <ng-template pTemplate="caption">
     <label for="portfolio-switch">{{ showPortfolio ? 'Portfolio' : 'Recommendations'}}</label>
     <p-inputSwitch inputId="portfolio-switch" [(ngModel)]="showPortfolio" (onChange)="setTable($event)"></p-inputSwitch>
@@ -37,10 +37,18 @@
           {{element?.previousImpliedMovement | percent}}
         </span>
         <span *ngSwitchCase="'primaryLegs'">
-          <p-tag [value]="element?.primaryLegs" severity="info" [pTooltip]="element?.primaryLegs"></p-tag>
+          <p-button *ngIf="element?.primaryLegs" (onClick)="primaryLegOp.toggle($event)" [label]="element?.primaryLegsSymbol">
+          </p-button>
+          <p-overlayPanel #primaryLegOp>
+            <p-tag [value]="element?.primaryLegs" severity="info"></p-tag>
+          </p-overlayPanel>
         </span>
         <span *ngSwitchCase="'secondaryLegs'">
-          <p-tag [value]="element?.secondaryLegs" severity="info" [pTooltip]="element?.secondaryLegs"></p-tag>
+          <p-button *ngIf="element?.secondaryLegs" (onClick)="secondaryLegOp.toggle($event)" [label]="element?.secondaryLegsSymbol">
+          </p-button>
+          <p-overlayPanel #secondaryLegOp>
+            <p-tag [value]="element?.secondaryLegs" severity="info"></p-tag>
+          </p-overlayPanel>
         </span>
         <span *ngSwitchCase="'kellyCriterion'">
           <button pButton color="primary" *ngIf=!element.kellyCriterion (click)="getKellyCriterion(element)">Get
