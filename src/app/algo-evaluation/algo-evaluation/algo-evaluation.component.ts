@@ -77,7 +77,6 @@ export class AlgoEvaluationComponent implements OnInit {
       { field: 'shares', header: 'Shares' },
       { field: 'primaryLegs', header: 'Primary Options' },
       { field: 'secondaryLegs', header: 'Secondary Options' },
-      { field: 'shares', header: 'Shares' },
       { field: 'pl', header: 'PnL' },
       { field: 'netLiq', header: 'NetLiq' },
       { field: 'recommendation', header: 'Recommendation' }

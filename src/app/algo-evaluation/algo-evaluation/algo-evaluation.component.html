@@ -36,6 +36,12 @@
         <span *ngSwitchCase="'previousImpliedMovement'">
           {{element?.previousImpliedMovement | percent}}
         </span>
+        <span *ngSwitchCase="'primaryLegs'">
+          <p-tag [value]="element?.primaryLegs" severity="info" [pTooltip]="element?.primaryLegs"></p-tag>
+        </span>
+        <span *ngSwitchCase="'secondaryLegs'">
+          <p-tag [value]="element?.secondaryLegs" severity="info" [pTooltip]="element?.secondaryLegs"></p-tag>
+        </span>
         <span *ngSwitchCase="'kellyCriterion'">
           <button pButton color="primary" *ngIf=!element.kellyCriterion (click)="getKellyCriterion(element)">Get
             Allocation</button>
