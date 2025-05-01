@@ -107,6 +107,8 @@ export enum Strategy {
 export class AutopilotService {
   riskCounter = 0;
   lastSpyMl = 0;
+  lastGldMl = 0;
+  lastBtcMl = 0;
   volatility = 0;
   lastMarketHourCheck = null;
   sessionStart = null;
@@ -768,6 +770,16 @@ export class AutopilotService {
         return this.isOpened;
       })
     );
+  }
+
+  async updateBtcPrediction() {
+    const backtestData = await this.strategyBuilderService.getBacktestData('BTC');
+    this.lastBtcMl = backtestData.ml;
+  }
+
+  async updateGldPrediction() {
+    const backtestData = await this.strategyBuilderService.getBacktestData('GLD');
+    this.lastGldMl = backtestData.ml;
   }
 
   updateVolatility() {

@@ -455,6 +455,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     this.autopilotService.setLastSpyMl(backtestData?.ml);
     this.autopilotService.updateVolatility();
+    await this.autopilotService.updateBtcPrediction();
+    await this.autopilotService.updateGldPrediction();
     await this.priceTargetService.setTargetDiff();
     this.backtestAggregatorService.clearTimeLine();
 
