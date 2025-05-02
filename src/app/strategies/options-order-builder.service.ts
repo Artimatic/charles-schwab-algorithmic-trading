@@ -433,7 +433,7 @@ export class OptionsOrderBuilderService {
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
     const imThreshold = (1 / (impliedMove || 1) * 0.002);
     console.log(`${symbol} current diff: ${currentDiff}, threshold: ${imThreshold}`);
-    if (Math.abs(currentDiff) < Math.max(0.016, imThreshold)) {
+    if (Math.abs(currentDiff) < Math.max(0.01, imThreshold)) {
       return true;
     }
 

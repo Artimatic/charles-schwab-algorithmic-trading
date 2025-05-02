@@ -36,7 +36,9 @@ export enum SwingtradeAlgorithms {
   roc = 'roc',
   vwma = 'vwma',
   bband = 'bband',
-  flagPennant = 'flagPennant'
+  flagPennant = 'flagPennant',
+  breakSupport = 'breakSupport',
+  breakResistance = 'breakResistance'
 }
 
 export enum RiskTolerance {
@@ -75,6 +77,7 @@ export enum Strategy {
   BuyPuts = 'BuyPuts',
   BuySnP = 'Buy S&P500',
   BuyWinners = 'Buy Winners',
+  BuyWinnersSellLosers = 'Buy Winners Sell Losers',
   BuyML = 'Buy by ML signal',
   MLPairs = 'ML trade pairs',
   VolatilityPairs = 'Implied Movement trade pairs',
@@ -134,6 +137,7 @@ export class AutopilotService {
     Strategy.AddToPositions,
     Strategy.BuyMfiDiv,
     Strategy.PerfectPair,
+    Strategy.BuyWinnersSellLosers,
     Strategy.SellBband,
     Strategy.MLPairs,
     Strategy.BuyMacd,
@@ -457,6 +461,13 @@ export class AutopilotService {
     this.addPair(buys, sells, 'ML pair');
   }
 
+  async buyWinnersSellLosers() {
+    const buys = this.getBuyList((backtestData) => backtestData.net / backtestData.total > 0.04 && backtestData.ml > 0.5)
+    const sells = this.getSellList((backtestData) => backtestData.net / backtestData.total < -0.04 && backtestData.sellMl > 0.5);
+    console.log('buyWinnersSellLosers', buys, sells);
+    this.addPair(buys, sells, 'Winner Loser pair');
+  }
+
   async findTopBuy() {
     const buys = this.getBuyList();
     for (const b of buys) {
@@ -480,7 +491,7 @@ export class AutopilotService {
     }
   }
 
-  addPairOnSignal(indicator: SwingtradeAlgorithms, direction: 'buy' | 'sell') {
+  addPairOnSignal(indicator: SwingtradeAlgorithms, direction: 'buy' | 'sell', addPair = true) {
     let buyFilterFn = null;
     let sellFilterFn = null;
     if (direction === 'buy') {
@@ -494,7 +505,9 @@ export class AutopilotService {
     const buys = this.getBuyList(buyFilterFn);
     const sells = this.getSellList(sellFilterFn);
     console.log(`${indicator} ${direction}`, buys, sells);
-    this.addPair(buys, sells, `${direction} ${indicator}`);
+    if (addPair) {
+      this.addPair(buys, sells, `${direction} ${indicator}`);
+    }
   }
 
   async buyOnSignal(indicator: SwingtradeAlgorithms, direction: 'buy' | 'sell') {
@@ -958,6 +971,9 @@ export class AutopilotService {
         break;
       case Strategy.BuyWinners:
         await this.buyWinners();
+        break;
+      case Strategy.BuyWinnersSellLosers:
+        await this.buyWinnersSellLosers();
         break;
       case Strategy.AddToPositions:
         this.currentHoldings = await this.cartService.findCurrentPositions();

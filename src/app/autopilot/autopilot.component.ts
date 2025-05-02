@@ -25,7 +25,7 @@ import { FindPatternService } from '../strategies/find-pattern.service';
 import { AddOptionsTradeComponent } from './add-options-trade/add-options-trade.component';
 import { FindDaytradeService } from './find-daytrade.service';
 import { PriceTargetService } from './price-target.service';
-import { AutopilotService, ProfitLossRecord, RiskTolerance } from './autopilot.service';
+import { AutopilotService, ProfitLossRecord, RiskTolerance, SwingtradeAlgorithms } from './autopilot.service';
 import { BacktestAggregatorService } from '../backtest-table/backtest-aggregator.service';
 import { OrderingService } from '@shared/ordering.service';
 import { NewStockFinderService } from '../backtest-table/new-stock-finder.service';
@@ -162,6 +162,30 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     ];
 
     this.multibuttonOptions = [
+      {
+        label: 'Test create strategy',
+        command: async () => {
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakSupport, 'buy', false); 
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakResistance, 'buy', false); 
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakSupport, 'sell', false);
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakResistance, 'sell', false); 
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'sell');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'buy');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'sell');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'sell');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.demark9, 'buy');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfi, 'sell');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.bband, 'sell');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfi, 'buy');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.bband, 'buy');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.macd, 'buy');
+          this.autopilotService.buyWinnersSellLosers();
+        }
+      },
       {
         label: 'Sell All',
         command: async () => {
