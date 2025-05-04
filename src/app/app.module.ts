@@ -10,6 +10,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { ToolbarModule } from 'primeng/toolbar';
 import { TooltipModule } from 'primeng/tooltip';
 import { TabMenuModule } from 'primeng/tabmenu';
+import { OverlayPanelModule } from 'primeng/overlaypanel';
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import 'hammerjs';
@@ -178,7 +179,8 @@ import { StatsCardComponent } from './stats-card/stats-card.component';
     TooltipModule,
     RippleModule,
     TabMenuModule,
-    AlgoEvaluationModule
+    AlgoEvaluationModule,
+    OverlayPanelModule
   ],
   providers: [
     BacktestService,

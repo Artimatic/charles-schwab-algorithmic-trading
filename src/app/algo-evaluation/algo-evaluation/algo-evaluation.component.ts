@@ -93,10 +93,10 @@ export class AlgoEvaluationComponent implements OnInit {
           pl: pos.pl,
           netLiq: pos.netLiq,
           shares: pos.shares,
-          primaryLegs: pos.primaryLegs ? pos.primaryLegs.map(leg => `${leg.quantity} ${leg.description}`).join(',') : '',
-          primaryLegsSymbol: pos.primaryLegs ? pos.primaryLegs[0].putCallInd : '',
-          secondaryLegs: pos.secondaryLegs ? pos.secondaryLegs.map(leg => `${leg.quantity} ${leg.description}`).join(',') : '',
-          secondaryLegsSymbol: pos.secondaryLegs ? pos.secondaryLegs[0].putCallInd : ''
+          primaryLegs: pos.primaryLegs ? pos.primaryLegs.map(leg => `${leg.quantity} ${leg.description}`).join(',') : null,
+          primaryLegsSymbol: pos.primaryLegs ? pos.primaryLegs[0].putCall : '',
+          secondaryLegs: pos.secondaryLegs ? pos.secondaryLegs.map(leg => `${leg.quantity} ${leg.description}`).join(',') : null,
+          secondaryLegsSymbol: pos.secondaryLegs ? pos.secondaryLegs[0].putCall : ''
         };
       });
     } else {

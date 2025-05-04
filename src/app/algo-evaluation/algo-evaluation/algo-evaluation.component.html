@@ -37,14 +37,14 @@
           {{element?.previousImpliedMovement | percent}}
         </span>
         <span *ngSwitchCase="'primaryLegs'">
-          <p-button *ngIf="element?.primaryLegs" (onClick)="primaryLegOp.toggle($event)" [label]="element?.primaryLegsSymbol">
+          <p-button *ngIf="element.primaryLegs" (onClick)="primaryLegOp.toggle($event)" [label]="element?.primaryLegsSymbol">
           </p-button>
           <p-overlayPanel #primaryLegOp>
             <p-tag [value]="element?.primaryLegs" severity="info"></p-tag>
           </p-overlayPanel>
         </span>
         <span *ngSwitchCase="'secondaryLegs'">
-          <p-button *ngIf="element?.secondaryLegs" (onClick)="secondaryLegOp.toggle($event)" [label]="element?.secondaryLegsSymbol">
+          <p-button *ngIf="element.secondaryLegs" (onClick)="secondaryLegOp.toggle($event)" [label]="element?.secondaryLegsSymbol">
           </p-button>
           <p-overlayPanel #secondaryLegOp>
             <p-tag [value]="element?.secondaryLegs" severity="info"></p-tag>
