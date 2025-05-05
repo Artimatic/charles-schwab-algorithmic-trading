@@ -146,7 +146,6 @@ export class AutopilotService {
     Strategy.Hedge,
     Strategy.BuyBband,
     Strategy.Short,
-    Strategy.SellMfi,
     Strategy.BuyMfiDiv2,
     Strategy.TradingPairs,
     Strategy.BuyDemark,
@@ -484,6 +483,12 @@ export class AutopilotService {
   }
 
   addPair(buys: string[], sells: string[], reason) {
+    if (!sells.length) {
+      buys.forEach(buy => {
+        this.strategyBuilderService.addBullishStock(buy);
+      });
+      return;
+    }
     let counter = 0;
     while (counter < buys.length && counter < sells.length) {
       this.strategyBuilderService.createStrategy(`${buys[counter]} ${reason}`, buys[counter], [buys[counter]], [sells[counter]], reason);

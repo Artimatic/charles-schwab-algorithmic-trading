@@ -8,6 +8,7 @@ import { AiPicksPredictionData } from '@shared/services/ai-picks.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ChartService } from '../simulation/chart.service';
+import { MessageService } from 'primeng/api';
 
 @Component({
   selector: 'app-product-view',
@@ -25,7 +26,8 @@ export class ProductViewComponent implements OnInit, OnDestroy {
     private algo: BacktestService,
     private aiPicksService: AiPicksService,
     private chartService: ChartService,
-    private machineLearningService: MachineLearningService
+    private machineLearningService: MachineLearningService,
+    private messageService: MessageService
   ) { }
 
   ngOnInit() {
@@ -268,6 +270,11 @@ export class ProductViewComponent implements OnInit, OnDestroy {
               this.resolving = false;
             }
           );
+      }, error => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Backtest failed.'
+        });
       });
   }
 
