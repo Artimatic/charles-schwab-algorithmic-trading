@@ -124,6 +124,8 @@ export class AutopilotService {
     RiskTolerance.Low,
     RiskTolerance.Low,
     RiskTolerance.Neutral,
+    RiskTolerance.Neutral,
+    RiskTolerance.Greed
   ];
   isOpened = false;
   maxHoldings = 30;
@@ -490,16 +492,12 @@ export class AutopilotService {
     } else if (!buys.length) {
       buys = ['SPY'];
     }
-    let buyCounter = 0;
-    let sellCounter = 0; 
-    while (buyCounter < buys.length || sellCounter < sells.length) {
-      this.strategyBuilderService.createStrategy(`${buys[buyCounter]} ${reason}`, buys[buyCounter], [buys[buyCounter]], [sells[sellCounter]], reason);
-      if (buyCounter < buys.length) {
-        buyCounter++;
-      } else {
-        sellCounter++;
-      }
-    }
+
+    buys.forEach(buy => {
+      sells.forEach(sell => {
+        this.strategyBuilderService.createStrategy(`${buy} ${reason}`, buy, [buy], [sell], reason);
+      });
+    });
   }
 
   addPairOnSignal(indicator: SwingtradeAlgorithms, direction: 'buy' | 'sell', addPair = true) {
@@ -653,7 +651,7 @@ export class AutopilotService {
   }
 
   isVolatilityHigh() {
-    return (this.volatility - 0.1618034) > this.priceTargetService.getPortfolioVolatility();
+    return this.volatility > this.priceTargetService.getPortfolioVolatility();
   }
 
   async sellOptionsHolding(holding: PortfolioInfoHolding, reason: string) {
@@ -821,9 +819,9 @@ export class AutopilotService {
     const impliedMove = await this.optionsOrderBuilderService.getImpliedMove(holding.name, backtestResults);
     if (backtestResults.averageMove) {
       if (isOptionOnly) {
-        stopLoss = impliedMove * -3;
+        stopLoss = impliedMove * -4.3;
         this.reportingService.addAuditLog(holding.name, `Setting options stop loss to ${stopLoss}`);
-        profitTarget = impliedMove * 5;
+        profitTarget = impliedMove * 5.3;
         this.reportingService.addAuditLog(holding.name, `Setting options profit target to ${profitTarget}`);
       } else if (holding.assetType === 'collective_investment') {
         stopLoss = impliedMove * -2;

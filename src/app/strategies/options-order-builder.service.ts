@@ -546,6 +546,7 @@ export class OptionsOrderBuilderService {
           if (shouldBuyCall && shouldBuyPut) {
             const buyTrendCall = await this.priceTargetService.hasBuyTrend(trade[0].holding.symbol);
             const buyTrendPut = await this.priceTargetService.hasSellTrend(trade[1].holding.symbol);
+            console.log('Trend', trade, buyTrendCall, buyTrendPut);
             if (buyTrendCall && buyTrendPut) {
               this.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Low volatility');
               foundTrade = true;
