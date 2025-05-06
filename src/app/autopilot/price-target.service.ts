@@ -148,6 +148,31 @@ export class PriceTargetService {
     }, { call: 1, put: 1 });
   }
 
+  async hasBuyTrend(symbol: string) {
+    const currentDate = moment().format('YYYY-MM-DD');
+    const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
+    const backtest = await this.backtestService.getBacktestEvaluation(symbol, startDate, currentDate, 'daily-indicators').toPromise();
+    const signals = backtest.signals;
+    const lastSignal = signals[signals.length - 1];
+    if (lastSignal.mfiPrevious < lastSignal.mfiLeft) {
+      return true;
+    }
+
+    return false;
+  }
+
+  async hasSellTrend(symbol: string) {
+    const currentDate = moment().format('YYYY-MM-DD');
+    const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
+    const backtest = await this.backtestService.getBacktestEvaluation(symbol, startDate, currentDate, 'daily-indicators').toPromise();
+    const signals = backtest.signals;
+    const lastSignal = signals[signals.length - 1];
+    if (lastSignal.mfiPrevious > lastSignal.mfiLeft) {
+      return true;
+    }
+
+    return false;
+  }
   async getCallPutRatio(volatility: number) {
     if (this.lastCallPutRatio && moment().diff(moment(this.lastCallPutRatio.datetime), 'minutes') < 35) {
       return this.lastCallPutRatio.value;

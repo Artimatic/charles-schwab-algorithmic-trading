@@ -663,7 +663,7 @@ export class StrategyBuilderService {
     if (!totalCost) {
       return 0;
     }
-    return Math.floor(totalCost / stockPrice);
+    return Math.floor(totalCost / stockPrice) | 1;
   }
 
   async buySnP(balance: number, totalBalance: number) {

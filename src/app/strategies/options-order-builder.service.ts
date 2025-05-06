@@ -428,16 +428,8 @@ export class OptionsOrderBuilderService {
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
     const lastPrice = price[symbol].quote.lastPrice;
     const closePrice = price[symbol].quote.closePrice;
-    const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
-    const impliedMove = await this.getImpliedMove(symbol, backtestResults)
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
-    const imThreshold = (1 / (impliedMove || 1) * 0.002);
-    console.log(`${symbol} current diff: ${currentDiff}, threshold: ${imThreshold}`);
-    if (Math.abs(currentDiff) < Math.max(0.01, imThreshold)) {
-      return true;
-    }
-
-    return false;
+    return Math.abs(currentDiff) < 0.01;
   }
 
   async shouldSellOptions(holding: PortfolioInfoHolding, isStrangle: boolean, putCallInd: string) {
@@ -552,9 +544,13 @@ export class OptionsOrderBuilderService {
           const shouldBuyPut = await this.shouldBuyOption(trade[1].holding.symbol);
           console.log('Should buy ', trade, shouldBuyCall, shouldBuyPut);
           if (shouldBuyCall && shouldBuyPut) {
-            this.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Low volatility');
-            foundTrade = true;
-            break;
+            const buyTrendCall = await this.priceTargetService.hasBuyTrend(trade[0].holding.symbol);
+            const buyTrendPut = await this.priceTargetService.hasSellTrend(trade[1].holding.symbol);
+            if (buyTrendCall && buyTrendPut) {
+              this.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Low volatility');
+              foundTrade = true;
+              break;
+            }
           }
         }
       }

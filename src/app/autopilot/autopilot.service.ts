@@ -120,9 +120,10 @@ export class AutopilotService {
     RiskTolerance.One,
     RiskTolerance.Two,
     RiskTolerance.Lower,
+    RiskTolerance.Lower,
+    RiskTolerance.Low,
     RiskTolerance.Low,
     RiskTolerance.Neutral,
-    RiskTolerance.Greed
   ];
   isOpened = false;
   maxHoldings = 30;
@@ -140,7 +141,6 @@ export class AutopilotService {
     Strategy.BuyWinnersSellLosers,
     Strategy.SellBband,
     Strategy.MLPairs,
-    Strategy.BuyMacd,
     Strategy.BuyMfi,
     Strategy.BuyCalls,
     Strategy.Hedge,
@@ -148,7 +148,6 @@ export class AutopilotService {
     Strategy.Short,
     Strategy.BuyMfiDiv2,
     Strategy.TradingPairs,
-    Strategy.BuyDemark,
     Strategy.VolatilityPairs,
     Strategy.BuyWinners,
     Strategy.SellMfiDiv2,
@@ -416,7 +415,7 @@ export class AutopilotService {
         backtestResults.push(backtestObj);
       }
       let minMl = 1;
-      while (minMl > 0 && !newList.length) {
+      while (minMl > 0.4 && !newList.length) {
         newList = backtestResults?.filter(backtestData => filter(backtestData) && backtestData?.ml && backtestData.ml > minMl);
         minMl -= 0.1;
       }
@@ -438,7 +437,7 @@ export class AutopilotService {
         backtestResults.push(backtestObj);
       }
       let minMl = 1;
-      while (minMl > 0 && !newList.length) {
+      while (minMl > 0.4 && !newList.length) {
         newList = backtestResults?.filter(backtestData => filter(backtestData) && backtestData?.sellMl && backtestData.sellMl > minMl);
         minMl -= 0.1;
       }
@@ -488,11 +487,18 @@ export class AutopilotService {
         this.strategyBuilderService.addBullishStock(buy);
       });
       return;
+    } else if (!buys.length) {
+      buys = ['SPY'];
     }
-    let counter = 0;
-    while (counter < buys.length && counter < sells.length) {
-      this.strategyBuilderService.createStrategy(`${buys[counter]} ${reason}`, buys[counter], [buys[counter]], [sells[counter]], reason);
-      counter++;
+    let buyCounter = 0;
+    let sellCounter = 0; 
+    while (buyCounter < buys.length || sellCounter < sells.length) {
+      this.strategyBuilderService.createStrategy(`${buys[buyCounter]} ${reason}`, buys[buyCounter], [buys[buyCounter]], [sells[sellCounter]], reason);
+      if (buyCounter < buys.length) {
+        buyCounter++;
+      } else {
+        sellCounter++;
+      }
     }
   }
 
