@@ -37,18 +37,26 @@
           {{element?.previousImpliedMovement | percent}}
         </span>
         <span *ngSwitchCase="'primaryLegs'">
-          <p-button *ngIf="element.primaryLegs" (onClick)="primaryLegOp.toggle($event)" [label]="element?.primaryLegsSymbol">
-          </p-button>
-          <p-overlayPanel #primaryLegOp>
-            <p-tag [value]="element?.primaryLegs" severity="info"></p-tag>
-          </p-overlayPanel>
+          <span *ngIf="element?.primaryLegs" [title]="element?.primaryLegs" style="
+            display: inline-block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 30px;
+          ">
+            {{ element?.primaryLegs }}
+          </span>
         </span>
         <span *ngSwitchCase="'secondaryLegs'">
-          <p-button *ngIf="element.secondaryLegs" (onClick)="secondaryLegOp.toggle($event)" [label]="element?.secondaryLegsSymbol">
-          </p-button>
-          <p-overlayPanel #secondaryLegOp>
-            <p-tag [value]="element?.secondaryLegs" severity="info"></p-tag>
-          </p-overlayPanel>
+          <span *ngIf="element?.secondaryLegs" [title]="element?.secondaryLegs" style="
+            display: inline-block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 30px;
+          ">
+            {{ element?.secondaryLegs }}
+          </span>
         </span>
         <span *ngSwitchCase="'kellyCriterion'">
           <button pButton color="primary" *ngIf=!element.kellyCriterion (click)="getKellyCriterion(element)">Get
