@@ -159,7 +159,6 @@ export class AutopilotService {
     Strategy.SellFlag
   ];
 
-  strategyCounter = 0;
   callPutBuffer = 0.05;
   intradayProcessCounter = 0;
   intradayStrategyTriggered = false;
@@ -234,7 +233,7 @@ export class AutopilotService {
       .subscribe(() => {
         const lastStrategy = JSON.parse(localStorage.getItem('profitLoss'));
         if (lastStrategy && lastStrategy.lastStrategy) {
-          const lastStrategyCount = this.strategyList.findIndex(strat => strat.toLowerCase() === lastStrategy.lastStrategy.toLowerCase());
+          const lastStrategyCount = this.strategyDeciderService.strategyList.findIndex(strat => strat.toLowerCase() === lastStrategy.lastStrategy.toLowerCase());
           this.strategyCounter = lastStrategyCount >= 0 ? lastStrategyCount : 0;
           this.riskCounter = lastStrategy.lastRiskTolerance || 0;
           console.log('Previous profit loss', lastStrategy);
@@ -252,7 +251,7 @@ export class AutopilotService {
   async getMinMaxCashForOptions(modifier = 1) {
     const cash = await this.cartService.getAvailableFunds(false);
     const minConstant = modifier ? (cash * RiskTolerance.Zero * modifier) : 1000;
-    const maxCash = round(this.riskToleranceList[this.riskCounter] * cash, 2);
+    const maxCash = round(this.strategyDeciderService.riskToleranceList[this.riskCounter] * cash, 2);
     const minCash = maxCash - minConstant;
     return {
       maxCash,
