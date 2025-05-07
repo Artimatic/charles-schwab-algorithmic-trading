@@ -819,9 +819,9 @@ export class AutopilotService {
     const impliedMove = await this.optionsOrderBuilderService.getImpliedMove(holding.name, backtestResults);
     if (backtestResults.averageMove) {
       if (isOptionOnly) {
-        stopLoss = impliedMove * -4.3;
+        stopLoss = impliedMove * -5;
         this.reportingService.addAuditLog(holding.name, `Setting options stop loss to ${stopLoss}`);
-        profitTarget = impliedMove * 5.3;
+        profitTarget = impliedMove * 6;
         this.reportingService.addAuditLog(holding.name, `Setting options profit target to ${profitTarget}`);
       } else if (holding.assetType === 'collective_investment') {
         stopLoss = impliedMove * -2;

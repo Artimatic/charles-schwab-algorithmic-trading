@@ -27,9 +27,9 @@ export class StrategyBuilderService {
   correlationThreshold = 0.55;
   sumNet = 0;
   countNet = 0;
-  defaultMinExpiration = 30;
+  defaultMinExpiration = 35;
   bullishStocks = [];
-  maxImpliedMovement = 0.15;
+  maxImpliedMovement = 0.11;
   constructor(private backtestService: BacktestService,
     private optionsDataService: OptionsDataService,
     private portfolioService: PortfolioService,
