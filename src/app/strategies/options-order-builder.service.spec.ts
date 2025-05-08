@@ -16,7 +16,7 @@ describe('OptionsOrderBuilderService', () => {
   const optionsDataServiceSpy = jasmine.createSpyObj('OptionsDataService', ['getImpliedMove']);
   const reportingServiceSpy = jasmine.createSpyObj('ReportingService', ['addAuditLog']);
   const orderHandlingServiceSpy = jasmine.createSpyObj('OrderHandlingService', ['getEstimatedPrice']);
-  const priceTargetServiceSpy = jasmine.createSpyObj('PriceTargetService', ['getDiff',]);
+  const priceTargetServiceSpy = jasmine.createSpyObj('PriceTargetService', ['getDiff', 'hasBuyTrend', 'hasSellTrend']);
   const backtestServiceSpy = jasmine.createSpyObj('BacktestService', ['getLastPriceTiingo',]);
 
   beforeEach(() => {
@@ -36,7 +36,8 @@ describe('OptionsOrderBuilderService', () => {
     cartServiceSpy.getBuyOrders.and.returnValue([]);
     cartServiceSpy.getSellOrders.and.returnValue([]);
     cartServiceSpy.getMaxTradeCount.and.returnValue(10);
-
+    priceTargetServiceSpy.hasBuyTrend.and.returnValue(true);
+    priceTargetServiceSpy.hasSellTrend.and.returnValue(true);
   });
 
   afterEach(() => {

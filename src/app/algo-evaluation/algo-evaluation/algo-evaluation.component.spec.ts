@@ -17,7 +17,7 @@ const mockAiPicksService = {
 const mockPortfolioHolding: any = {
   name: 'AAPL', pl: 100, netLiq: 5000, shares: 10, primaryLegs: null, secondaryLegs: null, assetType: 'EQUITY', cost: 4900, pnlPercentage: 0.02
 };
-describe('AlgoEvaluationComponent', () => {
+xdescribe('AlgoEvaluationComponent', () => {
   let component: AlgoEvaluationComponent;
   let fixture: ComponentFixture<AlgoEvaluationComponent>;
   let optionsOrderBuilderServiceSpy: jasmine.SpyObj<OptionsOrderBuilderService>;

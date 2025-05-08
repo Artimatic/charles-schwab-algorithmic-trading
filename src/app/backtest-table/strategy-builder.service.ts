@@ -27,9 +27,9 @@ export class StrategyBuilderService {
   correlationThreshold = 0.55;
   sumNet = 0;
   countNet = 0;
-  defaultMinExpiration = 35;
+  defaultMinExpiration = 60;
+  defaultMaxImpliedMovement = 0.05;
   bullishStocks = [];
-  maxImpliedMovement = 0.11;
   constructor(private backtestService: BacktestService,
     private optionsDataService: OptionsDataService,
     private portfolioService: PortfolioService,
@@ -178,9 +178,9 @@ export class StrategyBuilderService {
 
   async getCallStrangleTrade(symbol: string): Promise<Strangle> {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
-    if (!optionsData.move || optionsData.move > this.maxImpliedMovement) {
+    if (!optionsData.move || optionsData.move > this.defaultMaxImpliedMovement) {
       this.reportingService.addAuditLog(null,
-        `Implied movement is too high for ${symbol} at ${optionsData.move}. Max is ${this.maxImpliedMovement}`);
+        `Implied movement is too high for ${symbol} at ${optionsData.move}. Max is ${this.defaultMaxImpliedMovement}`);
       this.addBullishStock(symbol);
       return { call: null, put: null };
     }
@@ -226,7 +226,7 @@ export class StrategyBuilderService {
 
   async getPutStrangleTrade(symbol: string) {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
-    if (!optionsData.move || optionsData.move > this.maxImpliedMovement) {
+    if (!optionsData.move || optionsData.move > this.defaultMaxImpliedMovement) {
       this.reportingService.addAuditLog(null,
         `Implied movement is too high for ${symbol} at ${optionsData.move}`);
       return { call: null, put: null };
@@ -682,5 +682,20 @@ export class StrategyBuilderService {
         OrderTypes.call, 'Buy SnP strategy', 'Buy', currentCall.quantity);
       this.cartService.addToCart(order, true, 'Buy SPY');
     }
+  }
+
+  increaseStrategyRisk() {
+    if (this.defaultMinExpiration > 15) {
+      this.defaultMinExpiration -= 6;
+    }
+
+    if (this.defaultMaxImpliedMovement < 0.18) {
+      this.defaultMaxImpliedMovement += 0.01;
+    }
+  }
+
+  resetStrategyRisk() {
+    this.defaultMinExpiration = 60;
+    this.defaultMaxImpliedMovement = 0.07;
   }
 }

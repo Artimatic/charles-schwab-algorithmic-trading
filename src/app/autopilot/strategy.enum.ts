@@ -1,23 +1,3 @@
-import { Injectable } from '@angular/core';
-
-export enum RiskTolerance {
-  None = 0.003,
-  Zero = 0.005,
-  One = 0.01,
-  Two = 0.025,
-  Lower = 0.05,
-  Low = 0.1,
-  ExtremeFear = 0.15,
-  Fear = 0.2,
-  Neutral = 0.25,
-  Greed = 0.5,
-  ExtremeGreed = 0.6,
-  XLGreed = 0.7,
-  XXLGreed = 0.8,
-  XXXLGreed = 0.9,
-  XXXXLGreed = 1
-}
-
 export enum Strategy {
   Default = 'Default',
   DaytradeShort = 'DaytradeShort',
@@ -36,6 +16,7 @@ export enum Strategy {
   BuyPuts = 'BuyPuts',
   BuySnP = 'Buy S&P500',
   BuyWinners = 'Buy Winners',
+  BuyWinnersSellLosers = 'Buy Winners Sell Losers',
   BuyML = 'Buy by ML signal',
   MLPairs = 'ML trade pairs',
   VolatilityPairs = 'Implied Movement trade pairs',
@@ -44,9 +25,11 @@ export enum Strategy {
   SellMfiDiv = 'Buy by mfi divergence sell signal',
   BuyMfiDiv = 'Buy by mfi divergence buy signal',
   BuyMfiDiv2 = 'Buy by mfi divergence2 buy signal',
+  SellMfiDiv2 = 'Sell by mfi divergence2 buy signal',
   BuyMfi = 'Buy by mfi buy signal',
   BuyMacd = 'Buy by macd buy signal',
   BuyFlag = 'Buy by flag pennant buy signal',
+  SellFlag = 'Sell by flag pennant buy signal',
   SellMfi = 'Buy by mfi sell signal',
   BuyBband = 'Buy by bband buy signal',
   SellBband = 'Buy by bband sell signal',
@@ -56,53 +39,6 @@ export enum Strategy {
   BuyDemark = 'Buy demark',
   AddToPositions = 'Add to current positions',
   Hedge = 'Hedge',
+  Gold = 'Gold',
   None = 'None'
-}
-
-@Injectable({
-  providedIn: 'root'
-})
-export class StrategyDeciderService {
-  riskToleranceList = [
-    RiskTolerance.One,
-    RiskTolerance.Two,
-    RiskTolerance.Lower,
-    RiskTolerance.Low,
-    RiskTolerance.Neutral
-  ];
-
-  strategyList = [
-    Strategy.Default,
-    Strategy.InverseDispersion,
-    Strategy.BuyMfiTrade,
-    Strategy.BuyMfiDiv,
-    Strategy.BuyMfi,
-    Strategy.AddToPositions,
-    Strategy.PerfectPair,
-    Strategy.BuyCalls,
-    Strategy.Hedge,
-    Strategy.BuyMacd,
-    Strategy.BuyBband,
-    Strategy.Short,
-    Strategy.SellMfi,
-    Strategy.BuyFlag,
-    Strategy.BuyML,
-    Strategy.SellBband,
-    Strategy.BuySnP,
-    Strategy.MLPairs,
-    Strategy.TradingPairs,
-    Strategy.BuyDemark,
-    Strategy.VolatilityPairs,
-    Strategy.BuyWinners,
-    Strategy.TrimHoldings
-    //Strategy.None
-  ];
-
-  strategyCounter = 0;
-
-  constructor() { }
-  
-  handleStrategy() {
-
-  }
 }

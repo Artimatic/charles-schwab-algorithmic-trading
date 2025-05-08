@@ -72,7 +72,7 @@
     <p-tag [value]="'Profit target: ' + priceTargetService.targetDiff * 100 +'%'" severity="info"
         pTooltip="Profit target"></p-tag>
     <p-tag pTooltip="Trade allocation - percentage of cash balance"
-        [value]="'Trade allocation - percentage of cash balance: ' + autopilotService.riskToleranceList[autopilotService.riskCounter] * 100 +'%'"
+        [value]="'Trade allocation - percentage of cash balance: ' + autopilotService.riskLevel * 100 +'%'"
         severity="danger"></p-tag>
     <!-- 
 <p-tag [value]="dayTradingRiskToleranceList[dayTradeRiskCounter] * 100 +'%'" severity="warning"

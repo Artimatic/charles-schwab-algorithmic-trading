@@ -25,11 +25,12 @@ import { FindPatternService } from '../strategies/find-pattern.service';
 import { AddOptionsTradeComponent } from './add-options-trade/add-options-trade.component';
 import { FindDaytradeService } from './find-daytrade.service';
 import { PriceTargetService } from './price-target.service';
-import { AutopilotService, ProfitLossRecord, RiskTolerance, SwingtradeAlgorithms } from './autopilot.service';
+import { AutopilotService, ProfitLossRecord, SwingtradeAlgorithms } from './autopilot.service';
 import { BacktestAggregatorService } from '../backtest-table/backtest-aggregator.service';
 import { OrderingService } from '@shared/ordering.service';
 import { NewStockFinderService } from '../backtest-table/new-stock-finder.service';
 import { OrderType } from '@shared/stock-backtest.interface';
+import { RiskTolerance } from './risk-tolerance.enum';
 
 export interface PositionHoldings {
   name: string;
@@ -441,8 +442,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   decreaseRiskTolerance() {
-    this.autopilotService.riskCounter = 0;
-    const msg = `Decrease risk to ${this.autopilotService.riskToleranceList[this.autopilotService.riskCounter]}`;
+    this.autopilotService.resetRiskLevel();
+    const msg = `Decrease risk to ${this.autopilotService.riskLevel}`;
     console.log(msg);
     this.reportingService.addAuditLog(this.autopilotService.strategyList[this.autopilotService.strategyCounter], msg);
     this.autopilotService.saveRisk();
@@ -452,16 +453,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (this.dayTradeRiskCounter > 0) {
       this.dayTradeRiskCounter = 0;
     }
-    this.autopilotService.changeStrategy();
   }
 
-  increaseRiskTolerance() {
-    if (this.autopilotService.riskCounter < this.autopilotService.riskToleranceList.length - 1) {
-      this.autopilotService.riskCounter++;
-    }
-    this.autopilotService.changeStrategy();
-
-    const msg = `Increase risk to ${this.autopilotService.riskToleranceList[this.autopilotService.riskCounter]}`;
+  async increaseRiskTolerance() {
+    await this.autopilotService.executeMartingale();
+    const msg = `Increase risk to ${this.autopilotService.riskLevel}`;
     console.log(msg);
     this.reportingService.addAuditLog(this.autopilotService.strategyList[this.autopilotService.strategyCounter], msg);
     this.autopilotService.saveRisk();
@@ -618,7 +614,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async analyseRecommendations(holding: PortfolioInfoHolding) {
     if (holding.recommendation.toLowerCase() === 'buy') {
-      await this.orderHandlingService.addBuy(holding, (this.autopilotService.riskToleranceList[this.autopilotService.riskCounter]) * 2, 'Recommendated buy');
+      await this.orderHandlingService.addBuy(holding, (this.autopilotService.riskLevel) * 2, 'Recommendated buy');
     } else if (holding.recommendation.toLowerCase() === 'sell') {
       await this.cartService.portfolioSell(holding, 'Recommended sell');
     }
@@ -633,7 +629,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     profitThreshold: number = null,
     stopLossThreshold: number = null) {
     await this.cartService.portfolioDaytrade(symbol,
-      allocation || this.autopilotService.riskToleranceList[this.autopilotService.riskCounter],
+      allocation || this.autopilotService.riskLevel,
       profitThreshold,
       stopLossThreshold);
   }
@@ -688,7 +684,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const metTarget = await this.priceTargetService.hasMetPriceTarget(0);
     if (!metTarget) {
       this.decreaseDayTradeRiskTolerance();
-      this.increaseRiskTolerance();
+      await this.increaseRiskTolerance();
     } else {
       this.increaseDayTradeRiskTolerance();
     }
