@@ -92,20 +92,21 @@ export class CartService {
       }
       console.log('Add order', order);
       this.addOrder(order);
+    } else {
+      console.log('Order not added', order);
     }
 
     if (noDup && order.quantity > 0) {
-      if (order.side.toLowerCase() === 'sell') {
-        this.sellOrders.push(order);
-      } else if (order.side.toLowerCase() === 'buy') {
-        this.buyOrders.push(order);
-      } else {
-        this.otherOrders.push(order);
-      }
+      this.addOrder(order);
+
+      console.log('Added order', order);
+
       this.messageService.add({
         severity: 'success',
         summary: `Added ${order.side} ${order.holding.symbol}`
       });
+    } else {
+      console.log('Order not added', order);
     }
   }
 
