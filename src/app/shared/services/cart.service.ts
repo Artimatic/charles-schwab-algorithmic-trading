@@ -619,7 +619,7 @@ export class CartService {
     const cash = await this.getAvailableFunds(false);
     const quantity = this.getQuantity(price, allocation, cash);
     if (!quantity) {
-      this.reportingService.addAuditLog(holding.name, `Insufficient funds: Available: ${cash} Cost: ${round(cash * allocation, 2)} Share price: ${price}`, '');
+      this.reportingService.addAuditLog(holding.name, `Insufficient funds: Available: ${cash} Allocation: ${allocation} Share price: ${price}`, '');
     }
     const orderSizePct = 0.1;
     const order = this.buildOrderWithAllocation(holding.name, quantity, price, 'Buy',
