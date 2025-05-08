@@ -77,8 +77,11 @@ export class AutopilotService {
     Strategy.AddToPositions,
     Strategy.BuyMfiDiv,
     Strategy.PerfectPair,
+    Strategy.BuySnP,
     Strategy.BuyWinnersSellLosers,
+    Strategy.BuySnP,
     Strategy.MLPairs,
+    Strategy.BuySnP,
     Strategy.BuyMfi,
     Strategy.BuyCalls,
     Strategy.Hedge,
@@ -88,10 +91,14 @@ export class AutopilotService {
     Strategy.TradingPairs,
     Strategy.VolatilityPairs,
     Strategy.BuyWinners,
+    Strategy.BTC,
     Strategy.TrimHoldings,
     Strategy.Gold,
     Strategy.BuyFlag,
+    Strategy.Gold,
     Strategy.BuyMfiTrade,
+    Strategy.Gold,
+    Strategy.BTC
   ];
 
   callPutBuffer = 0.05;
@@ -985,6 +992,14 @@ export class AutopilotService {
       case Strategy.Gold:
         await this.orderHandlingService.addBuy(this.createHoldingObj('GLD'),
           (this.riskLevel) * 2, 'Buy gold');
+        break;
+      case Strategy.BuySnP:
+        await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'),
+          (this.riskLevel) * 2, 'Buy snp');
+        break;
+      case Strategy.BTC:
+        await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'),
+          (this.riskLevel) * 2, 'Buy BTC');
         break;
       default: {
         await this.findTopBuy();

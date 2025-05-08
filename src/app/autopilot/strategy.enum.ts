@@ -38,5 +38,6 @@ export enum Strategy {
   AddToPositions = 'Add to current positions',
   Hedge = 'Hedge',
   Gold = 'Gold',
+  BTC = 'BTC',
   None = 'None'
 }
