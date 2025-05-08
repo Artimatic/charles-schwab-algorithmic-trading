@@ -790,7 +790,7 @@ export class AutopilotService {
         }
       } else if (pnl > 0) {
         if (!isOptionOnly) {
-          await this.orderHandlingService.addBuy(holding, RiskTolerance.Zero, 'Adding to position');
+          await this.orderHandlingService.addBuy(holding, RiskTolerance.One, 'Adding to position');
         }
       }
     }
