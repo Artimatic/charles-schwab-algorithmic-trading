@@ -444,10 +444,10 @@ export class StrategyBuilderService {
       const pairs = tradingPairs[key];
       const bObj = backtests[key];
       if (bObj !== undefined && bObj !== null && bObj.ml !== null && bObj.buySignals) {
-        if (bObj.ml > 0.5 && bObj.recommendation.toLowerCase() === 'strongbuy') {
+        if (bObj.ml > 0.4 && bObj.recommendation.toLowerCase() === 'strongbuy') {
           for (const pairVal of pairs) {
             if (pairVal !== null && backtests[pairVal.symbol] && backtests[pairVal.symbol].ml !== null) {
-              if (backtests[pairVal.symbol]?.sellMl > 0.5 && (backtests[pairVal.symbol].recommendation.toLowerCase() === 'strongsell')) {
+              if (backtests[pairVal.symbol]?.sellMl > 0.4 && (backtests[pairVal.symbol].recommendation.toLowerCase() === 'strongsell')) {
                 this.createStrategy(`${bObj.stock} Pair trade`, bObj.stock, [bObj.stock], [pairVal.symbol], 'Correlated pairs');
               }
             }

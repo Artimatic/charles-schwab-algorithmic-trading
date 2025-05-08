@@ -74,13 +74,10 @@ export class AutopilotService {
   strategyList = [
     Strategy.Default,
     Strategy.InverseDispersion,
-    Strategy.BuyFlag,
-    Strategy.BuyMfiTrade,
     Strategy.AddToPositions,
     Strategy.BuyMfiDiv,
     Strategy.PerfectPair,
     Strategy.BuyWinnersSellLosers,
-    Strategy.SellBband,
     Strategy.MLPairs,
     Strategy.BuyMfi,
     Strategy.BuyCalls,
@@ -91,11 +88,10 @@ export class AutopilotService {
     Strategy.TradingPairs,
     Strategy.VolatilityPairs,
     Strategy.BuyWinners,
-    Strategy.SellMfiDiv2,
     Strategy.TrimHoldings,
-    Strategy.Swingtrade,
     Strategy.Gold,
-    Strategy.SellFlag
+    Strategy.BuyFlag,
+    Strategy.BuyMfiTrade,
   ];
 
   callPutBuffer = 0.05;
@@ -933,23 +929,10 @@ export class AutopilotService {
       case Strategy.VolatilityPairs:
         await this.addVolatilityPairs();
         break;
-      case Strategy.SellMfiTrade:
-        if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'sell');
-        } else {
-          await this.buyOnSignal(SwingtradeAlgorithms.mfiTrade, 'sell');
-        }
-        break;
-      case Strategy.SellMfiDiv:
-        if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
-        } else {
-          await this.buyOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
-        }
-        break;
       case Strategy.BuyMfiTrade:
         if (this.isVolatilityHigh()) {
           await this.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'buy');
+          await this.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'sell');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.mfiTrade, 'buy');
         }
@@ -957,20 +940,15 @@ export class AutopilotService {
       case Strategy.BuyMfiDiv2:
         if (this.isVolatilityHigh()) {
           await this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
-        } else {
-          await this.buyOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
-        }
-        break;
-      case Strategy.SellMfiDiv2:
-        if (this.isVolatilityHigh()) {
           await this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'sell');
         } else {
-          await this.buyOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'sell');
+          await this.buyOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
         }
         break;
       case Strategy.BuyMfiDiv:
         if (this.isVolatilityHigh()) {
           await this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
+          await this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
         }
@@ -978,57 +956,25 @@ export class AutopilotService {
       case Strategy.BuyFlag:
         if (this.isVolatilityHigh()) {
           await this.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
+          await this.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'sell');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
         }
         break;
-      case Strategy.SellFlag:
-        if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'sell');
-        } else {
-          await this.buyOnSignal(SwingtradeAlgorithms.flagPennant, 'sell');
-        }
-        break;
-      case Strategy.BuyDemark:
-        if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.demark9, 'buy');
-        } else {
-          await this.buyOnSignal(SwingtradeAlgorithms.demark9, 'buy');
-        }
-        break;
-      case Strategy.SellMfi:
-        if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.mfi, 'sell');
-        } else {
-          await this.buyOnSignal(SwingtradeAlgorithms.mfi, 'sell');
-        }
-        break;
-      case Strategy.SellBband:
-        if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.bband, 'sell');
-        } else {
-          await this.buyOnSignal(SwingtradeAlgorithms.bband, 'sell');
-        }
-        break;
       case Strategy.BuyMfi:
         if (this.isVolatilityHigh()) {
+          await this.addPairOnSignal(SwingtradeAlgorithms.mfi, 'sell');
           await this.addPairOnSignal(SwingtradeAlgorithms.mfi, 'buy');
         } else {
-          await this.buyOnSignal(SwingtradeAlgorithms.mfi, 'buy');
+          await this.buyOnSignal(SwingtradeAlgorithms.mfi, 'sell');
         }
         break;
       case Strategy.BuyBband:
         if (this.isVolatilityHigh()) {
           await this.addPairOnSignal(SwingtradeAlgorithms.bband, 'buy');
+          await this.addPairOnSignal(SwingtradeAlgorithms.bband, 'sell');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.bband, 'buy');
-        }
-        break;
-      case Strategy.BuyMacd:
-        if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.macd, 'buy');
-        } else {
-          await this.buyOnSignal(SwingtradeAlgorithms.macd, 'buy');
         }
         break;
       case Strategy.Hedge:

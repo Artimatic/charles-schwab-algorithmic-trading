@@ -43,8 +43,6 @@ export class AlgoEvaluationComponent implements OnInit {
         stock.recommendation = 'Strong buy';
         if (stock.impliedMovement < 0.09) {
           this.optionsOrderBuilderService.addCallToCurrentTrades(stock.stock);
-        } else {
-          this.strategyBuilderService.addBullishStock(stock.stock);
         }
         return true;
       } else if ((stock?.sellMl > 0.5) && (stock.recommendation.toLowerCase() === 'sell' || stock.recommendation.toLowerCase() === 'strongsell')) {
