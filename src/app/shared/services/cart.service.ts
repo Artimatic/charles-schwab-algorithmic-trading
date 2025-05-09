@@ -617,9 +617,9 @@ export class CartService {
     reason: string) {
     const price = await this.portfolioService.getPrice(holding.name).toPromise();
     const cash = await this.getAvailableFunds(false);
-    const quantity = this.getQuantity(price, allocation, cash);
-    if (!quantity) {
-      this.reportingService.addAuditLog(holding.name, `Insufficient funds: Available: ${cash} Allocation: ${allocation} Share price: ${price}`, '');
+    let quantity = this.getQuantity(price, allocation, cash);
+    if (!quantity && cash >= price) {
+      quantity = 1;
     }
     const orderSizePct = 0.1;
     const order = this.buildOrderWithAllocation(holding.name, quantity, price, 'Buy',
