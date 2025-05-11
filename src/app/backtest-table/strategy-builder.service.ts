@@ -690,7 +690,7 @@ export class StrategyBuilderService {
     }
 
     if (this.defaultMaxImpliedMovement < 0.18) {
-      this.defaultMaxImpliedMovement += 0.01;
+      this.defaultMaxImpliedMovement += 0.005;
     }
   }
 
