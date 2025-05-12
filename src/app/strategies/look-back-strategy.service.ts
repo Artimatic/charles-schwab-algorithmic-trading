@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { BacktestService } from '@shared/services';
 import { DaytradeRecommendation } from '@shared/stock-backtest.interface';
-import moment = require('moment');
+import * as moment from 'moment-timezone';
 
 @Injectable({
   providedIn: 'root'
