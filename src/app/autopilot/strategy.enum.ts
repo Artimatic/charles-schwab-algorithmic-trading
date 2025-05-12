@@ -37,8 +37,8 @@ export enum Strategy {
   BuyDemark = 'Buy demark',
   AddToPositions = 'Add to current positions',
   Hedge = 'Hedge',
-  Gold = 'Gold',
-  BTC = 'BTC',
+  Gold = 'Buy Gold',
+  BTC = 'Buy BTC',
   StopLoss = 'StopLoss',
   None = 'None'
 }
