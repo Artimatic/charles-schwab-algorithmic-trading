@@ -253,6 +253,9 @@ export class OptionsOrderBuilderService {
             const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
             if (!this.isIdealOption(putPrice, maxCashAllocation, bearishStrangle.put)) {
               currentPut = null;
+              if (currentCall) {
+                this.addCallToCurrentTrades(currentCall.underlying);
+              }
               break;
             }
             const multiple = (callPrice > putPrice) ? Math.round(callPrice / putPrice) : Math.round(putPrice / callPrice);
@@ -305,7 +308,9 @@ export class OptionsOrderBuilderService {
     multiple = 1,
     minCashAllocation: number,
     maxCashAllocation: number) {
-    while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > 350 &&
+    const startingDiff = maxCashAllocation - minCashAllocation;
+    let minDiff = startingDiff > 100 && startingDiff < 500 ? startingDiff : 350;
+    while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > minDiff &&
       Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) <= maxCashAllocation) {
       if (callPrice > putPrice) {
         callQuantity++;
