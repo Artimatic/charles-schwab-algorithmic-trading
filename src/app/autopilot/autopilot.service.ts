@@ -75,22 +75,30 @@ export class AutopilotService {
     Strategy.Default,
     Strategy.InverseDispersion,
     Strategy.AddToPositions,
+    Strategy.StopLoss,
     Strategy.BuyMfiDiv,
     Strategy.PerfectPair,
     Strategy.BuySnP,
+    Strategy.StopLoss,
     Strategy.BuyWinnersSellLosers,
     Strategy.BuySnP,
     Strategy.MLPairs,
+    Strategy.StopLoss,
     Strategy.BuySnP,
     Strategy.BuyMfi,
+    Strategy.StopLoss,
     Strategy.BuyCalls,
     Strategy.Hedge,
+    Strategy.StopLoss,
     Strategy.BuyBband,
+    Strategy.StopLoss,
     Strategy.Short,
     Strategy.BuyMfiDiv2,
     Strategy.TradingPairs,
+    Strategy.StopLoss,
     Strategy.VolatilityPairs,
     Strategy.BuyWinners,
+    Strategy.StopLoss,
     Strategy.BTC,
     Strategy.TrimHoldings,
     Strategy.Gold,
@@ -98,6 +106,7 @@ export class AutopilotService {
     Strategy.Gold,
     Strategy.BuyMfiTrade,
     Strategy.Gold,
+    Strategy.StopLoss,
     Strategy.BTC
   ];
 
@@ -516,7 +525,7 @@ export class AutopilotService {
       if (actualUtilization < targetUtilization) {
         this.reportingService.addAuditLog(null, `Underutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
 
-        await this.addToCurrentPositions(currentHoldings, RiskTolerance.Zero);
+        await this.addToCurrentPositions(currentHoldings, this.riskToleranceList[1]);
       }
     }
     return isOverBalance;
@@ -761,9 +770,9 @@ export class AutopilotService {
     const impliedMove = await this.optionsOrderBuilderService.getImpliedMove(holding.name, backtestResults);
     if (backtestResults.averageMove) {
       if (isOptionOnly) {
-        stopLoss = impliedMove * -5;
+        stopLoss = impliedMove * -6;
         this.reportingService.addAuditLog(holding.name, `Setting options stop loss to ${stopLoss}`);
-        profitTarget = impliedMove * 6;
+        profitTarget = impliedMove * 10;
         this.reportingService.addAuditLog(holding.name, `Setting options profit target to ${profitTarget}`);
       } else if (holding.assetType === 'collective_investment') {
         stopLoss = impliedMove * -2;
@@ -901,6 +910,7 @@ export class AutopilotService {
   }
 
   async handleStrategy(useDefault = false) {
+    console.log('Handle strategy');
     this.strategyBuilderService.findTrades();
     this.strategies = this.strategyBuilderService.getTradingStrategies();
     const strategy = useDefault ? Strategy.Default : this.strategyList[this.strategyCounter];
@@ -1001,6 +1011,15 @@ export class AutopilotService {
         await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'),
           (this.riskLevel) * 2, 'Buy BTC');
         break;
+      case Strategy.StopLoss:
+        this.currentHoldings.forEach(async (holding) => {
+          await this.checkStopLoss(holding);
+        });
+        break;
+      case Strategy.BTC:
+        await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'),
+          (this.riskLevel) * 2, 'Buy BTC');
+        break;
       default: {
         await this.findTopBuy();
         break;
@@ -1061,7 +1080,6 @@ export class AutopilotService {
       this.riskCounter++;
     } else {
       this.currentHoldings = await this.cartService.findCurrentPositions();
-      this.sellLoser(this.currentHoldings, 'Over balance');
       this.riskCounter = 0;
       this.strategyBuilderService.increaseStrategyRisk();
     }

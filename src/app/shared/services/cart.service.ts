@@ -19,17 +19,7 @@ export class CartService {
     private tradeService: TradeService,
     private reportingService: ReportingService,
     private messageService: MessageService) { }
-
-  private removeDuplicates(arr: SmartOrder[]): SmartOrder[] {
-    const seen = new Map();
-    for (const item of arr) {
-      if (!seen.has(item.holding.name)) {
-        seen.set(item.holding.name, item);
-      }
-    }
-    return Array.from(seen.values());
-  }
-
+    
   getBuyOrders() {
     return this.buyOrders;
   }
@@ -74,6 +64,8 @@ export class CartService {
     let noDup = true;
     for (const idx of indices) {
       if (idx > -1) {
+        console.log('Found duplicate order', order, indices);
+
         noDup = false;
         break;
       }
@@ -92,8 +84,6 @@ export class CartService {
       }
       console.log('Add order', order);
       this.addOrder(order);
-    } else {
-      console.log('Order not added', order);
     }
 
     if (noDup && order.quantity > 0) {
@@ -106,7 +96,7 @@ export class CartService {
         summary: `Added ${order.side} ${order.holding.symbol}`
       });
     } else {
-      console.log('Order not added', order);
+      console.log('Order not added', noDup, order);
     }
   }
 
@@ -179,10 +169,6 @@ export class CartService {
         this.otherOrders.push(order);
         break;
     }
-
-    this.sellOrders = this.removeDuplicates(this.sellOrders);
-    this.buyOrders = this.removeDuplicates(this.buyOrders);
-    this.otherOrders = this.removeDuplicates(this.otherOrders);
     console.log('Added new order', order, this.sellOrders, this.buyOrders, this.otherOrders);
   }
 

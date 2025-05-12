@@ -554,8 +554,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async modifyCurrentHoldings() {
     this.autopilotService.currentHoldings.forEach(async (holding) => {
-      await this.autopilotService.checkStopLoss(holding);
-
       try {
         const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
         if (holding.primaryLegs) {

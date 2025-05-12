@@ -27,7 +27,7 @@ export class StrategyBuilderService {
   correlationThreshold = 0.55;
   sumNet = 0;
   countNet = 0;
-  defaultMinExpiration = 75;
+  defaultMinExpiration = 90;
   defaultMaxImpliedMovement = 0.06;
   bullishStocks = [];
   constructor(private backtestService: BacktestService,
@@ -685,7 +685,7 @@ export class StrategyBuilderService {
   }
 
   increaseStrategyRisk() {
-    if (this.defaultMinExpiration > 15) {
+    if (this.defaultMinExpiration > 20) {
       this.defaultMinExpiration -= 6;
     }
 
@@ -695,7 +695,7 @@ export class StrategyBuilderService {
   }
 
   resetStrategyRisk() {
-    this.defaultMinExpiration = 60;
+    this.defaultMinExpiration = 90;
     this.defaultMaxImpliedMovement = 0.07;
   }
 }

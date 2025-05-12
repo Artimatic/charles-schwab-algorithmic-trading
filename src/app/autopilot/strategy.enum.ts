@@ -39,5 +39,6 @@ export enum Strategy {
   Hedge = 'Hedge',
   Gold = 'Gold',
   BTC = 'BTC',
+  StopLoss = 'StopLoss',
   None = 'None'
 }
