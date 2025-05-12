@@ -12,6 +12,7 @@ import { MessageService } from 'primeng/api';
 import { AlwaysBuy } from '../rh-table/backtest-stocks.constant';
 import { StrategyStoreService } from './strategy-store.service';
 import { AllocationService } from '../allocation/allocation.service';
+import { LookBackStrategyService } from '../strategies/look-back-strategy.service';
 
 export interface ComplexStrategy {
   state: 'assembling' | 'assembled' | 'disassembling' | 'disassembled';
@@ -37,7 +38,8 @@ export class StrategyBuilderService {
     private reportingService: ReportingService,
     private strategyStoreService: StrategyStoreService,
     private cartService: CartService,
-    private allocationService: AllocationService) { }
+    private allocationService: AllocationService,
+    private lookBackStrategyService: LookBackStrategyService) { }
 
   addBullishStock(symbol: string) {
     this.bullishStocks.push(symbol);
@@ -88,8 +90,9 @@ export class StrategyBuilderService {
         results.impliedMovement,
         results.ml);
       const kellyCriterion = this.allocationService.calculateKellyCriterion(pop, 1);
+      const recommendation = results.recommendation === 'INDETERMINANT' ? await this.lookBackStrategyService.checkOrderHistory(symbol, results.orderHistory) : results.recommendation;
       const tableObj = {
-        recommendation: results.recommendation,
+        recommendation: recommendation,
         stock: results.symbol,
         net: results.net,
         returns: results.returns,
@@ -109,9 +112,6 @@ export class StrategyBuilderService {
         pop: pop,
         kellyCriterion: kellyCriterion
       };
-      if (results.buySignals.find(s => s.includes('pennant')) || results.sellSignals.find(s => s.includes('pennant'))) {
-        this.messageService.add({ severity: 'info', summary: `${symbol} found flag pennant`, sticky: true });
-      }
 
       this.addToResultStorage(tableObj);
       return results;
