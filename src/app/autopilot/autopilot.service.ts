@@ -102,9 +102,11 @@ export class AutopilotService {
     Strategy.BTC,
     Strategy.TrimHoldings,
     Strategy.Gold,
+    Strategy.StopLoss,
     Strategy.BuyFlag,
     Strategy.Gold,
     Strategy.BuyMfiTrade,
+    Strategy.StopLoss,
     Strategy.Gold,
     Strategy.StopLoss,
     Strategy.BTC
