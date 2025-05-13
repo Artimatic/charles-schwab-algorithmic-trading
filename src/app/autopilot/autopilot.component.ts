@@ -355,7 +355,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.boughtAtClose = true;
         } else if (moment().isAfter(moment(this.autopilotService.sessionEnd)) &&
           moment().isBefore(moment(this.autopilotService.sessionEnd).add(5, 'minute'))) {
-          if (this.reportingService.logs.length > 6) {
+          if (this.reportingService.logs.length > 15) {
             const profitLog = `Profit ${this.scoreKeeperService.total}`;
             this.reportingService.addAuditLog(null, profitLog);
             this.reportingService.exportAuditHistory();
@@ -460,7 +460,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const msg = `Increase risk to ${this.autopilotService.riskLevel}`;
     console.log(msg);
     this.reportingService.addAuditLog(this.autopilotService.strategyList[this.autopilotService.strategyCounter], msg);
-    this.autopilotService.saveRisk();
   }
 
   increaseDayTradeRiskTolerance() {

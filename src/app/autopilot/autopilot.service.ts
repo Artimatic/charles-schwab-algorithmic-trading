@@ -194,6 +194,7 @@ export class AutopilotService {
         } else {
           this.strategyCounter = 0;
         }
+        this.setRiskLevel();
         this.portfolioService.getStrategy().subscribe(strategies => this.strategyBuilderService.addAndRemoveOldStrategies(strategies));
       });
   }
@@ -1087,6 +1088,8 @@ export class AutopilotService {
     }
     this.changeStrategy();
     this.setRiskLevel();
+    this.saveRisk();
+
     await this.handleStrategy();
   }
 

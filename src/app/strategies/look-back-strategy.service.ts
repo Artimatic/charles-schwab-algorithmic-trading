@@ -10,9 +10,9 @@ export class LookBackStrategyService {
 
   constructor(private backtestService: BacktestService) { }
 
-  async checkOrderHistory(symbol: string, orderHistory: any[]): Promise<DaytradeRecommendation> {
+  async checkOrderHistory(symbol: string, orderHistory: any[]): Promise<string> {
     if (!orderHistory.length) {
-      return Promise.resolve(DaytradeRecommendation.Neutral);
+      return 'INDETERMINANT';
     }
     const dateDiff = moment().diff(moment(orderHistory[orderHistory.length - 1].date), 'days');
     if (dateDiff > 9 && dateDiff < 20) {
@@ -23,10 +23,12 @@ export class LookBackStrategyService {
           const lastSignal = signals[signals.length - 1];
           const pastSignal = signals[signals.length - dateDiff];
           if (orderHistory[orderHistory.length - 1].action === 'STRONGBUY' && lastSignal.mfiLeft > pastSignal.mfiLeft) {
-            return DaytradeRecommendation.Bullish;
+            return 'STRONGBUY';
           } else if (orderHistory[orderHistory.length - 1].action === 'STRONGSELL' && lastSignal.mfiLeft < pastSignal.mfiLeft) {
-            return DaytradeRecommendation.Bearish;
+            return 'STRONGSELL';
           }
     }
+
+    return 'INDETERMINANT';
   }
 }
