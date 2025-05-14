@@ -1070,8 +1070,9 @@ export class AutopilotService {
   }
 
   private async padOrders() {
-    if ((this.cartService.getSellOrders().length + this.cartService.getBuyOrders().length) < 1 + (this.getVolatilityMl() * 5)) {
-      await this.handleStrategy(true);
+    if ((this.cartService.getSellOrders().length + this.cartService.getBuyOrders().length) < 1 + ((1 - this.getVolatilityMl()) * 11)) {
+      this.changeStrategy();
+      await this.handleStrategy();
     }
   }
 }
