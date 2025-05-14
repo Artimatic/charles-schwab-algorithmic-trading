@@ -277,7 +277,8 @@ export class AutopilotService {
         }
       }
     }
-    await this.addPairsFromHashMap(MlBuys, MlSells, 'Perfect pair');
+    console.log('Perfect pairs', MlBuys, MlSells);
+    this.addPairsFromHashMap(MlBuys, MlSells, 'Perfect pair');
   }
 
   async addMLPairs() {
@@ -424,6 +425,7 @@ export class AutopilotService {
 
   async findTopBuy() {
     const buys = this.getBuyList();
+    console.log('Top buy list', buys);
     for (const b of buys) {
       await this.orderHandlingService.addBuy(this.createHoldingObj(b),
         (this.riskLevel) * 2, 'Buy top stock');
@@ -486,32 +488,6 @@ export class AutopilotService {
     if (buys.length) {
       const candidate = buys.pop();
       await this.orderHandlingService.addBuy(this.createHoldingObj(candidate), this.riskLevel * 2, `${direction} ${indicator}`);
-    }
-  }
-
-  async findTopNotSell() {
-    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
-    let backtestResults = [];
-    if (savedBacktest) {
-      for (const saved in savedBacktest) {
-        const backtestObj = savedBacktest[saved];
-        backtestObj.pnl = this.priceTargetService.getDiff(backtestObj.invested, backtestObj.invested + backtestObj.net);
-        backtestResults.push(backtestObj);
-      }
-      let minMl = 0;
-      while (minMl < 0.5 && !backtestResults.length) {
-        backtestResults = backtestResults?.filter(backtestData => backtestData.sellMl !== undefined && backtestData.sellMl > minMl);
-        backtestResults?.sort((a, b) => (a.pnl || 0) - (b.pnl || 0));
-        minMl += 0.05;
-      }
-      if (backtestResults.length) {
-        const candidate = backtestResults.pop();
-        if (!candidate.stock) {
-          console.log('candidate', candidate);
-          throw Error('Invalid stock');
-        }
-        await this.orderHandlingService.addBuy(this.createHoldingObj(candidate.stock), (this.riskLevel) * 2, 'Buy top not sell stock');
-      }
     }
   }
 
