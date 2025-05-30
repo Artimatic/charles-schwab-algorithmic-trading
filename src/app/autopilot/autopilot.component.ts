@@ -10,9 +10,9 @@ import { AiPicksPredictionData, AiPicksService } from '@shared/services/ai-picks
 import { divide, round } from 'lodash';
 import { MenuItem, MessageService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { Subject, Subscription } from 'rxjs';
+import { of, Subject, Subscription } from 'rxjs';
 import { TimerObservable } from 'rxjs-compat/observable/TimerObservable';
-import { takeUntil } from 'rxjs/operators';
+import { catchError, takeUntil } from 'rxjs/operators';
 import { PotentialTrade } from '../backtest-table/potential-trade.constant';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
@@ -166,10 +166,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test create strategy',
         command: async () => {
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakSupport, 'buy', false); 
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakResistance, 'buy', false); 
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakSupport, 'buy', false);
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakResistance, 'buy', false);
           await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakSupport, 'sell', false);
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakResistance, 'sell', false); 
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakResistance, 'sell', false);
           await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'sell');
           await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
           await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'buy');
@@ -342,8 +342,19 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(async () => {
         if (!this.lastCredentialCheck || Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 25) {
-          await this.autopilotService.isMarketOpened().toPromise();
+          this.autopilotService.isMarketOpened().pipe(catchError(err => {
+            console.log('Error getting market status', err);
+            this.messageService.add({ severity: 'error', summary: 'Error getting market status', sticky: true });
+            return of('Error getting market status');
+          })).subscribe();
           this.lastCredentialCheck = moment();
+          await this.autopilotService.setCurrentHoldings().catch(err => {
+            console.log('Error positions', err);
+            this.messageService.add({ severity: 'error', summary: 'Error getting positions', sticky: true });
+            setTimeout(() => {
+              this.messageService.add({ severity: 'error', summary: 'Please sign in again', sticky: true });
+            }, 900000)
+          })
           await this.backtestOneStock(true, false);
         } else if (moment().isAfter(moment(this.autopilotService.sessionEnd).subtract(25, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionEnd).subtract(20, 'minutes'))) {
@@ -832,7 +843,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async testAddTradingPairsToCart() {
     await this.optionsOrderBuilderService.addOptionsStrategiesToCart();
   }
-  
+
   async test() {
     this.cartService.deleteCart();
     this.cartService.removeCompletedOrders();

@@ -121,12 +121,12 @@ export class AutopilotService {
   private processes = [
     async () => await this.priceTargetService.setTargetDiff(),
     async () => {
-      this.currentHoldings = await this.cartService.findCurrentPositions();
+      await this.setCurrentHoldings();
       await this.handleBalanceUtilization(this.currentHoldings);
     },
     async () => await this.checkIntradayStrategies(),
     async () => {
-      this.currentHoldings = await this.cartService.findCurrentPositions();
+      await this.setCurrentHoldings();
       const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
       await this.optionsOrderBuilderService.hedge(this.currentHoldings, balance, 0.2);
     },
@@ -134,11 +134,11 @@ export class AutopilotService {
       await this.optionsOrderBuilderService.addOptionsStrategiesToCart();
     },
     async () => {
-      this.currentHoldings = await this.cartService.findCurrentPositions();
+      await this.setCurrentHoldings();
       await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
     },
     async () => {
-      this.currentHoldings = await this.cartService.findCurrentPositions();
+      await this.setCurrentHoldings();
       await this.balanceCallPutRatio(this.currentHoldings);
     },
     async () => {
@@ -197,6 +197,10 @@ export class AutopilotService {
         this.setRiskLevel();
         this.portfolioService.getStrategy().subscribe(strategies => this.strategyBuilderService.addAndRemoveOldStrategies(strategies));
       });
+  }
+
+  async setCurrentHoldings() {
+    this.currentHoldings = await this.cartService.findCurrentPositions();
   }
 
   async checkIntradayStrategies() {
@@ -916,7 +920,7 @@ export class AutopilotService {
         await this.buyWinnersSellLosers();
         break;
       case Strategy.AddToPositions:
-        this.currentHoldings = await this.cartService.findCurrentPositions();
+        await this.setCurrentHoldings();
         await this.addToCurrentPositions(this.currentHoldings);
         break;
       case Strategy.PerfectPair:
@@ -1046,7 +1050,7 @@ export class AutopilotService {
     this.riskCounter = 0;
     this.setRiskLevel();
   }
-  setRiskLevel () {
+  setRiskLevel() {
     if (this.riskCounter < this.riskToleranceList.length) {
       this.riskLevel = this.riskToleranceList[this.riskCounter];
     } else {
@@ -1058,7 +1062,7 @@ export class AutopilotService {
     if (this.riskCounter < this.riskToleranceList.length - 1) {
       this.riskCounter++;
     } else {
-      this.currentHoldings = await this.cartService.findCurrentPositions();
+      await this.setCurrentHoldings();
       this.riskCounter = 0;
       this.strategyBuilderService.increaseStrategyRisk();
     }
