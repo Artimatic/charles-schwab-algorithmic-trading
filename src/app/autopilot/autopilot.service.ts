@@ -59,10 +59,7 @@ export class AutopilotService {
     RiskTolerance.One,
     RiskTolerance.Two,
     RiskTolerance.Lower,
-    RiskTolerance.Lower,
     RiskTolerance.Low,
-    RiskTolerance.Low,
-    RiskTolerance.Neutral,
     RiskTolerance.Neutral,
     RiskTolerance.Greed
   ];
