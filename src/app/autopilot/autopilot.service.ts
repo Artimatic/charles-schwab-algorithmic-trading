@@ -61,6 +61,24 @@ export class AutopilotService {
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.Neutral,
+    RiskTolerance.Greed,
+    RiskTolerance.One,
+    RiskTolerance.Two,
+    RiskTolerance.Lower,
+    RiskTolerance.Low,
+    RiskTolerance.Neutral,
+    RiskTolerance.Greed,
+    RiskTolerance.One,
+    RiskTolerance.Two,
+    RiskTolerance.Lower,
+    RiskTolerance.Low,
+    RiskTolerance.Neutral,
+    RiskTolerance.Greed,
+    RiskTolerance.One,
+    RiskTolerance.Two,
+    RiskTolerance.Lower,
+    RiskTolerance.Low,
+    RiskTolerance.Neutral,
     RiskTolerance.Greed
   ];
   isOpened = false;
@@ -1058,6 +1076,7 @@ export class AutopilotService {
   async executeMartingale() {
     if (this.riskCounter < this.riskToleranceList.length - 1) {
       this.riskCounter++;
+      this.strategyBuilderService.setStrategyRisk(this.riskCounter, this.riskToleranceList.length);
     } else {
       await this.setCurrentHoldings();
       this.riskCounter = 0;

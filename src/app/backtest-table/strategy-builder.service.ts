@@ -694,6 +694,57 @@ export class StrategyBuilderService {
     }
   }
 
+  setStrategyRisk(riskLevel: number, maxRisk: number) {
+    const riskPct = round(riskLevel / maxRisk, 1);
+    console.log('Risk percent', riskPct);
+    switch (riskLevel / maxRisk) {
+      case 0.1:
+        this.defaultMinExpiration = 80;
+        this.defaultMaxImpliedMovement = 0.08;
+        break;
+      case 0.2:
+        this.defaultMinExpiration = 70;
+        this.defaultMaxImpliedMovement = 0.09;
+        break;
+      case 0.3:
+        this.defaultMinExpiration = 60;
+        this.defaultMaxImpliedMovement = 0.1;
+        break;
+      case 0.4:
+        this.defaultMinExpiration = 55;
+        this.defaultMaxImpliedMovement = 0.11;
+        break;
+      case 0.5:
+        this.defaultMinExpiration = 55;
+        this.defaultMaxImpliedMovement = 0.115;
+        break;
+      case 0.6:
+        this.defaultMinExpiration = 50;
+        this.defaultMaxImpliedMovement = 0.125;
+        break;
+      case 0.7:
+        this.defaultMinExpiration = 45;
+        this.defaultMaxImpliedMovement = 0.135;
+        break;
+      case 0.8:
+        this.defaultMinExpiration = 40;
+        this.defaultMaxImpliedMovement = 0.145;
+        break;
+      case 0.9:
+        this.defaultMinExpiration = 35;
+        this.defaultMaxImpliedMovement = 0.15;
+        break;
+      case 1:
+        this.defaultMinExpiration = 25;
+        this.defaultMaxImpliedMovement = 0.155;
+        break;
+      default:
+        this.defaultMinExpiration = 90;
+        this.defaultMaxImpliedMovement = 0.07;
+        break;
+    }
+  }
+
   resetStrategyRisk() {
     this.defaultMinExpiration = 90;
     this.defaultMaxImpliedMovement = 0.07;
