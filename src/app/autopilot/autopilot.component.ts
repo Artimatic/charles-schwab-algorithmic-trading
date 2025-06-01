@@ -344,15 +344,15 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         if (!this.lastCredentialCheck || Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 25) {
           this.autopilotService.isMarketOpened().pipe(catchError(err => {
             console.log('Error getting market status', err);
-            this.messageService.add({ severity: 'error', summary: 'Error getting market status', sticky: true });
+            this.messageService.add({ severity: 'error', summary: 'Error getting market status', life: 3600000 });
             return of('Error getting market status');
           })).subscribe();
           this.lastCredentialCheck = moment();
           await this.autopilotService.setCurrentHoldings().catch(err => {
             console.log('Error positions', err);
-            this.messageService.add({ severity: 'error', summary: 'Error getting positions', sticky: true });
+            this.messageService.add({ severity: 'error', summary: 'Error getting positions' });
             setTimeout(() => {
-              this.messageService.add({ severity: 'error', summary: 'Please sign in again', sticky: true });
+              this.messageService.add({ severity: 'error', summary: 'Please sign in again', life: 3600000 });
             }, 900000)
           })
           await this.backtestOneStock(true, false);
