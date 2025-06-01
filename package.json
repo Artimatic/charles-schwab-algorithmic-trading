@@ -9,6 +9,7 @@
     "build": "ng build --aot && npm run build-ts",
     "build:server": "npm run build-ts",
     "build:ui": "ng build --aot",
+    "build:ui:watch": "node --max-old-space-size=8192 ./node_modules/@angular/cli/bin/ng build", 
     "start": "node dist/app.js",
     "test-server": "npm run build-ts && node server-tests.js",
     "test": "ng test",

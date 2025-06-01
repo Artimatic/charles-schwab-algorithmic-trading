@@ -10,9 +10,9 @@ import { AiPicksPredictionData, AiPicksService } from '@shared/services/ai-picks
 import { divide, round } from 'lodash';
 import { MenuItem, MessageService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { Subject, Subscription } from 'rxjs';
+import { of, Subject, Subscription } from 'rxjs';
 import { TimerObservable } from 'rxjs-compat/observable/TimerObservable';
-import { takeUntil } from 'rxjs/operators';
+import { catchError, takeUntil } from 'rxjs/operators';
 import { PotentialTrade } from '../backtest-table/potential-trade.constant';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
@@ -25,11 +25,12 @@ import { FindPatternService } from '../strategies/find-pattern.service';
 import { AddOptionsTradeComponent } from './add-options-trade/add-options-trade.component';
 import { FindDaytradeService } from './find-daytrade.service';
 import { PriceTargetService } from './price-target.service';
-import { AutopilotService, ProfitLossRecord, RiskTolerance } from './autopilot.service';
+import { AutopilotService, ProfitLossRecord, SwingtradeAlgorithms } from './autopilot.service';
 import { BacktestAggregatorService } from '../backtest-table/backtest-aggregator.service';
 import { OrderingService } from '@shared/ordering.service';
 import { NewStockFinderService } from '../backtest-table/new-stock-finder.service';
 import { OrderType } from '@shared/stock-backtest.interface';
+import { RiskTolerance } from './risk-tolerance.enum';
 
 export interface PositionHoldings {
   name: string;
@@ -162,6 +163,30 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     ];
 
     this.multibuttonOptions = [
+      {
+        label: 'Test create strategy',
+        command: async () => {
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakSupport, 'buy', false);
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakResistance, 'buy', false);
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakSupport, 'sell', false);
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakResistance, 'sell', false);
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'sell');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'buy');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'sell');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'sell');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.demark9, 'buy');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfi, 'sell');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.bband, 'sell');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfi, 'buy');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.bband, 'buy');
+          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.macd, 'buy');
+          this.autopilotService.buyWinnersSellLosers();
+        }
+      },
       {
         label: 'Sell All',
         command: async () => {
@@ -317,8 +342,19 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(async () => {
         if (!this.lastCredentialCheck || Math.abs(this.lastCredentialCheck.diff(moment(), 'minutes')) > 25) {
-          await this.autopilotService.isMarketOpened().toPromise();
+          this.autopilotService.isMarketOpened().pipe(catchError(err => {
+            console.log('Error getting market status', err);
+            this.messageService.add({ severity: 'error', summary: 'Error getting market status', sticky: true });
+            return of('Error getting market status');
+          })).subscribe();
           this.lastCredentialCheck = moment();
+          await this.autopilotService.setCurrentHoldings().catch(err => {
+            console.log('Error positions', err);
+            this.messageService.add({ severity: 'error', summary: 'Error getting positions', sticky: true });
+            setTimeout(() => {
+              this.messageService.add({ severity: 'error', summary: 'Please sign in again', sticky: true });
+            }, 900000)
+          })
           await this.backtestOneStock(true, false);
         } else if (moment().isAfter(moment(this.autopilotService.sessionEnd).subtract(25, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionEnd).subtract(20, 'minutes'))) {
@@ -330,7 +366,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.boughtAtClose = true;
         } else if (moment().isAfter(moment(this.autopilotService.sessionEnd)) &&
           moment().isBefore(moment(this.autopilotService.sessionEnd).add(5, 'minute'))) {
-          if (this.reportingService.logs.length > 6) {
+          if (this.reportingService.logs.length > 15) {
             const profitLog = `Profit ${this.scoreKeeperService.total}`;
             this.reportingService.addAuditLog(null, profitLog);
             this.reportingService.exportAuditHistory();
@@ -417,8 +453,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   decreaseRiskTolerance() {
-    this.autopilotService.riskCounter = 0;
-    const msg = `Decrease risk to ${this.autopilotService.riskToleranceList[this.autopilotService.riskCounter]}`;
+    this.autopilotService.resetRiskLevel();
+    const msg = `Decrease risk to ${this.autopilotService.riskLevel}`;
     console.log(msg);
     this.reportingService.addAuditLog(this.autopilotService.strategyList[this.autopilotService.strategyCounter], msg);
     this.autopilotService.saveRisk();
@@ -428,19 +464,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (this.dayTradeRiskCounter > 0) {
       this.dayTradeRiskCounter = 0;
     }
-    this.autopilotService.changeStrategy();
   }
 
-  increaseRiskTolerance() {
-    if (this.autopilotService.riskCounter < this.autopilotService.riskToleranceList.length - 1) {
-      this.autopilotService.riskCounter++;
-    }
-    this.autopilotService.changeStrategy();
-
-    const msg = `Increase risk to ${this.autopilotService.riskToleranceList[this.autopilotService.riskCounter]}`;
+  async increaseRiskTolerance() {
+    await this.autopilotService.executeMartingale();
+    const msg = `Increase risk to ${this.autopilotService.riskLevel}`;
     console.log(msg);
     this.reportingService.addAuditLog(this.autopilotService.strategyList[this.autopilotService.strategyCounter], msg);
-    this.autopilotService.saveRisk();
   }
 
   increaseDayTradeRiskTolerance() {
@@ -455,6 +485,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     this.autopilotService.setLastSpyMl(backtestData?.ml);
     this.autopilotService.updateVolatility();
+    await this.autopilotService.updateBtcPrediction();
+    await this.autopilotService.updateGldPrediction();
     await this.priceTargetService.setTargetDiff();
     this.backtestAggregatorService.clearTimeLine();
 
@@ -532,8 +564,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async modifyCurrentHoldings() {
     this.autopilotService.currentHoldings.forEach(async (holding) => {
-      await this.autopilotService.checkStopLoss(holding);
-
       try {
         const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
         if (holding.primaryLegs) {
@@ -592,7 +622,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async analyseRecommendations(holding: PortfolioInfoHolding) {
     if (holding.recommendation.toLowerCase() === 'buy') {
-      await this.orderHandlingService.addBuy(holding, (this.autopilotService.riskToleranceList[this.autopilotService.riskCounter]) * 2, 'Recommendated buy');
+      await this.orderHandlingService.addBuy(holding, (this.autopilotService.riskLevel) * 2, 'Recommendated buy');
     } else if (holding.recommendation.toLowerCase() === 'sell') {
       await this.cartService.portfolioSell(holding, 'Recommended sell');
     }
@@ -607,7 +637,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     profitThreshold: number = null,
     stopLossThreshold: number = null) {
     await this.cartService.portfolioDaytrade(symbol,
-      allocation || this.autopilotService.riskToleranceList[this.autopilotService.riskCounter],
+      allocation || this.autopilotService.riskLevel,
       profitThreshold,
       stopLossThreshold);
   }
@@ -662,7 +692,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const metTarget = await this.priceTargetService.hasMetPriceTarget(0);
     if (!metTarget) {
       this.decreaseDayTradeRiskTolerance();
-      this.increaseRiskTolerance();
+      await this.increaseRiskTolerance();
     } else {
       this.increaseDayTradeRiskTolerance();
     }
@@ -813,7 +843,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async testAddTradingPairsToCart() {
     await this.optionsOrderBuilderService.addOptionsStrategiesToCart();
   }
-  
+
   async test() {
     this.cartService.deleteCart();
     this.cartService.removeCompletedOrders();

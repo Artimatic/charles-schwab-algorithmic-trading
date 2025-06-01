@@ -12,6 +12,7 @@ import { MessageService } from 'primeng/api';
 import { AlwaysBuy } from '../rh-table/backtest-stocks.constant';
 import { StrategyStoreService } from './strategy-store.service';
 import { AllocationService } from '../allocation/allocation.service';
+import { LookBackStrategyService } from '../strategies/look-back-strategy.service';
 
 export interface ComplexStrategy {
   state: 'assembling' | 'assembled' | 'disassembling' | 'disassembled';
@@ -27,9 +28,9 @@ export class StrategyBuilderService {
   correlationThreshold = 0.55;
   sumNet = 0;
   countNet = 0;
-  defaultMinExpiration = 30;
+  defaultMinExpiration = 90;
+  defaultMaxImpliedMovement = 0.06;
   bullishStocks = [];
-  maxImpliedMovement = 0.15;
   constructor(private backtestService: BacktestService,
     private optionsDataService: OptionsDataService,
     private portfolioService: PortfolioService,
@@ -37,7 +38,8 @@ export class StrategyBuilderService {
     private reportingService: ReportingService,
     private strategyStoreService: StrategyStoreService,
     private cartService: CartService,
-    private allocationService: AllocationService) { }
+    private allocationService: AllocationService,
+    private lookBackStrategyService: LookBackStrategyService) { }
 
   addBullishStock(symbol: string) {
     this.bullishStocks.push(symbol);
@@ -88,8 +90,9 @@ export class StrategyBuilderService {
         results.impliedMovement,
         results.ml);
       const kellyCriterion = this.allocationService.calculateKellyCriterion(pop, 1);
+      const recommendation = results.recommendation === 'INDETERMINANT' ? await this.lookBackStrategyService.checkOrderHistory(symbol, results.orderHistory) : results.recommendation;
       const tableObj = {
-        recommendation: results.recommendation,
+        recommendation: recommendation,
         stock: results.symbol,
         net: results.net,
         returns: results.returns,
@@ -109,9 +112,6 @@ export class StrategyBuilderService {
         pop: pop,
         kellyCriterion: kellyCriterion
       };
-      if (results.buySignals.find(s => s.includes('pennant')) || results.sellSignals.find(s => s.includes('pennant'))) {
-        this.messageService.add({ severity: 'info', summary: `${symbol} found flag pennant`, sticky: true });
-      }
 
       this.addToResultStorage(tableObj);
       return results;
@@ -168,7 +168,7 @@ export class StrategyBuilderService {
   }
 
   private passesVolumeCheck(openInterest, currTotalVolume, prevObj) {
-    return ((!prevObj && (openInterest > 430 || currTotalVolume > 200)) || prevObj && (openInterest > prevObj.openInterest));
+    return ((!prevObj && (openInterest > 390 || currTotalVolume > 200)) || prevObj && (openInterest > prevObj.openInterest));
   }
 
   private passesPriceCheck(price) {
@@ -178,9 +178,9 @@ export class StrategyBuilderService {
 
   async getCallStrangleTrade(symbol: string): Promise<Strangle> {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
-    if (!optionsData.move || optionsData.move > this.maxImpliedMovement) {
+    if (!optionsData.move || optionsData.move > this.defaultMaxImpliedMovement) {
       this.reportingService.addAuditLog(null,
-        `Implied movement is too high for ${symbol} at ${optionsData.move}. Max is ${this.maxImpliedMovement}`);
+        `Implied movement is too high for ${symbol} at ${optionsData.move}. Max is ${this.defaultMaxImpliedMovement}`);
       this.addBullishStock(symbol);
       return { call: null, put: null };
     }
@@ -226,7 +226,7 @@ export class StrategyBuilderService {
 
   async getPutStrangleTrade(symbol: string) {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
-    if (!optionsData.move || optionsData.move > this.maxImpliedMovement) {
+    if (!optionsData.move || optionsData.move > this.defaultMaxImpliedMovement) {
       this.reportingService.addAuditLog(null,
         `Implied movement is too high for ${symbol} at ${optionsData.move}`);
       return { call: null, put: null };
@@ -444,10 +444,10 @@ export class StrategyBuilderService {
       const pairs = tradingPairs[key];
       const bObj = backtests[key];
       if (bObj !== undefined && bObj !== null && bObj.ml !== null && bObj.buySignals) {
-        if (bObj.ml > 0.5 && bObj.recommendation.toLowerCase() === 'strongbuy') {
+        if (bObj.ml > 0.4 && bObj.recommendation.toLowerCase() === 'strongbuy') {
           for (const pairVal of pairs) {
             if (pairVal !== null && backtests[pairVal.symbol] && backtests[pairVal.symbol].ml !== null) {
-              if (backtests[pairVal.symbol]?.sellMl > 0.5 && (backtests[pairVal.symbol].recommendation.toLowerCase() === 'strongsell')) {
+              if (backtests[pairVal.symbol]?.sellMl > 0.4 && (backtests[pairVal.symbol].recommendation.toLowerCase() === 'strongsell')) {
                 this.createStrategy(`${bObj.stock} Pair trade`, bObj.stock, [bObj.stock], [pairVal.symbol], 'Correlated pairs');
               }
             }
@@ -467,7 +467,7 @@ export class StrategyBuilderService {
   }
 
   addAndRemoveOldStrategies(storage) {
-    storage = storage.filter(s => moment().diff(moment(s.date), 'days') < 6);
+    storage = storage.filter(s => moment().diff(moment(s.date), 'days') < 10);
     this.setTradingStrategies(storage);
   }
 
@@ -663,7 +663,7 @@ export class StrategyBuilderService {
     if (!totalCost) {
       return 0;
     }
-    return Math.floor(totalCost / stockPrice);
+    return Math.floor(totalCost / stockPrice) | 1;
   }
 
   async buySnP(balance: number, totalBalance: number) {
@@ -682,5 +682,71 @@ export class StrategyBuilderService {
         OrderTypes.call, 'Buy SnP strategy', 'Buy', currentCall.quantity);
       this.cartService.addToCart(order, true, 'Buy SPY');
     }
+  }
+
+  increaseStrategyRisk() {
+    if (this.defaultMinExpiration > 20) {
+      this.defaultMinExpiration -= 6;
+    }
+
+    if (this.defaultMaxImpliedMovement < 0.18) {
+      this.defaultMaxImpliedMovement += 0.005;
+    }
+  }
+
+  setStrategyRisk(riskLevel: number, maxRisk: number) {
+    const riskPct = round(riskLevel / maxRisk, 1);
+    console.log('Risk percent', riskPct);
+    switch (riskLevel / maxRisk) {
+      case 0.1:
+        this.defaultMinExpiration = 80;
+        this.defaultMaxImpliedMovement = 0.08;
+        break;
+      case 0.2:
+        this.defaultMinExpiration = 70;
+        this.defaultMaxImpliedMovement = 0.09;
+        break;
+      case 0.3:
+        this.defaultMinExpiration = 60;
+        this.defaultMaxImpliedMovement = 0.1;
+        break;
+      case 0.4:
+        this.defaultMinExpiration = 55;
+        this.defaultMaxImpliedMovement = 0.11;
+        break;
+      case 0.5:
+        this.defaultMinExpiration = 55;
+        this.defaultMaxImpliedMovement = 0.115;
+        break;
+      case 0.6:
+        this.defaultMinExpiration = 50;
+        this.defaultMaxImpliedMovement = 0.125;
+        break;
+      case 0.7:
+        this.defaultMinExpiration = 45;
+        this.defaultMaxImpliedMovement = 0.135;
+        break;
+      case 0.8:
+        this.defaultMinExpiration = 40;
+        this.defaultMaxImpliedMovement = 0.145;
+        break;
+      case 0.9:
+        this.defaultMinExpiration = 35;
+        this.defaultMaxImpliedMovement = 0.15;
+        break;
+      case 1:
+        this.defaultMinExpiration = 25;
+        this.defaultMaxImpliedMovement = 0.155;
+        break;
+      default:
+        this.defaultMinExpiration = 90;
+        this.defaultMaxImpliedMovement = 0.07;
+        break;
+    }
+  }
+
+  resetStrategyRisk() {
+    this.defaultMinExpiration = 90;
+    this.defaultMaxImpliedMovement = 0.07;
   }
 }

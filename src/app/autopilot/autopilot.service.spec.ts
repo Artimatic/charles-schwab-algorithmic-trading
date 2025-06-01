@@ -99,6 +99,7 @@ describe('AutopilotService', () => {
 
   it('should get min and max cash for options', async () => {
     service.riskCounter = 1;
+    service.setRiskLevel();
     mockCartService.getAvailableFunds.and.returnValue(10000);
     const result = await service.getMinMaxCashForOptions();
     expect(result.maxCash).toBe(250);
@@ -108,6 +109,7 @@ describe('AutopilotService', () => {
 
   it('should get min and max cash for options with modifier', async () => {
     service.riskCounter = 1;
+    service.setRiskLevel();
     mockCartService.getAvailableFunds.and.returnValue(10000);
     const result = await service.getMinMaxCashForOptions(0.1);
     expect(result.maxCash).toBe(250);

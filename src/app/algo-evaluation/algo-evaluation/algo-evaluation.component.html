@@ -1,5 +1,5 @@
 <p-table [columns]="selectedColumns" [value]="currentList" [paginator]="true" [rows]="3" selectionMode="single"
-  [(selection)]="selectedStock" dataKey="stock">
+  [(selection)]="selectedStock" dataKey="stock" [tableStyle]="{ 'min-width': '50rem' }">
   <ng-template pTemplate="caption">
     <label for="portfolio-switch">{{ showPortfolio ? 'Portfolio' : 'Recommendations'}}</label>
     <p-inputSwitch inputId="portfolio-switch" [(ngModel)]="showPortfolio" (onChange)="setTable($event)"></p-inputSwitch>
@@ -35,6 +35,28 @@
         </span>
         <span *ngSwitchCase="'previousImpliedMovement'">
           {{element?.previousImpliedMovement | percent}}
+        </span>
+        <span *ngSwitchCase="'primaryLegs'">
+          <span *ngIf="element?.primaryLegs" [title]="element?.primaryLegs" style="
+            display: inline-block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 150px;
+          ">
+            {{ element?.primaryLegs }}
+          </span>
+        </span>
+        <span *ngSwitchCase="'secondaryLegs'">
+          <span *ngIf="element?.secondaryLegs" [title]="element?.secondaryLegs" style="
+            display: inline-block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 150px;
+          ">
+            {{ element?.secondaryLegs }}
+          </span>
         </span>
         <span *ngSwitchCase="'kellyCriterion'">
           <button pButton color="primary" *ngIf=!element.kellyCriterion (click)="getKellyCriterion(element)">Get

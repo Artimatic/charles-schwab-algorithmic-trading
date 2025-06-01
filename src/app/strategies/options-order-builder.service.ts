@@ -253,6 +253,9 @@ export class OptionsOrderBuilderService {
             const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
             if (!this.isIdealOption(putPrice, maxCashAllocation, bearishStrangle.put)) {
               currentPut = null;
+              if (currentCall) {
+                this.addCallToCurrentTrades(currentCall.underlying);
+              }
               break;
             }
             const multiple = (callPrice > putPrice) ? Math.round(callPrice / putPrice) : Math.round(putPrice / callPrice);
@@ -305,7 +308,9 @@ export class OptionsOrderBuilderService {
     multiple = 1,
     minCashAllocation: number,
     maxCashAllocation: number) {
-    while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > 350 &&
+    const startingDiff = maxCashAllocation - minCashAllocation;
+    let minDiff = startingDiff > 100 && startingDiff < 500 ? startingDiff : 350;
+    while (Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) > minDiff &&
       Math.abs((callPrice * callQuantity) - (putPrice * putQuantity)) <= maxCashAllocation) {
       if (callPrice > putPrice) {
         callQuantity++;
@@ -428,16 +433,8 @@ export class OptionsOrderBuilderService {
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
     const lastPrice = price[symbol].quote.lastPrice;
     const closePrice = price[symbol].quote.closePrice;
-    const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
-    const impliedMove = await this.getImpliedMove(symbol, backtestResults)
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
-    const imThreshold = (1 / (impliedMove || 1) * 0.002);
-    console.log(`${symbol} current diff: ${currentDiff}, threshold: ${imThreshold}`);
-    if (Math.abs(currentDiff) < Math.max(0.019, imThreshold)) {
-      return true;
-    }
-
-    return false;
+    return Math.abs(currentDiff) < 0.01;
   }
 
   async shouldSellOptions(holding: PortfolioInfoHolding, isStrangle: boolean, putCallInd: string) {
@@ -552,9 +549,14 @@ export class OptionsOrderBuilderService {
           const shouldBuyPut = await this.shouldBuyOption(trade[1].holding.symbol);
           console.log('Should buy ', trade, shouldBuyCall, shouldBuyPut);
           if (shouldBuyCall && shouldBuyPut) {
-            this.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Low volatility');
-            foundTrade = true;
-            break;
+            const buyTrendCall = await this.priceTargetService.hasBuyTrend(trade[0].holding.symbol);
+            const buyTrendPut = await this.priceTargetService.hasSellTrend(trade[1].holding.symbol);
+            console.log('Trend', trade, buyTrendCall, buyTrendPut);
+            if (buyTrendCall && buyTrendPut) {
+              this.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Low volatility');
+              foundTrade = true;
+              break;
+            }
           }
         }
       }

@@ -19,7 +19,7 @@ export class PortfolioMgmtService {
     private strategyBuilderService: StrategyBuilderService,
     private orderHandlingService: OrderHandlingService) { }
 
-  // getMinMaxCash(this.riskToleranceList[1], this.riskToleranceList[this.riskCounter])
+  // getMinMaxCash(this.riskToleranceList[1], this.riskLevel)
   async getMinMaxCash(minRiskPct, maxRiskPct): Promise<{ minCash: number, maxCash: number }> {
     const cash = await this.cartService.getAvailableFunds(false);
     const minCash = round(minRiskPct * cash, 2);

@@ -1,8 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { AiPicksService, CartService, PortfolioInfoHolding } from '@shared/services';
 import { Stock } from '@shared/stock.interface';
-import { StrategyBuilderService } from 'src/app/backtest-table/strategy-builder.service';
-import { OptionsOrderBuilderService } from 'src/app/strategies/options-order-builder.service';
 
 @Component({
   selector: 'app-algo-evaluation',
@@ -18,9 +16,7 @@ export class AlgoEvaluationComponent implements OnInit {
   recommendations: Stock[] = [];
 
   constructor(private aiPicksService: AiPicksService,
-    private optionsOrderBuilderService: OptionsOrderBuilderService,
-    private cartService: CartService,
-    private strategyBuilderService: StrategyBuilderService) { }
+    private cartService: CartService) { }
 
   async ngOnInit() {
     await this.getBacktests();
@@ -41,17 +37,9 @@ export class AlgoEvaluationComponent implements OnInit {
     this.recommendations = this.stockList.filter(stock => {
       if ((stock?.ml > 0.5) && (stock.recommendation.toLowerCase() === 'buy' || stock.recommendation.toLowerCase() === 'strongbuy')) {
         stock.recommendation = 'Strong buy';
-        if (stock.impliedMovement < 0.09) {
-          this.optionsOrderBuilderService.addCallToCurrentTrades(stock.stock);
-        } else {
-          this.strategyBuilderService.addBullishStock(stock.stock);
-        }
         return true;
       } else if ((stock?.sellMl > 0.5) && (stock.recommendation.toLowerCase() === 'sell' || stock.recommendation.toLowerCase() === 'strongsell')) {
         stock.recommendation = 'Strong sell';
-        if (stock.impliedMovement < 0.09) {
-          this.optionsOrderBuilderService.addPutToCurrentTrades(stock.stock);
-        }
         return true;
       }
       return false;
@@ -77,17 +65,15 @@ export class AlgoEvaluationComponent implements OnInit {
       { field: 'shares', header: 'Shares' },
       { field: 'primaryLegs', header: 'Primary Options' },
       { field: 'secondaryLegs', header: 'Secondary Options' },
-      { field: 'shares', header: 'Shares' },
       { field: 'pl', header: 'PnL' },
-      { field: 'netLiq', header: 'NetLiq' },
-      { field: 'recommendation', header: 'Recommendation' }
+      { field: 'netLiq', header: 'NetLiq' }
     ];
   }
 
   async setTable(ev = null) {
     this.showPortfolio = ev?.checked;
     if (this.showPortfolio) {
-      this.setColumnsForPortfolio
+      this.setColumnsForPortfolio();
       const positions = await this.cartService.findCurrentPositions();
       this.currentList = positions.map((pos: PortfolioInfoHolding) => {
         return {
@@ -95,9 +81,10 @@ export class AlgoEvaluationComponent implements OnInit {
           pl: pos.pl,
           netLiq: pos.netLiq,
           shares: pos.shares,
-          primaryLegs: pos.primaryLegs.map(leg => leg.description).join(','),
-          secondaryLegs: pos.secondaryLegs.map(leg => leg.description).join(','),
-          recommendation: pos.recommendation
+          primaryLegs: pos.primaryLegs ? pos.primaryLegs.map(leg => `${leg.quantity} ${leg.description}`).join(',') : null,
+          primaryLegsSymbol: pos.primaryLegs ? pos.primaryLegs[0].putCall : '',
+          secondaryLegs: pos.secondaryLegs ? pos.secondaryLegs.map(leg => `${leg.quantity} ${leg.description}`).join(',') : null,
+          secondaryLegsSymbol: pos.secondaryLegs ? pos.secondaryLegs[0].putCall : ''
         };
       });
     } else {

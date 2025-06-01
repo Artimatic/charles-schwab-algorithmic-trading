@@ -19,17 +19,7 @@ export class CartService {
     private tradeService: TradeService,
     private reportingService: ReportingService,
     private messageService: MessageService) { }
-
-  private removeDuplicates(arr: SmartOrder[]): SmartOrder[] {
-    const seen = new Map();
-    for (const item of arr) {
-      if (!seen.has(item.holding.name)) {
-        seen.set(item.holding.name, item);
-      }
-    }
-    return Array.from(seen.values());
-  }
-
+    
   getBuyOrders() {
     return this.buyOrders;
   }
@@ -74,6 +64,8 @@ export class CartService {
     let noDup = true;
     for (const idx of indices) {
       if (idx > -1) {
+        console.log('Found duplicate order', order, indices);
+
         noDup = false;
         break;
       }
@@ -95,17 +87,16 @@ export class CartService {
     }
 
     if (noDup && order.quantity > 0) {
-      if (order.side.toLowerCase() === 'sell') {
-        this.sellOrders.push(order);
-      } else if (order.side.toLowerCase() === 'buy') {
-        this.buyOrders.push(order);
-      } else {
-        this.otherOrders.push(order);
-      }
+      this.addOrder(order);
+
+      console.log('Added order', order);
+
       this.messageService.add({
         severity: 'success',
         summary: `Added ${order.side} ${order.holding.symbol}`
       });
+    } else {
+      console.log('Order not added', noDup, order);
     }
   }
 
@@ -178,10 +169,6 @@ export class CartService {
         this.otherOrders.push(order);
         break;
     }
-
-    this.sellOrders = this.removeDuplicates(this.sellOrders);
-    this.buyOrders = this.removeDuplicates(this.buyOrders);
-    this.otherOrders = this.removeDuplicates(this.otherOrders);
     console.log('Added new order', order, this.sellOrders, this.buyOrders, this.otherOrders);
   }
 
@@ -616,7 +603,10 @@ export class CartService {
     reason: string) {
     const price = await this.portfolioService.getPrice(holding.name).toPromise();
     const cash = await this.getAvailableFunds(false);
-    const quantity = this.getQuantity(price, allocation, cash);
+    let quantity = this.getQuantity(price, allocation, cash);
+    if (!quantity && cash >= price) {
+      quantity = 1;
+    }
     const orderSizePct = 0.1;
     const order = this.buildOrderWithAllocation(holding.name, quantity, price, 'Buy',
       orderSizePct, stopLossThreshold, profitThreshold,
@@ -640,8 +630,9 @@ export class CartService {
     allocation: number = 0.05,
     profitThreshold: number = null,
     stopLossThreshold: number = null, reason: string) {
-    console.log('Portfolio buy', holding, allocation, profitThreshold, stopLossThreshold);
     const order = await this.buildBuyOrder(holding, allocation, profitThreshold, stopLossThreshold, reason);
+    console.log('Portfolio buy', order, reason);
+
     if (order.quantity) {
       this.addToCart(order, false, reason);
       this.initializeOrder(order);
