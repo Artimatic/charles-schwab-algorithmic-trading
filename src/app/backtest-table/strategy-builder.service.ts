@@ -601,7 +601,7 @@ export class StrategyBuilderService {
     this.portfolioService.sendOptionBuy(putOption.put.symbol, orderQuantity, price, false).subscribe();
   }
 
-  getBuyList() {
+  getAlwaysBuyList() {
     const alwaysBuyStorage = this.strategyStoreService.getStorage('always_buy');
     if (alwaysBuyStorage && alwaysBuyStorage.length) {
       return AlwaysBuy.concat(alwaysBuyStorage);
@@ -632,7 +632,7 @@ export class StrategyBuilderService {
   }
 
   addToBuyList(ticker: string) {
-    const list = this.getBuyList();
+    const list = this.getAlwaysBuyList();
     if (list && list.length) {
       if (!list.find(val => val.ticker === ticker)) {
         list.push({
@@ -650,7 +650,7 @@ export class StrategyBuilderService {
   }
 
   removeFromBuyList(ticker: string) {
-    const list = this.getBuyList();
+    const list = this.getAlwaysBuyList();
     if (list && list.length) {
       localStorage.setItem('always_buy', JSON.stringify(list.filter(val => val.ticker !== ticker)));
     } else {
@@ -699,43 +699,43 @@ export class StrategyBuilderService {
     console.log('Risk percent', riskPct);
     switch (riskLevel / maxRisk) {
       case 0.1:
-        this.defaultMinExpiration = 80;
+        this.defaultMinExpiration = 90;
         this.defaultMaxImpliedMovement = 0.08;
         break;
       case 0.2:
-        this.defaultMinExpiration = 70;
+        this.defaultMinExpiration = 80;
         this.defaultMaxImpliedMovement = 0.09;
         break;
       case 0.3:
-        this.defaultMinExpiration = 60;
+        this.defaultMinExpiration = 78;
         this.defaultMaxImpliedMovement = 0.1;
         break;
       case 0.4:
-        this.defaultMinExpiration = 55;
+        this.defaultMinExpiration = 75;
         this.defaultMaxImpliedMovement = 0.11;
         break;
       case 0.5:
-        this.defaultMinExpiration = 55;
+        this.defaultMinExpiration = 70;
         this.defaultMaxImpliedMovement = 0.115;
         break;
       case 0.6:
-        this.defaultMinExpiration = 50;
+        this.defaultMinExpiration = 65;
         this.defaultMaxImpliedMovement = 0.125;
         break;
       case 0.7:
-        this.defaultMinExpiration = 45;
+        this.defaultMinExpiration = 55;
         this.defaultMaxImpliedMovement = 0.135;
         break;
       case 0.8:
-        this.defaultMinExpiration = 40;
+        this.defaultMinExpiration = 50;
         this.defaultMaxImpliedMovement = 0.145;
         break;
       case 0.9:
-        this.defaultMinExpiration = 35;
+        this.defaultMinExpiration = 45;
         this.defaultMaxImpliedMovement = 0.15;
         break;
       case 1:
-        this.defaultMinExpiration = 25;
+        this.defaultMinExpiration = 35;
         this.defaultMaxImpliedMovement = 0.155;
         break;
       default:
