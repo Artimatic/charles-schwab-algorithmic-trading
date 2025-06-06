@@ -20,7 +20,8 @@ export class ReportingService {
   exportAuditHistory() {
     const today = moment().format('MM-DD-YY');
     console.log('printing logs: ', this.logs);
-    this.excelService.exportAsExcelFile(this.logs, `logs_${today}`);
+    const accountId = sessionStorage.getItem('accountId');
+    this.excelService.exportAsExcelFile(this.logs, `${accountId || 'default'}_logs_${today}`);
     this.clearLogs();
   }
 
