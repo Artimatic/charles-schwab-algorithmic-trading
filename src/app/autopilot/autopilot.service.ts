@@ -82,7 +82,7 @@ export class AutopilotService {
     RiskTolerance.Greed
   ];
   isOpened = false;
-  maxHoldings = 30;
+  maxHoldings = 15;
   lastBuyList = [];
   lastOptionsCheckCheck = null;
   currentHoldings: PortfolioInfoHolding[] = [];
@@ -97,6 +97,7 @@ export class AutopilotService {
     Strategy.StopLoss,
     Strategy.BuyWinnersSellLosers,
     Strategy.BuySnP,
+    Strategy.TrimHoldings,
     Strategy.MLPairs,
     Strategy.StopLoss,
     Strategy.BuySnP,

@@ -13,6 +13,7 @@ import { AlwaysBuy } from '../rh-table/backtest-stocks.constant';
 import { StrategyStoreService } from './strategy-store.service';
 import { AllocationService } from '../allocation/allocation.service';
 import { LookBackStrategyService } from '../strategies/look-back-strategy.service';
+import { ServiceStatus } from '@shared/models/service-status';
 
 export interface ComplexStrategy {
   state: 'assembling' | 'assembled' | 'disassembling' | 'disassembled';
@@ -71,6 +72,13 @@ export class StrategyBuilderService {
     return { buySignals, sellSignals };
   }
 
+  mlError() {
+    this.messageService.add({
+      severity: 'danger',
+      summary: 'Machine learning service is down.',
+      life: 1800000
+    });
+  }
   async getBacktestData(symbol: string, overwrite = false) {
     if (symbol === undefined) {
       return null;
@@ -82,7 +90,19 @@ export class StrategyBuilderService {
     const current = moment().format('YYYY-MM-DD');
     const start = moment().subtract(700, 'days').format('YYYY-MM-DD');
     try {
-      const results = await this.backtestService.getBacktestData(symbol, start, current).toPromise();
+      const results = await this.backtestService.getBacktestData(symbol, start, current)
+        .toPromise()
+        .catch(() => {
+          this.backtestService.pingArmidillo().subscribe(
+            (data: ServiceStatus) => {
+              if (!data || !data.status) {
+                this.mlError();
+              }
+            },
+            () => {
+              this.mlError();
+            });
+        });
       // this.backtestAggregatorService.analyseBacktest(results);
       this.addToOrderHistoryStorage(symbol, results.orderHistory);
       const pop = this.allocationService.determineProbabilityOfProfit(results.buySignals.length,
@@ -697,7 +717,7 @@ export class StrategyBuilderService {
   setStrategyRisk(riskLevel: number, maxRisk: number) {
     const riskPct = round(riskLevel / maxRisk, 1);
     console.log('Risk percent', riskPct);
-    switch (riskLevel / maxRisk) {
+    switch (riskPct) {
       case 0.1:
         this.defaultMinExpiration = 90;
         this.defaultMaxImpliedMovement = 0.08;
