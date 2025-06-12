@@ -719,28 +719,28 @@ export class StrategyBuilderService {
     console.log('Risk percent', riskPct);
     switch (riskPct) {
       case 0.1:
-        this.defaultMinExpiration = 90;
-        this.defaultMaxImpliedMovement = 0.08;
+        this.defaultMinExpiration = 100;
+        this.defaultMaxImpliedMovement = 0.065;
         break;
       case 0.2:
-        this.defaultMinExpiration = 80;
-        this.defaultMaxImpliedMovement = 0.09;
+        this.defaultMinExpiration = 90;
+        this.defaultMaxImpliedMovement = 0.075;
         break;
       case 0.3:
-        this.defaultMinExpiration = 78;
-        this.defaultMaxImpliedMovement = 0.1;
+        this.defaultMinExpiration = 85;
+        this.defaultMaxImpliedMovement = 0.085;
         break;
       case 0.4:
-        this.defaultMinExpiration = 75;
-        this.defaultMaxImpliedMovement = 0.11;
+        this.defaultMinExpiration = 80;
+        this.defaultMaxImpliedMovement = 0.095;
         break;
       case 0.5:
-        this.defaultMinExpiration = 70;
-        this.defaultMaxImpliedMovement = 0.115;
+        this.defaultMinExpiration = 75;
+        this.defaultMaxImpliedMovement = 0.105;
         break;
       case 0.6:
         this.defaultMinExpiration = 65;
-        this.defaultMaxImpliedMovement = 0.125;
+        this.defaultMaxImpliedMovement = 0.115;
         break;
       case 0.7:
         this.defaultMinExpiration = 55;
@@ -752,10 +752,10 @@ export class StrategyBuilderService {
         break;
       case 0.9:
         this.defaultMinExpiration = 45;
-        this.defaultMaxImpliedMovement = 0.15;
+        this.defaultMaxImpliedMovement = 0.155;
         break;
       case 1:
-        this.defaultMinExpiration = 35;
+        this.defaultMinExpiration = 30;
         this.defaultMaxImpliedMovement = 0.155;
         break;
       default:
