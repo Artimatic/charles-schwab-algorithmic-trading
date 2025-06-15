@@ -76,7 +76,7 @@ export class StrategyBuilderService {
     this.messageService.add({
       severity: 'danger',
       summary: 'Machine learning service is down.',
-      life: 1800000
+      sticky: true
     });
   }
   async getBacktestData(symbol: string, overwrite = false) {
