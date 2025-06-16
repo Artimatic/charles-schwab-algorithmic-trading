@@ -95,7 +95,7 @@ export class StockListDialogComponent implements OnInit {
   }
 
   setToAlwaysBuyList() {
-    this.stockList = this.strategyBuilderService.getBuyList();
+    this.stockList = this.strategyBuilderService.getAlwaysBuyList();
   }
 
   addRow(stock: string = null) {

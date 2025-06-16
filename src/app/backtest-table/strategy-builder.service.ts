@@ -13,6 +13,7 @@ import { AlwaysBuy } from '../rh-table/backtest-stocks.constant';
 import { StrategyStoreService } from './strategy-store.service';
 import { AllocationService } from '../allocation/allocation.service';
 import { LookBackStrategyService } from '../strategies/look-back-strategy.service';
+import { ServiceStatus } from '@shared/models/service-status';
 
 export interface ComplexStrategy {
   state: 'assembling' | 'assembled' | 'disassembling' | 'disassembled';
@@ -71,6 +72,13 @@ export class StrategyBuilderService {
     return { buySignals, sellSignals };
   }
 
+  mlError() {
+    this.messageService.add({
+      severity: 'danger',
+      summary: 'Machine learning service is down.',
+      sticky: true
+    });
+  }
   async getBacktestData(symbol: string, overwrite = false) {
     if (symbol === undefined) {
       return null;
@@ -82,7 +90,19 @@ export class StrategyBuilderService {
     const current = moment().format('YYYY-MM-DD');
     const start = moment().subtract(700, 'days').format('YYYY-MM-DD');
     try {
-      const results = await this.backtestService.getBacktestData(symbol, start, current).toPromise();
+      const results = await this.backtestService.getBacktestData(symbol, start, current)
+        .toPromise()
+        .catch(() => {
+          this.backtestService.pingArmidillo().subscribe(
+            (data: ServiceStatus) => {
+              if (!data || !data.status) {
+                this.mlError();
+              }
+            },
+            () => {
+              this.mlError();
+            });
+        });
       // this.backtestAggregatorService.analyseBacktest(results);
       this.addToOrderHistoryStorage(symbol, results.orderHistory);
       const pop = this.allocationService.determineProbabilityOfProfit(results.buySignals.length,
@@ -601,7 +621,7 @@ export class StrategyBuilderService {
     this.portfolioService.sendOptionBuy(putOption.put.symbol, orderQuantity, price, false).subscribe();
   }
 
-  getBuyList() {
+  getAlwaysBuyList() {
     const alwaysBuyStorage = this.strategyStoreService.getStorage('always_buy');
     if (alwaysBuyStorage && alwaysBuyStorage.length) {
       return AlwaysBuy.concat(alwaysBuyStorage);
@@ -632,7 +652,7 @@ export class StrategyBuilderService {
   }
 
   addToBuyList(ticker: string) {
-    const list = this.getBuyList();
+    const list = this.getAlwaysBuyList();
     if (list && list.length) {
       if (!list.find(val => val.ticker === ticker)) {
         list.push({
@@ -650,7 +670,7 @@ export class StrategyBuilderService {
   }
 
   removeFromBuyList(ticker: string) {
-    const list = this.getBuyList();
+    const list = this.getAlwaysBuyList();
     if (list && list.length) {
       localStorage.setItem('always_buy', JSON.stringify(list.filter(val => val.ticker !== ticker)));
     } else {
@@ -697,45 +717,45 @@ export class StrategyBuilderService {
   setStrategyRisk(riskLevel: number, maxRisk: number) {
     const riskPct = round(riskLevel / maxRisk, 1);
     console.log('Risk percent', riskPct);
-    switch (riskLevel / maxRisk) {
+    switch (riskPct) {
       case 0.1:
-        this.defaultMinExpiration = 80;
-        this.defaultMaxImpliedMovement = 0.08;
+        this.defaultMinExpiration = 100;
+        this.defaultMaxImpliedMovement = 0.065;
         break;
       case 0.2:
-        this.defaultMinExpiration = 70;
-        this.defaultMaxImpliedMovement = 0.09;
+        this.defaultMinExpiration = 90;
+        this.defaultMaxImpliedMovement = 0.075;
         break;
       case 0.3:
-        this.defaultMinExpiration = 60;
-        this.defaultMaxImpliedMovement = 0.1;
+        this.defaultMinExpiration = 85;
+        this.defaultMaxImpliedMovement = 0.085;
         break;
       case 0.4:
-        this.defaultMinExpiration = 55;
-        this.defaultMaxImpliedMovement = 0.11;
+        this.defaultMinExpiration = 80;
+        this.defaultMaxImpliedMovement = 0.095;
         break;
       case 0.5:
-        this.defaultMinExpiration = 55;
-        this.defaultMaxImpliedMovement = 0.115;
+        this.defaultMinExpiration = 75;
+        this.defaultMaxImpliedMovement = 0.105;
         break;
       case 0.6:
-        this.defaultMinExpiration = 50;
-        this.defaultMaxImpliedMovement = 0.125;
+        this.defaultMinExpiration = 65;
+        this.defaultMaxImpliedMovement = 0.115;
         break;
       case 0.7:
-        this.defaultMinExpiration = 45;
+        this.defaultMinExpiration = 55;
         this.defaultMaxImpliedMovement = 0.135;
         break;
       case 0.8:
-        this.defaultMinExpiration = 40;
+        this.defaultMinExpiration = 50;
         this.defaultMaxImpliedMovement = 0.145;
         break;
       case 0.9:
-        this.defaultMinExpiration = 35;
-        this.defaultMaxImpliedMovement = 0.15;
+        this.defaultMinExpiration = 45;
+        this.defaultMaxImpliedMovement = 0.155;
         break;
       case 1:
-        this.defaultMinExpiration = 25;
+        this.defaultMinExpiration = 30;
         this.defaultMaxImpliedMovement = 0.155;
         break;
       default:

@@ -82,7 +82,7 @@ export class AutopilotService {
     RiskTolerance.Greed
   ];
   isOpened = false;
-  maxHoldings = 30;
+  maxHoldings = 10;
   lastBuyList = [];
   lastOptionsCheckCheck = null;
   currentHoldings: PortfolioInfoHolding[] = [];
@@ -97,6 +97,7 @@ export class AutopilotService {
     Strategy.StopLoss,
     Strategy.BuyWinnersSellLosers,
     Strategy.BuySnP,
+    Strategy.TrimHoldings,
     Strategy.MLPairs,
     Strategy.StopLoss,
     Strategy.BuySnP,
@@ -1077,6 +1078,7 @@ export class AutopilotService {
     if (this.riskCounter < this.riskToleranceList.length - 1) {
       this.riskCounter++;
       this.strategyBuilderService.setStrategyRisk(this.riskCounter, this.riskToleranceList.length);
+      await this.sellLoser(this.currentHoldings);
     } else {
       await this.setCurrentHoldings();
       this.riskCounter = 0;

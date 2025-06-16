@@ -38,8 +38,7 @@ export class DaytradeActiveSearchComponent implements OnInit, OnDestroy {
   processSymbol$ = new Subject<string>();
   delay;
 
-  constructor(private strategyBuilderService: StrategyBuilderService,
-    private backtestService: BacktestService,
+  constructor(private backtestService: BacktestService,
     private portfolioService: PortfolioService,
     private daytradeService: DaytradeService,
     private machineDaytradingService: MachineDaytradingService,
