@@ -518,13 +518,17 @@ export class AutopilotService {
       this.reportingService.addAuditLog(null, 'Over balance');
       this.sellLoser(currentHoldings, 'Over balance');
     } else {
-      let targetUtilization = 1.618034 - this.getVolatilityMl() - (1 - this.getLastSpyMl());
-      targetUtilization = targetUtilization > 1 ? 1 : targetUtilization;
       const actualUtilization = (1 - (balance.cashBalance / balance.liquidationValue));
-      if (actualUtilization < targetUtilization) {
-        this.reportingService.addAuditLog(null, `Underutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
 
-        await this.addToCurrentPositions(currentHoldings, this.riskToleranceList[1]);
+      if (actualUtilization > 0.95) {
+        await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'), 1, 'Near 100 percent utilization');
+      } else {
+        let targetUtilization = 1.618034 - this.getVolatilityMl() - (1 - this.getLastSpyMl());
+        targetUtilization = targetUtilization > 1 ? 1 : targetUtilization;
+        if (actualUtilization < targetUtilization) {
+          this.reportingService.addAuditLog(null, `Underutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
+          await this.addToCurrentPositions(currentHoldings, this.riskToleranceList[1]);
+        }
       }
     }
     return isOverBalance;
