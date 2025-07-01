@@ -513,6 +513,7 @@ export class AutopilotService {
 
   async handleBalanceUtilization(currentHoldings) {
     const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
+    this.priceTargetService.setLiquidationValue(balance.liquidationValue);
     const isOverBalance = Boolean(Number(balance.cashBalance) < 0);
     if (isOverBalance) {
       this.reportingService.addAuditLog(null, 'Over balance');

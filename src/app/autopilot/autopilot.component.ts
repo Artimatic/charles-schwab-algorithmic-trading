@@ -194,6 +194,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
       },
       {
+        label: 'Test buy stock',
+        command: async () => {
+          
+        }
+      },
+      {
         label: 'Set credentials',
         command: async () => {
           this.autopilotService.checkCredentials();
@@ -814,6 +820,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async testPut() {
     const sell = 'WMT';
     const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
+    if (!bearishStrangle.put) {
+      return;
+    }
     const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
     const currentPut = {
       put: bearishStrangle.put,
@@ -832,6 +841,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async testCall() {
     const buy = 'AMZN';
     const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(buy);
+    if (!bullishStrangle.call) {
+      return;
+    }
     const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
 
     const currentCall = {
@@ -930,16 +942,19 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       for (let i = 0; i < orders.length; i++) {
         orders[i].priceLowerBound = 0.01
         const buyOrder = orders[i];
+        // Test sending buy order
         await this.orderHandlingService.handleIntradayRecommendation(buyOrder, { recommendation: OrderType.Buy } as any);
       }
       this.testAddTradingPairsToCart()
     }, 20000);
+
     setTimeout(async () => {
       const buyAndSellList = this.cartService.sellOrders.concat(this.cartService.buyOrders);
       const orders = buyAndSellList.concat(this.cartService.otherOrders);
       for (let i = 0; i < orders.length; i++) {
         orders[i].priceLowerBound = 100000
         const buyOrder = orders[i];
+        // Test sending sell order
         await this.orderHandlingService.handleIntradayRecommendation(buyOrder, { recommendation: OrderType.Sell } as any);
       }
       this.testAddTradingPairsToCart()
