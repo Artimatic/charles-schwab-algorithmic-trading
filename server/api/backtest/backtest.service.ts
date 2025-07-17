@@ -1787,7 +1787,7 @@ class BacktestService {
     recommendations.bband = AlgoService.checkBBand(price,
       AlgoService.getLowerBBand(indicator.bband80), AlgoService.getUpperBBand(indicator.bband80));
 
-    recommendations.vwma = AlgoService.checkVwma(price, indicator.vwma);
+    recommendations.vwma = AlgoService.checkVwma(price, indicator.vwma, indicator.sma10, indicator.sma50);
 
     recommendations.mfiDivergence = AlgoService.checkMfiDivergence(allIndicators);
     recommendations.mfiDivergence2 = AlgoService.checkMfiDivergence2(allIndicators);
