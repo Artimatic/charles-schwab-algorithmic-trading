@@ -395,7 +395,7 @@ class BacktestService {
     const bbandRecommendation = AlgoService.checkBBand(price,
       AlgoService.getLowerBBand(indicator.bband80), AlgoService.getUpperBBand(indicator.bband80));
 
-    const vwmaRecommendation = AlgoService.checkVwma(price, indicator.vwma);
+    const vwmaRecommendation = AlgoService.checkVwma(price, indicator.vwma, indicator.sma10, indicator.sma50);
 
     const macdRecommendation = AlgoService.checkMacdDaytrade(indicator.macd, indicator.macdPrevious);
 
