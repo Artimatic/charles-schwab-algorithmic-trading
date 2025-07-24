@@ -1082,7 +1082,6 @@ export class AutopilotService {
     if (this.riskCounter < this.riskToleranceList.length - 1) {
       this.riskCounter++;
       this.strategyBuilderService.setStrategyRisk(this.riskCounter, this.riskToleranceList.length);
-      await this.sellLoser(this.currentHoldings);
     } else {
       await this.setCurrentHoldings();
       this.riskCounter = 0;
