@@ -96,7 +96,7 @@ export class AutopilotService {
     Strategy.BuyMfiDiv,
     Strategy.PerfectPair,
     Strategy.StopLoss,
-    //Strategy.BuySnP,
+    Strategy.BuySnP,
     Strategy.BuyWinnersSellLosers,
     //Strategy.BuySnP,
     Strategy.TrimHoldings,
@@ -155,9 +155,6 @@ export class AutopilotService {
     async () => {
       await this.setCurrentHoldings();
       await this.balanceCallPutRatio(this.currentHoldings);
-    },
-    async () => {
-      await this.padOrders();
     }
   ];
 
@@ -1087,17 +1084,30 @@ export class AutopilotService {
       this.riskCounter = 0;
       this.strategyBuilderService.increaseStrategyRisk();
     }
-    this.changeStrategy();
+    this.checkAndChangeStrategyOnNegativePnL();
     this.setRiskLevel();
     this.saveRisk();
 
     await this.handleStrategy();
   }
 
-  private async padOrders() {
-    if ((this.cartService.getSellOrders().length + this.cartService.getBuyOrders().length) < 1 + ((1 - this.getVolatilityMl()) * 11)) {
-      this.changeStrategy();
-      await this.handleStrategy();
+    /**
+   * Checks today's combined portfolio PnL from localStorage and calls changeStrategy if negative.
+   */
+  public checkAndChangeStrategyOnNegativePnL(): void {
+    try {
+      const key = 'todaysPortfolioPlHistory';
+      const historyRaw = localStorage.getItem(key);
+      if (!historyRaw) { return; }
+      const history = JSON.parse(historyRaw);
+      // Sum all values in the history
+      const combinedValue = history.reduce((sum: number, entry: { date: string, value: number }) => sum + (typeof entry.value === 'number' ? entry.value : 0), 0);
+      if (combinedValue < 0) {
+        this.changeStrategy();
+        this.sellLoser(this.currentHoldings, 'Negative PnL strategy change, selling losers');
+      }
+    } catch (e) {
+      // Ignore localStorage errors
     }
   }
 }

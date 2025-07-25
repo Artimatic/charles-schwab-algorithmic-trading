@@ -196,7 +196,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test buy stock',
         command: async () => {
-          
+
         }
       },
       {
@@ -380,6 +380,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else if (moment().isAfter(moment(this.autopilotService.sessionEnd)) &&
           moment().isBefore(moment(this.autopilotService.sessionEnd).add(5, 'minute'))) {
           if (this.reportingService.logs.length > 15) {
+            this.addCurrentHoldingsToAuditLog();
             const profitLog = `Profit ${this.scoreKeeperService.total}`;
             this.reportingService.addAuditLog(null, profitLog);
             this.reportingService.exportAuditHistory();
@@ -409,6 +410,25 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           // await this.newStockFinderService.processOneStock();
         }
       });
+  }
+
+  addCurrentHoldingsToAuditLog() {
+    if (this.autopilotService.currentHoldings && this.autopilotService.currentHoldings.length > 0) {
+      const holdingsSummary = this.autopilotService.currentHoldings.map(h => ({
+        name: h.name,
+        pl: h.pl,
+        netLiq: h.netLiq,
+        shares: h.shares,
+        alloc: h.alloc,
+        recommendation: h.recommendation
+      }));
+      this.reportingService.addAuditLog(
+        null,
+        `Current Holdings: ${JSON.stringify(holdingsSummary)}`
+      );
+    } else {
+      this.reportingService.addAuditLog(null, 'No current holdings to log.');
+    }
   }
 
   calculatePl(records) {

@@ -73,7 +73,29 @@ export class PriceTargetService {
       return acc;
     }, { profitLoss: 0, total: 0 });
 
-    return round(this.getDiff(todayPl.total, todayPl.total + todayPl.profitLoss), 4);
+    const result = round(this.getDiff(todayPl.total, todayPl.total + todayPl.profitLoss), 4);
+
+    // Save result in localStorage by date for the last 5 days
+    try {
+      const key = 'todaysPortfolioPlHistory';
+      const today = moment().format('YYYY-MM-DD');
+      let history = [];
+      const existing = localStorage.getItem(key);
+      if (existing) {
+        history = JSON.parse(existing);
+      }
+      // Remove any entry for today
+      history = history.filter(entry => entry.date !== today);
+      // Add today's result
+      history.push({ date: today, value: result });
+      // Keep only last 3 days
+      history = history.slice(-3);
+      localStorage.setItem(key, JSON.stringify(history));
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+
+    return result;
   }
 
   getDiff(cost, currentValue) {
