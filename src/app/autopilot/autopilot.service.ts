@@ -56,14 +56,10 @@ export class AutopilotService {
   sessionStart = null;
   sessionEnd = null;
   riskToleranceList = [
-    RiskTolerance.Zero,
-    RiskTolerance.One,
     RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,
-    RiskTolerance.ExtremeFear,
     RiskTolerance.Fear,
-    RiskTolerance.Neutral,
     RiskTolerance.Greed,
     RiskTolerance.One,
     RiskTolerance.Two,
