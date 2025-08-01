@@ -18,6 +18,7 @@ import { IntradayStrategyService } from '../strategies/intraday-strategy.service
 import { ScoringIndex } from '@shared/services/score-keeper.service';
 import { RiskTolerance } from './risk-tolerance.enum';
 import { Strategy } from './strategy.enum';
+import { DelayedBuySellStrategyService } from '../delayed-buy-sell-strategy.service';
 
 export interface ProfitLossRecord {
   date: string;
@@ -38,6 +39,7 @@ export enum SwingtradeAlgorithms {
   roc = 'roc',
   vwma = 'vwma',
   bband = 'bband',
+  bbandBreakout = 'bbandBreakout',
   flagPennant = 'flagPennant',
   breakSupport = 'breakSupport',
   breakResistance = 'breakResistance'
@@ -117,10 +119,12 @@ export class AutopilotService {
     Strategy.BuyFlag,
     //Strategy.Gold,
     Strategy.BuyMfiTrade,
+    Strategy.BuyBband,
     //Strategy.Gold,
     Strategy.StopLoss,
     Strategy.BTC,
-    Strategy.TrimHoldings
+    Strategy.TrimHoldings,
+    Strategy.BuyBbandBreakout
   ];
 
   callPutBuffer = 0.05;
@@ -167,7 +171,8 @@ export class AutopilotService {
     private daytradeService: DaytradeService,
     private daytradeStrategiesService: DaytradeStrategiesService,
     private machineLearningService: MachineLearningService,
-    private intradayStrategyService: IntradayStrategyService
+    private intradayStrategyService: IntradayStrategyService,
+    private delayedBuySellStrategyService: DelayedBuySellStrategyService
   ) {
     const globalStartStop = this.globalSettingsService.getStartStopTime();
     this.sessionStart = globalStartStop.startDateTime;
@@ -501,6 +506,7 @@ export class AutopilotService {
       const candidate = buys.pop();
       await this.orderHandlingService.addBuy(this.createHoldingObj(candidate), this.riskLevel * 2, `${direction} ${indicator}`);
     }
+    return buys;
   }
 
   async handleBalanceUtilization(currentHoldings) {
@@ -910,6 +916,20 @@ export class AutopilotService {
     this.strategyBuilderService.findTrades();
     this.strategies = this.strategyBuilderService.getTradingStrategies();
     const strategy = useDefault ? Strategy.Default : this.strategyList[this.strategyCounter];
+
+        // Get the list of stocks to sell today from delayed sells
+    const delayedSells = this.delayedBuySellStrategyService.getTodaysDelayedSells();
+    console.log('Delayed sells for today', delayedSells);
+
+    // Add sell orders for any current positions that match the delayed sells
+    for (const stock of delayedSells) {
+      const holding = this.currentHoldings.find(h => h.name === stock);
+      if (holding) {
+        this.reportingService.addAuditLog(stock, `Selling due to delayed sell signal`);
+        await this.cartService.portfolioSell(holding, 'Delayed sell signal', false, false);
+      }
+    }
+
     switch (strategy) {
       case Strategy.MLPairs:
         await this.addMLPairs();
@@ -944,10 +964,10 @@ export class AutopilotService {
         break;
       case Strategy.BuyMfiTrade:
         if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'buy');
-          await this.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'sell');
+          await this.addPairOnSignal(SwingtradeAlgorithms.bband, 'buy');
+          await this.addPairOnSignal(SwingtradeAlgorithms.bband, 'sell');
         } else {
-          await this.buyOnSignal(SwingtradeAlgorithms.mfiTrade, 'buy');
+          await this.buyOnSignal(SwingtradeAlgorithms.bband, 'buy');
         }
         break;
       case Strategy.BuyMfiDiv2:
@@ -1024,6 +1044,11 @@ export class AutopilotService {
 
     await this.createTradingPairs();
     await this.findStock();
+    const buys = await this.buyOnSignal(SwingtradeAlgorithms.bbandBreakout, 'buy');
+    if (buys.length) {
+      this.reportingService.addAuditLog(null, `Adding delayed sell for ${buys.join(', ')}`);
+      this.delayedBuySellStrategyService.addDelayedSell(buys);
+    }
   }
 
   saveRisk() {
@@ -1087,9 +1112,9 @@ export class AutopilotService {
     await this.handleStrategy();
   }
 
-    /**
-   * Checks today's combined portfolio PnL from localStorage and calls changeStrategy if negative.
-   */
+  /**
+ * Checks today's combined portfolio PnL from localStorage and calls changeStrategy if negative.
+ */
   public checkAndChangeStrategyOnNegativePnL(): void {
     try {
       const key = 'todaysPortfolioPlHistory';

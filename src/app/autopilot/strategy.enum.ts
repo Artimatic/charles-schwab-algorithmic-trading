@@ -21,6 +21,7 @@ export enum Strategy {
   MLPairs = 'ML trade pairs',
   VolatilityPairs = 'Implied Movement trade pairs',
   BuyMfiTrade = 'Buy by mfi trade signal',
+  BuyBbandBreakout = 'Buy by bband breakout signal',
   BuyMfiDiv = 'Buy by mfi divergence buy signal',
   BuyMfiDiv2 = 'Buy by mfi divergence2 buy signal',
   SellMfiDiv2 = 'Sell by mfi divergence2 buy signal',
