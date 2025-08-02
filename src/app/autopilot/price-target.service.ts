@@ -73,7 +73,7 @@ export class PriceTargetService {
       return acc;
     }, { profitLoss: 0, total: 0 });
 
-    const result = round(this.getDiff(todayPl.total, todayPl.total + todayPl.profitLoss), 4);
+    const result = round(this.getDiff(todayPl.total, todayPl.total + todayPl.profitLoss), 4) || 0;
 
     // Save result in localStorage by date for the last 5 days
     try {
