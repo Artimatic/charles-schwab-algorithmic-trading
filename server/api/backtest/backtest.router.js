@@ -12,10 +12,6 @@ export const indicator = (request, response) => {
   BacktestController.getIndicator(request, response);
 };
 
-export const bollingerBands = (request, response) => {
-  BacktestController.getBollingerBands(request, response);
-};
-
 export const infoV2 = (request, response) => {
   BacktestController.getInfoV2(request, response);
 };

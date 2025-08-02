@@ -229,10 +229,6 @@ export class BacktestService {
     return this.http.post(`${BASE_URL}api/quote/optionchain`, body, {});
   }
 
-  getBBands(data: any): Observable<any> {
-    return this.http.post(`${BASE_URL}api/backtest/bbands`, data, {});
-  }
-
   getSMA(data: any): Observable<any> {
     return this.http.post(`${BASE_URL}api/backtest/sma`, data, {});
   }
