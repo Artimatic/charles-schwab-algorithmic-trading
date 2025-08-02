@@ -2,12 +2,8 @@ import * as _ from 'lodash';
 import * as tulind from 'tulind';
 
 class BBandBreakoutService {
-  async isBreakout(quotes, previousMfi: number, currentMfi: number, currentBBand, bbandPeriod) {
-    if (previousMfi < 16 && currentMfi > previousMfi) {
-      if (!quotes.slice) {
-        throw new Error(`BBandBreakoutService failed to get quotes ${JSON.stringify(quotes)}`);
-      }
-      return this.getBBands(quotes.slice(1, -1), bbandPeriod, 2)
+  async isBreakout(quotes, currentBBand, bbandPeriod) {
+      return this.getBBands(quotes.slice(0, -1), bbandPeriod, 2)
         .then(previousBband => {
           if (previousBband.length && previousBband[0].length) {
             if (quotes[quotes.length - 2] < previousBband[0][0] && quotes[quotes.length - 1] > currentBBand[0][0]) {
@@ -17,9 +13,7 @@ class BBandBreakoutService {
             return true;
           }
           return false;
-        });
-    }
-    return false;
+        }); 
   }
 
   getBBands(real, period, stddev) {

@@ -76,10 +76,6 @@ class BacktestService {
     return tulind.indicators;
   }
 
-  getBBands(real, period, stddev) {
-    return tulind.indicators.bbands.indicator([real], [period, stddev]);
-  }
-
   getSMA(real, period) {
     return tulind.indicators.sma.indicator([real], [period]);
   }
@@ -1183,7 +1179,7 @@ class BacktestService {
     const levels = supportResistanceService.calculateSupportResistance(indicators.quotes)
     currentQuote.support = levels.support;
     currentQuote.resistance = levels.resistance;
-    return this.getBBands(indicators.reals, bbandPeriod, 2)
+    return BBandBreakoutService.getBBands(indicators.reals, bbandPeriod, 2)
       .then((bband80) => {
         currentQuote.bband80 = bband80;
         const quotes10Day = this.getSubArray(indicators.reals, 24);
@@ -1298,8 +1294,7 @@ class BacktestService {
       .then((mfiPrevious) => {
         const len = mfiPrevious[0].length - 1;
         currentQuote.mfiPrevious = _.round(mfiPrevious[0][len], 3);
-        return BBandBreakoutService.isBreakout(indicators.reals, currentQuote.mfiPrevious,
-          currentQuote.mfiLeft, currentQuote.bband80, bbandPeriod);
+        return BBandBreakoutService.isBreakout(indicators.reals, currentQuote.bband80, bbandPeriod);
       })
       .then((bbandBreakout) => {
         currentQuote.bbandBreakout = bbandBreakout;
@@ -1315,7 +1310,7 @@ class BacktestService {
     const currentQuote = quotes[quotes.length - 1];
     const indicators = this.processQuotes(quotes);
 
-    return this.getBBands(indicators.reals, 80, 2)
+    return BBandBreakoutService.getBBands(indicators.reals, 80, 2)
       .then((bband80) => {
         currentQuote.bband80 = bband80;
         //   return this.getSMA(indicators.reals, 5);
