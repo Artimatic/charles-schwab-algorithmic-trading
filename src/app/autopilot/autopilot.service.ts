@@ -917,7 +917,7 @@ export class AutopilotService {
     this.strategies = this.strategyBuilderService.getTradingStrategies();
     const strategy = useDefault ? Strategy.Default : this.strategyList[this.strategyCounter];
 
-        // Get the list of stocks to sell today from delayed sells
+    // Get the list of stocks to sell today from delayed sells
     const delayedSells = this.delayedBuySellStrategyService.getTodaysDelayedSells();
     console.log('Delayed sells for today', delayedSells);
 
@@ -1010,6 +1010,13 @@ export class AutopilotService {
           await this.buyOnSignal(SwingtradeAlgorithms.bband, 'buy');
         }
         break;
+      case Strategy.BuyBbandBreakout:
+        const buys = await this.buyOnSignal(SwingtradeAlgorithms.bbandBreakout, 'buy');
+        if (buys.length) {
+          this.reportingService.addAuditLog(null, `Adding delayed sell for ${buys.join(', ')}`);
+          this.delayedBuySellStrategyService.addDelayedSell(buys);
+        }
+        break;
       case Strategy.Hedge:
         this.currentHoldings = await this.cartService.findCurrentPositions();
         const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
@@ -1044,11 +1051,6 @@ export class AutopilotService {
 
     await this.createTradingPairs();
     await this.findStock();
-    const buys = await this.buyOnSignal(SwingtradeAlgorithms.bbandBreakout, 'buy');
-    if (buys.length) {
-      this.reportingService.addAuditLog(null, `Adding delayed sell for ${buys.join(', ')}`);
-      this.delayedBuySellStrategyService.addDelayedSell(buys);
-    }
   }
 
   saveRisk() {
