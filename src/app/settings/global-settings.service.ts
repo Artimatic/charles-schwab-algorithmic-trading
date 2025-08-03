@@ -34,7 +34,7 @@ export class GlobalSettingsService {
   async get10YearYield() {
     const spreadData = await this.get10y2ySpread().toPromise();
     if (!spreadData.QuickQuoteResult.QuickQuote[0].FundamentalData) {
-      return 0.023; // Default value if no data is available
+      return 0.042; // Default value if no data is available
     }
     return Number(spreadData.QuickQuoteResult.QuickQuote[0].FundamentalData.yrhiprice);
   }
