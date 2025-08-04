@@ -96,11 +96,9 @@ export class AutopilotService {
     Strategy.StopLoss,
     Strategy.BuySnP,
     Strategy.BuyWinnersSellLosers,
-    //Strategy.BuySnP,
     Strategy.TrimHoldings,
     Strategy.MLPairs,
     Strategy.StopLoss,
-    //Strategy.BuySnP,
     Strategy.BuyMfi,
     Strategy.BuyCalls,
     Strategy.Hedge,
@@ -980,6 +978,7 @@ export class AutopilotService {
           await this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
+          await this.buyOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
         }
         break;
       case Strategy.BuyFlag:
@@ -995,6 +994,7 @@ export class AutopilotService {
           await this.addPairOnSignal(SwingtradeAlgorithms.mfi, 'sell');
           await this.addPairOnSignal(SwingtradeAlgorithms.mfi, 'buy');
         } else {
+          await this.buyOnSignal(SwingtradeAlgorithms.mfi, 'buy');
           await this.buyOnSignal(SwingtradeAlgorithms.mfi, 'sell');
         }
         break;
@@ -1004,6 +1004,7 @@ export class AutopilotService {
           await this.addPairOnSignal(SwingtradeAlgorithms.bband, 'sell');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.bband, 'buy');
+          await this.buyOnSignal(SwingtradeAlgorithms.bband, 'sell');
         }
         break;
       case Strategy.BuyBbandBreakout:
@@ -1121,7 +1122,7 @@ export class AutopilotService {
       const history = JSON.parse(historyRaw);
       // Sum all values in the history
       const combinedValue = history.reduce((sum: number, entry: { date: string, value: number }) => sum + (typeof entry.value === 'number' ? entry.value : 0), 0);
-      if (combinedValue < 0) {
+      if (combinedValue <= 0) {
         this.changeStrategy();
         this.sellLoser(this.currentHoldings, 'Negative PnL strategy change, selling losers');
       }
