@@ -86,10 +86,10 @@ export class PriceTargetService {
       }
       // Remove any entry for today
       history = history.filter(entry => entry.date !== today);
+      history = history.slice(-2);
       // Add today's result
       history.push({ date: today, value: result });
-      // Keep only last 3 days
-      history = history.slice(-3);
+      
       localStorage.setItem(key, JSON.stringify(history));
     } catch (e) {
       // Ignore localStorage errors
