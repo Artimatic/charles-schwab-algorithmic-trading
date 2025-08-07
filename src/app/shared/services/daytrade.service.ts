@@ -10,6 +10,7 @@ import { IndicatorsService } from './indicators.service';
 import { CartService } from './cart.service';
 import { CardOptions } from '../models/card-options';
 import { map } from 'rxjs/operators';
+import { MessageService } from 'primeng/api';
 
 @Injectable()
 export class DaytradeService {
@@ -17,7 +18,8 @@ export class DaytradeService {
   constructor(private backtestService: BacktestService,
     private portfolioService: PortfolioService,
     private indicatorsService: IndicatorsService,
-    private cartService: CartService) { }
+    private cartService: CartService,
+    private messageService: MessageService) { }
 
   getDefaultOrderSize(quantity) {
     return Math.ceil(quantity / 10);
@@ -134,6 +136,23 @@ export class DaytradeService {
     this.portfolioService.buy(buyOrder.holding, buyOrder.quantity, buyOrder.price, type).subscribe(
       response => {
         resolve(response);
+        setTimeout(() => {
+          // After the buy order, check the portfolio to confirm the order has filled
+          this.portfolioService.getTdPortfolio().subscribe(
+            portfolio => {
+              const filledPosition = portfolio.find(position => position.instrument.symbol === buyOrder.holding.symbol);
+              if (filledPosition) {
+                console.log(`Buy order for ${buyOrder.holding.symbol} filled. Current position:`, filledPosition);
+              } else {
+                console.warn(`Buy order for ${buyOrder.holding.symbol} may not have filled yet.`);
+                this.messageService.add({ severity: 'error', summary: `Buy order for ${buyOrder.holding.symbol} as not been filled`, sticky: true });
+              }
+            },
+            error => {
+              console.error('Error fetching portfolio after buy order:', error);
+            }
+          );
+        }, 150000);
       },
       error => {
         reject(error);
