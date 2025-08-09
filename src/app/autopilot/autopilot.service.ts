@@ -87,7 +87,7 @@ export class AutopilotService {
   lastBuyList = [];
   lastOptionsCheckCheck = null;
   currentHoldings: PortfolioInfoHolding[] = [];
-  strategyList = [
+  defaultList = [
     Strategy.Default,
     Strategy.InverseDispersion,
     Strategy.AddToPositions,
@@ -120,6 +120,33 @@ export class AutopilotService {
     Strategy.TrimHoldings,
     Strategy.BuyBbandBreakout
   ];
+
+  bearishList = [
+    Strategy.TrimHoldings,
+    Strategy.StopLoss,
+    Strategy.InverseDispersion,
+    Strategy.PerfectPair,
+    Strategy.BuySnP,
+    Strategy.BuyWinnersSellLosers,
+    Strategy.MLPairs,
+    Strategy.Hedge,
+    Strategy.Short,
+    Strategy.TradingPairs,
+    Strategy.VolatilityPairs,
+    Strategy.Gold,
+    Strategy.BuyMfiTrade
+  ];
+
+  bullishList = [
+    Strategy.AddToPositions,
+    Strategy.BuyCalls,
+    Strategy.BuyBbandBreakout,
+    Strategy.BuyWinners,
+    Strategy.BuyFlag,
+    Strategy.StopLoss
+  ];
+
+  strategyList = this.defaultList;
 
   callPutBuffer = 0.05;
   intradayProcessCounter = 0;
@@ -171,6 +198,7 @@ export class AutopilotService {
     const globalStartStop = this.globalSettingsService.getStartStopTime();
     this.sessionStart = globalStartStop.startDateTime;
     this.sessionEnd = globalStartStop.endDateTime;
+    this.strategyList = this.defaultList;
   }
 
   setPreferencesFromDB() {
@@ -583,6 +611,17 @@ export class AutopilotService {
 
   setLastSpyMl(val: number) {
     this.lastSpyMl = round(val, 2);
+    if (this.lastSpyMl > 0.6) {
+      this.strategyList = this.bullishList;
+    } else if (this.lastSpyMl < 0.4) {
+      this.strategyList = this.bearishList;
+      this.strategyCounter = 0;
+
+    } else {
+      this.strategyList = this.defaultList;
+      this.strategyCounter = 0;
+    }
+    this.strategyCounter = this.strategyCounter > this.strategyList.length ? 0 : this.strategyCounter;
   }
 
   getLastSpyMl() {

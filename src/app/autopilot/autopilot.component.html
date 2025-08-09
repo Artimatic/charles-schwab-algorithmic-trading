@@ -37,12 +37,12 @@
 
 <p-card>
     <span *ngIf="autopilotService.strategyList[autopilotService.strategyCounter] === 'Daytrade'">
-        <p-tag [value]="autopilotService.strategyList[autopilotService.strategyCounter]"
-            pTooltip="Current strategy" severity="warning"></p-tag>
+        <p-tag [value]="autopilotService.strategyList[autopilotService.strategyCounter]" pTooltip="Current strategy"
+            severity="warning"></p-tag>
     </span>
     <span *ngIf="autopilotService.strategyList[autopilotService.strategyCounter] !== 'Daytrade'">
-        <p-tag [value]="autopilotService.strategyList[autopilotService.strategyCounter]"
-            pTooltip="Current strategy" severity="danger"></p-tag>
+        <p-tag [value]="autopilotService.strategyList[autopilotService.strategyCounter]" pTooltip="Current strategy"
+            severity="danger"></p-tag>
     </span>
     <p-tag [value]="'Predicted volatility: ' + autopilotService.volatility * 100 +'%'"
         *ngIf="autopilotService.volatility >= 0.5" severity="danger" pTooltip="Predicted volatility"></p-tag>
@@ -60,7 +60,7 @@
     <p-tag [value]="'Predicted GLD: ' + autopilotService.lastGldMl * 100 +'%'" severity="info"
         pTooltip="Predicted"></p-tag>
 
-    <p-tag [value]="'Predicted SPY: ' + autopilotService.lastSpyMl * 100 +'%'" severity="info"
+    <p-tag [value]="'Predicted SPY: ' + (autopilotService.lastSpyMl | number: '1.2-2') + '%'" severity="info"
         pTooltip="Predicted"></p-tag>
 
     <p-tag [value]="'Portfolio volatility: ' + priceTargetService.portfolioVolatility * 100 +'%'" severity="info"
