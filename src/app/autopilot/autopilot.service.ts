@@ -544,11 +544,14 @@ export class AutopilotService {
       if (actualUtilization > 0.95) {
         await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'), 1, 'Near 100 percent utilization');
       } else {
-        let targetUtilization = 1.618034 - this.getVolatilityMl() - (1 - this.getLastSpyMl());
+        let targetUtilization = this.getLastSpyMl();
         targetUtilization = targetUtilization > 1 ? 1 : targetUtilization;
         if (actualUtilization < targetUtilization) {
           this.reportingService.addAuditLog(null, `Underutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
           await this.addToCurrentPositions(currentHoldings, this.riskToleranceList[1]);
+        } else if (actualUtilization > targetUtilization + 0.05) {
+          this.reportingService.addAuditLog(null, `Overutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
+          await this.sellLoser(currentHoldings, 'Overutilized');
         }
       }
     }
