@@ -138,6 +138,7 @@ export class AutopilotService {
   ];
 
   bullishList = [
+    Strategy.TrimHoldings,
     Strategy.AddToPositions,
     Strategy.BuyCalls,
     Strategy.BuyBbandBreakout,
@@ -531,7 +532,7 @@ export class AutopilotService {
     return buys;
   }
 
-  async handleBalanceUtilization(currentHoldings) {
+  async handleBalanceUtilization(currentHoldings, canSell = false) {
     const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
     this.priceTargetService.setLiquidationValue(balance.liquidationValue);
     const isOverBalance = Boolean(Number(balance.cashBalance) < 0);
@@ -549,7 +550,7 @@ export class AutopilotService {
         if (actualUtilization < targetUtilization) {
           this.reportingService.addAuditLog(null, `Underutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
           await this.addToCurrentPositions(currentHoldings, this.riskToleranceList[1]);
-        } else if (actualUtilization > targetUtilization + 0.05) {
+        } else if (canSell && actualUtilization > targetUtilization + 0.05) {
           this.reportingService.addAuditLog(null, `Overutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
           await this.sellLoser(currentHoldings, 'Overutilized');
         }
@@ -614,15 +615,12 @@ export class AutopilotService {
 
   setLastSpyMl(val: number) {
     this.lastSpyMl = round(val, 2);
-    if (this.lastSpyMl > 0.6) {
+    if (this.lastSpyMl > 0.7) {
       this.strategyList = this.bullishList;
-    } else if (this.lastSpyMl < 0.4) {
+    } else if (this.lastSpyMl < 0.3) {
       this.strategyList = this.bearishList;
-      this.strategyCounter = 0;
-
     } else {
       this.strategyList = this.defaultList;
-      this.strategyCounter = 0;
     }
     this.strategyCounter = this.strategyCounter > this.strategyList.length ? 0 : this.strategyCounter;
   }
@@ -971,7 +969,7 @@ export class AutopilotService {
         await this.addMLPairs();
         break;
       case Strategy.TrimHoldings:
-        await this.sellLoser(this.currentHoldings);
+        this.handleBalanceUtilization(this.currentHoldings, true);
         break;
       case Strategy.Short:
         await this.addShort();

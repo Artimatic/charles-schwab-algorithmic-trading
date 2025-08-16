@@ -60,7 +60,7 @@
     <p-tag [value]="'Predicted GLD: ' + autopilotService.lastGldMl * 100 +'%'" severity="info"
         pTooltip="Predicted"></p-tag>
 
-    <p-tag [value]="'Predicted SPY: ' + (autopilotService.lastSpyMl | number: '1.2-2') + '%'" severity="info"
+    <p-tag [value]="'Predicted SPY: ' + (autopilotService.lastSpyMl * 100 | number: '1.2-2') + '%'" severity="info"
         pTooltip="Predicted"></p-tag>
 
     <p-tag [value]="'Portfolio volatility: ' + priceTargetService.portfolioVolatility * 100 +'%'" severity="info"
