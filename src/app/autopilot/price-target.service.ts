@@ -37,7 +37,13 @@ export class PriceTargetService {
     let portfolioVolatility = await this.portfolioWeightsService.getPortfolioVolatility(holdings);
     this.portfolioVolatility = round(portfolioVolatility, 2);
     const tenYrYield = await this.globalSettingsService.get10YearYield();
-    const target = ((tenYrYield + 1.618034) * (this.portfolioVolatility + 0.01)) + 0.018;
+    let targetYield = 3;;
+    if (tenYrYield > 1 && tenYrYield < 10) {
+      targetYield = tenYrYield;
+    } else if (tenYrYield < 1) {
+      targetYield = tenYrYield * 100;
+    }
+    const target = (((targetYield + 1.618034) * 0.1) * (this.portfolioVolatility + 0.01)) + 0.018;
     this.targetDiff = round((!target) ? this.targetDiff : target, 4);
     this.reportingService.addAuditLog(null, `Target set to ${this.targetDiff}`);
     this.reportingService.addAuditLog(null, `Current portfolio volatility: ${this.portfolioVolatility}`);
