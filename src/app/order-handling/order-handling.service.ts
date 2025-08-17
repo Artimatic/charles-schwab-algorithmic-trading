@@ -249,7 +249,13 @@ export class OrderHandlingService {
       }
       const balance = await this.machineDaytradingService.getPortfolioBalance().toPromise();
       const currentBalance = balance.cashBalance;
-      if (order.quantity * order.price < currentBalance) {
+      if (order.quantity * order.price > currentBalance) {
+          const adjustedQty = Math.floor(currentBalance / order.price);
+          order.quantity = adjustedQty;
+          const log = `Not enough balance. Adjusted quantity to ${adjustedQty}`;
+          this.reportingService.addAuditLog(order.holding.symbol, log);
+      }
+      if (order.quantity > 0) {
         const log = `${moment().format()} Received buy recommendation`;
         this.reportingService.addAuditLog(order.holding.symbol, log);
 

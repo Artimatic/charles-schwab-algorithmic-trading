@@ -89,10 +89,9 @@ export class AutopilotService {
   currentHoldings: PortfolioInfoHolding[] = [];
   defaultList = [
     Strategy.Default,
-    Strategy.InverseDispersion,
-    Strategy.AddToPositions,
     Strategy.BuyMfiDiv,
     Strategy.BuyFlag,
+    Strategy.AddToPositions,
     Strategy.PerfectPair,
     Strategy.StopLoss,
     Strategy.BuySnP,
