@@ -102,8 +102,8 @@ describe('AutopilotService', () => {
     service.setRiskLevel();
     mockCartService.getAvailableFunds.and.returnValue(10000);
     const result = await service.getMinMaxCashForOptions();
-    expect(result.maxCash).toBe(250);
-    expect(result.minCash).toBe(200);
+    expect(result.maxCash).toBe(500);
+    expect(result.minCash).toBe(450);
     expect(mockCartService.getAvailableFunds).toHaveBeenCalled();
   });
 
@@ -112,8 +112,8 @@ describe('AutopilotService', () => {
     service.setRiskLevel();
     mockCartService.getAvailableFunds.and.returnValue(10000);
     const result = await service.getMinMaxCashForOptions(0.1);
-    expect(result.maxCash).toBe(250);
-    expect(result.minCash).toBe(245);
+    expect(result.maxCash).toBe(500);
+    expect(result.minCash).toBe(495);
     expect(mockCartService.getAvailableFunds).toHaveBeenCalled();
   });
 
