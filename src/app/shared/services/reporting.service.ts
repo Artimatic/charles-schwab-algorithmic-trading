@@ -63,6 +63,11 @@ export class ReportingService {
     return log;
   }
 
+  findBuyLogBySymbol(symbol: string) {
+    return this.backtestResults.find(log => log.symbol === symbol && log.message.toLowerCase().includes('buy'));
+  }
+
+
   exportBacktestResults() {
     const today = moment().format('MM-DD-YY');
 

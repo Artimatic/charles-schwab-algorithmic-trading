@@ -6,16 +6,6 @@ export class IndicatorsService {
 
   constructor(private backtestService: BacktestService) { }
 
-  async getBBand(reals: number[], period): Promise<any[]> {
-    const body = {
-      real: this.fillInMissingReals(reals),
-      period: period,
-      stddev: 2
-    };
-
-    return await this.backtestService.getBBands(body).toPromise();
-  }
-
   async getSMA(reals: number[], period): Promise<any[]> {
     const body = {
       real: this.fillInMissingReals(reals),

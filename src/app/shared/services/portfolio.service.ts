@@ -8,6 +8,7 @@ import { Holding } from '../models';
 import * as _ from 'lodash';
 import { Subject, of } from 'rxjs';
 import { Options } from '@shared/models/options';
+import * as moment from 'moment';
 
 export interface PortfolioInfoHolding {
   name: string;
@@ -59,14 +60,58 @@ export interface Balance {
   sma: number;
 }
 
+interface Order {
+  symbol: string;
+  quantity: number;
+  price: number;
+  type: 'BUY' | 'SELL';
+  timestamp: string;
+}
+
 @Injectable()
 export class PortfolioService {
   portfolioSubject: Subject<PortfolioInfoHolding> = new Subject();
   portfolio;
+  private readonly ORDERS_KEY = 'orders'; // Single key for orders
 
   constructor(
     private http: HttpClient,
     private authenticationService: AuthenticationService) {
+  }
+
+  private saveOrder(order: Order): void {
+    const today = moment().format('YYYY-MM-DD');
+    let orders: Order[] = [];
+    const storedOrders = sessionStorage.getItem(this.ORDERS_KEY);
+    if (storedOrders) {
+      orders = JSON.parse(storedOrders);
+      // Filter out orders that are not from today
+      orders = orders.filter(o => moment(o.timestamp).format('YYYY-MM-DD') === today);
+    }
+    orders.push(order);
+    sessionStorage.setItem(this.ORDERS_KEY, JSON.stringify(orders));
+  }
+
+  private getTodaysOrders(): Order[] {
+    const storedOrders = sessionStorage.getItem(this.ORDERS_KEY);
+    if (storedOrders) {
+      let orders = JSON.parse(storedOrders);
+      const today = moment().format('YYYY-MM-DD');
+      // Filter out orders that are not from today
+      orders = orders.filter(o => moment(o.timestamp).format('YYYY-MM-DD') === today);
+      return orders;
+    }
+    return [];
+  }
+
+  private checkForMatchingBuyOrder(symbol: string): boolean {
+    const todaysOrders = this.getTodaysOrders();
+    const matchingOrder = todaysOrders.find(order => order.symbol === symbol && order.type === 'BUY');
+    if (matchingOrder) {
+      console.log(`Cannot sell ${symbol} today because a buy order already exists.`);
+      return true;
+    }
+    return false;
   }
 
   getPortfolio(): Observable<any> {
@@ -109,7 +154,7 @@ export class PortfolioService {
   getStrategy(): Observable<any> {
     return this.http.get('/api/portfolio/strategy');
   }
-  
+
   getProfitLoss(): Observable<any> {
     return this.http.get('/api/portfolio/profit-loss');
   }
@@ -268,10 +313,23 @@ export class PortfolioService {
       extendedHours: extended,
       accountId
     };
+
+    const order: Order = {
+      symbol: holding.symbol,
+      quantity: quantity,
+      price: price,
+      type: 'BUY',
+      timestamp: moment().toISOString()
+    };
+    this.saveOrder(order);
+
     return this.http.post('/api/portfolio/v2/buy', body);
   }
 
   sendTdSell(holding: Holding, quantity: number, price: number, extended: boolean): Observable<any> {
+    if (this.checkForMatchingBuyOrder(holding.symbol)) {
+      return of(null);
+    }
 
     const body = {
       symbol: holding.symbol,
@@ -295,10 +353,21 @@ export class PortfolioService {
       price: price,
       accountId
     };
+    const order: Order = {
+      symbol: primaryLegSymbol,
+      quantity: quantity,
+      price: price,
+      type: 'BUY',
+      timestamp: moment().toISOString()
+    };
+    this.saveOrder(order);
     return this.http.post('/api/portfolio/v2/option-buy', body);
   }
 
   sendOptionSell(primaryLegSymbol: string, quantity: number, price: number): Observable<any> {
+    if (this.checkForMatchingBuyOrder(primaryLegSymbol)) {
+      return of(null);
+    }
     const accountId = this.getAccountId();
     if (!accountId) {
       return of(null);

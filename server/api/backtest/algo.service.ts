@@ -16,13 +16,15 @@ class AlgoService {
     return bband[2][0];
   }
 
-  checkVwma(lastClose: number, vwma: number): DaytradeRecommendation {
+  checkVwma(lastClose: number, vwma: number, sma10: number, sma50: number): DaytradeRecommendation {
     const change = DecisionService.getPercentChange(lastClose, vwma);
 
-    if (_.isNumber(lastClose) && _.isNumber(vwma) && Math.abs(change) < 0.03) {
-      if (lastClose < vwma) {
+    if (Math.abs(change) < 0.03) {
+      if (lastClose > vwma && lastClose> sma10 && lastClose > sma50) {
         return DaytradeRecommendation.Bullish;
-      } else {
+      } else if (lastClose < vwma && sma10 > sma50) {
+        return DaytradeRecommendation.Bullish;
+      } else if (lastClose < sma10 && lastClose < sma50) {
         return DaytradeRecommendation.Bearish;
       }
     }

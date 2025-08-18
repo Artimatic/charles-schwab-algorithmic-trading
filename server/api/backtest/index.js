@@ -7,7 +7,6 @@ const router = express.Router();
 router.post('/', handler.backtest);
 router.post('/indicator', handler.indicator);
 router.post('/chart', handler.getMeanReversionChart);
-router.post('/bbands', handler.bollingerBands);
 router.post('/sma', handler.sma);
 router.post('/roc', handler.roc);
 router.post('/rsi', BacktestController.getRsi);

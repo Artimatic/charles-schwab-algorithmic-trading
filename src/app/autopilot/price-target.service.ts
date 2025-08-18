@@ -13,10 +13,11 @@ import { round } from 'lodash-es';
 export class PriceTargetService {
   targetDiff = 0.023;
   portfolioPl = null;
+  liquidationValue = 0;
   startingBalance: { date: string, balance: number } = null;
   lastTargetMet = null;
   portfolioVolatility = 0;
-  lastCallPutRatio: { datetime: string, value: number } = null; 
+  lastCallPutRatio: { datetime: string, value: number } = null;
 
   constructor(private backtestService: BacktestService,
     private portfolioService: PortfolioService,
@@ -36,7 +37,13 @@ export class PriceTargetService {
     let portfolioVolatility = await this.portfolioWeightsService.getPortfolioVolatility(holdings);
     this.portfolioVolatility = round(portfolioVolatility, 2);
     const tenYrYield = await this.globalSettingsService.get10YearYield();
-    const target = ((tenYrYield + 1.618034) * 0.01 * this.portfolioVolatility) + 0.018;
+    let targetYield = 3;;
+    if (tenYrYield > 1 && tenYrYield < 10) {
+      targetYield = tenYrYield;
+    } else if (tenYrYield < 1) {
+      targetYield = tenYrYield * 100;
+    }
+    const target = (((targetYield + 1.618034) * 0.1) * (this.portfolioVolatility + 0.01)) + 0.018;
     this.targetDiff = round((!target) ? this.targetDiff : target, 4);
     this.reportingService.addAuditLog(null, `Target set to ${this.targetDiff}`);
     this.reportingService.addAuditLog(null, `Current portfolio volatility: ${this.portfolioVolatility}`);
@@ -72,7 +79,29 @@ export class PriceTargetService {
       return acc;
     }, { profitLoss: 0, total: 0 });
 
-    return round(this.getDiff(todayPl.total, todayPl.total + todayPl.profitLoss), 4);
+    const result = round(this.getDiff(todayPl.total, todayPl.total + todayPl.profitLoss), 4) || 0;
+
+    // Save result in localStorage by date for the last 5 days
+    try {
+      const key = 'todaysPortfolioPlHistory';
+      const today = moment().format('YYYY-MM-DD');
+      let history = [];
+      const existing = localStorage.getItem(key);
+      if (existing) {
+        history = JSON.parse(existing);
+      }
+      // Remove any entry for today
+      history = history.filter(entry => entry.date !== today);
+      history = history.slice(-2);
+      // Add today's result
+      history.push({ date: today, value: result });
+      
+      localStorage.setItem(key, JSON.stringify(history));
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+
+    return result;
   }
 
   getDiff(cost, currentValue) {
@@ -118,17 +147,19 @@ export class PriceTargetService {
     if (targetMet) {
       const holdings = retrievedHoldings ? retrievedHoldings : await this.cartService.findCurrentPositions();
       holdings.forEach(async (portItem: PortfolioInfoHolding) => {
-        if (portItem.primaryLegs) {
-          let orderType = null;
-          if (portItem.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
-            orderType = OrderTypes.call;
-          } else if (portItem.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
-            orderType = OrderTypes.put;
+        if (this.liquidationValue > 25000 || !this.reportingService.findBuyLogBySymbol(portItem.name)) {
+          if (portItem.primaryLegs) {
+            let orderType = null;
+            if (portItem.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
+              orderType = OrderTypes.call;
+            } else if (portItem.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
+              orderType = OrderTypes.put;
+            }
+            const estPrice = await this.orderHandlingService.getEstimatedPrice(portItem.primaryLegs[0].symbol);
+            this.cartService.addSingleLegOptionOrder(portItem.name, [portItem.primaryLegs[0]], estPrice, portItem.primaryLegs[0].quantity, orderType, 'Sell', 'Profit target met', true);
+          } else {
+            await this.cartService.portfolioSell(portItem, `Price target reached. Portfolio profit: ${this.portfolioPl}`, true);
           }
-          const estPrice = await this.orderHandlingService.getEstimatedPrice(portItem.primaryLegs[0].symbol);
-          this.cartService.addSingleLegOptionOrder(portItem.name, [portItem.primaryLegs[0]], estPrice, portItem.primaryLegs[0].quantity, orderType, 'Sell', 'Profit target met', true);
-        } else {
-          await this.cartService.portfolioSell(portItem, `Price target reached. Portfolio profit: ${this.portfolioPl}`, true);
         }
       });
     }
@@ -179,13 +210,13 @@ export class PriceTargetService {
     }
 
     let putsThreshold = volatility ? (volatility * 0.20) + 0.4 : 0.5;
-    
+
     const currentDate = moment().format('YYYY-MM-DD');
     const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
     const spyBacktest = await this.backtestService.getBacktestEvaluation('SPY', startDate, currentDate, 'daily-indicators').toPromise();
     const signals = spyBacktest.signals;
     const lastSignal = signals[signals.length - 1];
-    
+
     if (lastSignal.mfiPrevious > lastSignal.mfiLeft) {
       putsThreshold += 0.05;
     }
@@ -197,5 +228,9 @@ export class PriceTargetService {
     }
     this.lastCallPutRatio = { datetime: moment().format(), value: putsThreshold };
     return putsThreshold;
+  }
+
+  setLiquidationValue(val: number) {
+    this.liquidationValue = val;
   }
 }
