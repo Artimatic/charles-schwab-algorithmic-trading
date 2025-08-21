@@ -119,10 +119,10 @@ export class AutopilotService {
   ];
 
   bearishList = [
-    Strategy.TrimHoldings,
-    Strategy.StopLoss,
     Strategy.InverseDispersion,
+    Strategy.TrimHoldings,
     Strategy.PerfectPair,
+    Strategy.StopLoss,
     Strategy.BuySnP,
     Strategy.BuyWinnersSellLosers,
     Strategy.MLPairs,
