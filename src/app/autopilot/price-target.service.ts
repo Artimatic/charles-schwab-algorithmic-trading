@@ -135,9 +135,19 @@ export class PriceTargetService {
     this.reportingService.addAuditLog(null, `Portfolio PnL: ${portfolioPl}. target: ${priceTarget}`);
 
     if (portfolioPl && portfolioPl > priceTarget) {
-      this.reportingService.addAuditLog(null, `Profit target met.`);
-      this.lastTargetMet = moment();
-      this.targetDiff = round(this.targetDiff * 1.25, 4);
+      if (portfolioPl > priceTarget * 5) {
+        const portData = await this.portfolioService.getTdPortfolio().toPromise();
+        try {
+          this.reportingService.addAuditLog(null, `Profit loss may be inaccurate: ${portfolioPl} ${JSON.stringify(portData)}`);
+        } catch (e) {
+          console.error('Error saving portfolio data', e);
+        } 
+      } else {
+        this.reportingService.addAuditLog(null, `Profit target met.`);
+        this.lastTargetMet = moment();
+        this.targetDiff = round(this.targetDiff * 1.8, 4);
+      }
+  
       return true;
     }
     return false;

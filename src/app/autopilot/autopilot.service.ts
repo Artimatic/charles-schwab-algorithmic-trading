@@ -96,9 +96,7 @@ export class AutopilotService {
     Strategy.StopLoss,
     Strategy.BuySnP,
     Strategy.BuyWinnersSellLosers,
-    Strategy.TrimHoldings,
     Strategy.MLPairs,
-    Strategy.StopLoss,
     Strategy.BuyMfi,
     Strategy.Hedge,
     Strategy.StopLoss,
@@ -109,23 +107,21 @@ export class AutopilotService {
     Strategy.StopLoss,
     Strategy.VolatilityPairs,
     Strategy.BuyWinners,
-    Strategy.TrimHoldings,
     Strategy.Gold,
     Strategy.StopLoss,
     Strategy.BuyMfiTrade,
-    Strategy.StopLoss,
     Strategy.BTC,
     Strategy.TrimHoldings
   ];
 
   bearishList = [
     Strategy.InverseDispersion,
-    Strategy.TrimHoldings,
     Strategy.PerfectPair,
     Strategy.StopLoss,
     Strategy.BuySnP,
     Strategy.BuyWinnersSellLosers,
     Strategy.MLPairs,
+    Strategy.TrimHoldings,
     Strategy.Hedge,
     Strategy.Short,
     Strategy.TradingPairs,
@@ -135,7 +131,6 @@ export class AutopilotService {
   ];
 
   bullishList = [
-    Strategy.TrimHoldings,
     Strategy.AddToPositions,
     Strategy.BuyCalls,
     Strategy.BuyBbandBreakout,
