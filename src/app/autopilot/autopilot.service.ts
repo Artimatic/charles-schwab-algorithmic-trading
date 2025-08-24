@@ -93,18 +93,15 @@ export class AutopilotService {
     Strategy.BuyFlag,
     Strategy.AddToPositions,
     Strategy.PerfectPair,
-    Strategy.StopLoss,
     Strategy.BuySnP,
     Strategy.BuyWinnersSellLosers,
     Strategy.MLPairs,
     Strategy.BuyMfi,
     Strategy.Hedge,
-    Strategy.StopLoss,
     Strategy.BuyBband,
     Strategy.Short,
     Strategy.BuyMfiDiv2,
     Strategy.TradingPairs,
-    Strategy.StopLoss,
     Strategy.VolatilityPairs,
     Strategy.BuyWinners,
     Strategy.Gold,
@@ -117,8 +114,8 @@ export class AutopilotService {
   bearishList = [
     Strategy.InverseDispersion,
     Strategy.PerfectPair,
-    Strategy.StopLoss,
     Strategy.BuySnP,
+    Strategy.StopLoss,
     Strategy.BuyWinnersSellLosers,
     Strategy.MLPairs,
     Strategy.TrimHoldings,
@@ -374,7 +371,7 @@ export class AutopilotService {
   }
 
   async findSwingStockCallback(symbol: string, prediction: number, backtestData: any) {
-    if ((prediction > 0.7 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
+    if ((prediction > 0.8 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
       const stock: PortfolioInfoHolding = {
         name: symbol,
         pl: 0,
@@ -388,7 +385,7 @@ export class AutopilotService {
         sellConfidence: 0,
         prediction: null
       };
-      await this.orderHandlingService.addBuy(stock, (this.riskLevel) * 2, 'Swing trade buy');
+      await this.orderHandlingService.addBuy(stock, this.riskLevel, 'Swing trade buy');
     }
   }
 
@@ -455,19 +452,10 @@ export class AutopilotService {
     this.addPair(buys, sells, 'Winner Loser pair');
   }
 
-  async findTopBuy() {
-    const buys = this.getBuyList();
-    console.log('Top buy list', buys);
-    for (const b of buys) {
-      await this.orderHandlingService.addBuy(this.createHoldingObj(b),
-        (this.riskLevel) * 2, 'Buy top stock');
-    }
-  }
-
   async findStock() {
     if (this.strategyBuilderService.bullishStocks.length) {
       await this.orderHandlingService.addBuy(this.createHoldingObj(this.strategyBuilderService.bullishStocks.pop()),
-        (this.riskLevel) * 2, 'Buy bullish stock');
+        this.riskLevel, 'Buy bullish stock');
     }
   }
 
@@ -695,7 +683,7 @@ export class AutopilotService {
 
   async addShort() {
     await this.orderHandlingService.addBuy(this.createHoldingObj('SH'),
-      (this.riskLevel) * 2, 'Short');
+      this.riskLevel, 'Short');
   }
 
   async balanceCallPutRatio(holdings: PortfolioInfoHolding[]) {
@@ -904,7 +892,7 @@ export class AutopilotService {
           prediction: null
         };
         console.log('Found potential buy', stock);
-        await this.orderHandlingService.addBuy(stock, (this.riskLevel) * 2, 'inverse dispersion reject');
+        await this.orderHandlingService.addBuy(stock, this.riskLevel, 'inverse dispersion reject');
       }
     };
     await this.getNewTrades(findPuts, null, this.currentHoldings);
@@ -926,7 +914,7 @@ export class AutopilotService {
           sellConfidence: 0,
           prediction: null
         };
-        await this.orderHandlingService.addBuy(stock, (this.riskLevel) * 2, 'Buy winners');
+        await this.orderHandlingService.addBuy(stock, this.riskLevel, 'Buy winners');
       }
     };
     await this.getNewTrades(buyWinner, null, this.currentHoldings);
@@ -1053,15 +1041,15 @@ export class AutopilotService {
         break;
       case Strategy.Gold:
         await this.orderHandlingService.addBuy(this.createHoldingObj('GLD'),
-          (this.riskLevel) * 2, 'Buy gold');
+          this.riskLevel, 'Buy gold');
         break;
       case Strategy.BuySnP:
         await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'),
-          (this.riskLevel) * 2, 'Buy snp');
+          this.riskLevel, 'Buy snp');
         break;
       case Strategy.BTC:
         await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'),
-          (this.riskLevel) * 2, 'Buy BTC');
+          this.riskLevel, 'Buy BTC');
         break;
       case Strategy.StopLoss:
         this.currentHoldings.forEach(async (holding) => {
@@ -1070,16 +1058,16 @@ export class AutopilotService {
         break;
       case Strategy.BTC:
         await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'),
-          (this.riskLevel) * 2, 'Buy BTC');
+          this.riskLevel, 'Buy BTC');
         break;
       default: {
-        await this.findTopBuy();
+        await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'), this.riskLevel, 'Buy snp');
         break;
       }
     }
 
-    await this.createTradingPairs();
     await this.findStock();
+    await this.createTradingPairs();
   }
 
   saveRisk() {
