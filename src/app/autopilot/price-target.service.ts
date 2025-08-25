@@ -43,7 +43,7 @@ export class PriceTargetService {
     } else if (tenYrYield < 1) {
       targetYield = tenYrYield * 100;
     }
-    const target = (((targetYield + 1.618034) * 0.1) * ((this.portfolioVolatility * 0.03) + 0.01)) + 0.018;
+    const target = (((targetYield + 1.618034) * 0.1) * ((this.portfolioVolatility * 0.03) + 0.01)) + 0.019;
     this.targetDiff = round((!target) ? this.targetDiff : target, 4);
     this.reportingService.addAuditLog(null, `Target set to ${this.targetDiff}`);
     this.reportingService.addAuditLog(null, `Current portfolio volatility: ${this.portfolioVolatility}`);

@@ -49,6 +49,7 @@ export enum SwingtradeAlgorithms {
   providedIn: 'root'
 })
 export class AutopilotService {
+  lastBalanceUtilizationCheck: any = null;
   riskCounter = 0;
   lastSpyMl = 0;
   lastGldMl = 0;
@@ -89,34 +90,18 @@ export class AutopilotService {
   currentHoldings: PortfolioInfoHolding[] = [];
   defaultList = [
     Strategy.Default,
-    Strategy.BuyMfiDiv,
-    Strategy.BuyFlag,
     Strategy.AddToPositions,
-    Strategy.PerfectPair,
     Strategy.BuySnP,
     Strategy.BuyWinnersSellLosers,
-    Strategy.MLPairs,
-    Strategy.BuyMfi,
-    Strategy.Hedge,
-    Strategy.BuyBband,
-    Strategy.Short,
-    Strategy.BuyMfiDiv2,
-    Strategy.TradingPairs,
-    Strategy.VolatilityPairs,
-    Strategy.BuyWinners,
-    Strategy.Gold,
-    Strategy.StopLoss,
-    Strategy.BuyMfiTrade,
-    Strategy.BTC,
-    Strategy.TrimHoldings
+    Strategy.StopLoss
   ];
 
   bearishList = [
+    Strategy.Hedge,
     Strategy.InverseDispersion,
     Strategy.PerfectPair,
     Strategy.BuySnP,
     Strategy.StopLoss,
-    Strategy.BuyWinnersSellLosers,
     Strategy.MLPairs,
     Strategy.TrimHoldings,
     Strategy.Hedge,
@@ -124,6 +109,16 @@ export class AutopilotService {
     Strategy.TradingPairs,
     Strategy.VolatilityPairs,
     Strategy.Gold,
+    Strategy.BuyMfiTrade,
+    Strategy.BuyMfiDiv,
+    Strategy.PerfectPair,
+    Strategy.MLPairs,
+    Strategy.BuyMfi,
+    Strategy.BuyBband,
+    Strategy.BuyMfiDiv2,
+    Strategy.TradingPairs,
+    Strategy.VolatilityPairs,
+    Strategy.BuyWinners,
     Strategy.BuyMfiTrade
   ];
 
@@ -133,7 +128,9 @@ export class AutopilotService {
     Strategy.BuyBbandBreakout,
     Strategy.BuyWinners,
     Strategy.BuyFlag,
-    Strategy.StopLoss
+    Strategy.BTC,
+    Strategy.StopLoss,
+    Strategy.BuyFlag
   ];
 
   strategyList = this.defaultList;
@@ -148,7 +145,13 @@ export class AutopilotService {
     async () => await this.priceTargetService.setTargetDiff(),
     async () => {
       await this.setCurrentHoldings();
-      await this.handleBalanceUtilization(this.currentHoldings);
+      // Prevent handleBalanceUtilization if last call was within 45 minutes
+      if (!this.lastBalanceUtilizationCheck || Math.abs(moment().diff(this.lastBalanceUtilizationCheck, 'minutes')) > 45) {
+        await this.handleBalanceUtilization(this.currentHoldings);
+        this.lastBalanceUtilizationCheck = moment();
+      } else {
+        this.reportingService.addAuditLog(null, 'Skipped handleBalanceUtilization: last call within 45 minutes');
+      }
     },
     async () => await this.checkIntradayStrategies(),
     async () => {
@@ -446,8 +449,8 @@ export class AutopilotService {
   }
 
   async buyWinnersSellLosers() {
-    const buys = this.getBuyList((backtestData) => backtestData.net / backtestData.total > 0.04 && backtestData.ml > 0.5)
-    const sells = this.getSellList((backtestData) => backtestData.net / backtestData.total < -0.04 && backtestData.sellMl > 0.5);
+    const buys = this.getBuyList((backtestData) => backtestData.net / backtestData.total > 0.04 && backtestData.ml > 0.6)
+    const sells = this.getSellList((backtestData) => backtestData.net / backtestData.total < -0.04 && backtestData.sellMl > 0.6);
     console.log('buyWinnersSellLosers', buys, sells);
     this.addPair(buys, sells, 'Winner Loser pair');
   }
@@ -518,6 +521,9 @@ export class AutopilotService {
     const isOverBalance = Boolean(Number(balance.cashBalance) < 0);
     if (isOverBalance) {
       this.reportingService.addAuditLog(null, 'Over balance');
+      this.currentHoldings.forEach(async (holding) => {
+        await this.checkStopLoss(holding);
+      });
       this.sellLoser(currentHoldings, 'Over balance');
     } else {
       const actualUtilization = (1 - (balance.cashBalance / balance.liquidationValue));
@@ -532,7 +538,9 @@ export class AutopilotService {
           await this.addToCurrentPositions(currentHoldings, this.riskToleranceList[1]);
         } else if (canSell && actualUtilization > targetUtilization + 0.05) {
           this.reportingService.addAuditLog(null, `Overutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
-          await this.sellLoser(currentHoldings, 'Overutilized');
+          this.currentHoldings.forEach(async (holding) => {
+            await this.checkStopLoss(holding);
+          });
         }
       }
     }
@@ -699,13 +707,6 @@ export class AutopilotService {
         await this.sellRightAway(sqqqHolding.name, sqqqHolding.shares);
       }
       await this.buyRightAway('TQQQ', RiskTolerance.None);
-      //this.optionsOrderBuilderService.addOptionByBalance('SPY', threshold, 'Balance call put ratio', true);
-
-      // this.currentHoldings = await this.cartService.findCurrentPositions();
-      //await this.sellLoser(this.currentHoldings);
-      //const currentHoldings = await this.cartService.findCurrentPositions();
-      // await this.sellPutLoser(currentHoldings);
-      //} else if (results.call / results.put > (1 + this.getLastSpyMl() + this.riskLevel)) {
     } else if (putPct < threshold - this.callPutBuffer) {
       const tqqqHolding = holdings.find(h => h.name.toUpperCase() === 'TQQQ');
       const uproHolding = holdings.find(h => h.name.toUpperCase() === 'UPRO');
@@ -716,10 +717,6 @@ export class AutopilotService {
         await this.sellRightAway(uproHolding.name, uproHolding.shares);
       }
       await this.buyRightAway('SQQQ', RiskTolerance.None);
-      // this.currentHoldings = await this.cartService.findCurrentPositions();
-      // await this.sellLoser(this.currentHoldings);
-      // await this.sellCallLoser(currentHoldings);
-
     }
   }
 
@@ -1061,12 +1058,12 @@ export class AutopilotService {
           this.riskLevel, 'Buy BTC');
         break;
       default: {
-        await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'), this.riskLevel, 'Buy snp');
+          await this.findStock();
+          await this.getNewTrades(null, null, this.currentHoldings);
         break;
       }
     }
 
-    await this.findStock();
     await this.createTradingPairs();
   }
 
@@ -1144,7 +1141,9 @@ export class AutopilotService {
       const combinedValue = history.reduce((sum: number, entry: { date: string, value: number }) => sum + (typeof entry.value === 'number' ? entry.value : 0), 0);
       if (combinedValue <= 0) {
         this.changeStrategy();
-        this.sellLoser(this.currentHoldings, 'Negative PnL strategy change, selling losers');
+        this.currentHoldings.forEach(async (holding) => {
+          await this.checkStopLoss(holding);
+        });
       }
     } catch (e) {
       // Ignore localStorage errors
