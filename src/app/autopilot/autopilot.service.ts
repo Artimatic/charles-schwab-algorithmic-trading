@@ -92,7 +92,6 @@ export class AutopilotService {
     Strategy.Default,
     Strategy.AddToPositions,
     Strategy.BuySnP,
-    Strategy.BuyWinnersSellLosers,
     Strategy.StopLoss
   ];
 
@@ -128,9 +127,10 @@ export class AutopilotService {
     Strategy.BuyBbandBreakout,
     Strategy.BuyWinners,
     Strategy.BuyFlag,
+    Strategy.BuyFlag,
+    Strategy.BuyWinnersSellLosers,
     Strategy.BTC,
-    Strategy.StopLoss,
-    Strategy.BuyFlag
+    Strategy.StopLoss
   ];
 
   strategyList = this.defaultList;
