@@ -374,7 +374,7 @@ export class AutopilotService {
   }
 
   async findSwingStockCallback(symbol: string, prediction: number, backtestData: any) {
-    if ((prediction > 0.8 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
+    if ((prediction > 0.7 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY') && this.priceTargetService.isProfitable(backtestData.invested, backtestData.net)) {
       const stock: PortfolioInfoHolding = {
         name: symbol,
         pl: 0,
@@ -535,8 +535,8 @@ export class AutopilotService {
         targetUtilization = targetUtilization > 1 ? 1 : targetUtilization;
         if (actualUtilization < targetUtilization) {
           this.reportingService.addAuditLog(null, `Underutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
-          await this.addToCurrentPositions(currentHoldings, this.riskToleranceList[1]);
-        } else if (canSell && actualUtilization > targetUtilization + 0.05) {
+          await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'), this.riskToleranceList[0], 'Underutilized. Buy snp');
+        } else if (canSell && actualUtilization > targetUtilization + 0.03) {
           this.reportingService.addAuditLog(null, `Overutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
           this.currentHoldings.forEach(async (holding) => {
             await this.checkStopLoss(holding);
@@ -923,7 +923,6 @@ export class AutopilotService {
   }
 
   async handleStrategy(useDefault = false) {
-    console.log('Handle strategy');
     this.strategyBuilderService.findTrades();
     this.strategies = this.strategyBuilderService.getTradingStrategies();
     const strategy = useDefault ? Strategy.Default : this.strategyList[this.strategyCounter];
