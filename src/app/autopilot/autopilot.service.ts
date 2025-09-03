@@ -63,19 +63,16 @@ export class AutopilotService {
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.Fear,
-    RiskTolerance.Greed,
     RiskTolerance.One,
     RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.Neutral,
-    RiskTolerance.Greed,
     RiskTolerance.One,
     RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.Neutral,
-    RiskTolerance.Greed,
     RiskTolerance.One,
     RiskTolerance.Two,
     RiskTolerance.Lower,
@@ -603,14 +600,19 @@ export class AutopilotService {
 
   setLastSpyMl(val: number) {
     this.lastSpyMl = round(val, 2);
+    let newList;
     if (this.lastSpyMl > 0.7) {
-      this.strategyList = this.bullishList;
+      newList = this.bullishList;
     } else if (this.lastSpyMl < 0.3) {
-      this.strategyList = this.bearishList;
+      newList = this.bearishList;
     } else {
-      this.strategyList = this.defaultList;
+      newList = this.defaultList;
     }
-    this.strategyCounter = this.strategyCounter > this.strategyList.length ? 0 : this.strategyCounter;
+    if (this.strategyList !== newList) {
+      this.reportingService.addAuditLog(null, `Strategy list changed: ${newList.map(s => s).join(', ')}`);
+    }
+    this.strategyList = newList;
+    this.strategyCounter = this.strategyCounter >= this.strategyList.length ? 0 : this.strategyCounter;
   }
 
   getLastSpyMl() {
