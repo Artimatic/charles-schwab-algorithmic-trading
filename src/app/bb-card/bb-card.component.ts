@@ -306,6 +306,10 @@ export class BbCardComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
+  toggleSettingsVisible() {
+    this.settingsVisible = !this.settingsVisible;
+  }
+
   delete() {
     this.order.stopped = true;
     this.alive = false;

@@ -142,6 +142,7 @@ export class PriceTargetService {
         } catch (e) {
           console.error('Error saving portfolio data', e);
         } 
+        return false;
       } else {
         this.reportingService.addAuditLog(null, `Profit target met.`);
         this.lastTargetMet = moment();

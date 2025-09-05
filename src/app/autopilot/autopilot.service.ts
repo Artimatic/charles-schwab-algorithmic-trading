@@ -144,8 +144,8 @@ export class AutopilotService {
       await this.setCurrentHoldings();
       // Prevent handleBalanceUtilization if last call was within 45 minutes
       if (!this.lastBalanceUtilizationCheck || Math.abs(moment().diff(this.lastBalanceUtilizationCheck, 'minutes')) > 45) {
-        await this.handleBalanceUtilization(this.currentHoldings);
         this.lastBalanceUtilizationCheck = moment();
+        await this.handleBalanceUtilization(this.currentHoldings);
       } else {
         this.reportingService.addAuditLog(null, 'Skipped handleBalanceUtilization: last call within 45 minutes');
       }
