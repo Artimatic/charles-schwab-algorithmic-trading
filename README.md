@@ -5,7 +5,6 @@
 ```
 export default {
     port: 9000,
-    goliathUrl: 'http://localhost:8100/', // Database service local address https://github.com/Artimatic/station-data-service
     armadilloUrl: 'http://localhost:3000/', // Machine Learning service local address https://github.com/Artimatic/station-analysis-service
     twilio: { // For SMS functionality
       key: 'KEY',
@@ -28,10 +27,6 @@ Run `npm run start`
 ## Local Address
 
 http://127.0.0.1:9000/
-
-#### Research Backtest Screener
-
-Requires station-data-service to be set up and running. https://github.com/Artimatic/station-data-service
 
 #### Machine Learning functionalities
 
