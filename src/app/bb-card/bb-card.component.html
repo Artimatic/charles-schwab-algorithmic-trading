@@ -26,14 +26,13 @@
       WARNING: {{warning}}
     </div>
   </div>
-  <p-steps [model]="items" [(activeIndex)]="activeIndex" [readonly]="false"></p-steps>
 
   <div>
     <div>
-      <div *ngIf="live">
+      <div *ngIf="!order.stopped">
         <p-chip label="Live" styleClass="p-mr-2 live-chip"></p-chip>
       </div>
-      <div *ngIf="!live">
+      <div *ngIf="order.stopped">
         <p-chip label="Stalled"></p-chip>
       </div>
       <div>
@@ -102,9 +101,6 @@
         </div>
         <div class="card-actions">
           <button pButton class="p-button-info" (click)="simulate()">Simulate</button>
-        </div>
-        <div class="card-actions">
-          <button pButton class="p-button-info" (click)="buyStrangle()">Buy Strangle</button>
         </div>
       </div>
     </div>

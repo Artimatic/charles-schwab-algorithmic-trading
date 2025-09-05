@@ -43,10 +43,11 @@ export class PriceTargetService {
     } else if (tenYrYield < 1) {
       targetYield = tenYrYield * 100;
     }
-    const target = (((targetYield + 1.618034) * 0.1) * (this.portfolioVolatility + 0.01)) + 0.018;
+    const target = (((targetYield + 1.618034) * 0.1) * ((this.portfolioVolatility * 0.03) + 0.01)) + 0.023;
     this.targetDiff = round((!target) ? this.targetDiff : target, 4);
     this.reportingService.addAuditLog(null, `Target set to ${this.targetDiff}`);
     this.reportingService.addAuditLog(null, `Current portfolio volatility: ${this.portfolioVolatility}`);
+    this.reportingService.addAuditLog(null, `Ten Year Yield High: ${targetYield}`);
   }
 
   isProfitable(invested: number, pl: number, target = 0.05) {
@@ -134,9 +135,20 @@ export class PriceTargetService {
     this.reportingService.addAuditLog(null, `Portfolio PnL: ${portfolioPl}. target: ${priceTarget}`);
 
     if (portfolioPl && portfolioPl > priceTarget) {
-      this.reportingService.addAuditLog(null, `Profit target met.`);
-      this.lastTargetMet = moment();
-      this.targetDiff = round(this.targetDiff * 1.25, 4);
+      if (portfolioPl > priceTarget * 5) {
+        const portData = await this.portfolioService.getTdPortfolio().toPromise();
+        try {
+          this.reportingService.addAuditLog(null, `Profit loss may be inaccurate: ${portfolioPl} ${JSON.stringify(portData)}`);
+        } catch (e) {
+          console.error('Error saving portfolio data', e);
+        } 
+        return false;
+      } else {
+        this.reportingService.addAuditLog(null, `Profit target met.`);
+        this.lastTargetMet = moment();
+        this.targetDiff = round(this.targetDiff * 1.8, 4);
+      }
+  
       return true;
     }
     return false;

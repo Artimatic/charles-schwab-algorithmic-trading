@@ -514,7 +514,9 @@ class BacktestService {
           orderType = OrderType.Sell;
           indicator.recommendation = { recommendation: OrderType.Sell };
         } else {
-          indicator.flagPennant = AlgoService.addFlagPennantData(indicators.slice(idx - 79, idx));
+          if (idx > 80 && (indicators[idx - 1].mfiLeft > indicators[idx - 2].mfiLeft)) {
+            indicator.flagPennant = AlgoService.addFlagPennantData(indicators.slice(idx - 79, idx));
+          }
 
           const recommendation: Recommendation = recommendationFn(indicator.close,
             indicator,
