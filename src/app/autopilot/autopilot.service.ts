@@ -1059,6 +1059,7 @@ export class AutopilotService {
           this.riskLevel, 'Buy BTC');
         break;
       default: {
+          await this.addInverseDispersionTrade();
           await this.findStock();
           await this.getNewTrades(null, null, this.currentHoldings);
         break;
