@@ -6,15 +6,11 @@
 export default {
     port: 9000,
     armadilloUrl: 'http://localhost:3000/', // Machine Learning service local address https://github.com/Artimatic/station-analysis-service
-    twilio: { // For SMS functionality
-      key: 'KEY',
-      id: 'ID'
-    }
 };
 
 ```
 
-Run `npm install`
+Run `npm install` or `npm ci`
 
 ## Build
 
