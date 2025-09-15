@@ -1,15 +1,11 @@
 import * as moment from 'moment';
 import * as _ from 'lodash';
 import * as RequestPromise from 'request-promise';
-import * as algotrader from 'algotrader';
 import PortfolioService from '../portfolio/portfolio.service';
 
 import * as configurations from '../../config/environment';
 
 const appUrl = configurations.apps.goliath;
-
-const AlphaVantage = algotrader.Data.AlphaVantage;
-const av = new AlphaVantage(configurations.alpha.key);
 
 class QuoteService {
   lastQuoteRequest = null;
@@ -181,24 +177,6 @@ class QuoteService {
             volume: quote.volume,
             open: quote.open,
             high: quote.high
-          });
-        });
-        return result;
-      });
-  }
-
-  getIntradayDataV2(symbol, interval) {
-    const result = { candles: [] };
-    return av.timeSeriesIntraday(symbol, interval)
-      .then(quotes => {
-        quotes.forEach(quote => {
-          result.candles.push({
-            datetime: moment(quote.date).valueOf(),
-            close: quote.getClose(),
-            low: quote.getLow(),
-            volume: quote.getVolume(),
-            open: quote.getOpen(),
-            high: quote.getHigh()
           });
         });
         return result;

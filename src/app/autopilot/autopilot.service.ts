@@ -387,7 +387,7 @@ export class AutopilotService {
         sellConfidence: 0,
         prediction: null
       };
-      await this.orderHandlingService.addBuy(stock, this.riskLevel, 'Swing trade buy');
+      await this.orderHandlingService.addBuy(stock, this.riskLevel * 2, 'Swing trade buy');
     }
   }
 
@@ -457,7 +457,7 @@ export class AutopilotService {
   async findStock() {
     if (this.strategyBuilderService.bullishStocks.length) {
       await this.orderHandlingService.addBuy(this.createHoldingObj(this.strategyBuilderService.bullishStocks.pop()),
-        this.riskLevel, 'Buy bullish stock');
+        this.riskLevel * 2, 'Buy bullish stock');
     }
   }
 

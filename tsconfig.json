@@ -13,6 +13,13 @@
     "typeRoots": [
       "node_modules/@types"
     ],
+    "types": [
+      "node",
+      "minimatch",
+      "lodash",
+      "moment",
+      "jasmine"
+    ],
     "lib": [
       "es2017",
       "dom"

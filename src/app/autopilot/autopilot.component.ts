@@ -613,7 +613,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.cartService.portfolioSell(holding, 'Backtest indicates sell');
         } else if (backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.7 && (backtestResults.recommendation === 'STRONGBUY' || backtestResults.recommendation === 'BUY')) {
           console.log('Backtest indicates buying', backtestResults);
-          await this.orderHandlingService.addBuy(this.autopilotService.createHoldingObj(holding.name), RiskTolerance.Zero, 'Backtest indicates buying');
+          await this.orderHandlingService.addBuy(this.autopilotService.createHoldingObj(holding.name), RiskTolerance.One, 'Backtest indicates buying');
         }
       } catch (error) {
         console.log('Backtest error', error);

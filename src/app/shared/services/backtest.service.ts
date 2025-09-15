@@ -188,10 +188,6 @@ export class BacktestService {
     return this.http.post(`${BASE_URL}api/quote`, body, {});
   }
 
-  getIntraday2(data: any): Observable<any> {
-    return this.http.post(`${BASE_URL}api/quote/intraday2`, data, {});
-  }
-
   postIntraday(data: JSON): Observable<any> {
     return this.http.post(`${BASE_URL}api/quote/historical-intraday`, data, {});
   }
