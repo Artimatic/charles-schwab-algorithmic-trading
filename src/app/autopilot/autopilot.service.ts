@@ -59,14 +59,11 @@ export class AutopilotService {
   sessionStart = null;
   sessionEnd = null;
   riskToleranceList = [
+    RiskTolerance.One,
     RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.Fear,
-    RiskTolerance.One,
-    RiskTolerance.Two,
-    RiskTolerance.Lower,
-    RiskTolerance.Low,
     RiskTolerance.Neutral,
     RiskTolerance.One,
     RiskTolerance.Two,
@@ -74,6 +71,11 @@ export class AutopilotService {
     RiskTolerance.Low,
     RiskTolerance.Neutral,
     RiskTolerance.One,
+    RiskTolerance.Two,
+    RiskTolerance.Lower,
+    RiskTolerance.Low,
+    RiskTolerance.Neutral,
+    RiskTolerance.Greed,
     RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,
@@ -385,7 +387,7 @@ export class AutopilotService {
         sellConfidence: 0,
         prediction: null
       };
-      await this.orderHandlingService.addBuy(stock, this.riskLevel, 'Swing trade buy');
+      await this.orderHandlingService.addBuy(stock, this.riskLevel * 2, 'Swing trade buy');
     }
   }
 
@@ -455,7 +457,7 @@ export class AutopilotService {
   async findStock() {
     if (this.strategyBuilderService.bullishStocks.length) {
       await this.orderHandlingService.addBuy(this.createHoldingObj(this.strategyBuilderService.bullishStocks.pop()),
-        this.riskLevel, 'Buy bullish stock');
+        this.riskLevel * 2, 'Buy bullish stock');
     }
   }
 
@@ -1059,6 +1061,7 @@ export class AutopilotService {
           this.riskLevel, 'Buy BTC');
         break;
       default: {
+          await this.addInverseDispersionTrade();
           await this.findStock();
           await this.getNewTrades(null, null, this.currentHoldings);
         break;

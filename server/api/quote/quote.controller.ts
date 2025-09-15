@@ -51,16 +51,6 @@ class QuoteController extends BaseController {
     }
   }
 
-  getIntradayV2(request, response) {
-    if (_.isEmpty(request.body)) {
-      return response.status(Boom.badRequest().output.statusCode).send(Boom.badRequest().output);
-    } else {
-      QuoteService.getIntradayDataV2(request.body.symbol, request.body.interval)
-        .then((data) => BaseController.requestGetSuccessHandler(response, data))
-        .catch((e) => BaseController.requestErrorHandler(response, e));
-    }
-  }
-
   findIntraday(request, response) {
     console.log('q: ', request.query);
 
