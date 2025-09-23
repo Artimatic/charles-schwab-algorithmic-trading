@@ -76,7 +76,7 @@ export class OptionsOrderBuilderService {
     option: Options) {
     if (price > (maxCashAllocation / 2)) {
       this.reportingService.addAuditLog(null,
-        `Unable to find suitable option. Stock: ${option.underlyingSymbol} Option: ${option.description} Price: ${price} Cash available: ${maxCashAllocation}`);
+        `Unable to find suitable option. Stock: ${option.underlyingSymbol} Option: ${option.description} Price: ${price} Cash available to trade: ${maxCashAllocation}`);
       return false;
     }
     return true;
