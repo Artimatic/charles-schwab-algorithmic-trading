@@ -59,11 +59,6 @@ export class AutopilotService {
   sessionStart = null;
   sessionEnd = null;
   riskToleranceList = [
-    RiskTolerance.Two,
-    RiskTolerance.Lower,
-    RiskTolerance.Low,
-    RiskTolerance.Fear,
-    RiskTolerance.Neutral,
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.Neutral,
@@ -522,13 +517,13 @@ export class AutopilotService {
       const actualUtilization = (1 - (balance.cashBalance / balance.liquidationValue));
 
       if (actualUtilization > 0.95) {
-        await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'), 1, 'Near 100 percent utilization');
+        await this.orderHandlingService.addBuy(this.createHoldingObj('SPY'), 1, 'Near 100 percent utilization');
       } else {
         let targetUtilization = this.getLastSpyMl();
         targetUtilization = targetUtilization > 1 ? 1 : targetUtilization;
         if (actualUtilization < targetUtilization) {
           this.reportingService.addAuditLog(null, `Underutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
-          await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'), this.riskToleranceList[0], 'Underutilized. Buy snp');
+          await this.orderHandlingService.addBuy(this.createHoldingObj('SPY'), this.riskToleranceList[0], 'Underutilized. Buy snp');
         } else if (canSell && actualUtilization > targetUtilization + 0.03) {
           this.reportingService.addAuditLog(null, `Overutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
           this.currentHoldings.forEach(async (holding) => {
