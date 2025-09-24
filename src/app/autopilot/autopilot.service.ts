@@ -61,6 +61,10 @@ export class AutopilotService {
   riskToleranceList = [
     RiskTolerance.Lower,
     RiskTolerance.Low,
+    RiskTolerance.Fear,
+    RiskTolerance.Neutral,
+    RiskTolerance.Lower,
+    RiskTolerance.Low,
     RiskTolerance.Neutral,
     RiskTolerance.Lower,
     RiskTolerance.Low,
