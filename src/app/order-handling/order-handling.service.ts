@@ -144,8 +144,8 @@ export class OrderHandlingService {
       this.reportingService.addAuditLog(order.holding.symbol, `Total Price with secondary leg ${totalPrice}, balance: ${cashBalance}`);
       if (totalPrice < cashBalance) {
         order = this.incrementBuy(order);
-        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.primaryLegs[0].quantity} ${order.primaryLegs[0].symbol} $${totalPrice}`);
-        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.secondaryLegs[0].quantity} ${order.secondaryLegs[0].symbol} $${totalPrice}`);
+        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.primaryLegs[0].quantity} ${order.primaryLegs[0].symbol}@$${primaryLegPrice}`);
+        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.secondaryLegs[0].quantity} ${order.secondaryLegs[0].symbol}@$${secondaryLegPrice}`);
 
         await this.buyOption(order.primaryLegs[0].symbol, order.primaryLegs[0].quantity || 1, primaryLegPrice, () => { });
         await this.buyOption(order.secondaryLegs[0].symbol, order.secondaryLegs[0].quantity || 1, secondaryLegPrice, () => { });
@@ -155,7 +155,7 @@ export class OrderHandlingService {
 
       if (totalPrice < cashBalance) {
         order = this.incrementBuy(order);
-        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.quantity} ${order.primaryLegs[0].symbol} $${totalPrice}`);
+        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.quantity} ${order.primaryLegs[0].symbol}@$${primaryLegPrice}`);
         await this.buyOption(order.primaryLegs[0].symbol, order.quantity || 1);
       } else {
         this.reportingService.addAuditLog(order.holding.symbol, 'Balance is too low.');
