@@ -396,6 +396,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             this.lastProfitCheck = moment();
             const metTarget = await this.priceTargetService.checkProfitTarget(this.autopilotService.currentHoldings);
             if (metTarget) {
+              this.addCurrentHoldingsToAuditLog();
               this.decreaseRiskTolerance();
             }
           }

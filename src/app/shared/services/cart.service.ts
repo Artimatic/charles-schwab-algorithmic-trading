@@ -183,10 +183,13 @@ export class CartService {
   }
 
   deleteCart() {
-    console.log('Delete cart');
     this.sellOrders = [];
     this.buyOrders = [];
     this.otherOrders = [];
+  }
+
+  deleteBuyOrders() {
+    this.buyOrders = [];
   }
 
   submitOrders() {

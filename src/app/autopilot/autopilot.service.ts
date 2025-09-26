@@ -59,10 +59,12 @@ export class AutopilotService {
   sessionStart = null;
   sessionEnd = null;
   riskToleranceList = [
+    RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.Fear,
     RiskTolerance.Neutral,
+    RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.Neutral,
@@ -160,7 +162,7 @@ export class AutopilotService {
     },
     async () => {
       await this.setCurrentHoldings();
-      await this.balanceCallPutRatio(this.currentHoldings);
+      // await this.balanceCallPutRatio(this.currentHoldings);
     }
   ];
 
