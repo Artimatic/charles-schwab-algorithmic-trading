@@ -63,7 +63,6 @@ export class AutopilotService {
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.Fear,
-    RiskTolerance.Neutral,
     RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,
@@ -71,7 +70,6 @@ export class AutopilotService {
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.Neutral,
-    RiskTolerance.Greed,
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.Neutral,
@@ -1050,10 +1048,6 @@ export class AutopilotService {
         this.currentHoldings.forEach(async (holding) => {
           await this.checkStopLoss(holding);
         });
-        break;
-      case Strategy.BTC:
-        await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'),
-          this.riskLevel, 'Buy BTC');
         break;
       default: {
           await this.addInverseDispersionTrade();

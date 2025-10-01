@@ -3,6 +3,7 @@ import * as moment from 'moment-timezone';
 import { PriceTargetService } from '../autopilot/price-target.service';
 import { BacktestService, ReportingService } from '@shared/services';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
+import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 
 @Injectable({
   providedIn: 'root'
@@ -13,7 +14,8 @@ export class IntradayStrategyService {
   constructor(private priceTargetService: PriceTargetService,
     private backtestService: BacktestService,
     private reportingService: ReportingService,
-    private orderHandlingService: OrderHandlingService
+    private orderHandlingService: OrderHandlingService,
+    private strategyBuilderService: StrategyBuilderService
   ) { }
 
   async buyTqqq(currentAllocation: number, reason: string) {
@@ -72,6 +74,7 @@ export class IntradayStrategyService {
         this.intradayStrategyTriggered = true;
 
         await this.buyTqqq(currentAllocation, 'Buy the dip');
+        this.strategyBuilderService.findTrades('SPY', true);
       }
     }
   }
@@ -91,6 +94,7 @@ export class IntradayStrategyService {
       } else {
         await this.buyTqqq(currentAllocation, 'Buy on volume');
       }
+      this.strategyBuilderService.findTrades('SPY', true);
     }
 
     this.lastVolume = currentVolume;

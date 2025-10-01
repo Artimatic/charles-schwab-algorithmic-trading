@@ -457,14 +457,17 @@ export class StrategyBuilderService {
     this.addTradingStrategy(trade);
   }
 
-  findTrades() {
+  findTrades(filterKey = '', skipRecommendation = false) {
     const backtests = this.sanitizeData();
     const tradingPairs = JSON.parse(localStorage.getItem('tradingPairs'));
-    for (const key in tradingPairs) {
+    const keysToProcess = filterKey ? [filterKey] : Object.keys(tradingPairs);
+    
+    for (const key of keysToProcess) {
+      if (!tradingPairs[key]) continue;
       const pairs = tradingPairs[key];
       const bObj = backtests[key];
       if (bObj !== undefined && bObj !== null && bObj.ml !== null && bObj.buySignals) {
-        if (bObj.ml > 0.4 && bObj.recommendation.toLowerCase() === 'strongbuy') {
+        if (bObj.ml > 0.4 && (bObj.recommendation.toLowerCase() === 'strongbuy' || (skipRecommendation))) {
           for (const pairVal of pairs) {
             if (pairVal !== null && backtests[pairVal.symbol] && backtests[pairVal.symbol].ml !== null) {
               if (backtests[pairVal.symbol]?.sellMl > 0.4 && (backtests[pairVal.symbol].recommendation.toLowerCase() === 'strongsell')) {
@@ -473,7 +476,6 @@ export class StrategyBuilderService {
             }
           }
         }
-
       }
     }
   }
