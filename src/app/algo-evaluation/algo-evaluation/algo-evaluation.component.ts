@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AiPicksService, CartService, PortfolioInfoHolding } from '@shared/services';
 import { Stock } from '@shared/stock.interface';
+import { StrategyBuilderService } from 'src/app/backtest-table/strategy-builder.service';
 
 @Component({
   selector: 'app-algo-evaluation',
@@ -16,7 +17,8 @@ export class AlgoEvaluationComponent implements OnInit {
   recommendations: Stock[] = [];
 
   constructor(private aiPicksService: AiPicksService,
-    private cartService: CartService) { }
+    private cartService: CartService,
+    private strategyBuilderService: StrategyBuilderService) { }
 
   async ngOnInit() {
     await this.getBacktests();
@@ -37,6 +39,7 @@ export class AlgoEvaluationComponent implements OnInit {
     this.recommendations = this.stockList.filter(stock => {
       if ((stock?.ml > 0.5) && (stock.recommendation.toLowerCase() === 'buy' || stock.recommendation.toLowerCase() === 'strongbuy')) {
         stock.recommendation = 'Strong buy';
+        this.strategyBuilderService.addBullishStock(stock.stock);
         return true;
       } else if ((stock?.sellMl > 0.5) && (stock.recommendation.toLowerCase() === 'sell' || stock.recommendation.toLowerCase() === 'strongsell')) {
         stock.recommendation = 'Strong sell';

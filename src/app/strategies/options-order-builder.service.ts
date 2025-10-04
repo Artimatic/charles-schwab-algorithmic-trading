@@ -434,7 +434,7 @@ export class OptionsOrderBuilderService {
     const lastPrice = price[symbol].quote.lastPrice;
     const closePrice = price[symbol].quote.closePrice;
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
-    return Math.abs(currentDiff) < 0.01;
+    return currentDiff < 0.01;
   }
 
   async shouldSellOptions(holding: PortfolioInfoHolding, isStrangle: boolean, putCallInd: string) {

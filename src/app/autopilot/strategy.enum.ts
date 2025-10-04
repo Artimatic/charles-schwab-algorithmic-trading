@@ -39,5 +39,6 @@ export enum Strategy {
   Gold = 'Buy Gold',
   BTC = 'Buy BTC',
   StopLoss = 'StopLoss',
+  IwmInverseDispersion = 'IWM InverseDispersion',
   None = 'None'
 }

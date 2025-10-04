@@ -82,7 +82,6 @@ export class AutopilotService {
   currentHoldings: PortfolioInfoHolding[] = [];
   defaultList = [
     Strategy.Default,
-    Strategy.AddToPositions,
     Strategy.BuySnP,
     Strategy.StopLoss
   ];
@@ -461,7 +460,7 @@ export class AutopilotService {
       });
       return;
     } else if (!buys.length) {
-      buys = ['SPY'];
+      buys = ['IWM', 'QQQ', 'SPY'];
     }
 
     buys.forEach(buy => {
@@ -488,6 +487,13 @@ export class AutopilotService {
     if (addPair) {
       this.addPair(buys, sells, `${direction} ${indicator}`);
     }
+  }
+
+  findIwmTrade() {
+    const buys = ['IWM', 'META', 'AAPL', 'AMZN', 'NVDA', 'GOOGL'];
+    const sells = this.getSellList((backtestData) => backtestData.recommendation.toLowerCase() === 'strongsell' && backtestData.sellMl > 0.5);
+    console.log('IWM trade', buys, sells);
+    this.addPair(buys, sells, 'IWM pair');
   }
 
   async buyOnSignal(indicator: SwingtradeAlgorithms, direction: 'buy' | 'sell') {
@@ -1048,6 +1054,8 @@ export class AutopilotService {
         this.currentHoldings.forEach(async (holding) => {
           await this.checkStopLoss(holding);
         });
+      case Strategy.IwmInverseDispersion:
+        this.findIwmTrade();
         break;
       default: {
           await this.addInverseDispersionTrade();
