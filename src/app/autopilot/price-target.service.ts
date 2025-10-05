@@ -135,7 +135,7 @@ export class PriceTargetService {
     this.reportingService.addAuditLog(null, `Portfolio PnL: ${portfolioPl}. target: ${priceTarget}`);
 
     if (portfolioPl && portfolioPl > priceTarget) {
-      if (portfolioPl > priceTarget * 5) {
+      if (portfolioPl > priceTarget * 7) {
         const portData = await this.portfolioService.getTdPortfolio().toPromise();
         try {
           this.reportingService.addAuditLog(null, `Profit loss may be inaccurate: ${portfolioPl} ${JSON.stringify(portData)}`);

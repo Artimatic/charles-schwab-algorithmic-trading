@@ -686,6 +686,9 @@ describe('PriceTargetService', () => {
     expect(Number(pl.toFixed(4))).toEqual(0.0786);
 
     const priceTargetMet = await service.hasMetPriceTarget();
+    
+    expect(service.targetDiff).toEqual(0.023);
+
     expect(priceTargetMet).toEqual(true);
 
     await service.checkProfitTarget(testHoldings);

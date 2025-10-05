@@ -178,6 +178,7 @@ describe('AutopilotService', () => {
 
   it('should call find swing stock callback buy', async () => {
     mockCartService.portfolioBuy.and.callFake(() => { });
+    mockPriceTargetService.isProfitable.and.returnValue(true);
     await service.findSwingStockCallback('AAPL', 0.8, { recommendation: 'STRONGBUY', impliedMovement: 0.1, net: 10, invested: 100 });
     expect(mockOrderHandlingService.addBuy).toHaveBeenCalled();
   });
