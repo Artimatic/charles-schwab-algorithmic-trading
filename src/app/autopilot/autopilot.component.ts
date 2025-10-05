@@ -399,6 +399,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
               this.addCurrentHoldingsToAuditLog();
               this.decreaseRiskTolerance();
             }
+          } else {
+            if (this.cartService.buyOrders.length === 0 && this.cartService.sellOrders.length === 0) {
+              await this.autopilotService.handleStrategy(true);
+            }
           }
         } else if (!this.developedStrategy && moment().isAfter(moment(this.autopilotService.sessionStart).subtract(this.interval * 2, 'minutes')) &&
           moment().isBefore(moment(this.autopilotService.sessionStart))) {

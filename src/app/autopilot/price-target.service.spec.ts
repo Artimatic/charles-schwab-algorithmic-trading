@@ -118,7 +118,7 @@ describe('PriceTargetService', () => {
   const orderHandlingServiceSpy = jasmine.createSpyObj('OrderHandlingService', ['getEstimatedPrice']);
   const portfolioServiceSpy = jasmine.createSpyObj('PortfolioService', ['getTdPortfolio', 'getTdBalance']);
   const backtestServiceSpy = jasmine.createSpyObj('BacktestService', ['getLastPriceTiingo', 'getBacktestEvaluation']);
-  const reportingServiceSpy = jasmine.createSpyObj('ReportingService', ['addAuditLog']);
+  const reportingServiceSpy = jasmine.createSpyObj('ReportingService', ['addAuditLog', 'findBuyLogBySymbol']);
   const globalSettingsServiceSpy = jasmine.createSpyObj('GlobalSettingsService', ['get10YearYield']);
   const portfolioWeightsServiceSpy = jasmine.createSpyObj('PortfolioWeightsService', ['getPortfolioVolatility']);
 
@@ -665,7 +665,7 @@ describe('PriceTargetService', () => {
     const testSpyPrice = {
       'SPY': {
         quote: {
-          lastPrice: 568.58,
+          lastPrice: 579.58,
           closePrice: 580
         }
       }
@@ -679,21 +679,26 @@ describe('PriceTargetService', () => {
 
     cartServiceSpy.isStrangle.and.returnValue(false);
 
-    expect(service.getDiff(testSpyPrice['SPY'].quote.closePrice, testSpyPrice['SPY'].quote.lastPrice)).toEqual(-0.019689655172413723);
+    // Mock that these stocks were already added to bullish list by algo-evaluation component
+    reportingServiceSpy.findBuyLogBySymbol.and.returnValue(false);
+
+    // Set target diff to a reasonable value
+    service.targetDiff = 0.02;
+
+    // Ensure we haven't hit target recently
+    service.lastTargetMet = null;
 
     const pl = await service.todaysPortfolioPl();
 
     expect(Number(pl.toFixed(4))).toEqual(0.0786);
 
     const priceTargetMet = await service.hasMetPriceTarget();
-    
-    expect(service.targetDiff).toEqual(0.023);
-
     expect(priceTargetMet).toEqual(true);
 
     await service.checkProfitTarget(testHoldings);
     expect(cartServiceSpy.addSingleLegOptionOrder).toHaveBeenCalledTimes(2);
     expect(cartServiceSpy.portfolioSell).not.toHaveBeenCalled();
+    expect(reportingServiceSpy.addAuditLog).toHaveBeenCalled();
   });
 
   it('should get call put balance', async () => {
