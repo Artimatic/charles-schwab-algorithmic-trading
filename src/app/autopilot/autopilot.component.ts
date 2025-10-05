@@ -387,8 +387,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             await this.setProfitLoss();
             this.scoreKeeperService.resetTotal();
             this.resetCart();
-            setTimeout(() => {
-              this.autopilotService.handleStrategy();
+            setTimeout(async () => {
+              await this.autopilotService.handleStrategy();
             }, 10800000);
           }
         } else if (this.autopilotService.handleIntraday()) {
