@@ -83,7 +83,9 @@ export class AutopilotService {
   defaultList = [
     Strategy.Default,
     Strategy.BuySnP,
-    Strategy.StopLoss
+    Strategy.StopLoss,
+    Strategy.IwmInverseDispersion,
+    Strategy.TrimHoldings
   ];
 
   bearishList = [

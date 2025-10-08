@@ -108,7 +108,6 @@ const fullList = [
     'CCL',
     'CLF',
     'APP',
-    'BJ',
     'SPOT',
     'S',
     'TSM',
