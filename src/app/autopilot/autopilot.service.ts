@@ -357,7 +357,7 @@ export class AutopilotService {
   }
 
   async findSwingStockCallback(symbol: string, prediction: number, backtestData: any) {
-    if ((prediction > 0.7 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY') && this.priceTargetService.isProfitable(backtestData.invested, backtestData.net)) {
+    if ((prediction > 0.65 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY') && this.priceTargetService.isProfitable(backtestData.invested, backtestData.net)) {
       const stock: PortfolioInfoHolding = {
         name: symbol,
         pl: 0,
@@ -1050,7 +1050,6 @@ export class AutopilotService {
         this.findIwmTrade();
         break;
       default: {
-          await this.addInverseDispersionTrade();
           await this.findStock();
           await this.getNewTrades(null, null, this.currentHoldings);
         break;

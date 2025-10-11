@@ -50,7 +50,7 @@ export class PriceTargetService {
     this.reportingService.addAuditLog(null, `Ten Year Yield High: ${targetYield}`);
   }
 
-  isProfitable(invested: number, pl: number, target = 0.05) {
+  isProfitable(invested: number, pl: number, target = 0) {
     return this.getDiff(invested, invested + pl) > target;
   }
 
