@@ -82,7 +82,6 @@ const fullList = [
     'HAL',
     'CAT',
     'CAVA',
-    'CARR',
     'TSN',
     'LEN',
     'SE',

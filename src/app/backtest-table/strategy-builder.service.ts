@@ -238,8 +238,9 @@ export class StrategyBuilderService {
     }
 
     if (!potentialStrangle.call) {
-      this.reportingService.addAuditLog(null,
-        'Unable to find call for ' + symbol);
+      const msg = 'Unable to find call for ' + symbol;
+      this.reportingService.addAuditLog(null, msg); 
+      this.messageService.add({ severity: 'danger', summary: msg, sticky: true });
     }
     return potentialStrangle;
   }
@@ -286,8 +287,9 @@ export class StrategyBuilderService {
       }
     }
     if (!potentialStrangle.put) {
-      this.reportingService.addAuditLog(null,
-        'Unable to find put for ' + symbol);
+      const msg = 'Unable to find put for ' + symbol;
+      this.reportingService.addAuditLog(null, msg);
+      this.messageService.add({ severity: 'danger', summary: msg, sticky: true });
     }
     return potentialStrangle;
   }

@@ -85,33 +85,24 @@ export class AutopilotService {
     Strategy.BuySnP,
     Strategy.StopLoss,
     Strategy.IwmInverseDispersion,
-    Strategy.TrimHoldings
+    Strategy.TrimHoldings,
+    Strategy.PerfectPair
   ];
 
   bearishList = [
     Strategy.Hedge,
     Strategy.InverseDispersion,
-    Strategy.PerfectPair,
-    Strategy.BuySnP,
+    Strategy.VolatilityPairs,
     Strategy.StopLoss,
     Strategy.MLPairs,
     Strategy.TrimHoldings,
-    Strategy.Hedge,
-    Strategy.Short,
-    Strategy.TradingPairs,
-    Strategy.VolatilityPairs,
-    Strategy.Gold,
     Strategy.BuyMfiTrade,
+    Strategy.Gold,
     Strategy.BuyMfiDiv,
-    Strategy.PerfectPair,
-    Strategy.MLPairs,
     Strategy.BuyMfi,
     Strategy.BuyBband,
     Strategy.BuyMfiDiv2,
-    Strategy.TradingPairs,
-    Strategy.VolatilityPairs,
-    Strategy.BuyWinners,
-    Strategy.BuyMfiTrade
+    Strategy.Short
   ];
 
   bullishList = [
@@ -119,7 +110,6 @@ export class AutopilotService {
     Strategy.BuyCalls,
     Strategy.BuyBbandBreakout,
     Strategy.BuyWinners,
-    Strategy.BuyFlag,
     Strategy.BuyFlag,
     Strategy.BuyWinnersSellLosers,
     Strategy.BTC,
@@ -314,13 +304,13 @@ export class AutopilotService {
       for (const saved in savedBacktest) {
         const backtestObj = savedBacktest[saved];
         const symbol = backtestObj.stock
-        if (backtestObj.ml > 0.5 && backtestObj.sellMl < 0.5 && backtestObj.recommendation.toLowerCase() === 'STRONGBUY') {
+        if (backtestObj.ml > 0.5 && backtestObj.sellMl < 0.5 && backtestObj.recommendation.toLowerCase() === 'strongbuy') {
           if (MlBuys[backtestObj.ml]) {
             MlBuys[backtestObj.ml].push(symbol);
           } else {
             MlBuys[backtestObj.ml] = [symbol];
           }
-        } else if (backtestObj.ml < 0.5 && backtestObj.sellMl > 0.5 && backtestObj.recommendation.toLowerCase() === 'STRONGSELL') {
+        } else if (backtestObj.ml < 0.5 && backtestObj.sellMl > 0.5 && backtestObj.recommendation.toLowerCase() === 'strongsell') {
           if (MlSells[backtestObj.sellMl]) {
             MlSells[backtestObj.sellMl].push(symbol);
           } else {
