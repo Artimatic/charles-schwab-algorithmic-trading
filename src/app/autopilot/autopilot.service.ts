@@ -525,7 +525,24 @@ export class AutopilotService {
         targetUtilization = targetUtilization > 1 ? 1 : targetUtilization;
         if (actualUtilization < targetUtilization) {
           this.reportingService.addAuditLog(null, `Underutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
-          await this.orderHandlingService.addBuy(this.createHoldingObj('SPY'), this.riskToleranceList[0], 'Underutilized. Buy snp');
+          
+          // Get backtest data for multiple symbols and find the one with highest ml value
+          const symbols = ['GLD', 'SH', 'SPY', 'TLT'];
+          const backtestResults = await Promise.all(
+            symbols.map(symbol => this.strategyBuilderService.getBacktestData(symbol))
+          );
+          
+          let bestSymbol = 'SPY';
+          let highestMl = -1;
+          
+          for (let i = 0; i < symbols.length; i++) {
+            if (backtestResults[i] && backtestResults[i].ml > highestMl) {
+              highestMl = backtestResults[i].ml;
+              bestSymbol = symbols[i];
+            }
+          }
+          
+          await this.orderHandlingService.addBuy(this.createHoldingObj(bestSymbol), this.riskToleranceList[0], `Underutilized. Buy ${bestSymbol} (ml: ${highestMl})`);
         } else if (canSell && actualUtilization > targetUtilization + 0.03) {
           this.reportingService.addAuditLog(null, `Overutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
           this.currentHoldings.forEach(async (holding) => {
