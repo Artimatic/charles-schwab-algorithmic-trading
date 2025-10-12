@@ -199,4 +199,67 @@ describe('AutopilotService', () => {
     const result = service.getBuyList(() => true);
     expect(result).toEqual(['AAPL']);
   });
+
+  describe('selectBestSymbolByMl', () => {
+    it('should return the symbol with the highest ml score', async () => {
+      // Mock different ml scores for different symbols
+      mockStrategyBuilderService.getBacktestData.and.callFake((symbol: string) => {
+        const mockData = {
+          'GLD': { ml: 0.3, recommendation: 'BUY' },
+          'SH': { ml: 0.8, recommendation: 'STRONGBUY' },
+          'SPY': { ml: 0.5, recommendation: 'BUY' },
+          'TLT': { ml: 0.2, recommendation: 'SELL' }
+        };
+        return Promise.resolve(mockData[symbol] || { ml: 0, recommendation: 'HOLD' });
+      });
+
+      const symbols = ['GLD', 'SH', 'SPY', 'TLT'];
+      const result = await service.selectBestSymbolByMl(symbols);
+
+      expect(result.symbol).toBe('SH');
+      expect(result.ml).toBe(0.8);
+      expect(mockStrategyBuilderService.getBacktestData).toHaveBeenCalledTimes(4);
+    });
+
+    it('should handle empty symbols array', async () => {
+      const result = await service.selectBestSymbolByMl([]);
+      expect(result.symbol).toBeUndefined();
+      expect(result.ml).toBe(-1);
+    });
+
+    it('should handle null/undefined backtest results', async () => {
+      mockStrategyBuilderService.getBacktestData.and.returnValue(Promise.resolve(null));
+
+      const symbols = ['GLD', 'SPY'];
+      const result = await service.selectBestSymbolByMl(symbols);
+
+      expect(result.symbol).toBe('GLD'); // Should default to first symbol
+      expect(result.ml).toBe(-1);
+    });
+
+    it('should handle mixed valid and invalid results', async () => {
+      mockStrategyBuilderService.getBacktestData.and.callFake((symbol: string) => {
+        if (symbol === 'SPY') {
+          return Promise.resolve({ ml: 0.7, recommendation: 'BUY' });
+        }
+        return Promise.resolve(null);
+      });
+
+      const symbols = ['GLD', 'SPY', 'TLT'];
+      const result = await service.selectBestSymbolByMl(symbols);
+
+      expect(result.symbol).toBe('SPY');
+      expect(result.ml).toBe(0.7);
+    });
+
+    it('should return first symbol when all ml scores are equal', async () => {
+      mockStrategyBuilderService.getBacktestData.and.returnValue(Promise.resolve({ ml: 0.5, recommendation: 'BUY' }));
+
+      const symbols = ['GLD', 'SH', 'SPY', 'TLT'];
+      const result = await service.selectBestSymbolByMl(symbols);
+
+      expect(result.symbol).toBe('GLD'); // First symbol when all are equal
+      expect(result.ml).toBe(0.5);
+    });
+  });
 });
