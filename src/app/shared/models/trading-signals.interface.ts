@@ -1,4 +1,4 @@
-import { PortfolioInfoHolding } from './portfolio-info-holding.interface';
+import { PortfolioInfoHolding } from '../services/portfolio.service';
 
 export interface MarketStatus {
   isOpen: boolean;
