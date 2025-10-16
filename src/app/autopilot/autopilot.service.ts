@@ -63,20 +63,22 @@ export class AutopilotService {
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.Fear,
-    RiskTolerance.Two,
-    RiskTolerance.Lower,
-    RiskTolerance.Low,
     RiskTolerance.Neutral,
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.Neutral,
+    RiskTolerance.Greed,
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.Neutral,
-    RiskTolerance.Greed
+    RiskTolerance.Lower,
+    RiskTolerance.Greed,
+    RiskTolerance.Low,
+    RiskTolerance.Neutral,
+    RiskTolerance.XXXXLGreed
   ];
   isOpened = false;
-  maxHoldings = 10;
+  maxHoldings = 15;
   lastBuyList = [];
   lastOptionsCheckCheck = null;
   currentHoldings: PortfolioInfoHolding[] = [];
@@ -483,7 +485,7 @@ export class AutopilotService {
 
   findIwmTrade() {
     const buys = ['IWM', 'META', 'AAPL', 'AMZN', 'NVDA', 'GOOGL'];
-    const sells = this.getSellList((backtestData) => backtestData.recommendation.toLowerCase() === 'strongsell' && backtestData.sellMl > 0.5);
+    const sells = this.getSellList((backtestData) => backtestData.recommendation.toLowerCase() === 'strongsell' && backtestData.sellMl > 0.63);
     console.log('IWM trade', buys, sells);
     this.addPair(buys, sells, 'IWM pair');
   }
@@ -607,7 +609,7 @@ export class AutopilotService {
       newList = this.defaultList;
     }
     if (this.strategyList !== newList) {
-      this.reportingService.addAuditLog(null, `Strategy list changed: ${newList.map(s => s).join(', ')}`);
+      this.reportingService.addAuditLog(null, `Strategy list changed: ${newList.map(s => s).join(', ')}. Last SPY prediction: ${this.lastSpyMl}`);
     }
     this.strategyList = newList;
     this.strategyCounter = this.strategyCounter >= this.strategyList.length ? 0 : this.strategyCounter;
@@ -1080,6 +1082,7 @@ export class AutopilotService {
       default: {
           await this.findStock();
           await this.getNewTrades(null, null, this.currentHoldings);
+          this.findIwmTrade();
         break;
       }
     }
