@@ -88,7 +88,8 @@ export class AutopilotService {
     Strategy.StopLoss,
     Strategy.IwmInverseDispersion,
     Strategy.TrimHoldings,
-    Strategy.PerfectPair
+    Strategy.PerfectPair,
+    Strategy.Swingtrade
   ];
 
   bearishList = [
@@ -527,11 +528,11 @@ export class AutopilotService {
         targetUtilization = targetUtilization > 1 ? 1 : targetUtilization;
         if (actualUtilization < targetUtilization) {
           this.reportingService.addAuditLog(null, `Underutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
-          
+
           // Get the best symbol based on ML scores
           // const symbols = ['GLD', 'SH', 'SPY', 'TLT'];
           // const bestSymbolResult = await this.selectBestSymbolByMl(symbols);
-          
+
           // await this.orderHandlingService.addBuy(this.createHoldingObj(bestSymbolResult.symbol), this.riskToleranceList[0], `Underutilized. Buy ${bestSymbolResult.symbol} (ml: ${bestSymbolResult.ml})`);
           this.findIwmTrade();
         } else if (canSell && actualUtilization > targetUtilization + 0.03) {
@@ -780,17 +781,17 @@ export class AutopilotService {
     const backtestResults = await Promise.all(
       symbols.map(symbol => this.strategyBuilderService.getBacktestData(symbol))
     );
-    
+
     let bestSymbol = symbols[0]; // Default to first symbol
     let highestMl = -1;
-    
+
     for (let i = 0; i < symbols.length; i++) {
       if (backtestResults[i] && backtestResults[i].ml > highestMl) {
         highestMl = backtestResults[i].ml;
         bestSymbol = symbols[i];
       }
     }
-    
+
     return { symbol: bestSymbol, ml: highestMl };
   }
 
@@ -1080,10 +1081,12 @@ export class AutopilotService {
       case Strategy.IwmInverseDispersion:
         this.findIwmTrade();
         break;
+      case Strategy.Swingtrade:
+        await this.getNewTrades(null, null, this.currentHoldings);
+        break;
       default: {
-          await this.findStock();
-          await this.getNewTrades(null, null, this.currentHoldings);
-          this.findIwmTrade();
+        await this.findStock();
+        this.findIwmTrade();
         break;
       }
     }
