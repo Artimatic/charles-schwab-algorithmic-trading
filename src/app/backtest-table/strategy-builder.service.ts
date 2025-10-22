@@ -31,7 +31,8 @@ export class StrategyBuilderService {
   countNet = 0;
   defaultMinExpiration = 90;
   defaultMaxImpliedMovement = 0.06;
-  bullishStocks = [];
+  bullishStocks: string[] = [];
+  bearishStocks: string[] = [];
   constructor(private backtestService: BacktestService,
     private optionsDataService: OptionsDataService,
     private portfolioService: PortfolioService,
@@ -45,6 +46,27 @@ export class StrategyBuilderService {
   addBullishStock(symbol: string) {
     this.bullishStocks.push(symbol);
   }
+
+  clearBullishStock() {
+    this.bullishStocks = [];
+  }
+
+  getBullishStocks() {
+    return this.bullishStocks;
+  }
+
+  clearBearishStocks() {
+    this.bearishStocks = [];
+  }
+
+  addBearishStock(symbol: string) {
+    this.bearishStocks.push(symbol);
+  }
+
+  getBearishStocks() {
+    return this.bearishStocks;
+  }
+
   getRecentBacktest(symbol: string = null, expiry = 1) {
     const backtestStorage = this.strategyStoreService.getStorage('backtest');
     if (!symbol) {

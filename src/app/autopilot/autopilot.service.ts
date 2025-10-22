@@ -19,6 +19,7 @@ import { ScoringIndex } from '@shared/services/score-keeper.service';
 import { RiskTolerance } from './risk-tolerance.enum';
 import { Strategy } from './strategy.enum';
 import { DelayedBuySellStrategyService } from '../delayed-buy-sell-strategy.service';
+import { IntradayStrategyScannerService } from '../strategies/intraday-strategy-scanner.service';
 
 export interface ProfitLossRecord {
   date: string;
@@ -140,6 +141,7 @@ export class AutopilotService {
       }
     },
     async () => await this.checkIntradayStrategies(),
+    async () => await this.findAnyPair(),
     async () => {
       await this.setCurrentHoldings();
       const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
@@ -172,7 +174,8 @@ export class AutopilotService {
     private daytradeStrategiesService: DaytradeStrategiesService,
     private machineLearningService: MachineLearningService,
     private intradayStrategyService: IntradayStrategyService,
-    private delayedBuySellStrategyService: DelayedBuySellStrategyService
+    private delayedBuySellStrategyService: DelayedBuySellStrategyService,
+    private intradayStrategyScannerService: IntradayStrategyScannerService
   ) {
     const globalStartStop = this.globalSettingsService.getStartStopTime();
     this.sessionStart = globalStartStop.startDateTime;
@@ -423,9 +426,8 @@ export class AutopilotService {
   }
 
   async findAnyPair() {
-    const buys = this.getBuyList()
-    const sells = this.getSellList();
-    this.addPair(buys, sells, 'Any pair');
+    const buySellList = await this.intradayStrategyScannerService.scanStocksForIntradayStrategies()
+    this.addPair(buySellList.buys, buySellList.sells, 'Intraday pair');
   }
 
   async findMlOnlyPair() {

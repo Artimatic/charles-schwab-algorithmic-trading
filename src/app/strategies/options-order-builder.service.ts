@@ -429,12 +429,28 @@ export class OptionsOrderBuilderService {
       return (backtestResults.averageMove / lastPrice) * 3;
     }
   }
-  async shouldBuyOption(symbol: string) {
+  async shouldBuyOption(symbol: string, threshold = 0.01) {
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
     const lastPrice = price[symbol].quote.lastPrice;
     const closePrice = price[symbol].quote.closePrice;
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
-    return currentDiff < 0.01;
+    return Math.abs(currentDiff) < threshold;
+  }
+
+  async shouldBuyCallOption(symbol: string, threshold = 0.01) {
+    const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
+    const lastPrice = price[symbol].quote.lastPrice;
+    const closePrice = price[symbol].quote.closePrice;
+    const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
+    return currentDiff < -1 * threshold;
+  }
+
+  async shouldBuyPutOption(symbol: string, threshold = 0.01) {
+    const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
+    const lastPrice = price[symbol].quote.lastPrice;
+    const closePrice = price[symbol].quote.closePrice;
+    const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
+    return currentDiff > threshold;
   }
 
   async shouldSellOptions(holding: PortfolioInfoHolding, isStrangle: boolean, putCallInd: string) {
@@ -468,7 +484,7 @@ export class OptionsOrderBuilderService {
   async hedge(currentHoldings: PortfolioInfoHolding[], balance: Balance, min = 0.15) {
     currentHoldings.forEach(async (holding) => {
       if (holding.netLiq && (holding.netLiq / balance.liquidationValue) > min) {
-        const shouldBuy = await this.shouldBuyOption(holding.name);
+        const shouldBuy = await this.shouldBuyPutOption(holding.name);
         if (shouldBuy && holding.assetType !== 'collective_investment') {
           console.log('Adding protective put for', holding.name);
           await this.createProtectivePutOrder(holding, balance.cashBalance);
@@ -545,8 +561,8 @@ export class OptionsOrderBuilderService {
           !this.cartService.optionsOrderExists(trade[1].holding.symbol, trade[1].primaryLegs) &&
           !this.cartService.optionsOrderExists(trade[1].holding.symbol, trade[1].secondaryLegs)
         ) {
-          const shouldBuyCall = await this.shouldBuyOption(trade[0].holding.symbol);
-          const shouldBuyPut = await this.shouldBuyOption(trade[1].holding.symbol);
+          const shouldBuyCall = await this.shouldBuyCallOption(trade[0].holding.symbol);
+          const shouldBuyPut = await this.shouldBuyPutOption(trade[1].holding.symbol);
           console.log('Should buy ', trade, shouldBuyCall, shouldBuyPut);
           if (shouldBuyCall && shouldBuyPut) {
             const buyTrendCall = await this.priceTargetService.hasBuyTrend(trade[0].holding.symbol);
