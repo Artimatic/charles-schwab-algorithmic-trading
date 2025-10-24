@@ -13,7 +13,8 @@ export class AlgoEvaluationComponent implements OnInit {
   selectedStock: any;
   currentList: any[] = [];
   stockList: Stock[] = [];
-  showPortfolio;
+  tableStates: any[] = [{ label: 'Recommendations', value: 'recommendations' },{ label: 'Portfolio', value: 'portfolio' }];
+  tableDisplay: string = 'recommendations';
   recommendations: Stock[] = [];
 
   constructor(private aiPicksService: AiPicksService,
@@ -77,8 +78,8 @@ export class AlgoEvaluationComponent implements OnInit {
   }
 
   async setTable(ev = null) {
-    this.showPortfolio = ev?.checked;
-    if (this.showPortfolio) {
+    this.tableDisplay = ev?.value;
+    if (this.tableDisplay === this.tableStates[1].value) {
       this.setColumnsForPortfolio();
       const positions = await this.cartService.findCurrentPositions();
       this.currentList = positions.map((pos: PortfolioInfoHolding) => {
