@@ -743,27 +743,27 @@ export class StrategyBuilderService {
     console.log('Risk percent', riskPct);
     switch (riskPct) {
       case 0.1:
-        this.defaultMinExpiration = 100;
+        this.defaultMinExpiration = 90;
         this.defaultMaxImpliedMovement = 0.065;
         break;
       case 0.2:
-        this.defaultMinExpiration = 90;
+        this.defaultMinExpiration = 85;
         this.defaultMaxImpliedMovement = 0.075;
         break;
       case 0.3:
-        this.defaultMinExpiration = 85;
+        this.defaultMinExpiration = 80;
         this.defaultMaxImpliedMovement = 0.085;
         break;
       case 0.4:
-        this.defaultMinExpiration = 80;
+        this.defaultMinExpiration = 75;
         this.defaultMaxImpliedMovement = 0.095;
         break;
       case 0.5:
-        this.defaultMinExpiration = 75;
+        this.defaultMinExpiration = 65;
         this.defaultMaxImpliedMovement = 0.105;
         break;
       case 0.6:
-        this.defaultMinExpiration = 65;
+        this.defaultMinExpiration = 60;
         this.defaultMaxImpliedMovement = 0.115;
         break;
       case 0.7:
@@ -779,7 +779,7 @@ export class StrategyBuilderService {
         this.defaultMaxImpliedMovement = 0.155;
         break;
       case 1:
-        this.defaultMinExpiration = 30;
+        this.defaultMinExpiration = 40;
         this.defaultMaxImpliedMovement = 0.155;
         break;
       default:
@@ -787,6 +787,8 @@ export class StrategyBuilderService {
         this.defaultMaxImpliedMovement = 0.07;
         break;
     }
+          this.reportingService.addAuditLog(null,
+        `Min expiration is ${this.defaultMinExpiration} Max implied movement is ${this.defaultMaxImpliedMovement}`);
   }
 
   resetStrategyRisk() {
