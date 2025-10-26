@@ -7,7 +7,7 @@ import { OptionsOrderBuilderService } from './options-order-builder.service';
 })
 export class IntradayStrategyScannerService {
 
-  constructor(private strategyBuilderService: StrategyBuilderService, 
+  constructor(private strategyBuilderService: StrategyBuilderService,
     private optionsOrderBuilderService: OptionsOrderBuilderService) { }
 
   async scanStocksForIntradayStrategies() {
@@ -18,7 +18,7 @@ export class IntradayStrategyScannerService {
     bullishStocks.forEach(async (stock) => {
       const backtestResults = await this.strategyBuilderService.getBacktestData(stock);
       // Process backtestResults for bullish stocks
-      const buy = this.optionsOrderBuilderService.shouldBuyCallOption(stock, backtestResults.impliedMovement - 0.01);
+      const buy = this.optionsOrderBuilderService.shouldBuyCallOption(stock, backtestResults.impliedMovement - 0.015);
       if (buy) {
         buys.push(stock);
       }
@@ -26,11 +26,26 @@ export class IntradayStrategyScannerService {
     bearishStocks.forEach(async (stock) => {
       const backtestResults = await this.strategyBuilderService.getBacktestData(stock);
       // Process backtestResults for bearish stocks
-      const buy = this.optionsOrderBuilderService.shouldBuyPutOption(stock, backtestResults.impliedMovement - 0.01);
+      const buy = this.optionsOrderBuilderService.shouldBuyPutOption(stock, backtestResults.impliedMovement - 0.015);
       if (buy) {
         sells.push(stock);
       }
     });
     return { buys, sells };
+  }
+
+  async scanStocksForIntradayBuys() {
+    const buys = [];
+    const bullishStocks = this.strategyBuilderService.getBullishStocks();
+    bullishStocks.forEach(async (stock) => {
+      const backtestResults = await this.strategyBuilderService.getBacktestData(stock);
+      // Process backtestResults for bullish stocks
+      const buy = this.optionsOrderBuilderService.shouldBuyCallOption(stock, backtestResults.impliedMovement - 0.02);
+      if (buy) {
+        buys.push(stock);
+      }
+    });
+
+    return buys;
   }
 }

@@ -126,7 +126,11 @@ export class StrategyBuilderService {
             });
         });
       // this.backtestAggregatorService.analyseBacktest(results);
-      this.addToOrderHistoryStorage(symbol, results.orderHistory);
+      if (results.orderHistory) {
+        this.addToOrderHistoryStorage(symbol, results.orderHistory);
+      } else {
+        console.log('Order history is missing', results);
+      }
       const pop = this.allocationService.determineProbabilityOfProfit(results.buySignals.length,
         results.sellSignals.length,
         results.impliedMovement,

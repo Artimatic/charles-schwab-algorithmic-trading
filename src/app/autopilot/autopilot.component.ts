@@ -576,7 +576,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.machineLearningService.getFoundPatterns()
       .subscribe(patternsResponse => console.log('found patterns ', patternsResponse));
 
-    this.autopilotService.currentHoldings = await this.cartService.findCurrentPositions();
+    this.autopilotService.setCurrentHoldings();
 
     await this.modifyCurrentHoldings();
   }
@@ -600,7 +600,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async backtestOneStock(overwrite = false, addTrade = true) {
     try {
       let stock = this.machineDaytradingService.getNextStock();
-      while (Boolean(this.autopilotService.currentHoldings.find((value) => value.name === stock))) {
+      while (Boolean(this.autopilotService.getCurrentHoldings().find((value) => value.name === stock))) {
         stock = this.machineDaytradingService.getNextStock();
       }
       await this.strategyBuilderService.getBacktestData(stock, overwrite);
@@ -643,7 +643,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async modifyCurrentHoldings() {
-    this.autopilotService.currentHoldings.forEach(async (holding) => {
+    this.autopilotService.getCurrentHoldings().forEach(async (holding) => {
       try {
         const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
         if (holding.primaryLegs) {
@@ -660,7 +660,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.cartService.portfolioSell(holding, 'Backtest indicates sell');
         } else if (backtestResults && backtestResults.ml !== null && backtestResults.ml > 0.7 && (backtestResults.recommendation === 'STRONGBUY' || backtestResults.recommendation === 'BUY')) {
           console.log('Backtest indicates buying', backtestResults);
-          await this.orderHandlingService.addBuy(this.autopilotService.createHoldingObj(holding.name), RiskTolerance.One, 'Backtest indicates buying');
+          this.strategyBuilderService.addBullishStock(holding.name);
         }
       } catch (error) {
         console.log('Backtest error', error);
@@ -702,7 +702,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async analyseRecommendations(holding: PortfolioInfoHolding) {
     if (holding.recommendation.toLowerCase() === 'buy') {
-      await this.orderHandlingService.addBuy(holding, (this.autopilotService.riskLevel) * 2, 'Recommendated buy');
+      
+      await this.orderHandlingService.addBuy(holding, (this.autopilotService.riskLevel) * 2, 'Recommended buy');
     } else if (holding.recommendation.toLowerCase() === 'sell') {
       await this.cartService.portfolioSell(holding, 'Recommended sell');
     }
@@ -790,7 +791,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async buySellAtCloseOrOpen() {
-    const overBalance = await this.autopilotService.handleBalanceUtilization(this.autopilotService.currentHoldings);
+    const overBalance = await this.autopilotService.handleBalanceUtilization(this.autopilotService.getCurrentHoldings());
     if (this.boughtAtClose || this.manualStart || overBalance) {
       return;
     }
@@ -822,8 +823,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async sellAll() {
-    this.autopilotService.currentHoldings = await this.cartService.findCurrentPositions();
-    this.autopilotService.currentHoldings.forEach(async (holding) => {
+    await this.autopilotService.setCurrentHoldings();
+    this.autopilotService.getCurrentHoldings().forEach(async (holding) => {
       if (!this.cartService.isStrangle(holding)) {
         if (!holding?.primaryLegs?.length) {
           await this.cartService.portfolioSell(holding, 'Sell all command');
@@ -933,9 +934,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   async test() {
     this.cartService.deleteCart();
     this.cartService.removeCompletedOrders();
-    this.autopilotService.currentHoldings = await this.cartService.findCurrentPositions();
+    await this.autopilotService.setCurrentHoldings();
     await this.modifyCurrentHoldings();
-    console.log(this.autopilotService.currentHoldings);
+    console.log(this.autopilotService.getCurrentHoldings());
     //await this.orderHandlingService.intradayStep('SPY');
     await this.optionsOrderBuilderService.balanceTrades(['GOOGL'], ['AAPL'], 1000, 5000, 'Test');
     if (!this.tradingPairs.length) {
@@ -944,7 +945,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.portfolioService.purgeStrategy().subscribe();
 
     // Sell all
-    this.autopilotService.currentHoldings.forEach(async (portItem: PortfolioInfoHolding) => {
+    this.autopilotService.getCurrentHoldings().forEach(async (portItem: PortfolioInfoHolding) => {
       if (portItem.primaryLegs) {
         let orderType = null;
         if (portItem.primaryLegs[0].putCallInd.toLowerCase() === 'c') {

@@ -2,6 +2,9 @@ import { Injectable } from '@angular/core';
 import { AuthenticationService, CartService, DaytradeService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService } from '@shared/services';
 import { round } from 'lodash-es';
 import * as moment from 'moment-timezone';
+import { BacktestData } from './interfaces/backtest-data.interface';
+import { MarketHours } from './interfaces/market-hours.interface';
+import { TradingStrategy } from './interfaces/trading-strategy.interface';
 import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';
 import { PriceTargetService } from './price-target.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
@@ -10,7 +13,7 @@ import { StrategyBuilderService } from '../backtest-table/strategy-builder.servi
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { OrderTypes } from '@shared/models/smart-order';
 import { map, tap } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
 import { Balance } from '@shared/services/portfolio.service';
@@ -50,15 +53,72 @@ export enum SwingtradeAlgorithms {
   providedIn: 'root'
 })
 export class AutopilotService {
-  lastBalanceUtilizationCheck: any = null;
-  riskCounter = 0;
-  lastSpyMl = 0;
-  lastGldMl = 0;
-  lastBtcMl = 0;
-  volatility = 0;
-  lastMarketHourCheck = null;
-  sessionStart = null;
-  sessionEnd = null;
+  private lastBalanceUtilizationCheck: moment.Moment | null = null;
+  private _riskCounter = 0;
+  private _lastSpyMl = 0;
+  private _lastGldMl = 0;
+  private _lastBtcMl = 0;
+
+  get riskCounter(): number {
+    return this._riskCounter;
+  }
+
+  set riskCounter(value: number) {
+    this._riskCounter = value;
+  }
+
+  get lastSpyMl(): number {
+    return this._lastSpyMl;
+  }
+
+  set lastSpyMl(value: number) {
+    this._lastSpyMl = value;
+  }
+
+  get lastGldMl(): number {
+    return this._lastGldMl;
+  }
+
+  set lastGldMl(value: number) {
+    this._lastGldMl = value;
+  }
+
+  get lastBtcMl(): number {
+    return this._lastBtcMl;
+  }
+
+  set lastBtcMl(value: number) {
+    this._lastBtcMl = value;
+  }
+  private _volatility = 0;
+  private lastMarketHourCheck: moment.Moment | null = null;
+  private _sessionStart: Date | null = null;
+  private _sessionEnd: Date | null = null;
+
+  get volatility(): number {
+    return this._volatility;
+  }
+
+  set volatility(value: number) {
+    this._volatility = value;
+  }
+
+  get sessionStart(): Date | null {
+    return this._sessionStart;
+  }
+
+  set sessionStart(value: Date | null) {
+    this._sessionStart = value;
+  }
+
+  get sessionEnd(): Date | null {
+    return this._sessionEnd;
+  }
+
+  set sessionEnd(value: Date | null) {
+    this._sessionEnd = value;
+  }
+
   riskToleranceList = [
     RiskTolerance.Two,
     RiskTolerance.Lower,
@@ -78,12 +138,21 @@ export class AutopilotService {
     RiskTolerance.Neutral,
     RiskTolerance.XXXXLGreed
   ];
-  isOpened = false;
-  maxHoldings = 15;
-  lastBuyList = [];
-  lastOptionsCheckCheck = null;
-  currentHoldings: PortfolioInfoHolding[] = [];
-  defaultList = [
+  private isOpened = false;
+  private maxHoldings = 15;
+  private lastBuyList: string[] = [];
+  private lastOptionsCheckCheck: moment.Moment | null = null;
+  private _currentHoldings: PortfolioInfoHolding[] = [];
+
+  get currentHoldings(): PortfolioInfoHolding[] {
+    return this._currentHoldings;
+  }
+
+  set currentHoldings(value: PortfolioInfoHolding[]) {
+    this._currentHoldings = value;
+  }
+
+  private readonly defaultList: Strategy[] = [
     Strategy.Default,
     Strategy.BuySnP,
     Strategy.StopLoss,
@@ -93,7 +162,7 @@ export class AutopilotService {
     Strategy.Swingtrade
   ];
 
-  bearishList = [
+  private readonly bearishList: Strategy[] = [
     Strategy.Hedge,
     Strategy.InverseDispersion,
     Strategy.VolatilityPairs,
@@ -109,7 +178,7 @@ export class AutopilotService {
     Strategy.Short
   ];
 
-  bullishList = [
+  private readonly bullishList: Strategy[] = [
     Strategy.AddToPositions,
     Strategy.BuyCalls,
     Strategy.BuyBbandBreakout,
@@ -120,15 +189,32 @@ export class AutopilotService {
     Strategy.StopLoss
   ];
 
-  strategyList = this.defaultList;
+  private _strategyList: Strategy[] = this.defaultList;
 
-  callPutBuffer = 0.05;
-  intradayProcessCounter = 0;
-  intradayStrategyTriggered = false;
-  strategies = [];
-  strategyCounter = 0;
-  riskLevel = RiskTolerance.One;
-  private processes = [
+  get strategyList(): Strategy[] {
+    return this._strategyList;
+  }
+
+  set strategyList(value: Strategy[]) {
+    this._strategyList = value;
+    // Reset counter if it's out of bounds with new list
+    this.strategyCounter = this.strategyCounter >= value.length ? 0 : this.strategyCounter;
+  }
+
+  private readonly callPutBuffer = 0.05;
+  private intradayProcessCounter = 0;
+  private _strategies: TradingStrategy[] = [];
+  private _strategyCounter = 0;
+
+  get strategyCounter(): number {
+    return this._strategyCounter;
+  }
+
+  set strategyCounter(value: number) {
+    this._strategyCounter = value;
+  }
+  private _riskLevel: RiskTolerance = RiskTolerance.One;
+  private readonly processes: Array<() => Promise<void>> = [
     async () => await this.priceTargetService.setTargetDiff(),
     async () => {
       await this.setCurrentHoldings();
@@ -157,7 +243,8 @@ export class AutopilotService {
     async () => {
       await this.setCurrentHoldings();
       // await this.balanceCallPutRatio(this.currentHoldings);
-    }
+    },
+    async () => await this.findStockBuys()
   ];
 
   constructor(private cartService: CartService,
@@ -218,6 +305,10 @@ export class AutopilotService {
 
   async setCurrentHoldings() {
     this.currentHoldings = await this.cartService.findCurrentPositions();
+  }
+
+  getCurrentHoldings() {
+    return this.currentHoldings;
   }
 
   async checkIntradayStrategies() {
@@ -362,29 +453,16 @@ export class AutopilotService {
     };
   }
 
-  async findSwingStockCallback(symbol: string, prediction: number, backtestData: any) {
+  async findSwingStockCallback(symbol: string, prediction: number | null, backtestData: BacktestData): Promise<void> {
     if ((prediction > 0.65 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY') && this.priceTargetService.isProfitable(backtestData.invested, backtestData.net)) {
-      const stock: PortfolioInfoHolding = {
-        name: symbol,
-        pl: 0,
-        netLiq: 0,
-        shares: 0,
-        alloc: 0,
-        recommendation: 'None',
-        buyReasons: '',
-        sellReasons: '',
-        buyConfidence: 0,
-        sellConfidence: 0,
-        prediction: null
-      };
-      await this.orderHandlingService.addBuy(stock, this.riskLevel * 2, 'Swing trade buy');
+      this.strategyBuilderService.addBullishStock(symbol);
     }
   }
 
-  getBuyList(filter = (data) => data.recommendation === 'STRONGBUY'): string[] {
-    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
-    let backtestResults = [];
-    let newList = [];
+  getBuyList(filter: (data: BacktestData) => boolean = (data: BacktestData) => data.recommendation === 'STRONGBUY'): string[] {
+    const savedBacktest = JSON.parse(localStorage.getItem('backtest') || '{}');
+    let backtestResults: BacktestData[] = [];
+    let newList: BacktestData[] = [];
 
     if (savedBacktest) {
       for (const saved in savedBacktest) {
@@ -430,6 +508,13 @@ export class AutopilotService {
     this.addPair(buySellList.buys, buySellList.sells, 'Intraday pair');
   }
 
+  async findStockBuys() {
+    const buyList = await this.intradayStrategyScannerService.scanStocksForIntradayBuys()
+      
+    buyList.forEach(async (buy) => await this.orderHandlingService.addBuy(this.createHoldingObj(buy),
+        this.riskLevel * 2, 'Buy bullish stock'), true);
+  }
+
   async findMlOnlyPair() {
     const buys = this.getBuyList(() => true)
     const sells = this.getSellList(() => true);
@@ -441,13 +526,6 @@ export class AutopilotService {
     const sells = this.getSellList((backtestData) => backtestData.net / backtestData.total < -0.04 && backtestData.sellMl > 0.6);
     console.log('buyWinnersSellLosers', buys, sells);
     this.addPair(buys, sells, 'Winner Loser pair');
-  }
-
-  async findStock() {
-    if (this.strategyBuilderService.bullishStocks.length) {
-      await this.orderHandlingService.addBuy(this.createHoldingObj(this.strategyBuilderService.bullishStocks.pop()),
-        this.riskLevel * 2, 'Buy bullish stock');
-    }
   }
 
   addPair(buys: string[], sells: string[], reason) {
@@ -735,12 +813,12 @@ export class AutopilotService {
     this.authenticationService.checkCredentials(accountId).subscribe();
   }
 
-  isMarketOpened() {
+  isMarketOpened(): Observable<boolean> {
     if (this.lastMarketHourCheck && Math.abs(this.lastMarketHourCheck.diff(moment(), 'minutes')) < 20) {
       return of(this.isOpened);
     }
     return this.portfolioService.getEquityMarketHours(moment().format('YYYY-MM-DD')).pipe(
-      map((marketHour: any) => {
+      map((marketHour: MarketHours) => {
         if (!marketHour.equity) {
           this.checkCredentials();
           return this.isOpened;
@@ -780,7 +858,7 @@ export class AutopilotService {
    * @returns Object containing the best symbol and its ml score
    */
   async selectBestSymbolByMl(symbols: string[]): Promise<{ symbol: string; ml: number }> {
-    const backtestResults = await Promise.all(
+    const backtestResults: Array<BacktestData | null> = await Promise.all(
       symbols.map(symbol => this.strategyBuilderService.getBacktestData(symbol))
     );
 
@@ -953,7 +1031,7 @@ export class AutopilotService {
 
   async handleStrategy(useDefault = false) {
     this.strategyBuilderService.findTrades();
-    this.strategies = this.strategyBuilderService.getTradingStrategies();
+    this._strategies = this.strategyBuilderService.getTradingStrategies();
     const strategy = useDefault ? Strategy.Default : this.strategyList[this.strategyCounter];
 
     // Get the list of stocks to sell today from delayed sells
@@ -1087,7 +1165,6 @@ export class AutopilotService {
         await this.getNewTrades(null, null, this.currentHoldings);
         break;
       default: {
-        await this.findStock();
         this.findIwmTrade();
         break;
       }
@@ -1135,9 +1212,9 @@ export class AutopilotService {
   }
   setRiskLevel() {
     if (this.riskCounter < this.riskToleranceList.length) {
-      this.riskLevel = this.riskToleranceList[this.riskCounter];
+      this._riskLevel = this.riskToleranceList[this.riskCounter];
     } else {
-      this.riskLevel = this.riskToleranceList[this.riskToleranceList.length - 1];
+      this._riskLevel = this.riskToleranceList[this.riskToleranceList.length - 1];
     }
   }
 
@@ -1160,6 +1237,22 @@ export class AutopilotService {
   /**
  * Checks today's combined portfolio PnL from localStorage and calls changeStrategy if negative.
  */
+  public get strategies(): TradingStrategy[] {
+    return this._strategies;
+  }
+
+  public set strategies(value: TradingStrategy[]) {
+    this._strategies = value;
+  }
+
+  public get riskLevel(): RiskTolerance {
+    return this._riskLevel;
+  }
+
+  public set riskLevel(value: RiskTolerance) {
+    this._riskLevel = value;
+  }
+
   public checkAndChangeStrategyOnNegativePnL(): void {
     try {
       const key = 'todaysPortfolioPlHistory';

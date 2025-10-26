@@ -52,11 +52,13 @@ export class OrderHandlingService {
     return this.backtestService.getBacktestEvaluation(stock, startDate, currentDate, 'daily-indicators');
   }
 
-  async addBuy(holding: PortfolioInfoHolding, allocation, reason) {
+  async addBuy(holding: PortfolioInfoHolding, allocation, reason, addOrderRightAway = false) {
     if (!holding.name) {
       throw Error('Ticker is missing')
     }
-    if ((this.cartService.getBuyOrders().length + this.cartService.getOtherOrders().length) < this.cartService.getMaxTradeCount()) {
+    if (!addOrderRightAway) {
+      this.strategyBuilderService.addBullishStock(holding.name);
+    } else if ((this.cartService.getBuyOrders().length + this.cartService.getOtherOrders().length) < this.cartService.getMaxTradeCount()) {
       const currentDate = moment().format('YYYY-MM-DD');
       const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
       try {
