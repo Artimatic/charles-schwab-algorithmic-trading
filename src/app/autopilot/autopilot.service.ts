@@ -610,10 +610,10 @@ export class AutopilotService {
           this.reportingService.addAuditLog(null, `Underutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
 
           // Get the best symbol based on ML scores
-          // const symbols = ['GLD', 'SH', 'SPY', 'TLT'];
-          // const bestSymbolResult = await this.selectBestSymbolByMl(symbols);
+          const symbols = ['GLD', 'SH', 'UPRO', 'TLT'];
+          const bestSymbolResult = await this.selectBestSymbolByMl(symbols);
 
-          // await this.orderHandlingService.addBuy(this.createHoldingObj(bestSymbolResult.symbol), this.riskToleranceList[0], `Underutilized. Buy ${bestSymbolResult.symbol} (ml: ${bestSymbolResult.ml})`);
+          await this.orderHandlingService.addBuy(this.createHoldingObj(bestSymbolResult.symbol), this.riskToleranceList[0], `Underutilized. Buy ${bestSymbolResult.symbol} (ml: ${bestSymbolResult.ml})`);
           this.findIwmTrade();
         } else if (canSell && actualUtilization > targetUtilization + 0.03) {
           this.reportingService.addAuditLog(null, `Overutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);

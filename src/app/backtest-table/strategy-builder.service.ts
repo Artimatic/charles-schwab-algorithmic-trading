@@ -515,7 +515,7 @@ export class StrategyBuilderService {
   }
 
   addAndRemoveOldStrategies(storage) {
-    storage = storage.filter(s => moment().diff(moment(s.date), 'days') < 10);
+    storage = storage.filter(s => moment().diff(moment(s.date), 'days') < 15);
     this.setTradingStrategies(storage);
   }
 
@@ -545,7 +545,6 @@ export class StrategyBuilderService {
           storage.push(trade)
         }
 
-        storage = storage.filter(s => moment().diff(moment(s.date), 'days') < 9);
         this.addAndRemoveOldStrategies(storage);
       } else {
         const newStorageObj = [trade];

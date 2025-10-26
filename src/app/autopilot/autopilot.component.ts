@@ -770,7 +770,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async modifyRisk() {
-    const metTarget = await this.priceTargetService.hasMetPriceTarget(0);
+    const metTarget = await this.priceTargetService.hasMetPriceTarget(0.001);
     if (!metTarget) {
       this.decreaseDayTradeRiskTolerance();
       await this.increaseRiskTolerance();
