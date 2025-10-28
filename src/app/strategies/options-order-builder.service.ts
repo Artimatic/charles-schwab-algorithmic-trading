@@ -442,7 +442,7 @@ export class OptionsOrderBuilderService {
     const lastPrice = price[symbol].quote.lastPrice;
     const closePrice = price[symbol].quote.closePrice;
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
-    return currentDiff < -1 * threshold;
+    return (currentDiff < -1 * threshold) || Math.abs(currentDiff) < 0.01;
   }
 
   async shouldBuyPutOption(symbol: string, threshold = 0.01) {
@@ -450,7 +450,7 @@ export class OptionsOrderBuilderService {
     const lastPrice = price[symbol].quote.lastPrice;
     const closePrice = price[symbol].quote.closePrice;
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
-    return currentDiff > threshold;
+    return currentDiff > threshold || Math.abs(currentDiff) < 0.01;
   }
 
   async shouldSellOptions(holding: PortfolioInfoHolding, isStrangle: boolean, putCallInd: string) {

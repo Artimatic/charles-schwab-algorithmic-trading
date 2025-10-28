@@ -244,7 +244,8 @@ export class AutopilotService {
       await this.setCurrentHoldings();
       // await this.balanceCallPutRatio(this.currentHoldings);
     },
-    async () => await this.findStockBuys()
+    async () => await this.findStockBuys(),
+    async () => await this.handleStrategy()
   ];
 
   constructor(private cartService: CartService,
@@ -614,7 +615,7 @@ export class AutopilotService {
           const bestSymbolResult = await this.selectBestSymbolByMl(symbols);
 
           await this.orderHandlingService.addBuy(this.createHoldingObj(bestSymbolResult.symbol), this.riskToleranceList[0], `Underutilized. Buy ${bestSymbolResult.symbol} (ml: ${bestSymbolResult.ml})`);
-          this.findIwmTrade();
+          //this.findIwmTrade();
         } else if (canSell && actualUtilization > targetUtilization + 0.03) {
           this.reportingService.addAuditLog(null, `Overutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
           this.currentHoldings.forEach(async (holding) => {
@@ -1166,6 +1167,8 @@ export class AutopilotService {
         break;
       default: {
         this.findIwmTrade();
+        await this.addVolatilityPairs();
+        this.addPerfectPair()
         break;
       }
     }
