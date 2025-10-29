@@ -245,7 +245,12 @@ export class AutopilotService {
       // await this.balanceCallPutRatio(this.currentHoldings);
     },
     async () => await this.findStockBuys(),
-    async () => await this.handleStrategy()
+    async () => {
+      // Prevent handleBalanceUtilization if last call was within 45 minutes
+      if (!this.lastBalanceUtilizationCheck || Math.abs(moment().diff(this.lastBalanceUtilizationCheck, 'minutes')) > 45) {
+        await this.handleStrategy();
+      }
+    }
   ];
 
   constructor(private cartService: CartService,
@@ -317,7 +322,7 @@ export class AutopilotService {
   }
 
   async getMinMaxCashForOptions(modifier = 1) {
-    const cash = await this.cartService.getAvailableFunds(false);
+    const cash = await this.cartService.getAvailableFunds(false, true);
     const minConstant = modifier ? (cash * RiskTolerance.Zero * modifier) : 1000;
     const maxCash = round(this.riskLevel * cash, 2);
     const minCash = maxCash - minConstant;
@@ -530,17 +535,35 @@ export class AutopilotService {
   }
 
   addPair(buys: string[], sells: string[], reason) {
-    if (!sells.length) {
-      buys.forEach(buy => {
+    // Get current trading pairs to filter against
+    const existingSymbols = new Set<string>();
+    
+    // Collect all symbols from existing trading pairs
+    this.optionsOrderBuilderService.tradingPairs.forEach(pair => {
+      pair.forEach(order => {
+        if (order.holding && order.holding.symbol) {
+          existingSymbols.add(order.holding.symbol);
+        }
+      });
+    });
+
+    // Filter out stocks that are already in trading pairs
+    const filteredBuys = buys.filter(buy => !existingSymbols.has(buy));
+    const filteredSells = sells.filter(sell => !existingSymbols.has(sell));
+
+    if (!filteredSells.length) {
+      filteredBuys.forEach(buy => {
         this.strategyBuilderService.addBullishStock(buy);
       });
       return;
-    } else if (!buys.length) {
-      buys = ['IWM', 'QQQ', 'SPY'];
+    } else if (!filteredBuys.length) {
+      const defaultSymbols = ['IWM', 'QQQ', 'SPY'].filter(sym => !existingSymbols.has(sym));
+      filteredBuys.push.apply(filteredBuys, defaultSymbols);
+      if (!filteredBuys.length) return;
     }
 
-    buys.forEach(buy => {
-      sells.forEach(sell => {
+    filteredBuys.forEach(buy => {
+      filteredSells.forEach(sell => {
         this.strategyBuilderService.createStrategy(`${buy} ${reason}`, buy, [buy], [sell], reason);
       });
     });

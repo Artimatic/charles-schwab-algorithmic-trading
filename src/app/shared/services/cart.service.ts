@@ -570,8 +570,8 @@ export class CartService {
     return currentHoldings;
   }
 
-  async getAvailableFunds(useCashBalance: boolean) {
-    const balance = await this.portfolioService.getTdBalance().toPromise();
+  async getAvailableFunds(useCashBalance: boolean, useCache = false) {
+    const balance = await this.portfolioService.getTdBalance(useCache).toPromise();
     let availableCash = useCashBalance ? Number(balance.cashBalance) : Number(balance.availableFunds);
     if (availableCash > balance.liquidationValue * 0.33) {
       availableCash = round(balance.liquidationValue * 0.33, 2);
