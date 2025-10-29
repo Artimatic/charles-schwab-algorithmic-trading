@@ -437,7 +437,7 @@ export class OptionsOrderBuilderService {
     return Math.abs(currentDiff) < threshold;
   }
 
-  async shouldBuyCallOption(symbol: string, threshold = 0.01) {
+  async shouldBuyCallOption(symbol: string, threshold = 0.015) {
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
     const lastPrice = price[symbol].quote.lastPrice;
     const closePrice = price[symbol].quote.closePrice;
@@ -445,7 +445,7 @@ export class OptionsOrderBuilderService {
     return (currentDiff < -1 * threshold) || Math.abs(currentDiff) < 0.01;
   }
 
-  async shouldBuyPutOption(symbol: string, threshold = 0.01) {
+  async shouldBuyPutOption(symbol: string, threshold = 0.015) {
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
     const lastPrice = price[symbol].quote.lastPrice;
     const closePrice = price[symbol].quote.closePrice;
