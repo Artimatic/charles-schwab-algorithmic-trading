@@ -212,10 +212,25 @@ export class OptionsOrderBuilderService {
   }
 
   async createTradingPair(minCashAllocation: number, maxCashAllocation: number) {
+    // Get all symbols that are currently in trading pairs
+    const existingSymbols = new Set<string>();
+    this.tradingPairs.forEach(pair => {
+      pair.forEach(order => {
+        if (order.holding && order.holding.symbol) {
+          existingSymbols.add(order.holding.symbol);
+        }
+      });
+    });
+
     this.strategyBuilderService.getTradingStrategies().forEach(async (strat) => {
-      const buys: string[] = strat.strategy.buy;
-      const sells: string[] = strat.strategy.sell;
-      await this.balanceTrades(buys, sells, minCashAllocation, maxCashAllocation, strat.reason ? strat.reason : 'Trading pair');
+      // Filter out symbols that already exist in trading pairs
+      const buys: string[] = strat.strategy.buy.filter(symbol => !existingSymbols.has(symbol));
+      const sells: string[] = strat.strategy.sell.filter(symbol => !existingSymbols.has(symbol));
+
+      // Only proceed if we have symbols to trade
+      if (buys.length > 0 && sells.length > 0) {
+        await this.balanceTrades(buys, sells, minCashAllocation, maxCashAllocation, strat.reason ? strat.reason : 'Trading pair');
+      }
     });
   }
 
