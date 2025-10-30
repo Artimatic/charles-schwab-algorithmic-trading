@@ -222,7 +222,9 @@ export class OptionsOrderBuilderService {
       });
     });
 
-    this.strategyBuilderService.getTradingStrategies().forEach(async (strat) => {
+    const strategies = this.strategyBuilderService.getTradingStrategies();
+    // Process strategies sequentially
+    for (const strat of strategies) {
       // Filter out symbols that already exist in trading pairs
       const buys: string[] = strat.strategy.buy.filter(symbol => !existingSymbols.has(symbol));
       const sells: string[] = strat.strategy.sell.filter(symbol => !existingSymbols.has(symbol));
@@ -231,7 +233,7 @@ export class OptionsOrderBuilderService {
       if (buys.length > 0 && sells.length > 0) {
         await this.balanceTrades(buys, sells, minCashAllocation, maxCashAllocation, strat.reason ? strat.reason : 'Trading pair');
       }
-    });
+    }
   }
 
   clearCurrentTradeIdeas() {
