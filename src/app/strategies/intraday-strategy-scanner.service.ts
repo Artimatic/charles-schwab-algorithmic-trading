@@ -30,16 +30,15 @@ export class IntradayStrategyScannerService {
     const bullStock = bullishStocks[this.currentBullishListCounter];
     const backtestResults = await this.strategyBuilderService.getBacktestData(bullStock);
     // Process backtestResults for bullish stocks
-    const buy = this.optionsOrderBuilderService.shouldBuyCallOption(bullStock, backtestResults.impliedMovement / 2);
+    const buy = this.optionsOrderBuilderService.shouldBuyCallOption(bullStock);
     if (buy) {
       buys.push(bullStock);
     }
 
     const bearStock = bearishStocks[this.currentBearishListCounter];
 
-    const backtestResultsSell = await this.strategyBuilderService.getBacktestData(bearStock);
     // Process backtestResults for bearish stocks
-    const sell = this.optionsOrderBuilderService.shouldBuyPutOption(bearStock, (backtestResultsSell.impliedMovement / 2));
+    const sell = this.optionsOrderBuilderService.shouldBuyPutOption(bearStock);
     if (sell) {
       sells.push(sell);
     }
@@ -55,9 +54,8 @@ export class IntradayStrategyScannerService {
       this.currentCounter = 0;
     }
     const stock = bullishStocks[this.currentCounter];
-    const backtestResults = await this.strategyBuilderService.getBacktestData(stock);
     // Process backtestResults for bullish stocks
-    const buy = this.optionsOrderBuilderService.shouldBuyCallOption(stock, backtestResults.impliedMovement - 0.02);
+    const buy = this.optionsOrderBuilderService.shouldBuyCallOption(stock);
     if (buy) {
       buys.push(stock);
     }
