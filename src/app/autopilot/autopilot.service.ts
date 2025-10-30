@@ -516,7 +516,7 @@ export class AutopilotService {
 
   async findStockBuys() {
     const buyList = await this.intradayStrategyScannerService.scanStocksForIntradayBuys()
-      
+    console.log('findStockBuys', buyList);
     buyList.forEach(async (buy) => await this.orderHandlingService.addBuy(this.createHoldingObj(buy),
         this.riskLevel * 2, 'Buy bullish stock'), true);
   }
@@ -975,6 +975,7 @@ export class AutopilotService {
       this.intradayProcessCounter = 0;
     }
 
+    console.log(`Executing intraday process ${this.intradayProcessCounter + 1} of ${this.processes.length}`);
     await this.processes[this.intradayProcessCounter]();
     this.intradayProcessCounter++;
   }
