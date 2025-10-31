@@ -13,9 +13,14 @@ export class AlgoEvaluationComponent implements OnInit {
   selectedStock: any;
   currentList: any[] = [];
   stockList: Stock[] = [];
-  tableStates: any[] = [{ label: 'Recommendations', value: 'recommendations' },{ label: 'Portfolio', value: 'portfolio' }];
+  tableStates: any[] = [
+    { label: 'Recommendations', value: 'recommendations' },
+    { label: 'Portfolio', value: 'portfolio' },
+    { label: 'Trading Pairs', value: 'tradingPairs' }
+  ];
   tableDisplay: string = 'recommendations';
   recommendations: Stock[] = [];
+  tradingPairs: any[] = [];
 
   constructor(private aiPicksService: AiPicksService,
     private cartService: CartService,
@@ -77,6 +82,15 @@ export class AlgoEvaluationComponent implements OnInit {
     ];
   }
 
+  setColumnsForTradingPairs() {
+    this.selectedColumns = [
+      { field: 'name', header: 'Strategy Name' },
+      { field: 'buySymbols', header: 'Buy Symbols' },
+      { field: 'sellSymbols', header: 'Sell Symbols' },
+      { field: 'reason', header: 'Reason' }
+    ];
+  }
+
   async setTable(ev = null) {
     this.tableDisplay = ev?.value;
     if (this.tableDisplay === this.tableStates[1].value) {
@@ -92,6 +106,17 @@ export class AlgoEvaluationComponent implements OnInit {
           primaryLegsSymbol: pos.primaryLegs ? pos.primaryLegs[0].putCall : '',
           secondaryLegs: pos.secondaryLegs ? pos.secondaryLegs.map(leg => `${leg.quantity} ${leg.description}`).join(',') : null,
           secondaryLegsSymbol: pos.secondaryLegs ? pos.secondaryLegs[0].putCall : ''
+        };
+      });
+    } else if (this.tableDisplay === this.tableStates[2].value) {
+      this.setColumnsForTradingPairs();
+      const strategies = this.strategyBuilderService.getTradingStrategies();
+      this.currentList = strategies.map(strategy => {
+        return {
+          name: strategy.name,
+          buySymbols: strategy.buySymbols.join(', '),
+          sellSymbols: strategy.sellSymbols.join(', '),
+          reason: strategy.reason
         };
       });
     } else {

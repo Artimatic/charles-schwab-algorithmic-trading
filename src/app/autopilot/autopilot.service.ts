@@ -139,8 +139,6 @@ export class AutopilotService {
     RiskTolerance.XXXXLGreed
   ];
   private isOpened = false;
-  private maxHoldings = 15;
-  private lastBuyList: string[] = [];
   private lastOptionsCheckCheck: moment.Moment | null = null;
   private _currentHoldings: PortfolioInfoHolding[] = [];
 
