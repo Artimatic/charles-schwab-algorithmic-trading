@@ -486,6 +486,9 @@ export class StrategyBuilderService {
   findTrades(filterKey = '', skipRecommendation = false) {
     const backtests = this.sanitizeData();
     const tradingPairs = JSON.parse(localStorage.getItem('tradingPairs'));
+    if (!tradingPairs) {
+      return;
+    }
     const keysToProcess = filterKey ? [filterKey] : Object.keys(tradingPairs);
     
     for (const key of keysToProcess) {

@@ -249,6 +249,10 @@ export class OptionsOrderBuilderService {
       minCashAllocation = 0;
     }
     for (const buy of buyList) {
+      if (typeof buy !== 'string') {
+        console.error('Invalid buy symbol:', buy, buyList);
+        continue;
+      }
       const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(buy);
       if (bullishStrangle && bullishStrangle.call) {
         const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
@@ -265,6 +269,10 @@ export class OptionsOrderBuilderService {
           break;
         }
         for (const sell of sellList) {
+          if (typeof sell !== 'string') {
+            console.error('Invalid sell symbol:', sell, sellList);
+            continue;
+          }
           const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
           if (bearishStrangle && bearishStrangle.put) {
             const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
@@ -456,7 +464,7 @@ export class OptionsOrderBuilderService {
 
   async shouldBuyCallOption(symbol: string) {
     const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
-    const threshold = (backtestResults.impliedMovement / 2.3);
+    const threshold = ((backtestResults.impliedMovement ? backtestResults.impliedMovement : 3) / 2.3);
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
     const lastPrice = price[symbol].quote.lastPrice;
     const closePrice = price[symbol].quote.closePrice;
@@ -466,7 +474,7 @@ export class OptionsOrderBuilderService {
 
   async shouldBuyPutOption(symbol: string) {
     const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
-    const threshold = (backtestResults.impliedMovement / 2.3);
+    const threshold = ((backtestResults.impliedMovement ? backtestResults.impliedMovement : 3) / 2.3);
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
     const lastPrice = price[symbol].quote.lastPrice;
     const closePrice = price[symbol].quote.closePrice;

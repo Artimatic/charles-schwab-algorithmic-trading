@@ -113,10 +113,10 @@ export class AlgoEvaluationComponent implements OnInit {
       const strategies = this.strategyBuilderService.getTradingStrategies();
       this.currentList = strategies.map(strategy => {
         return {
-          name: strategy.name,
-          buySymbols: strategy.buySymbols.join(', '),
-          sellSymbols: strategy.sellSymbols.join(', '),
-          reason: strategy.reason
+          name: strategy.name || 'Unnamed Strategy',
+          buySymbols: strategy.buySymbols?.length ? strategy.buySymbols.join(', ') : 'None',
+          sellSymbols: strategy.sellSymbols?.length ? strategy.sellSymbols.join(', ') : 'None',
+          reason: strategy.reason || 'No reason specified'
         };
       });
     } else {
