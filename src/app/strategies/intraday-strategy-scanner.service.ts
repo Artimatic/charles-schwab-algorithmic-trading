@@ -54,7 +54,7 @@ export class IntradayStrategyScannerService {
     }
     const stock = bullishStocks[this.currentCounter];
     // Process backtestResults for bullish stocks
-    const buy = this.optionsOrderBuilderService.shouldBuyCallOption(stock);
+    const buy = this.optionsOrderBuilderService.shouldBuyCallOption(stock, 0.7);
     if (buy) {
       buys.push(stock);
     }

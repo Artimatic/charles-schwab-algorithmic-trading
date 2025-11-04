@@ -459,7 +459,20 @@ export class AutopilotService {
 
   async findSwingStockCallback(symbol: string, prediction: number | null, backtestData: BacktestData): Promise<void> {
     if ((prediction > 0.65 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY') && this.priceTargetService.isProfitable(backtestData.invested, backtestData.net)) {
-      this.strategyBuilderService.addBullishStock(symbol);
+      const stock: PortfolioInfoHolding = {
+        name: symbol,
+        pl: 0,
+        netLiq: 0,
+        shares: 0,
+        alloc: 0,
+        recommendation: 'None',
+        buyReasons: '',
+        sellReasons: '',
+        buyConfidence: 0,
+        sellConfidence: 0,
+        prediction: null
+      };
+      await this.orderHandlingService.addBuy(stock, this.riskLevel * 2, 'Swing trade buy');
     }
   }
 
@@ -560,11 +573,12 @@ export class AutopilotService {
       if (!filteredBuys.length) return;
     }
 
-    filteredBuys.forEach(buy => {
-      filteredSells.forEach(sell => {
-        this.strategyBuilderService.createStrategy(`${buy} ${reason}`, buy, [buy], [sell], reason);
-      });
-    });
+    // filteredBuys.forEach(buy => {
+    //   filteredSells.forEach(sell => {
+    //     this.strategyBuilderService.createStrategy(`${buy} ${reason}`, buy, [buy], [sell], reason);
+    //   });
+    // });
+    this.strategyBuilderService.createStrategy(`${filteredBuys[0]} ${reason}`, filteredBuys[0], filteredBuys, filteredSells, reason);
   }
 
   addPairOnSignal(indicator: SwingtradeAlgorithms, direction: 'buy' | 'sell', addPair = true) {
