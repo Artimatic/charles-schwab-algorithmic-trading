@@ -416,7 +416,7 @@ export class OptionsOrderBuilderService {
     return Math.abs(currentDiff) < 0.008;
   }
 
-  async shouldBuyCallOption(symbol: string, modifier = 0) {
+  async shouldBuyCallOption(symbol: string, modifier = 1) {
     const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
     const threshold = ((backtestResults.impliedMovement ? backtestResults.impliedMovement : 3) / 2.3);
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();

@@ -528,8 +528,8 @@ export class AutopilotService {
   async findStockBuys() {
     const buyList = await this.intradayStrategyScannerService.scanStocksForIntradayBuys()
     console.log('findStockBuys', buyList);
-    buyList.forEach(async (buy) => await this.orderHandlingService.addBuy(this.createHoldingObj(buy),
-        this.riskLevel * 2, 'Buy bullish stock'), true);
+    await this.orderHandlingService.addBuy(this.createHoldingObj(buyList.pop()),
+        this.riskLevel, 'Buy intraday bullish stock');
   }
 
   async findMlOnlyPair() {

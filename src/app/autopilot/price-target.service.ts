@@ -198,7 +198,7 @@ export class PriceTargetService {
     const backtest = await this.backtestService.getBacktestEvaluation(symbol, startDate, currentDate, 'daily-indicators').toPromise();
     const signals = backtest.signals;
     const lastSignal = signals[signals.length - 1];
-    if (lastSignal.mfiPrevious < lastSignal.mfiLeft) {
+    if (lastSignal.mfiPrevious < lastSignal.mfiLeft + 1) {
       return true;
     }
 
@@ -211,7 +211,7 @@ export class PriceTargetService {
     const backtest = await this.backtestService.getBacktestEvaluation(symbol, startDate, currentDate, 'daily-indicators').toPromise();
     const signals = backtest.signals;
     const lastSignal = signals[signals.length - 1];
-    if (lastSignal.mfiPrevious > lastSignal.mfiLeft) {
+    if (lastSignal.mfiPrevious - 1 > lastSignal.mfiLeft) {
       return true;
     }
 

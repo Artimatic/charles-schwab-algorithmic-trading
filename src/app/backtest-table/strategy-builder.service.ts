@@ -31,7 +31,7 @@ export class StrategyBuilderService {
   sumNet = 0;
   countNet = 0;
   defaultMinExpiration = 90;
-  defaultMaxImpliedMovement = 0.07;
+  defaultMaxImpliedMovement = 0.085;
   bullishStocks: string[] = [];
   bearishStocks: string[] = [];
   constructor(private backtestService: BacktestService,
@@ -778,15 +778,15 @@ export class StrategyBuilderService {
     switch (riskPct) {
       case 0.1:
         this.defaultMinExpiration = 90;
-        this.defaultMaxImpliedMovement = 0.075;
+        this.defaultMaxImpliedMovement = 0.08;
         break;
       case 0.2:
         this.defaultMinExpiration = 85;
-        this.defaultMaxImpliedMovement = 0.08;
+        this.defaultMaxImpliedMovement = 0.085;
         break;
       case 0.3:
         this.defaultMinExpiration = 80;
-        this.defaultMaxImpliedMovement = 0.085;
+        this.defaultMaxImpliedMovement = 0.09;
         break;
       case 0.4:
         this.defaultMinExpiration = 75;
@@ -818,7 +818,7 @@ export class StrategyBuilderService {
         break;
       default:
         this.defaultMinExpiration = 90;
-        this.defaultMaxImpliedMovement = 0.07;
+        this.defaultMaxImpliedMovement = 0.08;
         break;
     }
           this.reportingService.addAuditLog(null,
@@ -827,6 +827,6 @@ export class StrategyBuilderService {
 
   resetStrategyRisk() {
     this.defaultMinExpiration = 90;
-    this.defaultMaxImpliedMovement = 0.07;
+    this.defaultMaxImpliedMovement = 0.08;
   }
 }
