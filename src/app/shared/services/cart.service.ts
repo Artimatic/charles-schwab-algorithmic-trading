@@ -345,8 +345,21 @@ export class CartService {
   }
 
   private existingOptionsCheck(order, underlyingSymbol: string, optionSymbol: string) {
-    return order.primaryLegs && (order.holding.symbol === underlyingSymbol || order.primaryLegs[0].symbol === optionSymbol) ||
-      (order.secondaryLegs && order.secondaryLegs[0].symbol === optionSymbol);
+    if (order.primaryLegs) {
+      if (order.holding.symbol === underlyingSymbol) {
+        console.log(`Existing options check found matching underlying symbol: ${underlyingSymbol} in order:`, order);
+        return true;
+      }
+      if (order.primaryLegs[0].symbol === optionSymbol) {
+        console.log(`Existing options check found matching primary leg option symbol: ${optionSymbol} in order:`, order);
+        return true;
+      }
+    }
+    if (order.secondaryLegs && order.secondaryLegs[0].symbol === optionSymbol) {
+      console.log(`Existing options check found matching secondary leg option symbol: ${optionSymbol} in order:`, order);
+      return true;
+    }
+    return false;
   }
 
   optionsOrderExists(symbol, leg) {

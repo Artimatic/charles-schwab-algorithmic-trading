@@ -17,6 +17,18 @@ export interface TradingPair {
   underlying: string;
 }
 
+export interface TradingStrategy {
+  name: string;
+  key: string;
+  date: string;  // Making date required to match PotentialTrade
+  type: string;  // Making type required to match PotentialTrade
+  strategy: {
+    buy: string[];
+    sell: string[];
+  };
+  reason?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -222,7 +234,7 @@ export class OptionsOrderBuilderService {
       });
     });
 
-    const strategies = this.strategyBuilderService.getTradingStrategies();
+    const strategies = await this.strategyBuilderService.getTradingStrategies();
     // Process strategies sequentially
     for (const strat of strategies) {
       // Filter out symbols that already exist in trading pairs
@@ -361,64 +373,6 @@ export class OptionsOrderBuilderService {
     return { callQuantity, putQuantity };
   }
 
-  async hedgeCallTrade(stock: string, quantity: number, currentHoldings: PortfolioInfoHolding[]) {
-    const tradingPairs = JSON.parse(localStorage.getItem('tradingPairs'));
-    const foundPairs = tradingPairs.find(s => s.name === stock);
-    if (foundPairs) {
-      const existingHedges = currentHoldings.reduce((acc, holding) => {
-        if (foundPairs.find(pair => pair.symbol === holding.name) &&
-          holding.primaryLegs &&
-          holding.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
-          acc.push(holding);
-        }
-        return acc;
-      }, []);
-
-    }
-    const pairTrades = this.strategyBuilderService.getTradingStrategies().find(s => s.name === stock);
-    const foundCurrentHoldingHedge = currentHoldings.find(ch => pairTrades.strategy.sell.find(s => s === ch.name));
-    let hedgeUnderlyingStock;
-    if (foundCurrentHoldingHedge) {
-      hedgeUnderlyingStock = foundCurrentHoldingHedge.name;
-    } else {
-      let foundBearishStrangle = null;
-      let foundPrice = null;
-      hedgeUnderlyingStock = pairTrades.strategy.sell.find(async (stockSymbol: string) => {
-        const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(stockSymbol);
-        const price = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
-        if (price > 500) {
-          foundBearishStrangle = bearishStrangle;
-          foundPrice = price;
-          return true;
-        }
-        return false;
-      });
-    }
-    if (!hedgeUnderlyingStock) {
-      return false;
-    }
-    const bullishStrangle = await this.strategyBuilderService.getPutStrangleTrade(hedgeUnderlyingStock);
-    const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
-
-    //const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple);
-    return true;
-  }
-
-  hedgePutTrade(stock: string, quantity: number, currentHoldings: PortfolioInfoHolding[]) {
-    const tradingPairs = JSON.parse(localStorage.getItem('tradingPairs'));
-    const foundPairs = tradingPairs.find(s => s.name === stock);
-    if (foundPairs) {
-      const existingHedges = currentHoldings.reduce((acc, holding) => {
-        if (foundPairs.find(pair => pair.symbol === holding.name) &&
-          holding.primaryLegs &&
-          holding.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
-          acc.push(holding);
-        }
-        return acc;
-      }, []);
-
-    }
-  }
 
   isExpiring(holding: PortfolioInfoHolding) {
     return (holding.primaryLegs ? holding.primaryLegs : []).concat(holding.secondaryLegs ? holding.secondaryLegs : []).find((option: Options) => {

@@ -114,8 +114,8 @@ export class AlgoEvaluationComponent implements OnInit {
       this.currentList = strategies.map(strategy => {
         return {
           name: strategy.name || 'Unnamed Strategy',
-          buySymbols: strategy.buySymbols?.length ? strategy.buySymbols.join(', ') : 'None',
-          sellSymbols: strategy.sellSymbols?.length ? strategy.sellSymbols.join(', ') : 'None',
+          buySymbols: strategy.strategy?.buy?.length ? strategy.strategy.buy.join(', ') : 'None',
+          sellSymbols: strategy.strategy?.sell?.length ? strategy.strategy.sell.join(', ') : 'None',
           reason: strategy.reason || 'No reason specified'
         };
       });

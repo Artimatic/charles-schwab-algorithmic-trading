@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { round } from 'lodash-es';
+import { TradingStrategy } from '../strategies/options-order-builder.service';
 import { OptionsDataService } from '@shared/options-data.service';
 import { BacktestService, CartService, PortfolioService, ReportingService } from '@shared/services';
 import { Stock } from '@shared/stock.interface';
@@ -467,17 +468,18 @@ export class StrategyBuilderService {
     return newBacktestData;
   }
 
-  createStrategy(tradeName: string, key: string, buyList: string[], sellList: string[], reason) {
-    const trade = {
+  createStrategy(tradeName: string, key: string, buyList: string[], sellList: string[], reason: string) {
+    // Ensure we only store string values
+    const trade: PotentialTrade = {
       name: tradeName,
       date: moment().format(),
       type: 'pairTrade',
       key: key,
       strategy: {
-        buy: buyList,
-        sell: sellList
+        buy: buyList.filter(s => typeof s === 'string'),
+        sell: sellList.filter(s => typeof s === 'string')
       },
-      reason: reason
+      reason: reason || 'Trading strategy' // Ensure reason is never undefined
     };
     this.portfolioService.addStrategy(trade.date, trade.type, trade.key, trade.strategy, trade.reason).subscribe();
     this.addTradingStrategy(trade);
@@ -509,8 +511,34 @@ export class StrategyBuilderService {
     }
   }
 
-  getTradingStrategies() {
-    return JSON.parse(localStorage.getItem('tradingStrategy')) || [];
+  private validateStrategy(strategy: any): TradingStrategy | null {
+    if (!strategy?.strategy?.buy || !strategy?.strategy?.sell) {
+      return null;
+    }
+    
+    return {
+      name: String(strategy.name || ''),
+      key: String(strategy.key || ''),
+      date: strategy.date || moment().format(),
+      type: strategy.type || 'pairTrade',
+      strategy: {
+        buy: Array.isArray(strategy.strategy.buy) ? strategy.strategy.buy.filter(s => typeof s === 'string') : [],
+        sell: Array.isArray(strategy.strategy.sell) ? strategy.strategy.sell.filter(s => typeof s === 'string') : []
+      },
+      reason: strategy.reason ? String(strategy.reason) : undefined
+    };
+  }
+
+  getTradingStrategies(): TradingStrategy[] {
+    try {
+      const strategies = JSON.parse(localStorage.getItem('tradingStrategy')) || [];
+      return strategies
+        .map(s => this.validateStrategy(s))
+        .filter(s => s !== null);
+    } catch (e) {
+      console.error('Error parsing trading strategies:', e);
+      return [];
+    }
   }
 
   setTradingStrategies(strats: PotentialTrade[]) {
