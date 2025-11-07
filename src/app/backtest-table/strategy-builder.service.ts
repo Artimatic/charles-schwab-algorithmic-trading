@@ -266,7 +266,7 @@ export class StrategyBuilderService {
 
     if (!potentialStrangle.call) {
       const msg = 'Unable to find call for ' + symbol;
-      this.reportingService.addAuditLog(null, msg); 
+      console.log(null, msg);
     }
     return potentialStrangle;
   }

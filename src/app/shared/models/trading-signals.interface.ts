@@ -16,9 +16,10 @@ export interface TradingSignals {
   lastProfitCheck: Date;
   hasErrors: boolean;
   errorMessage?: string;
+  lastIntradayCheck?: Date;
 }
 
 export interface SignalUpdate {
-  type: 'MARKET_STATUS' | 'HOLDINGS' | 'CREDENTIALS' | 'CLOSE_TRADE' | 'STRATEGY' | 'PROFIT' | 'ERROR';
+  type: 'MARKET_STATUS' | 'HOLDINGS' | 'CREDENTIALS' | 'CLOSE_TRADE' | 'STRATEGY' | 'PROFIT' | 'ERROR' | 'INTRADAY_CHECK';
   payload: any;
 }

@@ -120,7 +120,6 @@ export class AutopilotService {
   }
 
   riskToleranceList = [
-    RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.Fear,
@@ -645,11 +644,17 @@ export class AutopilotService {
         if (actualUtilization < targetUtilization) {
           this.reportingService.addAuditLog(null, `Underutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
 
+          try {
           // Get the best symbol based on ML scores
-          const symbols = ['GLD', 'SH', 'UPRO', 'TLT'];
-          const bestSymbolResult = await this.selectBestSymbolByMl(symbols);
+            const symbols = ['GLD', 'SH', 'UPRO', 'TLT'];
+            const bestSymbolResult = await this.selectBestSymbolByMl(symbols);
 
-          await this.orderHandlingService.addBuy(this.createHoldingObj(bestSymbolResult.symbol), this.riskToleranceList[0], `Underutilized. Buy ${bestSymbolResult.symbol} (ml: ${bestSymbolResult.ml})`);
+            await this.orderHandlingService.addBuy(this.createHoldingObj(bestSymbolResult.symbol), this.riskToleranceList[0], `Underutilized. Buy ${bestSymbolResult.symbol} (ml: ${bestSymbolResult.ml})`);
+          } catch (error) {
+            console.log(`Error selecting best symbol by ML: ${error}`);
+            await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'), this.riskToleranceList[0], `Underutilized. Buy UPRO (default)`);
+          }
+
           //this.findIwmTrade();
         } else if (canSell && actualUtilization > targetUtilization + 0.03) {
           this.reportingService.addAuditLog(null, `Overutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
@@ -993,22 +998,26 @@ export class AutopilotService {
   }
 
 
-  handleIntraday() {
-    if (moment().isAfter(moment(this.sessionStart).add(23, 'minutes')) &&
-      moment().isBefore(moment(this.sessionEnd).subtract(10, 'minutes'))) {
-      this.isMarketOpened().subscribe(async (isOpen) => {
-        if (isOpen) {
-          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 9) {
-            this.lastOptionsCheckCheck = moment();
-            await this.runIntradayProcess();
-          } else {
-            await this.executeOrderList();
-          }
-        }
-      });
-      return true;
+  isIntradayTrading(): boolean {
+    return moment().isAfter(moment(this.sessionStart).add(23, 'minutes')) &&
+           moment().isBefore(moment(this.sessionEnd).subtract(10, 'minutes'));
+  }
+
+  async handleIntraday(): Promise<void> {
+    if (!this.isIntradayTrading()) {
+      return;
+    }
+
+    const isOpen = await this.isMarketOpened().toPromise();
+    if (!isOpen) {
+      return;
+    }
+    
+    if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 9) {
+      this.lastOptionsCheckCheck = moment();
+      await this.runIntradayProcess();
     } else {
-      return false;
+      await this.executeOrderList();
     }
   }
 

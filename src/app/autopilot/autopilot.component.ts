@@ -144,6 +144,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.signalsStateService.select('lastProfitCheck').subscribe(
       lastCheck => this.lastProfitCheck = moment(lastCheck)
     );
+    
+    // Subscribe to intraday check updates
+    this.signalsStateService.select('lastIntradayCheck').subscribe(async () => {
+      if (this.autopilotService.isIntradayTrading()) {
+        await this.autopilotService.handleIntraday();
+      }
+    });
     this.startButtonOptions = [
       {
         label: 'Start orders without auto manage',
@@ -430,7 +437,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             }, 10800000);
           }
           
-        } else if (this.autopilotService.handleIntraday()) {
+        } else if (this.autopilotService.isIntradayTrading()) {
           if (moment().diff(state.lastProfitCheck, 'minutes') > 5) {
             this.signalsStateService.update({ type: 'PROFIT', payload: null });
             const metTarget = await this.priceTargetService.checkProfitTarget(state.currentHoldings);
@@ -438,6 +445,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
               this.addCurrentHoldingsToAuditLog();
               this.decreaseRiskTolerance();
             }
+          } else {
+            this.signalsStateService.update({ type: 'INTRADAY_CHECK', payload: true });
           }
         } else if (!state.developedStrategy && 
           currentTime.isAfter(moment(this.autopilotService.sessionStart).subtract(this.interval * 2, 'minutes')) &&

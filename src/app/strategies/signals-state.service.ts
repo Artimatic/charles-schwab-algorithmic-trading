@@ -20,7 +20,8 @@ export class SignalsStateService {
     boughtAtClose: false,
     developedStrategy: false,
     lastProfitCheck: moment().toDate(),
-    hasErrors: false
+    hasErrors: false,
+    lastIntradayCheck: null
   };
 
   private state$ = new BehaviorSubject<TradingSignals>(this.initialState);
@@ -92,6 +93,13 @@ export class SignalsStateService {
           ...currentState,
           hasErrors: true,
           errorMessage: update.payload
+        };
+        break;
+        
+      case 'INTRADAY_CHECK':
+        newState = {
+          ...currentState,
+          lastIntradayCheck: moment().toDate()
         };
         break;
 
