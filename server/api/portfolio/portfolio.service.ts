@@ -227,7 +227,7 @@ class PortfolioService {
 
         if (!diffMinutes || diffMinutes >= 30) {
           console.log('Last token request: ', moment(this.lastTokenRequest).format());
-          if (this.access_token[accountId] && (this.lastTokenRequest === null || moment().diff(moment(this.lastTokenRequest), 'minutes') > 15)) {
+          if (this.access_token[accountId] && (this.lastTokenRequest === null || moment().diff(moment(this.lastTokenRequest), 'minutes') > 10)) {
             this.lastTokenRequest = moment().valueOf();
             console.log('Requesting new token');
             return this.refreshAccessToken(accountId);

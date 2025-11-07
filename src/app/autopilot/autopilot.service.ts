@@ -895,7 +895,7 @@ export class AutopilotService {
    */
   async selectBestSymbolByMl(symbols: string[]): Promise<{ symbol: string; ml: number }> {
     const backtestResults: Array<BacktestData | null> = await Promise.all(
-      symbols.map(symbol => this.strategyBuilderService.getBacktestData(symbol))
+      symbols.map(async symbol => await this.strategyBuilderService.getBacktestData(symbol))
     );
 
     let bestSymbol = symbols[0]; // Default to first symbol
