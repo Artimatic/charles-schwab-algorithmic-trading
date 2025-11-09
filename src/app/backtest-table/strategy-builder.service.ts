@@ -126,6 +126,9 @@ export class StrategyBuilderService {
               this.mlError();
             });
         });
+      if (!results) {
+        return null;
+      }
       // this.backtestAggregatorService.analyseBacktest(results);
       if (results.orderHistory) {
         this.addToOrderHistoryStorage(symbol, results.orderHistory);
