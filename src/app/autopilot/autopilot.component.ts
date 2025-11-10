@@ -378,7 +378,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const currentTime = moment();
         
         // Check credentials and market status
-        if (!state.lastCredentialCheck || Math.abs(moment(state.lastCredentialCheck).diff(currentTime, 'minutes')) > 25) {
+        if (!state.lastCredentialCheck || Math.abs(moment(state.lastCredentialCheck).diff(currentTime, 'minutes')) > 10) {
           this.autopilotService.isMarketOpened().pipe(
             catchError(err => {
               console.log('Error getting market status', err);
