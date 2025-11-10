@@ -644,16 +644,17 @@ export class AutopilotService {
         if (actualUtilization < targetUtilization) {
           this.reportingService.addAuditLog(null, `Underutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
 
-          try {
-          // Get the best symbol based on ML scores
-            const symbols = ['GLD', 'SH', 'UPRO', 'TLT'];
-            const bestSymbolResult = await this.selectBestSymbolByMl(symbols);
+          // try {
+          // // Get the best symbol based on ML scores
+          //   const symbols = ['GLD', 'SH', 'UPRO', 'TLT'];
+          //   const bestSymbolResult = await this.selectBestSymbolByMl(symbols);
 
-            await this.orderHandlingService.addBuy(this.createHoldingObj(bestSymbolResult.symbol), this.riskToleranceList[0], `Underutilized. Buy ${bestSymbolResult.symbol} (ml: ${bestSymbolResult.ml})`);
-          } catch (error) {
-            console.log(`Error selecting best symbol by ML: ${error}`);
-            await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'), this.riskToleranceList[0], `Underutilized. Buy UPRO (default)`);
-          }
+          //   await this.orderHandlingService.addBuy(this.createHoldingObj(bestSymbolResult.symbol), this.riskToleranceList[0], `Underutilized. Buy ${bestSymbolResult.symbol} (ml: ${bestSymbolResult.ml})`);
+          // } catch (error) {
+          //   console.log(`Error selecting best symbol by ML: ${error}`);
+          //   await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'), this.riskToleranceList[0], `Underutilized. Buy UPRO (default)`);
+          // }
+          await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'), this.riskToleranceList[0], `Underutilized. Buy UPRO (default)`);
 
           //this.findIwmTrade();
         } else if (canSell && actualUtilization > targetUtilization + 0.03) {
@@ -979,12 +980,17 @@ export class AutopilotService {
   async executeOrderList() {
     const buyAndSellList = this.cartService.sellOrders.concat(this.cartService.buyOrders);
     const orders = buyAndSellList.concat(this.cartService.otherOrders);
+    console.log(`[${moment().format('HH:mm:ss')}] Executing order list - Total orders: ${orders.length} (Buy: ${this.cartService.buyOrders.length}, Sell: ${this.cartService.sellOrders.length}, Other: ${this.cartService.otherOrders.length})`);
+    
     for (let i = 0; i < orders.length; i++) {
       const symbol = orders[i].holding.symbol;
       if (!this.daytradeStrategiesService.shouldSkip(symbol)) {
+        console.log(`[${moment().format('HH:mm:ss')}] Processing order ${i + 1}/${orders.length}: ${symbol}`);
         await this.orderHandlingService.intradayStep(orders[i]);
       }
     }
+    
+    console.log(`[${moment().format('HH:mm:ss')}] Finished executing order list`);
   }
 
   private async runIntradayProcess() {
@@ -992,7 +998,7 @@ export class AutopilotService {
       this.intradayProcessCounter = 0;
     }
 
-    console.log(`Executing intraday process ${this.intradayProcessCounter + 1} of ${this.processes.length}`);
+    console.log(`[${moment().format('HH:mm:ss')}] Executing intraday process ${this.intradayProcessCounter + 1} of ${this.processes.length}`);
     await this.processes[this.intradayProcessCounter]();
     this.intradayProcessCounter++;
   }

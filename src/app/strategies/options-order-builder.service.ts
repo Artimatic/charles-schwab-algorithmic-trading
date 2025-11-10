@@ -418,7 +418,7 @@ export class OptionsOrderBuilderService {
 
   async shouldBuyCallOption(symbol: string, modifier = 1) {
     const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
-    const threshold = ((backtestResults.impliedMovement ? backtestResults.impliedMovement : 3) / 2.3);
+    const threshold = ((backtestResults.impliedMovement ? backtestResults.impliedMovement : 3) / 5);
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
     const lastPrice = price[symbol].quote.lastPrice;
     const closePrice = price[symbol].quote.closePrice;
@@ -426,14 +426,14 @@ export class OptionsOrderBuilderService {
     return (currentDiff < (-1 * threshold) * modifier) || Math.abs(currentDiff) < 0.006;
   }
 
-  async shouldBuyPutOption(symbol: string) {
+  async shouldBuyPutOption(symbol: string, modifier = 1) {
     const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
-    const threshold = ((backtestResults.impliedMovement ? backtestResults.impliedMovement : 3) / 2.3);
+    const threshold = ((backtestResults.impliedMovement ? backtestResults.impliedMovement : 5) / 3);
     const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
     const lastPrice = price[symbol].quote.lastPrice;
     const closePrice = price[symbol].quote.closePrice;
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
-    return currentDiff > threshold || Math.abs(currentDiff) < 0.006;
+    return currentDiff > threshold * modifier || Math.abs(currentDiff) < 0.006;
   }
 
   async shouldSellOptions(holding: PortfolioInfoHolding, isStrangle: boolean, putCallInd: string) {

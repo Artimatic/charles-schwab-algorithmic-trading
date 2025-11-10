@@ -52,7 +52,7 @@ export class OrderHandlingService {
     return this.backtestService.getBacktestEvaluation(stock, startDate, currentDate, 'daily-indicators');
   }
 
-  async addBuy(holding: PortfolioInfoHolding, allocation, reason, addOrderRightAway = false) {
+  async addBuy(holding: PortfolioInfoHolding, allocation, reason, addOrderRightAway = true) {
     console.log('addBuy called with params:', { 
       symbol: holding?.name, 
       allocation, 
