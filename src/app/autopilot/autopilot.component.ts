@@ -130,7 +130,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.autopilotService.checkCredentials();
     this.autopilotService.setPreferencesFromDB();
-    
+
     // Subscribe to signal state changes
     this.signalsStateService.select('lastCredentialCheck').subscribe(
       lastCheck => this.lastCredentialCheck = lastCheck ? moment(lastCheck) : null
@@ -144,7 +144,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.signalsStateService.select('lastProfitCheck').subscribe(
       lastCheck => this.lastProfitCheck = moment(lastCheck)
     );
-    
+
     // Subscribe to intraday check updates
     this.signalsStateService.select('lastIntradayCheck').subscribe(async () => {
       if (this.autopilotService.isIntradayTrading()) {
@@ -365,18 +365,18 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     if (this.timer) {
       this.timer.unsubscribe();
     }
-    
+
     // Initialize strategy and state
     await this.setupStrategy();
     await this.autopilotService.handleStrategy();
     this.signalsStateService.reset();
-    
+
     this.timer = TimerObservable.create(1000, this.interval)
       .pipe(takeUntil(this.destroy$))
       .subscribe(async () => {
         const state = this.signalsStateService.getState();
         const currentTime = moment();
-        
+
         // Check credentials and market status
         if (!state.lastCredentialCheck || Math.abs(moment(state.lastCredentialCheck).diff(currentTime, 'minutes')) > 10) {
           this.autopilotService.isMarketOpened().pipe(
@@ -391,7 +391,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
               this.signalsStateService.update({ type: 'MARKET_STATUS', payload: marketStatus });
             }
           });
-          
+
           try {
             const holdings = await this.autopilotService.setCurrentHoldings();
             this.signalsStateService.update({ type: 'HOLDINGS', payload: holdings });
@@ -399,7 +399,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             console.log('Error positions', err);
             this.messageService.add({ severity: 'error', summary: 'Error getting positions' });
             this.signalsStateService.update({ type: 'ERROR', payload: 'Error getting positions' });
-            
+
             setTimeout(async () => {
               try {
                 const retryHoldings = await this.autopilotService.setCurrentHoldings();
@@ -410,10 +410,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
               }
             }, 900000);
           }
-          
+
           this.signalsStateService.update({ type: 'CREDENTIALS', payload: null });
           await this.backtestOneStock(true, false);
-          
+
         } else if (currentTime.isAfter(moment(this.autopilotService.sessionEnd).subtract(25, 'minutes')) &&
           currentTime.isBefore(moment(this.autopilotService.sessionEnd).subtract(20, 'minutes'))) {
           console.log('Buy on close');
@@ -421,22 +421,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
             await this.buySellAtCloseOrOpen();
           }
           this.signalsStateService.update({ type: 'CLOSE_TRADE', payload: true });
-          
+
         } else if (currentTime.isAfter(moment(this.autopilotService.sessionEnd)) &&
-          currentTime.isBefore(moment(this.autopilotService.sessionEnd).add(5, 'minute'))) {
-          if (this.reportingService.logs.length > 15) {
-            this.addCurrentHoldingsToAuditLog();
-            const profitLog = `Profit ${this.scoreKeeperService.total}`;
-            this.reportingService.addAuditLog(null, profitLog);
-            this.reportingService.exportAuditHistory();
-            await this.setProfitLoss();
-            this.scoreKeeperService.resetTotal();
-            this.resetCart();
-            setTimeout(async () => {
-              await this.autopilotService.handleStrategy();
-            }, 10800000);
-          }
-          
+          currentTime.isBefore(moment(this.autopilotService.sessionEnd).add(10, 'minute'))) {
+          await this.printFinalResults();
         } else if (this.autopilotService.isIntradayTrading()) {
           if (moment().diff(state.lastProfitCheck, 'minutes') > 5) {
             this.signalsStateService.update({ type: 'PROFIT', payload: null });
@@ -448,12 +436,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           } else {
             this.signalsStateService.update({ type: 'INTRADAY_CHECK', payload: true });
           }
-        } else if (!state.developedStrategy && 
+        } else if (!state.developedStrategy &&
           currentTime.isAfter(moment(this.autopilotService.sessionStart).subtract(this.interval * 2, 'minutes')) &&
           currentTime.isBefore(moment(this.autopilotService.sessionStart))) {
           await this.setupStrategy();
           this.signalsStateService.update({ type: 'STRATEGY', payload: true });
-          
+
         } else {
           if (Math.abs(moment(state.lastCredentialCheck).diff(currentTime, 'minutes')) > 50) {
             this.aiPicksService.mlNeutralResults.next(null);
@@ -463,6 +451,20 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       });
   }
 
+  async printFinalResults() {
+    if (this.reportingService.logs.length > 15) {
+      this.addCurrentHoldingsToAuditLog();
+      const profitLog = `Profit ${this.scoreKeeperService.total}`;
+      this.reportingService.addAuditLog(null, profitLog);
+      this.reportingService.exportAuditHistory();
+      await this.setProfitLoss();
+      this.scoreKeeperService.resetTotal();
+      this.resetCart();
+      setTimeout(async () => {
+        await this.autopilotService.handleStrategy();
+      }, 10800000);
+    }
+  }
   addCurrentHoldingsToAuditLog() {
     if (this.autopilotService.currentHoldings && this.autopilotService.currentHoldings.length > 0) {
       const holdingsSummary = this.autopilotService.currentHoldings.map(h => ({
@@ -706,7 +708,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async analyseRecommendations(holding: PortfolioInfoHolding) {
     if (holding.recommendation.toLowerCase() === 'buy') {
-      
+
       await this.orderHandlingService.addBuy(holding, (this.autopilotService.riskLevel) * 2, 'Recommended buy');
     } else if (holding.recommendation.toLowerCase() === 'sell') {
       await this.cartService.portfolioSell(holding, 'Recommended sell');
@@ -774,13 +776,19 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async modifyRisk() {
-    const metTarget = await this.priceTargetService.hasMetPriceTarget(0.001);
-    if (!metTarget) {
-      this.decreaseDayTradeRiskTolerance();
+    try {
+      const metTarget = await this.priceTargetService.hasMetPriceTarget(0.001);
+      if (!metTarget) {
+        this.decreaseDayTradeRiskTolerance();
+        await this.increaseRiskTolerance();
+      } else {
+        this.increaseDayTradeRiskTolerance();
+      }
+    } catch (error) {
+      console.log('Error modifying risk', error);
       await this.increaseRiskTolerance();
-    } else {
-      this.increaseDayTradeRiskTolerance();
     }
+
   }
 
   cleanUpOrders() {

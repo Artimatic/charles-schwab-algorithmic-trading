@@ -229,7 +229,7 @@ export class StrategyBuilderService {
   async getCallStrangleTrade(symbol: string): Promise<Strangle> {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     if (!optionsData.move || optionsData.move > this.defaultMaxImpliedMovement) {
-      this.reportingService.addAuditLog(null,
+      console.log(null,
         `Implied movement is too high for ${symbol} at ${optionsData.move}. Max is ${this.defaultMaxImpliedMovement}`);
       this.addBullishStock(symbol);
       return { call: null, put: null };
@@ -277,7 +277,7 @@ export class StrategyBuilderService {
   async getPutStrangleTrade(symbol: string) {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     if (!optionsData.move || optionsData.move > this.defaultMaxImpliedMovement) {
-      this.reportingService.addAuditLog(null,
+      console.log(null,
         `Implied movement is too high for ${symbol} at ${optionsData.move}`);
       return { call: null, put: null };
     }
