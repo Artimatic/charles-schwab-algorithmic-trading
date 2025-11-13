@@ -395,6 +395,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           try {
             const holdings = await this.autopilotService.setCurrentHoldings();
             this.signalsStateService.update({ type: 'HOLDINGS', payload: holdings });
+            await this.portfolioService.getTdBalance().toPromise();
           } catch (err) {
             console.log('Error positions', err);
             this.messageService.add({ severity: 'error', summary: 'Error getting positions' });
