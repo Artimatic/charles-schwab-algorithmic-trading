@@ -152,11 +152,22 @@ export class AutopilotService {
   private readonly defaultList: Strategy[] = [
     Strategy.Default,
     Strategy.BuySnP,
-    Strategy.StopLoss,
     Strategy.IwmInverseDispersion,
-    Strategy.TrimHoldings,
     Strategy.PerfectPair,
-    Strategy.Swingtrade
+    Strategy.Swingtrade,
+    Strategy.VolatilityPairs,
+    Strategy.MLPairs,
+    Strategy.TrimHoldings,
+    Strategy.BuyMfiTrade,
+    Strategy.BuyMfiDiv,
+    Strategy.BuyBband,
+    Strategy.BuyBbandBreakout,
+    Strategy.BuyFlag,
+    Strategy.BuyWinnersSellLosers,
+    Strategy.BuyMfiDiv2,
+    Strategy.InverseDispersion,
+    Strategy.BuyWinners,
+    Strategy.StopLoss
   ];
 
   private readonly bearishList: Strategy[] = [
@@ -169,7 +180,6 @@ export class AutopilotService {
     Strategy.BuyMfiTrade,
     Strategy.Gold,
     Strategy.BuyMfiDiv,
-    Strategy.BuyMfi,
     Strategy.BuyBband,
     Strategy.BuyMfiDiv2,
     Strategy.Short
@@ -245,6 +255,9 @@ export class AutopilotService {
     async () => {
       // Prevent handleBalanceUtilization if last call was within 45 minutes
       if (!this.lastBalanceUtilizationCheck || Math.abs(moment().diff(this.lastBalanceUtilizationCheck, 'minutes')) > 45) {
+        if (this.cartService.buyOrders.length + this.cartService.otherOrders.length < 1) {
+          this.changeStrategy();
+        }
         await this.handleStrategy();
       }
     }
@@ -601,7 +614,7 @@ export class AutopilotService {
 
   findIwmTrade() {
     const buys = ['IWM'];
-    const sells = this.getSellList((backtestData) => backtestData.recommendation.toLowerCase() === 'strongsell' && backtestData.sellMl > 0.63);
+    const sells = this.getSellList((backtestData) => backtestData.recommendation.toLowerCase() === 'strongsell' && (backtestData.sellMl > 0.6 || backtestData.ml < 0.3));
     console.log('IWM trade', buys, sells);
     this.addPair(buys, sells, 'IWM pair');
   }
@@ -727,7 +740,7 @@ export class AutopilotService {
     let newList;
     if (this.lastSpyMl > 0.7) {
       newList = this.bullishList;
-    } else if (this.lastSpyMl < 0.33) {
+    } else if (this.lastSpyMl < 0.35) {
       newList = this.bearishList;
     } else {
       newList = this.defaultList;
