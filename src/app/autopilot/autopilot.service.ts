@@ -993,17 +993,13 @@ export class AutopilotService {
   async executeOrderList() {
     const buyAndSellList = this.cartService.sellOrders.concat(this.cartService.buyOrders);
     const orders = buyAndSellList.concat(this.cartService.otherOrders);
-    console.log(`[${moment().format('HH:mm:ss')}] Executing order list - Total orders: ${orders.length} (Buy: ${this.cartService.buyOrders.length}, Sell: ${this.cartService.sellOrders.length}, Other: ${this.cartService.otherOrders.length})`);
     
     for (let i = 0; i < orders.length; i++) {
       const symbol = orders[i].holding.symbol;
       if (!this.daytradeStrategiesService.shouldSkip(symbol)) {
-        console.log(`[${moment().format('HH:mm:ss')}] Processing order ${i + 1}/${orders.length}: ${symbol}`);
         await this.orderHandlingService.intradayStep(orders[i]);
       }
-    }
-    
-    console.log(`[${moment().format('HH:mm:ss')}] Finished executing order list`);
+    }    
   }
 
   private async runIntradayProcess() {
