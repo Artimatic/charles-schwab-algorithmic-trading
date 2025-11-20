@@ -100,7 +100,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   isLive = false;
   tradeObserverSub;
   lastProfitCheck = moment();
-
+  isOpenMarket = false;
   constructor(
     private portfolioService: PortfolioService,
     private strategyBuilderService: StrategyBuilderService,
@@ -409,7 +409,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
                 this.messageService.add({ severity: 'error', summary: 'Please sign in again', life: 900000 });
                 this.signalsStateService.update({ type: 'ERROR', payload: 'Authentication failed' });
               }
-            }, 900000);
+            }, 25000);
           }
 
           this.signalsStateService.update({ type: 'CREDENTIALS', payload: null });
@@ -426,8 +426,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         } else if (currentTime.isAfter(moment(this.autopilotService.sessionEnd)) &&
           currentTime.isBefore(moment(this.autopilotService.sessionEnd).add(10, 'minute'))) {
           await this.printFinalResults();
+          this.isOpenMarket = false;
         } else if (this.autopilotService.isIntradayTrading()) {
-          if (moment().diff(state.lastProfitCheck, 'minutes') > 5) {
+          this.isOpenMarket = true;
+          if (moment().diff(state.lastProfitCheck, 'minutes') > 7) {
             this.signalsStateService.update({ type: 'PROFIT', payload: null });
             const metTarget = await this.priceTargetService.checkProfitTarget(state.currentHoldings);
             if (metTarget) {
@@ -437,17 +439,19 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           } else {
             this.signalsStateService.update({ type: 'INTRADAY_CHECK', payload: true });
           }
+          
         } else if (!state.developedStrategy &&
           currentTime.isAfter(moment(this.autopilotService.sessionStart).subtract(this.interval * 2, 'minutes')) &&
           currentTime.isBefore(moment(this.autopilotService.sessionStart))) {
           await this.setupStrategy();
           this.signalsStateService.update({ type: 'STRATEGY', payload: true });
-
+          this.isOpenMarket = false;
         } else {
           if (Math.abs(moment(state.lastCredentialCheck).diff(currentTime, 'minutes')) > 50) {
             this.aiPicksService.mlNeutralResults.next(null);
           }
           await this.backtestOneStock(false, false);
+          this.isOpenMarket = false;
         }
       });
   }

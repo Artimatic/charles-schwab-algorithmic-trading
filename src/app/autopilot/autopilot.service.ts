@@ -137,7 +137,7 @@ export class AutopilotService {
     RiskTolerance.Neutral,
     RiskTolerance.XXXXLGreed
   ];
-  private isOpened = false;
+  public isOpened = false;
   private lastOptionsCheckCheck: moment.Moment | null = null;
   private _currentHoldings: PortfolioInfoHolding[] = [];
 
@@ -235,11 +235,11 @@ export class AutopilotService {
     },
     async () => await this.checkIntradayStrategies(),
     async () => await this.findAnyPair(),
-    async () => {
-      await this.setCurrentHoldings();
-      const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
-      await this.optionsOrderBuilderService.hedge(this.currentHoldings, balance, 0.2);
-    },
+    // async () => {
+    //   await this.setCurrentHoldings();
+    //   const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
+    //   await this.optionsOrderBuilderService.hedge(this.currentHoldings, balance, 0.2);
+    // },
     async () => {
       await this.optionsOrderBuilderService.addOptionsStrategiesToCart();
     },
@@ -247,18 +247,20 @@ export class AutopilotService {
       await this.setCurrentHoldings();
       await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
     },
-    async () => {
-      await this.setCurrentHoldings();
-      // await this.balanceCallPutRatio(this.currentHoldings);
-    },
+    // async () => {
+    //   await this.setCurrentHoldings();
+    //   // await this.balanceCallPutRatio(this.currentHoldings);
+    // },
     async () => await this.findStockBuys(),
     async () => {
       // Prevent handleBalanceUtilization if last call was within 45 minutes
       if (!this.lastBalanceUtilizationCheck || Math.abs(moment().diff(this.lastBalanceUtilizationCheck, 'minutes')) > 45) {
         if (this.cartService.buyOrders.length + this.cartService.otherOrders.length < 1) {
           this.changeStrategy();
+          await this.handleStrategy();
+        } else {
+          await this.createTradingPairs();
         }
-        await this.handleStrategy();
       }
     }
   ];
