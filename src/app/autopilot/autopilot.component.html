@@ -44,12 +44,33 @@
 
     <div *ngIf="showSavedStrategies">
         <div style="max-height:400px; overflow:auto; padding:0.5rem 0;">
-            <ul style="list-style:none; padding:0; margin:0;">
-                <li *ngFor="let strat of autopilotService.strategies"
-                    style="padding:0.5rem 0; border-bottom:1px solid #eee;">
-                    {{ strat?.name || (strat | json) }}
-                </li>
-            </ul>
+            <table class="p-datatable p-component" style="width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr>
+                        <th style="text-align:left; padding:0.5rem; border-bottom:1px solid #e6e6e6">Name</th>
+                        <th style="text-align:left; padding:0.5rem; border-bottom:1px solid #e6e6e6">Key</th>
+                        <th style="text-align:left; padding:0.5rem; border-bottom:1px solid #e6e6e6">Date</th>
+                        <th style="text-align:left; padding:0.5rem; border-bottom:1px solid #e6e6e6">Type</th>
+                        <th style="text-align:left; padding:0.5rem; border-bottom:1px solid #e6e6e6">Buy</th>
+                        <th style="text-align:left; padding:0.5rem; border-bottom:1px solid #e6e6e6">Sell</th>
+                        <th style="text-align:left; padding:0.5rem; border-bottom:1px solid #e6e6e6">Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let strat of autopilotService.strategies">
+                        <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">{{ strat?.name || '-' }}</td>
+                        <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">{{ strat?.key || '-' }}</td>
+                        <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">{{ strat?.date | date:'short' }}
+                        </td>
+                        <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">{{ strat?.type || '-' }}</td>
+                        <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">{{ strat?.strategy?.buy?.join(', ')
+                            || '-' }}</td>
+                        <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">{{ strat?.strategy?.sell?.join(', ')
+                            || '-' }}</td>
+                        <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">{{ strat?.reason || '-' }}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 
