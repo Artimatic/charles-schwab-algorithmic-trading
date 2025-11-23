@@ -84,6 +84,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   revealPotentialStrategy = false;
 
+  // Toggle to show saved strategies in the Strategy finder dialog
+  showSavedStrategies = false;
   strategies: PotentialTrade[] = [];
 
   dialogRef: DynamicDialogRef | undefined;
