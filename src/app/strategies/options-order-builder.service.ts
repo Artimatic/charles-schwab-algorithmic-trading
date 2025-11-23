@@ -3,6 +3,7 @@ import crc from 'crc';
 import * as moment from 'moment-timezone';
 import { BacktestService, CartService, PortfolioInfoHolding, ReportingService } from '@shared/services';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
+import { TradingStrategy } from '../autopilot/interfaces/trading-strategy.interface';
 import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
 import { Options } from '@shared/models/options';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
@@ -17,17 +18,7 @@ export interface TradingPair {
   underlying: string;
 }
 
-export interface TradingStrategy {
-  name: string;
-  key: string;
-  date: string;  // Making date required to match PotentialTrade
-  type: string;  // Making type required to match PotentialTrade
-  strategy: {
-    buy: string[];
-    sell: string[];
-  };
-  reason?: string;
-}
+// Using shared TradingStrategy interface from autopilot interfaces
 
 @Injectable({
   providedIn: 'root'

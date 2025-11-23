@@ -536,6 +536,9 @@ export class AutopilotService {
 
   async findAnyPair() {
     const buySellList = await this.intradayStrategyScannerService.scanStocksForIntradayStrategies()
+    if (!buySellList.buys.length || !buySellList.sells.length) {
+      return;
+    }
     this.addPair(buySellList.buys, buySellList.sells, 'Intraday pair');
   }
 
