@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import * as moment from 'moment-timezone';
 import { PriceTargetService } from '../autopilot/price-target.service';
 import { BacktestService, ReportingService } from '@shared/services';
+import { MessageService } from 'primeng/api';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 
@@ -15,7 +16,8 @@ export class IntradayStrategyService {
     private backtestService: BacktestService,
     private reportingService: ReportingService,
     private orderHandlingService: OrderHandlingService,
-    private strategyBuilderService: StrategyBuilderService
+    private strategyBuilderService: StrategyBuilderService,
+    private messageService: MessageService
   ) { }
 
   async buyTqqq(currentAllocation: number, reason: string) {
@@ -59,6 +61,13 @@ export class IntradayStrategyService {
   async buyDip(currentAllocation: number) {
     const isDown = await this.priceTargetService.isDownDay();
     if (isDown) {
+      // Notify user that SPY is down
+      try {
+        this.messageService.add({ severity: 'warn', summary: 'SnP is down', detail: 'Intraday check: SPY is down today' });
+      } catch (e) {
+        // message service may not be available in some test contexts; ignore errors
+        console.warn('MessageService unavailable:', e);
+      }
       const currentDate = moment().format('YYYY-MM-DD');
       const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
       const spyBacktest = await this.backtestService.getBacktestEvaluation('SPY', startDate, currentDate, 'daily-indicators').toPromise();
@@ -102,7 +111,7 @@ export class IntradayStrategyService {
 
   async checkIntradayStrategies(currentAllocation: number) {
     if (moment().isAfter(moment().tz('America/New_York').set({ hour: 10, minute: 35 })) &&
-      moment().isBefore(moment().tz('America/New_York').set({ hour: 11, minute: 15 }))) {
+      moment().isBefore(moment().tz('America/New_York').set({ hour: 12, minute: 15 }))) {
       if (this.intradayStrategyTriggered) {
         return;
       }
