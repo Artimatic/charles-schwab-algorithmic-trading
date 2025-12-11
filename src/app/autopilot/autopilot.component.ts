@@ -381,6 +381,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
         // Check credentials and market status
         if (!state.lastCredentialCheck || Math.abs(moment(state.lastCredentialCheck).diff(currentTime, 'minutes')) > 10) {
+          if (this.reportingService.logs.length > 100) {
+            await this.printFinalResults();
+          }
           this.autopilotService.isMarketOpened().pipe(
             catchError(err => {
               console.log('Error getting market status', err);
@@ -426,8 +429,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           this.signalsStateService.update({ type: 'CLOSE_TRADE', payload: true });
 
         } else if (currentTime.isAfter(moment(this.autopilotService.sessionEnd)) &&
-          currentTime.isBefore(moment(this.autopilotService.sessionEnd).add(10, 'minute'))) {
-          await this.printFinalResults();
+          currentTime.isBefore(moment(this.autopilotService.sessionEnd).add(15, 'minute'))) {
+          if (this.reportingService.logs.length > 15) {
+            await this.printFinalResults();
+          }
           this.isOpenMarket = false;
         } else if (this.autopilotService.isIntradayTrading()) {
           this.isOpenMarket = true;
@@ -441,7 +446,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           } else {
             this.signalsStateService.update({ type: 'INTRADAY_CHECK', payload: true });
           }
-          
+
         } else if (!state.developedStrategy &&
           currentTime.isAfter(moment(this.autopilotService.sessionStart).subtract(this.interval * 2, 'minutes')) &&
           currentTime.isBefore(moment(this.autopilotService.sessionStart))) {
@@ -459,18 +464,16 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async printFinalResults() {
-    if (this.reportingService.logs.length > 15) {
-      this.addCurrentHoldingsToAuditLog();
-      const profitLog = `Profit ${this.scoreKeeperService.total}`;
-      this.reportingService.addAuditLog(null, profitLog);
-      this.reportingService.exportAuditHistory();
-      await this.setProfitLoss();
-      this.scoreKeeperService.resetTotal();
-      this.resetCart();
-      setTimeout(async () => {
-        await this.autopilotService.handleStrategy();
-      }, 10800000);
-    }
+    this.addCurrentHoldingsToAuditLog();
+    const profitLog = `Profit ${this.scoreKeeperService.total}`;
+    this.reportingService.addAuditLog(null, profitLog);
+    this.reportingService.exportAuditHistory();
+    await this.setProfitLoss();
+    this.scoreKeeperService.resetTotal();
+    this.resetCart();
+    setTimeout(async () => {
+      await this.autopilotService.handleStrategy();
+    }, 10800000);
   }
   addCurrentHoldingsToAuditLog() {
     if (this.autopilotService.currentHoldings && this.autopilotService.currentHoldings.length > 0) {

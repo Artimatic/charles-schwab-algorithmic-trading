@@ -684,7 +684,6 @@ export class CartService {
       reason 
     });
     this.addToCart(order, false, reason);
-    console.log('Initializing order');
     this.initializeOrder(order);
   }
 

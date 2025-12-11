@@ -895,6 +895,8 @@ export class AutopilotService {
 
         if (!this.isOpened) {
           this.lastMarketHourCheck = moment();
+        } else {
+          console.log('Market is open', this.sessionStart, this.sessionEnd);
         }
 
         return this.isOpened;
