@@ -103,6 +103,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   tradeObserverSub;
   lastProfitCheck = moment();
   isOpenMarket = false;
+  // Track the last time printFinalResults ran so we can re-run if it's older than 24 hours
+  lastPrintFinalResults: moment.Moment | null = null;
   constructor(
     private portfolioService: PortfolioService,
     private strategyBuilderService: StrategyBuilderService,
@@ -132,6 +134,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.autopilotService.checkCredentials();
     this.autopilotService.setPreferencesFromDB();
+
+    // Initialize last printFinalResults timestamp from local storage if available
+    const lastPrint = localStorage.getItem('lastPrintFinalResults');
+    this.lastPrintFinalResults = lastPrint ? moment(lastPrint) : null;
 
     // Subscribe to signal state changes
     this.signalsStateService.select('lastCredentialCheck').subscribe(
@@ -379,11 +385,18 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         const state = this.signalsStateService.getState();
         const currentTime = moment();
 
-        // Check credentials and market status
-        if (!state.lastCredentialCheck || Math.abs(moment(state.lastCredentialCheck).diff(currentTime, 'minutes')) > 10) {
-          if (this.reportingService.logs.length > 100) {
+        // If it's been more than 24 hours since we last printed final results, call it again
+        if (!this.lastPrintFinalResults || currentTime.diff(this.lastPrintFinalResults, 'hours') >= 24) {
+          console.log('More than 24 hours since last printFinalResults run — running it again now.');
+          try {
             await this.printFinalResults();
+          } catch (err) {
+            console.log('Error running periodic printFinalResults', err);
           }
+        }
+
+        // Check credentials and market status
+        if (!state.lastCredentialCheck || Math.abs(moment(state.lastCredentialCheck).diff(currentTime, 'minutes')) > 10) {        
           this.autopilotService.isMarketOpened().pipe(
             catchError(err => {
               console.log('Error getting market status', err);
@@ -471,6 +484,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.setProfitLoss();
     this.scoreKeeperService.resetTotal();
     this.resetCart();
+    // Update the last print timestamp and persist
+    this.lastPrintFinalResults = moment();
+    localStorage.setItem('lastPrintFinalResults', this.lastPrintFinalResults.format());
     setTimeout(async () => {
       await this.autopilotService.handleStrategy();
     }, 10800000);
