@@ -1,5 +1,8 @@
 const fullList = [
+    'CARS',
+    'CARG',
     'TENB',
+    'W',
     'PTON',
     'APO',
     'BABA',
