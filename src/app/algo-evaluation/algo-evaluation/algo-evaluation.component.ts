@@ -49,7 +49,7 @@ export class AlgoEvaluationComponent implements OnInit {
         stock.recommendation = 'Strong buy';
         this.strategyBuilderService.addBullishStock(stock.stock);
         return true;
-      } else if ((stock?.sellMl > 0.5) && (stock.recommendation.toLowerCase() === 'sell' || stock.recommendation.toLowerCase() === 'strongsell')) {
+      } else if ((stock?.sellMl > 0.5 || stock?.ml < 0.4) && (stock.recommendation.toLowerCase() === 'sell' || stock.recommendation.toLowerCase() === 'strongsell')) {
         this.strategyBuilderService.addBearishStock(stock.stock);
         stock.recommendation = 'Strong sell';
         return true;
