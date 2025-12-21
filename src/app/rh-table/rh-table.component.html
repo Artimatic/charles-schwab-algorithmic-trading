@@ -110,6 +110,11 @@
              {{element.ml}}
           </div>
         </span>
+        <span *ngSwitchCase="'sellMl'">
+          <div *ngIf="element.sellMl !== undefined && element.sellMl !== null">
+            {{element.sellMl}}
+          </div>
+        </span>
         <span *ngSwitchDefault>
           {{element[col.field]}}
         </span>
