@@ -18,7 +18,7 @@ export class AlgoEvaluationComponent implements OnInit {
     { label: 'Portfolio', value: 'portfolio' },
     { label: 'Trading Pairs', value: 'tradingPairs' }
   ];
-  tableDisplay: string = 'recommendations';
+  tableDisplay: string = 'portfolio';
   recommendations: Stock[] = [];
   tradingPairs: any[] = [];
 

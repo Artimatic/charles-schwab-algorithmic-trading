@@ -396,7 +396,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         }
 
         // Check credentials and market status
-        if (!state.lastCredentialCheck || Math.abs(moment(state.lastCredentialCheck).diff(currentTime, 'minutes')) > 10) {        
+        if (!state.lastCredentialCheck || Math.abs(moment(state.lastCredentialCheck).diff(currentTime, 'minutes')) > 10) {
           this.autopilotService.isMarketOpened().pipe(
             catchError(err => {
               console.log('Error getting market status', err);
@@ -592,14 +592,26 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async setupStrategy() {
-    console.log('Setting up strategy')
-    const backtestData = await this.strategyBuilderService.getBacktestData('SPY');
+    try {
+      const backtestData = await this.strategyBuilderService.getBacktestData('SPY');
+      if (!backtestData || backtestData.ml === null || backtestData.ml === undefined) {
+        throw new Error('Failed to fetch backtest data for SPY');
+      }
+      this.autopilotService.setLastSpyMl(backtestData.ml);
+      this.autopilotService.updateVolatility();
 
-    this.autopilotService.setLastSpyMl(backtestData?.ml);
-    this.autopilotService.updateVolatility();
-    await this.autopilotService.updateBtcPrediction();
-    await this.autopilotService.updateGldPrediction();
-    await this.priceTargetService.setTargetDiff();
+      // These functions return void; await them so any rejection aborts setup
+      await this.autopilotService.updateBtcPrediction();
+      await this.autopilotService.updateGldPrediction();
+      await this.priceTargetService.setTargetDiff();
+    } catch (error) {
+      console.log('Error setting up strategy', error);
+      // Set conservative defaults, then rethrow to abort initialization
+      this.autopilotService.setLastSpyMl(0.5);
+      this.autopilotService.updateVolatility();
+      throw error;
+    }
+
     this.backtestAggregatorService.clearTimeLine();
 
     this.developedStrategy = true;

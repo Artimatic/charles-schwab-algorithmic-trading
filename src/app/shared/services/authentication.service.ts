@@ -8,6 +8,7 @@ import { DialogService } from 'primeng/dynamicdialog';
 import { MessageService } from 'primeng/api';
 import { catchError, tap } from 'rxjs/operators';
 import { throwError } from 'rxjs';
+import { AiPicksService } from './ai-picks.service';
 
 export interface TdaAccount {
   accountId: string;
@@ -25,7 +26,8 @@ export class AuthenticationService {
 
   constructor(private http: HttpClient,
     private dialogService: DialogService,
-    private messageService: MessageService) { }
+    private messageService: MessageService,
+    private aiPicksService: AiPicksService) { }
 
   openLoginDialog(): void {
     this.dialogService.open(RedirectLoginDialogComponent, {
@@ -104,6 +106,14 @@ export class AuthenticationService {
             severity: 'success',
             summary: 'Credentials selected'
           });
+
+          // Trigger ML-neutral refresh so components (eg. AlgoEvaluationComponent) reload backtests
+          try {
+            this.aiPicksService.mlNeutralResults.next(null);
+          } catch (err) {
+            console.log('Error signaling mlNeutralResults', err);
+          }
+
         }, () => {
           if (this.selectedTdaAccount.appKey && this.selectedTdaAccount.refreshKey) {
             this.setTdaAccount(this.selectedTdaAccount.accountId);
