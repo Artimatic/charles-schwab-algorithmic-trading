@@ -1,4 +1,4 @@
-const fullList = [
+const currentList = [
     'CARS',
     'CARG',
     'TENB',
@@ -156,8 +156,45 @@ const fullList = [
     'CHTR',
     'DASH',
     'NUE',
-    'DELL'];
-
+    'DELL',
+    // Newly added symbols (not already present)
+    'ALL',
+    'GOOG',
+    'FOLD',
+    'T',
+    'AZO',
+    'AVY',
+    'BFAM',
+    'CP.TO',
+    'CVNA',
+    'CBRE',
+    'CELH',
+    'CMC',
+    'CRH',
+    'CVS',
+    'DAN',
+    'DVN',
+    'DLR',
+    'DKNG',
+    'ETR',
+    'GL',
+    'GWRE',
+    'LC',
+    'MKC',
+    'MHK',
+    'PPG',
+    'RL',
+    'RVMD',
+    'ROKU',
+    'SNPS',
+    'WMB',
+    'TRTX',
+    'TRU',
+    'VLY',
+    'VMI',
+    'VIK',
+    'XENE'
+];
 const shuffle = (array) => {
     let currentIndex = array.length, randomIndex;
 
@@ -171,7 +208,7 @@ const shuffle = (array) => {
     return array;
 };
 
-export const CurrentStockList = shuffle(fullList).map(s => {
+export const CurrentStockList = shuffle(currentList).map(s => {
     return { ticker: s };
 });
 
