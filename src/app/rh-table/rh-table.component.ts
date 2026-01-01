@@ -892,13 +892,13 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
       this.currentList = this.currentList.filter((stock: Stock) => {
         const searchTextLowerCase = this.searchText.toLowerCase()
         const foundBuy = stock.buySignals.find(algo => {
-          return algo.toLowerCase().includes(searchTextLowerCase);
+          return algo.toLowerCase() === searchTextLowerCase;
         });
         const foundSell = stock.sellSignals.find(algo => {
-          return algo.toLowerCase().includes(searchTextLowerCase);
+          return algo.toLowerCase() === searchTextLowerCase;
         });
 
-        return foundBuy || foundSell || stock.stock.toLowerCase().includes(searchTextLowerCase);
+        return foundBuy || foundSell || stock.stock.toLowerCase() === searchTextLowerCase;
       });
     }
   }
