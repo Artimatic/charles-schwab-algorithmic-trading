@@ -797,6 +797,21 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
     return _.round(winProbability - (1 - winProbability) / totalWinLossRatio, 2);
   }
 
+  formatSignificant(value: any, digits: number = 2): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    const num = Number(value);
+    if (!isNaN(num)) {
+      try {
+        return num.toPrecision(digits);
+      } catch (e) {
+        return num.toString();
+      }
+    }
+    return String(value);
+  }
+
   executeBacktests() {
     this.bufferSubject = new Subject();
 

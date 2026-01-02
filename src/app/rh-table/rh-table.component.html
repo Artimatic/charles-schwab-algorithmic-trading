@@ -106,14 +106,24 @@
           <span *ngIf=element.kellyCriterion>{{element.kellyCriterion}}</span>
         </span>
         <span *ngSwitchCase="'ml'">
-          <div *ngIf="element.ml">
-             {{element.ml}}
+          <div *ngIf="element.ml !== undefined && element.ml !== null" [title]="element.ml">
+             {{ formatSignificant(element.ml, 2) }}
           </div>
         </span>
         <span *ngSwitchCase="'sellMl'">
-          <div *ngIf="element.sellMl !== undefined && element.sellMl !== null">
-            {{element.sellMl}}
+          <div *ngIf="element.sellMl !== undefined && element.sellMl !== null" [title]="element.sellMl">
+            {{ formatSignificant(element.sellMl, 2) }}
           </div>
+        </span>
+        <span *ngSwitchCase="'buySignals'">
+          <span [title]="(element.buySignals || []).join(', ')">
+            {{ (element.buySignals || []).join(', ') }}
+          </span>
+        </span>
+        <span *ngSwitchCase="'sellSignals'">
+          <span [title]="(element.sellSignals || []).join(', ')">
+            {{ (element.sellSignals || []).join(', ') }}
+          </span>
         </span>
         <span *ngSwitchDefault>
           {{element[col.field]}}
