@@ -14,8 +14,8 @@ export class AlgoEvaluationComponent implements OnInit {
   currentList: any[] = [];
   stockList: Stock[] = [];
   tableStates: any[] = [
-    { label: 'Recommendations', value: 'recommendations' },
     { label: 'Portfolio', value: 'portfolio' },
+    { label: 'Recommendations', value: 'recommendations' },
     { label: 'Trading Pairs', value: 'tradingPairs' }
   ];
   tableDisplay: string = 'portfolio';
