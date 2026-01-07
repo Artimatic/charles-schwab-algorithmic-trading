@@ -388,8 +388,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         // If it's been more than 24 hours since we last printed final results, call it again
         if (!this.lastPrintFinalResults || currentTime.diff(this.lastPrintFinalResults, 'hours') >= 24) {
           console.log('More than 24 hours since last printFinalResults run — running it again now.');
+          this.lastPrintFinalResults = moment();
           try {
-            await this.printFinalResults();
+            if (this.reportingService.logs.length > 15) {
+              await this.printFinalResults();
+            }
           } catch (err) {
             console.log('Error running periodic printFinalResults', err);
           }
@@ -484,8 +487,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.setProfitLoss();
     this.scoreKeeperService.resetTotal();
     this.resetCart();
-    // Update the last print timestamp and persist
-    this.lastPrintFinalResults = moment();
     localStorage.setItem('lastPrintFinalResults', this.lastPrintFinalResults.format());
     setTimeout(async () => {
       await this.autopilotService.handleStrategy();

@@ -1,4 +1,5 @@
 const currentList = [
+    'CCJ',
     'CARS',
     'CARG',
     'TENB',
@@ -73,7 +74,6 @@ const currentList = [
     'COF',
     'GS',
     'MRNA',
-    'VEEV',
     'COIN',
     'BA',
     'NFLX',
