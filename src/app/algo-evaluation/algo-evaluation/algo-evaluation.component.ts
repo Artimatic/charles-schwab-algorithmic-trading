@@ -93,7 +93,7 @@ export class AlgoEvaluationComponent implements OnInit {
 
   async setTable(ev = null) {
     this.tableDisplay = ev?.value;
-    if (this.tableDisplay === this.tableStates[1].value) {
+    if (this.tableDisplay === 'portfolio') {
       this.setColumnsForPortfolio();
       const positions = await this.cartService.findCurrentPositions();
       this.currentList = positions.map((pos: PortfolioInfoHolding) => {
@@ -108,7 +108,7 @@ export class AlgoEvaluationComponent implements OnInit {
           secondaryLegsSymbol: pos.secondaryLegs ? pos.secondaryLegs[0].putCall : ''
         };
       });
-    } else if (this.tableDisplay === this.tableStates[2].value) {
+    } else if (this.tableDisplay === 'tradingPairs') {
       this.setColumnsForTradingPairs();
       const strategies = this.strategyBuilderService.getTradingStrategies();
       this.currentList = strategies.map(strategy => {
