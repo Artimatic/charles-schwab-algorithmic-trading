@@ -30,6 +30,7 @@ export class AlgoEvaluationComponent implements OnInit {
     await this.getBacktests();
 
     this.aiPicksService.mlNeutralResults.subscribe(async () => {
+      console.log('AlgoEvaluationComponent detected mlNeutralResults update');
       await this.getBacktests();
     });
   }
@@ -92,7 +93,7 @@ export class AlgoEvaluationComponent implements OnInit {
   }
 
   async setTable(ev = null) {
-    this.tableDisplay = ev?.value;
+    this.tableDisplay = ev?.value || 'portfolio';
     if (this.tableDisplay === 'portfolio') {
       this.setColumnsForPortfolio();
       const positions = await this.cartService.findCurrentPositions();
