@@ -27,6 +27,7 @@ import { AddOptionsTradeComponent } from './add-options-trade/add-options-trade.
 import { FindDaytradeService } from './find-daytrade.service';
 import { PriceTargetService } from './price-target.service';
 import { AutopilotService, ProfitLossRecord, SwingtradeAlgorithms } from './autopilot.service';
+import { StrategyFinderDialogComponent } from './strategy-finder-dialog/strategy-finder-dialog.component';
 import { BacktestAggregatorService } from '../backtest-table/backtest-aggregator.service';
 import { OrderingService } from '@shared/ordering.service';
 import { NewStockFinderService } from '../backtest-table/new-stock-finder.service';
@@ -82,10 +83,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   lastMarketHourCheck = null;
   lastCredentialCheck;
 
-  revealPotentialStrategy = false;
-
-  // Toggle to show saved strategies in the Strategy finder dialog
-  showSavedStrategies = false;
   strategies: PotentialTrade[] = [];
 
   dialogRef: DynamicDialogRef | undefined;
@@ -885,14 +882,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   showStrategies() {
-    this.revealPotentialStrategy = false;
-    this.tradingPairs = [];
-
     this.tradingPairs = this.optionsOrderBuilderService.getTradingPairs();
-    setTimeout(() => {
-      this.revealPotentialStrategy = true;
-    }, 500);
     console.log(this.tradingPairs);
+    this.dialogRef = this.dialogService.open(StrategyFinderDialogComponent, {
+      header: 'Strategy finder',
+      width: '800px',
+      contentStyle: {'max-height': '600px', 'overflow': 'auto'},
+      data: { tradingPairs: this.tradingPairs }
+    });
   }
 
   hasTradeCapacity() {

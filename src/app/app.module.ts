@@ -90,6 +90,7 @@ import { BacktestTableComponent } from './backtest-table/backtest-table.componen
 import { AddOptionsTradeComponent } from './autopilot/add-options-trade/add-options-trade.component';
 import { DaytradeActiveSearchComponent } from './autopilot/daytrade-active-search/daytrade-active-search.component';
 import { StockListDialogComponent } from './stock-list-dialog/stock-list-dialog.component';
+import { StrategyFinderDialogComponent } from './autopilot/strategy-finder-dialog/strategy-finder-dialog.component';
 import { SimulationChartComponent } from './simulation/simulation-chart/simulation-chart.component';
 import { AlgoEvaluationModule } from './algo-evaluation/algo-evaluation.module';
 import { LiveSimulationComponent } from './simulation/live-simulation/live-simulation.component';
@@ -142,6 +143,7 @@ import { StatsCardComponent } from './stats-card/stats-card.component';
     AddOptionsTradeComponent,
     DaytradeActiveSearchComponent,
     StockListDialogComponent,
+    StrategyFinderDialogComponent,
     SimulationChartComponent,
     LiveSimulationComponent,
     StatsCardComponent,
@@ -152,6 +154,7 @@ import { StatsCardComponent } from './stats-card/stats-card.component';
     ReportDialogComponent,
     ChartDialogComponent,
     RedirectLoginDialogComponent,
+    StrategyFinderDialogComponent,
   ],
   imports: [
     BrowserModule,

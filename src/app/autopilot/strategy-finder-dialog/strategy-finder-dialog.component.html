@@ -1,0 +1,76 @@
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+    <div style="display:flex; align-items:center">
+        <label for="show-strategies-switch" style="margin-right:0.5rem">Saved strategies</label>
+        <p-inputSwitch inputId="show-strategies-switch" [(ngModel)]="showSavedStrategies"></p-inputSwitch>
+    </div>
+</div>
+
+<div *ngIf="!showSavedStrategies">
+    <p-listbox [options]="tradingPairs">
+        <ng-template let-strategy pTemplate="item">
+            <div class="strategy-list">
+                <div class="buy-sell-container">
+                    <table>
+                        <tr *ngFor="let buy of strategy">
+                            <td>
+                                <div *ngIf="buy && buy.primaryLegs">
+                                    <div *ngFor="let leg of buy.primaryLegs">
+                                        <p-tag *ngIf="leg.putCallInd==='C'" styleClass="p-mr-2" severity="success"
+                                            [value]="leg.description" [rounded]="true"></p-tag>
+                                        <p-tag *ngIf="leg.putCallInd==='P'" styleClass="p-mr-2" severity="danger"
+                                            [value]="leg.description" [rounded]="true"></p-tag>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div *ngIf="buy && buy.primaryLegs">
+                                    {{buy.quantity}}
+                                </div>
+
+                            </td>
+                            <td>
+                                <div *ngIf="buy && buy.primaryLegs">
+                                    {{buy.price | currency}}
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </ng-template>
+    </p-listbox>
+</div>
+
+<div *ngIf="showSavedStrategies">
+    <div style="max-height:400px; overflow:auto; padding:0.5rem 0;">
+        <table class="p-datatable p-component" style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr>
+                    <th style="text-align:left; padding:0.5rem; border-bottom:1px solid #e6e6e6">Name</th>
+                    <th style="text-align:left; padding:0.5rem; border-bottom:1px solid #e6e6e6">Key</th>
+                    <th style="text-align:left; padding:0.5rem; border-bottom:1px solid #e6e6e6">Date</th>
+                    <th style="text-align:left; padding:0.5rem; border-bottom:1px solid #e6e6e6">Type</th>
+                    <th style="text-align:left; padding:0.5rem; border-bottom:1px solid #e6e6e6">Buy</th>
+                    <th style="text-align:left; padding:0.5rem; border-bottom:1px solid #e6e6e6">Sell</th>
+                    <th style="text-align:left; padding:0.5rem; border-bottom:1px solid #e6e6e6">Reason</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let strat of autopilotService.strategies">
+                    <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">{{ strat?.name || '-' }}</td>
+                    <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">{{ strat?.key || '-' }}</td>
+                    <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">{{ strat?.date | date:'short' }}
+                    </td>
+                    <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">{{ strat?.type || '-' }}</td>
+                    <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">{{ strat?.strategy?.buy?.join(', ')
+                        || '-' }}</td>
+                    <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">{{ strat?.strategy?.sell?.join(', ')
+                        || '-' }}</td>
+                    <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">{{ strat?.reason || '-' }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<p-button label="Ok" styleClass="p-button-success" (onClick)="close()"></p-button>
