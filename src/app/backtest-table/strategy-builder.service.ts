@@ -348,6 +348,13 @@ export class StrategyBuilderService {
         kellyCriterion: result.kellyCriterion
       });
     }
+
+    // Prune old backtests after adding a new entry
+    try {
+      this.pruneBacktests(2);
+    } catch (err) {
+      console.warn('Error pruning backtests after addToResultStorage', err);
+    }
   }
 
   addToOrderHistoryStorage(symbol: string, tradingHistory: any[]) {
@@ -386,6 +393,38 @@ export class StrategyBuilderService {
       newStorageObj[key] = value;
       localStorage.setItem(storageName, JSON.stringify(newStorageObj));
     }
+  }
+
+  /**
+   * Prune backtests stored in localStorage under the key 'backtest'.
+   * Removes any entry where `backtestDate` is older than `maxAgeDays` days.
+   * Returns the pruned backtest object.
+   */
+  pruneBacktests(maxAgeDays = 2): { [key: string]: any } {
+    const storageRaw = localStorage.getItem('backtest');
+    if (!storageRaw) {
+      return {};
+    }
+
+    let storage: { [key: string]: any };
+    try {
+      storage = JSON.parse(storageRaw);
+    } catch (e) {
+      console.warn('Unable to parse backtest storage', e);
+      return {};
+    }
+
+    const now = moment();
+    Object.keys(storage).forEach(key => {
+      const entry = storage[key];
+      const dateStr = entry && entry.backtestDate;
+      if (!dateStr || now.diff(moment(dateStr), 'days') > maxAgeDays) {
+        delete storage[key];
+      }
+    });
+
+    localStorage.setItem('backtest', JSON.stringify(storage));
+    return storage;
   }
 
   addToBlackList(ticker: string) {
