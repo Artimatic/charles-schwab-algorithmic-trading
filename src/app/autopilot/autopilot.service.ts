@@ -167,7 +167,8 @@ export class AutopilotService {
     Strategy.BuyMfiDiv2,
     Strategy.InverseDispersion,
     Strategy.BuyWinners,
-    Strategy.StopLoss
+    Strategy.StopLoss,
+    Strategy.BuyMfi
   ];
 
   private readonly bearishList: Strategy[] = [

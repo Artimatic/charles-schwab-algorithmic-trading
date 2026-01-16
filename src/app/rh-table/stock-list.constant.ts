@@ -194,7 +194,8 @@ const currentList = [
     'VLY',
     'VMI',
     'VIK',
-    'XENE'
+    'XENE',
+    'SNDK'
 ];
 const shuffle = (array) => {
     let currentIndex = array.length, randomIndex;
