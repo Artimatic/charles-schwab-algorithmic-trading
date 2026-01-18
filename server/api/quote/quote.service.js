@@ -14,8 +14,8 @@ class QuoteService {
   * Interval: ["1m", "1d"]
   * Range: ["1d","5d","1mo","3mo","6mo","1y","2y","5y","10y","ytd","max"]
   */
-  getData(symbol, interval = '1d', range = '1d') {
-    return this.getRawData(symbol, interval, range)
+  getData(symbol, interval = '1d', range = '1d', accountId) {
+    return this.getRawData(symbol, interval, range, accountId)
       .then((data) => {
         const dataSize = _.get(data, 'chart.result[0].timestamp', []).length;
         console.log('Found quotes: ', dataSize);
@@ -45,7 +45,7 @@ class QuoteService {
       });
   }
 
-  getRawData(symbol, interval = '1d', range = '1d') {
+  getRawData(symbol, interval = '1d', range = '1d', accountId) {
     if (interval === '1m') {
       return PortfolioService.getIntraday(symbol);
     } else {
@@ -66,11 +66,11 @@ class QuoteService {
         startDate = moment(endDate).subtract(5, 'years').valueOf();
       }
 
-      return PortfolioService.getDailyQuoteInternal(symbol, startDate, endDate);
+      return PortfolioService.getDailyQuotes(symbol, startDate, endDate, accountId);
     }
   }
 
-  getDailyQuotes(symbol, toDate, fromDate) {
+  getDailyQuotes(symbol, toDate, fromDate, accountId) {
 
     const to = moment(toDate);
     const from = moment(fromDate);
@@ -94,7 +94,7 @@ class QuoteService {
       range = '10y';
     }
 
-    return this.getData(symbol, '1d', range);
+    return this.getData(symbol, '1d', range, accountId);
   }
 
   getLastPrice(symbol, response) {
