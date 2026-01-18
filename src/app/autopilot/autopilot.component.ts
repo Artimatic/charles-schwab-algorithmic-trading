@@ -432,7 +432,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
           this.signalsStateService.update({ type: 'CREDENTIALS', payload: null });
           await this.backtestOneStock(true, false);
-
         } else if (currentTime.isAfter(moment(this.autopilotService.sessionEnd).subtract(25, 'minutes')) &&
           currentTime.isBefore(moment(this.autopilotService.sessionEnd).subtract(20, 'minutes'))) {
           console.log('Buy on close');
@@ -606,7 +605,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       console.log('Error setting up strategy', error);
       // Set conservative defaults, then rethrow to abort initialization
       this.autopilotService.setLastSpyMl(0.5);
-      this.autopilotService.updateVolatility();
+      this.autopilotService.setVolatilityMl(0.5);
+
       throw error;
     }
 

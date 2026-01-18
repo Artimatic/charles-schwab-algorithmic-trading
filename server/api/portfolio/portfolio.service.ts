@@ -218,7 +218,6 @@ class PortfolioService {
       this.access_token[accountId] = { token: '123', timestamp: moment().valueOf() };
     }
     return this.sendPositionRequest(accountId).then(pos => {
-      console.log('Added new token');
       return Promise.resolve({ message: 'Added new token' });
     })
       .catch(error => {

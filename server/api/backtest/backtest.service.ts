@@ -242,10 +242,7 @@ class BacktestService {
   getData(ticker, currentDate, startDate) {
     const { end, start } = this.getDateRanges(currentDate, startDate);
 
-    return QuoteService.getDailyQuotes(ticker, end, start)
-      .then(data => {
-        return data;
-      });
+    return QuoteService.getDailyQuotes(ticker, end, start);
   }
 
   writeCsv(name, startDate, currentDate, rows, fields, count) {
