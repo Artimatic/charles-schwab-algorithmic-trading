@@ -195,7 +195,9 @@ const currentList = [
     'VMI',
     'VIK',
     'XENE',
-    'SNDK'
+    'SNDK',
+    'CMCSA',
+    'DOCU'
 ];
 const shuffle = (array) => {
     let currentIndex = array.length, randomIndex;
