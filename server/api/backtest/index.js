@@ -1,6 +1,6 @@
 const express = require('express');
-import * as handler from './backtest.router';
-import BacktestController from './backtest.controller';
+const handler = require('./backtest.router');
+const BacktestController = require('./backtest.controller').default;
 
 const router = express.Router();
 
