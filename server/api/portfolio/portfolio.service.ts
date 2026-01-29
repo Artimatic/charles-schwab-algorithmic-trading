@@ -221,7 +221,7 @@ class PortfolioService {
       return Promise.resolve({ message: 'Added new token' });
     })
       .catch(error => {
-        console.log('Potential token error: ', error, accountId);
+        console.log('Potential token error: ', error);
         const diffMinutes = moment().diff(moment(this.access_token[accountId].timestamp), 'minutes');
 
         if (!diffMinutes || diffMinutes >= 30) {
