@@ -49,11 +49,11 @@ class BacktestDataService {
         return backtest;
     }
 
-    getDefaultData(ticker: string, trainingStartDate, trainingEndDate) {
+    getDefaultData(ticker: string, trainingStartDate, trainingEndDate, accountId?) {
         ticker = ticker.toUpperCase();
         let finalData;
 
-        return backtestService.initDailyStrategy(ticker, trainingEndDate, trainingStartDate, { minQuotes: 80 })
+        return backtestService.initDailyStrategy(ticker, trainingEndDate, trainingStartDate, { minQuotes: 80 }, accountId)
             .then((dailyData) => {
                 finalData = this.addAverageMove(dailyData);
                 finalData = this.addBuySellSignals(finalData);

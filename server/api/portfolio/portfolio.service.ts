@@ -221,7 +221,7 @@ class PortfolioService {
       return Promise.resolve({ message: 'Added new token' });
     })
       .catch(error => {
-        console.log('Potential token error: ', error);
+        console.log('Potential token error: ', error, accountId);
         const diffMinutes = moment().diff(moment(this.access_token[accountId].timestamp), 'minutes');
 
         if (!diffMinutes || diffMinutes >= 30) {
@@ -390,9 +390,10 @@ class PortfolioService {
     }
   }
 
-  getDailyQuoteInternal(symbol, startDate, endDate, response = null) {
-    let accountId;
+  getDailyQuoteInternal(symbol, startDate, endDate, response = null, accountId = null) {
+    // TODO: Use passed accountId when available
     const accountIds = Object.getOwnPropertyNames(this.refreshTokensHash);
+    console.log('Found account ids: ', accountIds);
     if (accountIds.length > 0) {
       accountId = accountIds[0];
     } else {
