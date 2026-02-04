@@ -57,7 +57,6 @@ const currentList = [
     'TGT',
     'MU',
     'TFC',
-    'FDX',
     'IWM',
     'OXY',
     'BSX',
