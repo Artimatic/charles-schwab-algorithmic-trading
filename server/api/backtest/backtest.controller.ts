@@ -287,7 +287,7 @@ class BacktestController extends BaseController {
     backtestDataService.getDefaultData(request.query.symbol,
       request.query.startDate,
       request.query.endDate,
-      request.params.accountId)
+      request.query.accountId)
       .then((data) => BaseController.requestGetSuccessHandler(response, data))
       .catch((err) => BaseController.requestErrorHandler(response, err));
   }

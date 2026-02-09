@@ -152,11 +152,12 @@ export class BacktestService {
       params: {
         symbol,
         startDate,
-        endDate
+        endDate,
+        accountId: id
       }
     };
 
-    return this.http.get(`${BASE_URL}api/backtest/backtest-data/${id}`, options);
+    return this.http.get(`${BASE_URL}api/backtest/backtest-data`, options);
   }
 
   getLastPriceTiingo(data: any): Observable<any> {
