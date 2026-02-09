@@ -160,7 +160,6 @@ const currentList = [
     // Newly added symbols (not already present)
     'ALL',
     'GOOG',
-    'FOLD',
     'T',
     'AZO',
     'AVY',

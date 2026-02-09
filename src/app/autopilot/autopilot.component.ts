@@ -137,25 +137,35 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.lastPrintFinalResults = lastPrint ? moment(lastPrint) : null;
 
     // Subscribe to signal state changes
-    this.signalsStateService.select('lastCredentialCheck').subscribe(
-      lastCheck => this.lastCredentialCheck = lastCheck ? moment(lastCheck) : null
-    );
-    this.signalsStateService.select('developedStrategy').subscribe(
-      developed => this.developedStrategy = developed
-    );
-    this.signalsStateService.select('boughtAtClose').subscribe(
-      bought => this.boughtAtClose = bought
-    );
-    this.signalsStateService.select('lastProfitCheck').subscribe(
-      lastCheck => this.lastProfitCheck = moment(lastCheck)
-    );
+    this.signalsStateService.select('lastCredentialCheck')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        lastCheck => this.lastCredentialCheck = lastCheck ? moment(lastCheck) : null
+      );
+    this.signalsStateService.select('developedStrategy')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        developed => this.developedStrategy = developed
+      );
+    this.signalsStateService.select('boughtAtClose')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        bought => this.boughtAtClose = bought
+      );
+    this.signalsStateService.select('lastProfitCheck')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        lastCheck => this.lastProfitCheck = moment(lastCheck)
+      );
 
     // Subscribe to intraday check updates
-    this.signalsStateService.select('lastIntradayCheck').subscribe(async () => {
-      if (this.autopilotService.isIntradayTrading()) {
-        await this.autopilotService.handleIntraday();
-      }
-    });
+    this.signalsStateService.select('lastIntradayCheck')
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(async () => {
+        if (this.autopilotService.isIntradayTrading()) {
+          await this.autopilotService.handleIntraday();
+        }
+      });
     this.startButtonOptions = [
       {
         label: 'Start orders without auto manage',
@@ -221,12 +231,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.sellAll();
         }
       },
-      {
-        label: 'Test buy stock',
-        command: async () => {
 
-        }
-      },
       {
         label: 'Set credentials',
         command: async () => {
@@ -507,15 +512,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
   }
 
-  calculatePl(records) {
-    let profit = 0;
-    for (let key in records) {
-      if (records[key]) {
-        profit += Number(records[key].toFixed(2));
-      }
-    }
-
-    return profit;
+  calculatePl(records: { [key: string]: number }): number {
+    return Object.values(records)
+      .filter(value => value)
+      .reduce((sum, value) => sum + Number(value.toFixed(2)), 0);
   }
 
   async setProfitLoss() {
@@ -616,6 +616,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
     this.boughtAtClose = false;
     this.machineLearningService.getFoundPatterns()
+      .pipe(takeUntil(this.destroy$))
       .subscribe(patternsResponse => console.log('found patterns ', patternsResponse));
 
     this.autopilotService.setCurrentHoldings();
@@ -641,8 +642,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async backtestOneStock(overwrite = false, addTrade = true) {
     try {
+      const currentHoldings = this.autopilotService.getCurrentHoldings();
       let stock = this.machineDaytradingService.getNextStock();
-      while (Boolean(this.autopilotService.getCurrentHoldings().find((value) => value.name === stock))) {
+      while (currentHoldings.find((value) => value.name === stock)) {
         stock = this.machineDaytradingService.getNextStock();
       }
       await this.strategyBuilderService.getBacktestData(stock, overwrite);
@@ -685,7 +687,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async modifyCurrentHoldings() {
-    this.autopilotService.getCurrentHoldings().forEach(async (holding) => {
+    const holdings = this.autopilotService.getCurrentHoldings();
+    for (const holding of holdings) {
       try {
         const backtestResults = await this.strategyBuilderService.getBacktestData(holding.name);
         if (holding.primaryLegs) {
@@ -707,7 +710,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       } catch (error) {
         console.log('Backtest error', error);
       }
-    });
+    }
   }
 
   analyseIndicators(stock, signals, holdings) {
@@ -765,29 +768,23 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       stopLossThreshold);
   }
 
-  getRecommendationReason(recommendation) {
-    const reasons = {
-      buyReasons: '',
-      sellReasons: ''
-    };
+  getRecommendationReason(recommendation: { [key: string]: string }) {
+    const buyReasons: string[] = [];
+    const sellReasons: string[] = [];
 
-    const buyReasons = [];
-    const sellReasons = [];
-
-    for (const rec in recommendation) {
-      if (recommendation.hasOwnProperty(rec)) {
-        if (recommendation[rec].toLowerCase() === 'bullish') {
-          buyReasons.push(rec);
-        } else if (recommendation[rec].toLowerCase() === 'bearish') {
-          sellReasons.push(rec);
-        }
+    Object.entries(recommendation).forEach(([rec, value]) => {
+      const lowerValue = value.toLowerCase();
+      if (lowerValue === 'bullish') {
+        buyReasons.push(rec);
+      } else if (lowerValue === 'bearish') {
+        sellReasons.push(rec);
       }
-    }
+    });
 
-    reasons.buyReasons += buyReasons.join(',');
-    reasons.sellReasons += sellReasons.join(',');
-
-    return reasons;
+    return {
+      buyReasons: buyReasons.join(','),
+      sellReasons: sellReasons.join(',')
+    };
   }
 
   scroll() {
@@ -872,13 +869,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   async sellAll() {
     await this.autopilotService.setCurrentHoldings();
-    this.autopilotService.getCurrentHoldings().forEach(async (holding) => {
+    const holdings = this.autopilotService.getCurrentHoldings();
+    for (const holding of holdings) {
       if (!this.cartService.isStrangle(holding)) {
         if (!holding?.primaryLegs?.length) {
           await this.cartService.portfolioSell(holding, 'Sell all command');
         }
       }
-    });
+    }
   }
 
   showStrategies() {
@@ -930,6 +928,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
     if (this.backtestBuffer$) {
       this.backtestBuffer$.unsubscribe();
+    }
+    // Clean up test timeouts if they exist
+    const testTimeouts = (this as any)._testTimeouts as ReturnType<typeof setTimeout>[];
+    if (testTimeouts && Array.isArray(testTimeouts)) {
+      testTimeouts.forEach(timeout => clearTimeout(timeout));
     }
   }
 
@@ -1048,11 +1051,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     const trade = [option1, option2];
     this.optionsOrderBuilderService.addTradingPair(trade, trade[0].reason ? trade[0].reason : 'Testing pair trading');
 
-    setTimeout(async () => {
+    // Track timeouts for proper cleanup
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    
+    timeouts.push(setTimeout(async () => {
       await this.autopilotService.executeOrderList();
-    }, 10000);
+    }, 10000));
 
-    setTimeout(async () => {
+    timeouts.push(setTimeout(async () => {
       const buyAndSellList = this.cartService.sellOrders.concat(this.cartService.buyOrders);
       const orders = buyAndSellList.concat(this.cartService.otherOrders);
       for (let i = 0; i < orders.length; i++) {
@@ -1062,9 +1068,9 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.orderHandlingService.handleIntradayRecommendation(buyOrder, { recommendation: OrderType.Buy } as any);
       }
       this.testAddTradingPairsToCart()
-    }, 20000);
+    }, 20000));
 
-    setTimeout(async () => {
+    timeouts.push(setTimeout(async () => {
       const buyAndSellList = this.cartService.sellOrders.concat(this.cartService.buyOrders);
       const orders = buyAndSellList.concat(this.cartService.otherOrders);
       for (let i = 0; i < orders.length; i++) {
@@ -1074,7 +1080,10 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         await this.orderHandlingService.handleIntradayRecommendation(buyOrder, { recommendation: OrderType.Sell } as any);
       }
       this.testAddTradingPairsToCart()
-    }, 25000);
+    }, 25000));
+    
+    // Store timeouts reference for cleanup if component is destroyed
+    (this as any)._testTimeouts = timeouts;
 
   }
 
