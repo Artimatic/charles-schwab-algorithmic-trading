@@ -5,6 +5,7 @@ import { MachineDaytradingService } from '../machine-daytrading/machine-daytradi
 import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';
 import { BacktestService, CartService, PortfolioService, ReportingService, AuthenticationService, DaytradeService, MachineLearningService } from '@shared/services';
 import { PriceTargetService } from './price-target.service';
+import { IntradayStrategyService } from '../strategies/intraday-strategy.service';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { of } from 'rxjs';
@@ -26,6 +27,7 @@ describe('AutopilotService', () => {
   let mockDaytradeService: jasmine.SpyObj<DaytradeService>;
   let mockDaytradeStrategiesService: jasmine.SpyObj<DaytradeStrategiesService>;
   let mockMachineLearningService: jasmine.SpyObj<MachineLearningService>;
+  let mockIntradayStrategyService: jasmine.SpyObj<IntradayStrategyService>;
   beforeEach(() => {
     mockStrategyBuilderService = jasmine.createSpyObj('StrategyBuilderService', ['getBacktestData', 'addAndRemoveOldStrategies', 'createStrategy', 'getCallStrangleTrade', 'findOptionsPrice', 'getRecentBacktest', 'getQuantity']);
     mockMachineDaytradingService = jasmine.createSpyObj('MachineDaytradingService', ['getNextStock', 'getCurrentStockList', 'setCurrentStockList']);
@@ -41,6 +43,7 @@ describe('AutopilotService', () => {
     mockDaytradeService = jasmine.createSpyObj('DaytradeService', ['sendBuy', 'sendSell']);
     mockDaytradeStrategiesService = jasmine.createSpyObj('DaytradeStrategiesService', ['shouldSkip']);
     mockMachineLearningService = jasmine.createSpyObj('MachineLearningService', ['trainVolatility']);
+    mockIntradayStrategyService = jasmine.createSpyObj('IntradayStrategyService', ['checkIntradayStrategies']);
 
     mockPortfolioService.getEquityMarketHours.and.returnValue(of({ equity: { EQ: { isOpen: true, sessionHours: { regularMarket: [{ start: '2023-11-08T09:30:00', end: '2023-11-08T16:00:00' }] } } } }));
     mockGlobalSettingsService.getStartStopTime.and.returnValue({ startDateTime: new Date(), endDateTime: new Date() });
@@ -77,6 +80,7 @@ describe('AutopilotService', () => {
         { provide: DaytradeService, useValue: mockDaytradeService },
         { provide: DaytradeStrategiesService, useValue: mockDaytradeStrategiesService },
         { provide: MachineLearningService, useValue: mockMachineLearningService },
+        { provide: IntradayStrategyService, useValue: mockIntradayStrategyService },
       ]
     });
     service = TestBed.inject(AutopilotService);
@@ -179,12 +183,12 @@ describe('AutopilotService', () => {
   it('should call find swing stock callback buy', async () => {
     mockCartService.portfolioBuy.and.callFake(() => { });
     mockPriceTargetService.isProfitable.and.returnValue(true);
-    await service.findSwingStockCallback('AAPL', 0.8, { recommendation: 'STRONGBUY', impliedMovement: 0.1, net: 10, invested: 100 });
+    await service.findSwingStockCallback('AAPL', 0.8, { stock: 'AAPL', ml: 0.7, sellMl: 0.2, recommendation: 'STRONGBUY', impliedMovement: 0.1, net: 10, invested: 100, averageMove: 0.05, total: 100 });
     expect(mockOrderHandlingService.addBuy).toHaveBeenCalled();
   });
   it('should call find swing stock callback sell', async () => {
     mockCartService.portfolioBuy.and.callFake(() => { });
-    await service.findSwingStockCallback('AAPL', 0.3, { recommendation: 'STRONGBUY', impliedMovement: 0.1, net: 10, invested: 100 });
+    await service.findSwingStockCallback('AAPL', 0.3, { stock: 'AAPL', ml: 0.4, sellMl: 0.6, recommendation: 'STRONGBUY', impliedMovement: 0.1, net: 10, invested: 100, averageMove: 0.05, total: 100 });
     expect(mockCartService.portfolioBuy).not.toHaveBeenCalled();
   });
 

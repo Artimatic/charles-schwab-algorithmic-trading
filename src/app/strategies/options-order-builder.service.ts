@@ -414,7 +414,8 @@ export class OptionsOrderBuilderService {
     const lastPrice = price[symbol].quote.lastPrice;
     const closePrice = price[symbol].quote.closePrice;
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
-    return (currentDiff < (-1 * threshold) * modifier) || Math.abs(currentDiff) < 0.006;
+    // Treat very small non-zero diffs as potential buys, but do not treat zero change as buy
+    return (currentDiff < (-1 * threshold) * modifier) || (Math.abs(currentDiff) > 0 && Math.abs(currentDiff) < 0.006);
   }
 
   async shouldBuyPutOption(symbol: string, modifier = 1) {

@@ -157,7 +157,9 @@ export class PriceTargetService {
   async checkProfitTarget(retrievedHoldings: PortfolioInfoHolding[] = null, target = this.targetDiff) {
     const targetMet = await this.hasMetPriceTarget(target);
     if (targetMet) {
-      this.cartService.deleteBuyOrders();
+      if (this.cartService && typeof this.cartService.deleteBuyOrders === 'function') {
+        this.cartService.deleteBuyOrders();
+      }
       const holdings = retrievedHoldings ? retrievedHoldings : await this.cartService.findCurrentPositions();
       holdings.forEach(async (portItem: PortfolioInfoHolding) => {
         if (this.liquidationValue > 25000 || !this.reportingService.findBuyLogBySymbol(portItem.name)) {

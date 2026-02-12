@@ -106,8 +106,8 @@ xdescribe('AutopilotComponent', () => {
     mockAutopilotService.getBuyList.and.returnValue(['AAPL']);
     mockAutopilotService.isVolatilityHigh.and.returnValue(false);
     mockPricingService.getPricing.and.returnValue({ putsTotalPrice: 100, callsTotalPrice: 100 });
-    mockAutopilotService.sessionEnd = moment().add(1, 'days');
-    mockAutopilotService.sessionStart = moment().add(1, 'days');
+    (mockAutopilotService as any).sessionEnd = moment().add(1, 'days').toDate();
+    (mockAutopilotService as any).sessionStart = moment().add(1, 'days').toDate();
     mockAutopilotService.hasReachedBuyLimit.and.returnValue(false);
     mockOrderingService.getRecommendationAndProcess.and.returnValue({ recommendation: 'BUY' });
     mockPortfolioService.getPrice.and.returnValue(100);

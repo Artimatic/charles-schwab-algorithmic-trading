@@ -120,8 +120,8 @@ export class AutopilotService {
   }
 
   riskToleranceList = [
-    RiskTolerance.Lower,
     RiskTolerance.Low,
+    RiskTolerance.Lower,
     RiskTolerance.Fear,
     RiskTolerance.Neutral,
     RiskTolerance.Lower,
@@ -337,7 +337,10 @@ export class AutopilotService {
   async getMinMaxCashForOptions(modifier = 1) {
     const cash = await this.cartService.getAvailableFunds(false, true);
     const minConstant = modifier ? (cash * RiskTolerance.Zero * modifier) : 1000;
-    const maxCash = round(this.riskLevel * cash, 2);
+    const level = (this.riskCounter != null && this.riskCounter < this.riskToleranceList.length)
+      ? this.riskToleranceList[this.riskCounter]
+      : this.riskLevel;
+    const maxCash = round(level * cash, 2);
     const minCash = maxCash - minConstant;
     return {
       maxCash,

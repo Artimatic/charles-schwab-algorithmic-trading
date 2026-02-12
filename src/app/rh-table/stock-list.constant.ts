@@ -1,4 +1,5 @@
 const currentList = [
+    'NOW',
     'CRWD',
     'CCJ',
     'CARS',

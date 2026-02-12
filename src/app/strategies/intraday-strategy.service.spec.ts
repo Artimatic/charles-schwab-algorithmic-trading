@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { of } from 'rxjs';
 import * as moment from 'moment-timezone';
 
@@ -6,6 +7,7 @@ import { IntradayStrategyService } from './intraday-strategy.service';
 import { PriceTargetService } from '../autopilot/price-target.service';
 import { BacktestService, ReportingService } from '@shared/services';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
+import { MessageService } from 'primeng/api';
 import { PortfolioInfoHolding } from '@shared/services';
 
 // Mock data for BacktestService
@@ -80,6 +82,7 @@ describe('IntradayStrategyService', () => {
   let mockBacktestService: jasmine.SpyObj<BacktestService>;
   let mockReportingService: jasmine.SpyObj<ReportingService>;
   let mockOrderHandlingService: jasmine.SpyObj<OrderHandlingService>;
+  let mockMessageService: jasmine.SpyObj<MessageService>;
 
   const tqqqHolding: PortfolioInfoHolding = {
     name: 'TQQQ',
@@ -100,14 +103,17 @@ describe('IntradayStrategyService', () => {
     mockBacktestService = jasmine.createSpyObj('BacktestService', ['getBacktestEvaluation', 'getLastPriceTiingo']);
     mockReportingService = jasmine.createSpyObj('ReportingService', ['addAuditLog']);
     mockOrderHandlingService = jasmine.createSpyObj('OrderHandlingService', ['addBuy']);
+    mockMessageService = jasmine.createSpyObj('MessageService', ['add']);
 
     TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
       providers: [
         IntradayStrategyService,
         { provide: PriceTargetService, useValue: mockPriceTargetService },
         { provide: BacktestService, useValue: mockBacktestService },
         { provide: ReportingService, useValue: mockReportingService },
         { provide: OrderHandlingService, useValue: mockOrderHandlingService },
+        { provide: MessageService, useValue: mockMessageService },
       ]
     });
     service = TestBed.inject(IntradayStrategyService);
