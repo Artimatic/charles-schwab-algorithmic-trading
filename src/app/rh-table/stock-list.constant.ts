@@ -190,7 +190,6 @@ const currentList = [
     'WMB',
     'TRTX',
     'TRU',
-    'VLY',
     'VMI',
     'VIK',
     'XENE',
