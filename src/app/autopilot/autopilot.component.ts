@@ -65,6 +65,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   maxHoldings = 100;
   developedStrategy = false;
   tradingPairsCounter = 0;
+  isBacktestInProgress = false;
 
   dayTradeRiskCounter = 0;
 
@@ -641,6 +642,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   }
 
   async backtestOneStock(overwrite = false, addTrade = true) {
+    if (this.isBacktestInProgress) {
+      return;
+    }
+    
+    this.isBacktestInProgress = true;
     try {
       const currentHoldings = this.autopilotService.getCurrentHoldings();
       let stock = this.machineDaytradingService.getNextStock();
@@ -650,6 +656,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       await this.strategyBuilderService.getBacktestData(stock, overwrite);
     } catch (error) {
       console.log('Error finding new trade', error);
+    } finally {
+      this.isBacktestInProgress = false;
     }
   }
 

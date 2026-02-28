@@ -5,7 +5,6 @@ const currentList = [
     'CARS',
     'CARG',
     'TENB',
-    'W',
     'PTON',
     'APO',
     'BABA',

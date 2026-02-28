@@ -921,6 +921,8 @@ describe('OptionsOrderBuilderService', () => {
       // Reset mock calls before each test
       backtestServiceSpy.getLastPriceTiingo.calls.reset();
       priceTargetServiceSpy.getDiff.calls.reset();
+      // Setup getBacktestData mock with default impliedMovement
+      strategyBuilderServiceSpy.getBacktestData.and.returnValue(Promise.resolve({ impliedMovement: 3 }));
     });
 
     it('should return true when price difference is less than negative threshold', async () => {

@@ -606,11 +606,11 @@ export class AutopilotService {
     let buyFilterFn = null;
     let sellFilterFn = null;
     if (direction === 'buy') {
-      buyFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator);
-      sellFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator);
+      buyFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator) && backtestData.ml > 0.5;
+      sellFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator) && backtestData.sellMl > 0.5;
     } else {
-      sellFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator);
-      buyFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator);
+      sellFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator) && backtestData.sellMl > 0.5;
+      buyFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator) && backtestData.ml > 0.5;
     }
 
     const buys = this.getBuyList(buyFilterFn);
@@ -631,9 +631,9 @@ export class AutopilotService {
   async buyOnSignal(indicator: SwingtradeAlgorithms, direction: 'buy' | 'sell') {
     let buyFilterFn = null;
     if (direction === 'buy') {
-      buyFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator);
+      buyFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator) && backtestData.ml > 0.5;
     } else {
-      buyFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator);
+      buyFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator) && backtestData.ml > 0.5;
     }
 
     const buys = this.getBuyList(buyFilterFn);
