@@ -9,7 +9,6 @@ const currentList = [
     'APO',
     'BABA',
     'GEV',
-    'ET',
     'EQT',
     'CPNG',
     'TNL',
