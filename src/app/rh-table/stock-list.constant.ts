@@ -157,7 +157,6 @@ const currentList = [
     'DASH',
     'NUE',
     'DELL',
-    // Newly added symbols (not already present)
     'ALL',
     'GOOG',
     'T',
@@ -182,7 +181,6 @@ const currentList = [
     'MKC',
     'MHK',
     'PPG',
-    'RL',
     'RVMD',
     'ROKU',
     'SNPS',
@@ -194,7 +192,11 @@ const currentList = [
     'XENE',
     'SNDK',
     'CMCSA',
-    'DOCU'
+    'DOCU',
+    'ASTS',
+    'RKLB',
+    'NBIS',
+    'IREN'
 ];
 const shuffle = (array) => {
     let currentIndex = array.length, randomIndex;
