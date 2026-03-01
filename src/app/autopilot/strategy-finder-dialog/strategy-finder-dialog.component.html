@@ -83,6 +83,7 @@
     <div *ngIf="buys?.length || sells?.length" style="max-height:400px; overflow:auto; padding:0.5rem 0;">
         <h3>Signal-generated Pairs</h3>
         <p *ngIf="!buys?.length && !sells?.length">No pairs generated yet.</p>
+        <p *ngIf="selectedSignal">Signal used: <strong>{{ selectedSignal }}</strong></p>
         <table class="p-datatable p-component" style="width:100%; border-collapse:collapse;">
             <thead>
                 <tr>
