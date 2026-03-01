@@ -41,7 +41,6 @@ export class AppComponent implements OnInit, AfterViewInit {
       },
       {
         label: 'Live Trading',
-        icon: 'account_balance',
         routerLink: '/'
       },
       {

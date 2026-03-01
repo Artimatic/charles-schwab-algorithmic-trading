@@ -372,7 +372,8 @@ describe('OptionsOrderBuilderService', () => {
       };
     });
 
-    await service.balanceTrades(['BAC'], ['MO'], 100, 5000, 'test');
+    const result = await service.balanceTrades(['BAC'], ['MO'], 100, 5000, 'test');
+    expect(result.orders).toBeTruthy();
     expect(cartServiceSpy.createOptionOrder).toHaveBeenCalledTimes(2);
 
     expect(service.getTradingPairs().length).toEqual(1);
@@ -590,7 +591,8 @@ describe('OptionsOrderBuilderService', () => {
       };
     });
 
-    await service.balanceTrades(['BAC'], ['MO'], 100, 5000, 'test');
+    const result = await service.balanceTrades(['BAC'], ['MO'], 100, 5000, 'test');
+    expect(result.orders).toBeTruthy();
     expect(service.getTradeHashValue(service.getTradingPairs()[0])).toBe('93acbe56');
     expect(service.getTradeHashValue(service.getTradingPairs()[0])).toBe('93acbe56');
     expect(service.getTradeHashValue([{
@@ -724,7 +726,8 @@ describe('OptionsOrderBuilderService', () => {
       }
     } as any]];
     service.tradingPairDate = { '1c5adddb': 123, 'db6ee64b': new Date().valueOf() - 402000000 };
-    await service.balanceTrades(['BAC'], ['MO'], 100, 5000, 'test');
+    const result = await service.balanceTrades(['BAC'], ['MO'], 100, 5000, 'test');
+    expect(result.orders).toBeTruthy();
     expect(service.getTradeHashValue(service.getTradingPairs()[0])).toBe('db6ee64b');
     expect(service.getTradingPairs().length).toBe(2);
     expect(service.getTradingPairs()[0]).toEqual([{

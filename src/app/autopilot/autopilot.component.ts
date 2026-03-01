@@ -205,24 +205,24 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       {
         label: 'Test create strategy',
         command: async () => {
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakSupport, 'buy', false);
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakResistance, 'buy', false);
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakSupport, 'sell', false);
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakResistance, 'sell', false);
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'sell');
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'buy');
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'sell');
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'sell');
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.demark9, 'buy');
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfi, 'sell');
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.bband, 'sell');
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfi, 'buy');
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.bband, 'buy');
-          await this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.macd, 'buy');
+          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakSupport, 'buy', false);
+          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakResistance, 'buy', false);
+          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakSupport, 'sell', false);
+          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakResistance, 'sell', false);
+          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'sell');
+          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
+          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'buy');
+          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
+          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'sell');
+          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
+          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
+          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'sell');
+          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.demark9, 'buy');
+          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfi, 'sell');
+          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.bband, 'sell');
+          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfi, 'buy');
+          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.bband, 'buy');
+          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.macd, 'buy');
           this.autopilotService.buyWinnersSellLosers();
         }
       },
@@ -997,7 +997,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.modifyCurrentHoldings();
     console.log(this.autopilotService.getCurrentHoldings());
     //await this.orderHandlingService.intradayStep('SPY');
-    await this.optionsOrderBuilderService.balanceTrades(['GOOGL'], ['AAPL'], 1000, 5000, 'Test');
+    const result = await this.optionsOrderBuilderService.balanceTrades(['GOOGL'], ['AAPL'], 1000, 5000, 'Test');
+    console.log('test balanceTrades result', result);
     if (!this.tradingPairs.length) {
       console.error('TRADING PAIR NOT ADDED');
     }

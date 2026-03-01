@@ -1,11 +1,16 @@
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
     <div style="display:flex; align-items:center">
-        <label for="show-strategies-switch" style="margin-right:0.5rem">Saved strategies</label>
-        <p-inputSwitch inputId="show-strategies-switch" [(ngModel)]="showSavedStrategies"></p-inputSwitch>
+        <p-selectButton [options]="savedStrategies" 
+            [(ngModel)]="value" 
+            [multiple]="false" 
+            optionLabel="name"
+            (onChange)="onSelectChange($event)"
+            optionValue="value">
+        </p-selectButton>
     </div>
 </div>
 
-<div *ngIf="!showSavedStrategies">
+<div *ngIf="value === 1">
     <p-listbox [options]="tradingPairs">
         <ng-template let-strategy pTemplate="item">
             <div class="strategy-list">
@@ -41,7 +46,7 @@
     </p-listbox>
 </div>
 
-<div *ngIf="showSavedStrategies">
+<div *ngIf="value === 2">
     <div style="max-height:400px; overflow:auto; padding:0.5rem 0;">
         <table class="p-datatable p-component" style="width:100%; border-collapse:collapse;">
             <thead>
@@ -67,6 +72,32 @@
                     <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">{{ strat?.strategy?.sell?.join(', ')
                         || '-' }}</td>
                     <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">{{ strat?.reason || '-' }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- new table for value 3; keeps value 2 unchanged -->
+<div *ngIf="value === 3">
+    <div *ngIf="buys?.length || sells?.length" style="max-height:400px; overflow:auto; padding:0.5rem 0;">
+        <h3>Signal-generated Pairs</h3>
+        <p *ngIf="!buys?.length && !sells?.length">No pairs generated yet.</p>
+        <table class="p-datatable p-component" style="width:100%; border-collapse:collapse;">
+            <thead>
+                <tr>
+                    <th style="text-align:left; padding:0.5rem; border-bottom:1px solid #e6e6e6">Buys</th>
+                    <th style="text-align:left; padding:0.5rem; border-bottom:1px solid #e6e6e6">Sells</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">
+                        {{ buys.join(', ') || '-' }}
+                    </td>
+                    <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">
+                        {{ sells.join(', ') || '-' }}
+                    </td>
                 </tr>
             </tbody>
         </table>

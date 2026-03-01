@@ -3,7 +3,6 @@ import crc from 'crc';
 import * as moment from 'moment-timezone';
 import { BacktestService, CartService, PortfolioInfoHolding, ReportingService } from '@shared/services';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
-import { TradingStrategy } from '../autopilot/interfaces/trading-strategy.interface';
 import { OrderTypes, SmartOrder } from '@shared/models/smart-order';
 import { Options } from '@shared/models/options';
 import { OrderHandlingService } from '../order-handling/order-handling.service';
@@ -55,7 +54,8 @@ export class OptionsOrderBuilderService {
     return crc.crc32(value).toString(16);
   }
 
-  private createOrderAddToList(currentPut: TradingPair, currentCall: TradingPair, reason: string, minCashAllocation: number, maxCashAllocation: number) {
+  // returns the orders that were created (for callers that want them)
+  private createOrderAddToList(currentPut: TradingPair, currentCall: TradingPair, reason: string, minCashAllocation: number, maxCashAllocation: number): SmartOrder[] | null {
     if (currentPut && currentCall &&
       currentCall.quantity && currentPut.quantity &&
       (currentCall.price * currentCall.quantity) + (currentPut.price * currentPut.quantity) <= maxCashAllocation) {
@@ -71,7 +71,9 @@ export class OptionsOrderBuilderService {
       this.reportingService.addAuditLog(null,
         `Added trading pair ${option1?.primaryLegs[0]?.symbol} ${option2?.primaryLegs[0]?.symbol}. Reason: ${reason}, Min cash: ${minCashAllocation}, Max cash: ${maxCashAllocation}`);
       this.addTradingPairs([option1, option2], reason);
+      return [option1, option2];
     }
+    return null;
   }
 
   private isIdealOption(price: number,
@@ -234,7 +236,8 @@ export class OptionsOrderBuilderService {
 
       // Only proceed if we have symbols to trade
       if (buys.length > 0 && sells.length > 0) {
-        await this.balanceTrades(buys, sells, minCashAllocation, maxCashAllocation, strat.reason ? strat.reason : 'Trading pair');
+        const { orders } = await this.balanceTrades(buys, sells, minCashAllocation, maxCashAllocation, strat.reason ? strat.reason : 'Trading pair');
+        // orders may be used later if needed
       }
     }
   }
@@ -247,10 +250,16 @@ export class OptionsOrderBuilderService {
     sellList: string[],
     minCashAllocation: number,
     maxCashAllocation: number,
-    reason: string) {
+    reason: string,
+    addToList: boolean = true): Promise<{ currentPut: TradingPair | null; currentCall: TradingPair | null; orders: SmartOrder[] | null }> {
     if (minCashAllocation === maxCashAllocation) {
       minCashAllocation = 0;
     }
+
+    let finalPut: TradingPair | null = null;
+    let finalCall: TradingPair | null = null;
+    let returnedOrders: SmartOrder[] | null = null;
+
     for (const buy of buyList) {
       if (typeof buy !== 'string') {
         console.error('Invalid buy symbol:', buy, buyList);
@@ -259,13 +268,13 @@ export class OptionsOrderBuilderService {
       const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(buy);
       if (bullishStrangle && bullishStrangle.call) {
         const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
-        let currentCall = {
+        let currentCall: TradingPair = {
           call: bullishStrangle.call,
           price: callPrice,
           quantity: 0,
           underlying: buy
         };
-        let currentPut = null;
+        let currentPut: TradingPair | null = null;
         if (!this.isIdealOption(callPrice, maxCashAllocation, bullishStrangle.call)) {
           currentCall = null;
           this.strategyBuilderService.addBullishStock(buy);
@@ -324,9 +333,17 @@ export class OptionsOrderBuilderService {
             }
           }
         }
-        this.createOrderAddToList(currentPut, currentCall, reason, minCashAllocation, maxCashAllocation);
+        if (addToList) {
+          const orders = this.createOrderAddToList(currentPut, currentCall, reason, minCashAllocation, maxCashAllocation);
+          if (orders) {
+            returnedOrders = orders;
+          }
+        }
+        finalPut = currentPut;
+        finalCall = currentCall;
       }
     }
+    return { currentPut: finalPut, currentCall: finalCall, orders: returnedOrders };
   }
 
   getCallPutQuantities(callPrice,

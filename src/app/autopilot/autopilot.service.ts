@@ -120,8 +120,8 @@ export class AutopilotService {
   }
 
   riskToleranceList = [
-    RiskTolerance.Low,
     RiskTolerance.Lower,
+    RiskTolerance.Low,
     RiskTolerance.Fear,
     RiskTolerance.Neutral,
     RiskTolerance.Lower,
@@ -606,11 +606,11 @@ export class AutopilotService {
     let buyFilterFn = null;
     let sellFilterFn = null;
     if (direction === 'buy') {
-      buyFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator) && backtestData.ml > 0.5;
-      sellFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator) && backtestData.sellMl > 0.5;
+      buyFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator) && backtestData.ml > 0.5 && backtestData.sellMl < 0.5;
+      sellFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator) && backtestData.sellMl > 0.5 && backtestData.ml < 0.5;
     } else {
-      sellFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator) && backtestData.sellMl > 0.5;
-      buyFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator) && backtestData.ml > 0.5;
+      buyFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator) && backtestData.ml > 0.5 && backtestData.sellMl < 0.5;
+      sellFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator) && backtestData.sellMl > 0.5 && backtestData.ml < 0.5;
     }
 
     const buys = this.getBuyList(buyFilterFn);
@@ -619,6 +619,8 @@ export class AutopilotService {
     if (addPair) {
       this.addPair(buys, sells, `${direction} ${indicator}`);
     }
+
+    return { buys, sells };
   }
 
   findIwmTrade() {
@@ -1052,7 +1054,11 @@ export class AutopilotService {
     const findPuts = async (symbol: string, prediction: number, backtestData: any, sellMl: number) => {
       if (sellMl > 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
         const cash = await this.getMinMaxCashForOptions(backtestData.impliedMovement + 1);
-        await this.optionsOrderBuilderService.balanceTrades(['SPY'], [symbol], cash.minCash, cash.maxCash, 'Inverse dispersion');
+        const result = await this.optionsOrderBuilderService.balanceTrades(['SPY'], [symbol], cash.minCash, cash.maxCash, 'Inverse dispersion');
+        // result.orders contains created orders if any
+        if (result.orders) {
+          console.log('Inverse dispersion created orders', result.orders);
+        }
       } else if ((prediction > 0.8 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
         const stock: PortfolioInfoHolding = {
           name: symbol,
@@ -1153,24 +1159,24 @@ export class AutopilotService {
         break;
       case Strategy.BuyMfiTrade:
         if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.bband, 'buy');
-          await this.addPairOnSignal(SwingtradeAlgorithms.bband, 'sell');
+          this.addPairOnSignal(SwingtradeAlgorithms.bband, 'buy');
+          this.addPairOnSignal(SwingtradeAlgorithms.bband, 'sell');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.bband, 'buy');
         }
         break;
       case Strategy.BuyMfiDiv2:
         if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
-          await this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'sell');
+          this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
+          this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'sell');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
         }
         break;
       case Strategy.BuyMfiDiv:
         if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
-          await this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
+          this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
+          this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
           await this.buyOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
@@ -1178,16 +1184,16 @@ export class AutopilotService {
         break;
       case Strategy.BuyFlag:
         if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
-          await this.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'sell');
+          this.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
+          this.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'sell');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
         }
         break;
       case Strategy.BuyMfi:
         if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.mfi, 'sell');
-          await this.addPairOnSignal(SwingtradeAlgorithms.mfi, 'buy');
+          this.addPairOnSignal(SwingtradeAlgorithms.mfi, 'sell');
+          this.addPairOnSignal(SwingtradeAlgorithms.mfi, 'buy');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.mfi, 'buy');
           await this.buyOnSignal(SwingtradeAlgorithms.mfi, 'sell');
@@ -1195,8 +1201,8 @@ export class AutopilotService {
         break;
       case Strategy.BuyBband:
         if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.bband, 'buy');
-          await this.addPairOnSignal(SwingtradeAlgorithms.bband, 'sell');
+          this.addPairOnSignal(SwingtradeAlgorithms.bband, 'buy');
+          this.addPairOnSignal(SwingtradeAlgorithms.bband, 'sell');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.bband, 'buy');
           await this.buyOnSignal(SwingtradeAlgorithms.bband, 'sell');
