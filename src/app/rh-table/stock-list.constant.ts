@@ -134,7 +134,6 @@ const currentList = [
     'ZIM',
     'Z',
     'SLB',
-    'WD',
     'VRTS',
     'UPS',
     'UNH',
