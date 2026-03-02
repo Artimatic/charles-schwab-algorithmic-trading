@@ -197,7 +197,8 @@ const currentList = [
     'NBIS',
     'IREN',
     'FSLR',
-    'DHR'
+    'DHR',
+    'COHR'
 ];
 const shuffle = (array) => {
     let currentIndex = array.length, randomIndex;
