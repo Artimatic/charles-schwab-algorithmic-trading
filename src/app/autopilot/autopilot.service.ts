@@ -607,10 +607,10 @@ export class AutopilotService {
     let sellFilterFn = null;
     if (direction === 'buy') {
       buyFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator) && backtestData.ml > 0.5 && backtestData.sellMl < 0.5;
-      sellFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator) && backtestData.sellMl > 0.5 && backtestData.ml < 0.5;
+      sellFilterFn = (backtestData) => backtestData.sellSignals && backtestData.buySignals.find(sig => sig === indicator) && backtestData.sellMl > 0.5 && backtestData.ml < 0.5;
     } else {
       buyFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator) && backtestData.ml > 0.5 && backtestData.sellMl < 0.5;
-      sellFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator) && backtestData.sellMl > 0.5 && backtestData.ml < 0.5;
+      sellFilterFn = (backtestData) => backtestData.buySignals && backtestData.sellSignals.find(sig => sig === indicator) && backtestData.sellMl > 0.5 && backtestData.ml < 0.5;
     }
 
     const buys = this.getBuyList(buyFilterFn);
