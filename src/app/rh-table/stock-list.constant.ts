@@ -173,7 +173,6 @@ const currentList = [
     'DLR',
     'DKNG',
     'ETR',
-    'GL',
     'GWRE',
     'LC',
     'MKC',
