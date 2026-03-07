@@ -96,7 +96,6 @@ const currentList = [
     'WDC',
     'CAG',
     'SWKS',
-    'HUBS',
     'TER',
     'NET',
     'STLD',
