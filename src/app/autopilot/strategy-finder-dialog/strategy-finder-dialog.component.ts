@@ -50,11 +50,12 @@ export class StrategyFinderDialogComponent implements OnInit {
       const signals = [
         SwingtradeAlgorithms.mfi,
         SwingtradeAlgorithms.mfiTrade,
-        SwingtradeAlgorithms.breakResistance,
-        SwingtradeAlgorithms.breakSupport,
         SwingtradeAlgorithms.flagPennant,
         SwingtradeAlgorithms.mfiDivergence,
-        SwingtradeAlgorithms.mfiDivergence2
+        SwingtradeAlgorithms.mfiDivergence2,
+        SwingtradeAlgorithms.breakResistance,
+        SwingtradeAlgorithms.breakSupport
+
       ];
       // iterate through signal types until we generate both buys and sells
       let buys: string[] = [];
