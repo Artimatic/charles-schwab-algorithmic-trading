@@ -11,9 +11,8 @@ import { AiPicksPredictionData, AiPicksService } from '@shared/services/ai-picks
 import { divide, round } from 'lodash';
 import { MenuItem, MessageService } from 'primeng/api';
 import { DialogService, DynamicDialogRef } from 'primeng/dynamicdialog';
-import { of, Subject, Subscription } from 'rxjs';
-import { TimerObservable } from 'rxjs-compat/observable/TimerObservable';
-import { catchError, takeUntil } from 'rxjs/operators';
+import { Subject, Subscription } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { PotentialTrade } from '../backtest-table/potential-trade.constant';
 import { StrategyBuilderService } from '../backtest-table/strategy-builder.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
@@ -35,6 +34,7 @@ import { OrderType } from '@shared/stock-backtest.interface';
 import { RiskTolerance } from './risk-tolerance.enum';
 import { StrategyManagementService } from './strategy-management.service';
 import { RiskManagementService } from './risk-management.service';
+import { AutopilotOrchestrationService, IAutopilotOrchestrationContext } from './autopilot-orchestration.service';
 
 export interface PositionHoldings {
   name: string;
@@ -63,7 +63,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   oneDayInterval;
   timer: Subscription;
   alive = false;
-  destroy$ = new Subject();
+  destroy$ = new Subject<void>();
   maxHoldings = 100;
   developedStrategy = false;
   tradingPairsCounter = 0;
@@ -102,24 +102,21 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private messageService: MessageService,
     private scoreKeeperService: ScoreKeeperService,
     private reportingService: ReportingService,
-    private machineDaytradingService: MachineDaytradingService,
-    private findPatternService: FindPatternService,
     private machineLearningService: MachineLearningService,
     private globalSettingsService: GlobalSettingsService,
     public dialogService: DialogService,
     private findDaytradeService: FindDaytradeService,
-    private pricingService: PricingService,
     private orderHandlingService: OrderHandlingService,
     private optionsOrderBuilderService: OptionsOrderBuilderService,
     public priceTargetService: PriceTargetService,
     public autopilotService: AutopilotService,
     private backtestAggregatorService: BacktestAggregatorService,
-    private aiPicksService: AiPicksService,
     private orderingService: OrderingService,
     private newStockFinderService: NewStockFinderService,
     private signalsStateService: SignalsStateService,
     private strategyManagementService: StrategyManagementService,
-    private riskManagementService: RiskManagementService
+    private riskManagementService: RiskManagementService,
+    private orchestrationService: AutopilotOrchestrationService
   ) { }
 
   ngOnInit(): void {
@@ -165,7 +162,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
         label: 'Start orders without auto manage',
         command: async () => {
           this.manualStart = true;
-          this.destroy$ = new Subject();
+          this.destroy$ = new Subject<void>();
           if (this.backtestBuffer$) {
             this.backtestBuffer$.unsubscribe();
           }
@@ -350,7 +347,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
   open() {
     this.manualStart = false;
 
-    this.destroy$ = new Subject();
+    this.destroy$ = new Subject<void>();
     if (this.backtestBuffer$) {
       this.backtestBuffer$.unsubscribe();
     }
@@ -375,103 +372,20 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     await this.autopilotService.handleStrategy();
     this.signalsStateService.reset();
 
-    this.timer = TimerObservable.create(1000, this.interval)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(async () => {
-        const state = this.signalsStateService.getState();
-        const currentTime = moment();
+    const context: IAutopilotOrchestrationContext = {
+      getLastPrintFinalResults: () => this.lastPrintFinalResults,
+      setLastPrintFinalResults: (v) => { this.lastPrintFinalResults = v; },
+      getIsOpenMarket: () => this.isOpenMarket,
+      setIsOpenMarket: (v) => { this.isOpenMarket = v; },
+      printFinalResults: () => this.printFinalResults(),
+      setupStrategy: () => this.setupStrategy(),
+      backtestOneStock: (overwrite, addTrade) => this.backtestOneStock(overwrite, addTrade),
+      buySellAtCloseOrOpen: () => this.buySellAtCloseOrOpen(),
+      addCurrentHoldingsToAuditLog: () => this.addCurrentHoldingsToAuditLog(),
+      decreaseRiskTolerance: () => this.decreaseRiskTolerance()
+    };
 
-        // If it's been more than 24 hours since we last printed final results, call it again
-        if (!this.lastPrintFinalResults || currentTime.diff(this.lastPrintFinalResults, 'hours') >= 24) {
-          console.log('More than 24 hours since last printFinalResults run — running it again now.');
-          this.lastPrintFinalResults = moment();
-          try {
-            if (this.reportingService.logs.length > 15) {
-              await this.printFinalResults();
-            }
-          } catch (err) {
-            console.log('Error running periodic printFinalResults', err);
-          }
-        }
-
-        // Check credentials and market status
-        if (!state.lastCredentialCheck || Math.abs(moment(state.lastCredentialCheck).diff(currentTime, 'minutes')) > 10) {
-          this.autopilotService.isMarketOpened().pipe(
-            catchError(err => {
-              console.log('Error getting market status', err);
-              this.messageService.add({ severity: 'error', summary: 'Error getting market status', life: 3600000 });
-              this.signalsStateService.update({ type: 'ERROR', payload: 'Error getting market status' });
-              return of('Error getting market status');
-            })
-          ).subscribe(marketStatus => {
-            if (marketStatus) {
-              this.signalsStateService.update({ type: 'MARKET_STATUS', payload: marketStatus });
-            }
-          });
-
-          try {
-            const holdings = await this.autopilotService.setCurrentHoldings();
-            this.signalsStateService.update({ type: 'HOLDINGS', payload: holdings });
-            await this.portfolioService.getTdBalance().toPromise();
-          } catch (err) {
-            console.log('Error positions', err);
-            this.messageService.add({ severity: 'error', summary: 'Error getting positions' });
-            this.signalsStateService.update({ type: 'ERROR', payload: 'Error getting positions' });
-
-            setTimeout(async () => {
-              try {
-                const retryHoldings = await this.autopilotService.setCurrentHoldings();
-                this.signalsStateService.update({ type: 'HOLDINGS', payload: retryHoldings });
-              } catch (retryErr) {
-                this.messageService.add({ severity: 'error', summary: 'Please sign in again', life: 900000 });
-                this.signalsStateService.update({ type: 'ERROR', payload: 'Authentication failed' });
-              }
-            }, 25000);
-          }
-
-          this.signalsStateService.update({ type: 'CREDENTIALS', payload: null });
-          await this.backtestOneStock(true, false);
-        } else if (currentTime.isAfter(moment(this.autopilotService.sessionEnd).subtract(25, 'minutes')) &&
-          currentTime.isBefore(moment(this.autopilotService.sessionEnd).subtract(20, 'minutes'))) {
-          console.log('Buy on close');
-          if (!state.boughtAtClose) {
-            await this.buySellAtCloseOrOpen();
-          }
-          this.signalsStateService.update({ type: 'CLOSE_TRADE', payload: true });
-
-        } else if (currentTime.isAfter(moment(this.autopilotService.sessionEnd)) &&
-          currentTime.isBefore(moment(this.autopilotService.sessionEnd).add(15, 'minute'))) {
-          if (this.reportingService.logs.length > 15) {
-            await this.printFinalResults();
-          }
-          this.isOpenMarket = false;
-        } else if (this.autopilotService.isIntradayTrading()) {
-          this.isOpenMarket = true;
-          if (moment().diff(state.lastProfitCheck, 'minutes') > 7) {
-            this.signalsStateService.update({ type: 'PROFIT', payload: null });
-            const metTarget = await this.priceTargetService.checkProfitTarget(state.currentHoldings);
-            if (metTarget) {
-              this.addCurrentHoldingsToAuditLog();
-              this.decreaseRiskTolerance();
-            }
-          } else {
-            this.signalsStateService.update({ type: 'INTRADAY_CHECK', payload: true });
-          }
-
-        } else if (!state.developedStrategy &&
-          currentTime.isAfter(moment(this.autopilotService.sessionStart).subtract(this.interval * 2, 'minutes')) &&
-          currentTime.isBefore(moment(this.autopilotService.sessionStart))) {
-          await this.setupStrategy();
-          this.signalsStateService.update({ type: 'STRATEGY', payload: true });
-          this.isOpenMarket = false;
-        } else {
-          if (Math.abs(moment(state.lastCredentialCheck).diff(currentTime, 'minutes')) > 50) {
-            this.aiPicksService.mlNeutralResults.next(null);
-          }
-          await this.backtestOneStock(false, false);
-          this.isOpenMarket = false;
-        }
-      });
+    this.timer = this.orchestrationService.start(context, this.interval, this.destroy$);
   }
 
   async printFinalResults() {
@@ -520,6 +434,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
 
   stop() {
     this.display = false;
+    this.orchestrationService.stop();
     if (this.timer) {
       this.timer.unsubscribe();
     }
