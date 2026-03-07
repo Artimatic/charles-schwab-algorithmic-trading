@@ -79,11 +79,24 @@ export class OptionsOrderBuilderService {
   private isIdealOption(price: number,
     maxCashAllocation: number,
     option: Options) {
+    // reject if bid/ask spread is more than 15% of bid price
+    const bid = option.bid;
+    const ask = option.ask;
+    if (bid != null && ask != null && bid > 0) {
+      const spreadPct = (ask - bid) / bid;
+      if (spreadPct > 0.15) {
+        console.log(null,
+          `Bid/ask spread too wide (${(spreadPct * 100).toFixed(1)}%) for ${option.underlyingSymbol} ${option.description}`);
+        return false;
+      }
+    }
+    // check that the option price is within half of available cash
     if (price > (maxCashAllocation / 2)) {
       console.log(null,
         `Unable to find suitable option. Stock: ${option.underlyingSymbol} Option: ${option.description} Price: ${price} Cash available to trade: ${maxCashAllocation}`);
       return false;
     }
+
     return true;
   }
 
