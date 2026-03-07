@@ -6,6 +6,7 @@ import { OrderingService } from '@shared/ordering.service';
 import { AutopilotService, SwingtradeAlgorithms } from './autopilot.service';
 import { NewStockFinderService } from '../backtest-table/new-stock-finder.service';
 import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';
+import { environment } from '../../environments/environment';
 
 /** Context provided by the component for menu actions that affect component state or UI. */
 export interface IAutopilotMenuContext {
@@ -63,7 +64,23 @@ export class AutopilotMenuService {
   }
 
   getMultibuttonOptions(context: IAutopilotMenuContext): MenuItem[] {
-    return [
+    const items: MenuItem[] = [
+      {
+        label: 'Sell All',
+        command: async () => {
+          await context.sellAll();
+        }
+      },
+      {
+        label: 'Set credentials',
+        command: async () => {
+          this.autopilotService.checkCredentials();
+        }
+      }
+    ];
+
+    if (!environment.production) {
+      items.push(
       {
         label: 'Test create strategy',
         command: async () => {
@@ -86,18 +103,6 @@ export class AutopilotMenuService {
           this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.bband, 'buy');
           this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.macd, 'buy');
           this.autopilotService.buyWinnersSellLosers();
-        }
-      },
-      {
-        label: 'Sell All',
-        command: async () => {
-          await context.sellAll();
-        }
-      },
-      {
-        label: 'Set credentials',
-        command: async () => {
-          this.autopilotService.checkCredentials();
         }
       },
       {
@@ -194,6 +199,9 @@ export class AutopilotMenuService {
           }
         }
       }
-    ];
+      );
+    }
+
+    return items;
   }
 }

@@ -6,7 +6,7 @@ import { Options } from '@shared/models/options';
 import { SignalsStateService } from '../strategies/signals-state.service';
 import { OrderTypes } from '@shared/models/smart-order';
 import { Trade } from '@shared/models/trade';
-import { CartService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService, ScoreKeeperService, TradeService } from '@shared/services';
+import { CartService, MachineLearningService, PortfolioInfoHolding, PortfolioService, TradeService } from '@shared/services';
 import { AiPicksPredictionData, AiPicksService } from '@shared/services/ai-picks.service';
 import { divide, round } from 'lodash';
 import { MenuItem, MessageService } from 'primeng/api';
@@ -25,9 +25,8 @@ import { FindPatternService } from '../strategies/find-pattern.service';
 import { AddOptionsTradeComponent } from './add-options-trade/add-options-trade.component';
 import { FindDaytradeService } from './find-daytrade.service';
 import { PriceTargetService } from './price-target.service';
-import { AutopilotService, ProfitLossRecord } from './autopilot.service';
+import { AutopilotService } from './autopilot.service';
 import { StrategyFinderDialogComponent } from './strategy-finder-dialog/strategy-finder-dialog.component';
-import { BacktestAggregatorService } from '../backtest-table/backtest-aggregator.service';
 import { OrderingService } from '@shared/ordering.service';
 import { NewStockFinderService } from '../backtest-table/new-stock-finder.service';
 import { OrderType } from '@shared/stock-backtest.interface';
@@ -36,6 +35,7 @@ import { StrategyManagementService } from './strategy-management.service';
 import { RiskManagementService } from './risk-management.service';
 import { AutopilotOrchestrationService, IAutopilotOrchestrationContext } from './autopilot-orchestration.service';
 import { AutopilotMenuService, IAutopilotMenuContext } from './autopilot-menu.service';
+import { AutopilotSessionReportingService, ISessionReportingContext } from './autopilot-session-reporting.service';
 
 export interface PositionHoldings {
   name: string;
@@ -101,8 +101,6 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private cartService: CartService,
     private dailyBacktestService: DailyBacktestService,
     private messageService: MessageService,
-    private scoreKeeperService: ScoreKeeperService,
-    private reportingService: ReportingService,
     private machineLearningService: MachineLearningService,
     private globalSettingsService: GlobalSettingsService,
     public dialogService: DialogService,
@@ -111,12 +109,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     private optionsOrderBuilderService: OptionsOrderBuilderService,
     public priceTargetService: PriceTargetService,
     public autopilotService: AutopilotService,
-    private backtestAggregatorService: BacktestAggregatorService,
     private signalsStateService: SignalsStateService,
     private strategyManagementService: StrategyManagementService,
     private riskManagementService: RiskManagementService,
     private orchestrationService: AutopilotOrchestrationService,
-    private menuService: AutopilotMenuService
+    private menuService: AutopilotMenuService,
+    private sessionReportingService: AutopilotSessionReportingService
   ) { }
 
   ngOnInit(): void {
@@ -225,48 +223,12 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     this.timer = this.orchestrationService.start(context, this.interval, this.destroy$);
   }
 
-  async printFinalResults() {
-    this.strategyManagementService.addCurrentHoldingsToAuditLog();
-    const profitLog = `Profit ${this.scoreKeeperService.total}`;
-    this.reportingService.addAuditLog(null, profitLog);
-    this.reportingService.exportAuditHistory();
-    await this.setProfitLoss();
-    this.scoreKeeperService.resetTotal();
-    this.strategyManagementService.resetCart();
-    localStorage.setItem('lastPrintFinalResults', this.lastPrintFinalResults.format());
-    setTimeout(async () => {
-      await this.autopilotService.handleStrategy();
-    }, 10800000);
-  }
-
-  calculatePl(records: { [key: string]: number }): number {
-    return Object.values(records)
-      .filter(value => value)
-      .reduce((sum, value) => sum + Number(value.toFixed(2)), 0);
-  }
-
-  async setProfitLoss() {
-    await this.modifyRisk();
-
-    const tempProfitRecord = this.scoreKeeperService.profitLossHash;
-    let profit = 0;
-    if (tempProfitRecord) {
-      profit = this.calculatePl(tempProfitRecord);
-    }
-    const profitObj: ProfitLossRecord = {
-      'date': moment().format(),
-      profit: profit,
-      lastStrategy: this.autopilotService.strategyList[this.autopilotService.strategyCounter],
-      lastRiskTolerance: this.autopilotService.riskCounter,
-      profitRecord: tempProfitRecord
+  async printFinalResults(): Promise<void> {
+    const context: ISessionReportingContext = {
+      getLastPrintFinalResults: () => this.lastPrintFinalResults,
+      setLastPrintFinalResults: (v) => { this.lastPrintFinalResults = v; }
     };
-    localStorage.setItem('profitLoss', JSON.stringify(profitObj));
-    const accountId = sessionStorage.getItem('accountId');
-    this.portfolioService.updatePortfolioProfitLoss(accountId || null, profitObj.date,
-      profitObj.lastRiskTolerance,
-      profitObj.lastStrategy,
-      profitObj.profit).subscribe();
-
+    await this.sessionReportingService.printFinalResults(context);
   }
 
   stop() {
@@ -282,20 +244,13 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     });
   }
 
-  async setupStrategy() {
+  async setupStrategy(): Promise<void> {
     await this.strategyManagementService.setupStrategy();
-
-    this.backtestAggregatorService.clearTimeLine();
     this.developedStrategy = true;
-
     this.boughtAtClose = false;
     this.machineLearningService.getFoundPatterns()
       .pipe(takeUntil(this.destroy$))
       .subscribe(patternsResponse => console.log('found patterns ', patternsResponse));
-
-    this.autopilotService.setCurrentHoldings();
-
-    await this.strategyManagementService.modifyCurrentHoldings();
   }
 
   isBuyPrediction(prediction: { label: string, value: AiPicksPredictionData[] }) {

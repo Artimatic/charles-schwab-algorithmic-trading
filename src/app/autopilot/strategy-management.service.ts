@@ -9,6 +9,8 @@ import { OptionsOrderBuilderService } from '../strategies/options-order-builder.
 import { PriceTargetService } from './price-target.service';
 import { AutopilotService } from './autopilot.service';
 import { ReportingService } from '@shared/services';
+import { BacktestAggregatorService } from '../backtest-table/backtest-aggregator.service';
+import { SignalsStateService } from '../strategies/signals-state.service';
 import * as moment from 'moment-timezone';
 
 /**
@@ -29,13 +31,14 @@ export class StrategyManagementService {
     private strategyBuilderService: StrategyBuilderService,
     private machineDaytradingService: MachineDaytradingService,
     private findPatternService: FindPatternService,
-    private portfolioService: PortfolioService,
     private cartService: CartService,
     private pricingService: PricingService,
     private optionsOrderBuilderService: OptionsOrderBuilderService,
     private priceTargetService: PriceTargetService,
     private autopilotService: AutopilotService,
-    private reportingService: ReportingService
+    private reportingService: ReportingService,
+    private backtestAggregatorService: BacktestAggregatorService,
+    private signalsStateService: SignalsStateService
   ) {}
 
   /**
@@ -60,6 +63,12 @@ export class StrategyManagementService {
       this.autopilotService.setVolatilityMl(0.5);
       throw error;
     }
+
+    this.backtestAggregatorService.clearTimeLine();
+    this.signalsStateService.update({ type: 'STRATEGY', payload: true });
+    this.signalsStateService.update({ type: 'CLOSE_TRADE', payload: false });
+    this.autopilotService.setCurrentHoldings();
+    await this.modifyCurrentHoldings();
   }
 
   /**
