@@ -25,7 +25,7 @@ import { FindPatternService } from '../strategies/find-pattern.service';
 import { AddOptionsTradeComponent } from './add-options-trade/add-options-trade.component';
 import { FindDaytradeService } from './find-daytrade.service';
 import { PriceTargetService } from './price-target.service';
-import { AutopilotService, ProfitLossRecord, SwingtradeAlgorithms } from './autopilot.service';
+import { AutopilotService, ProfitLossRecord } from './autopilot.service';
 import { StrategyFinderDialogComponent } from './strategy-finder-dialog/strategy-finder-dialog.component';
 import { BacktestAggregatorService } from '../backtest-table/backtest-aggregator.service';
 import { OrderingService } from '@shared/ordering.service';
@@ -35,6 +35,7 @@ import { RiskTolerance } from './risk-tolerance.enum';
 import { StrategyManagementService } from './strategy-management.service';
 import { RiskManagementService } from './risk-management.service';
 import { AutopilotOrchestrationService, IAutopilotOrchestrationContext } from './autopilot-orchestration.service';
+import { AutopilotMenuService, IAutopilotMenuContext } from './autopilot-menu.service';
 
 export interface PositionHoldings {
   name: string;
@@ -111,12 +112,11 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     public priceTargetService: PriceTargetService,
     public autopilotService: AutopilotService,
     private backtestAggregatorService: BacktestAggregatorService,
-    private orderingService: OrderingService,
-    private newStockFinderService: NewStockFinderService,
     private signalsStateService: SignalsStateService,
     private strategyManagementService: StrategyManagementService,
     private riskManagementService: RiskManagementService,
-    private orchestrationService: AutopilotOrchestrationService
+    private orchestrationService: AutopilotOrchestrationService,
+    private menuService: AutopilotMenuService
   ) { }
 
   ngOnInit(): void {
@@ -157,191 +157,14 @@ export class AutopilotComponent implements OnInit, OnDestroy {
           await this.autopilotService.handleIntraday();
         }
       });
-    this.startButtonOptions = [
-      {
-        label: 'Start orders without auto manage',
-        command: async () => {
-          this.manualStart = true;
-          this.destroy$ = new Subject<void>();
-          if (this.backtestBuffer$) {
-            this.backtestBuffer$.unsubscribe();
-          }
-          this.backtestBuffer$ = new Subject();
-
-          this.display = true;
-          await this.startInterval();
-          this.interval = this.defaultInterval;
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Trading started'
-          });
-          this.newStockFinderService.addOldList();
-        }
-      }
-    ];
-
-    this.otherOptions = [
-      {
-        label: 'Update stock list',
-        command: () => this.updateStockList()
-      },
-      {
-        label: 'Change strategy',
-        command: () => this.autopilotService.changeStrategy(true)
-      },
-    ];
-
-    this.multibuttonOptions = [
-      {
-        label: 'Test create strategy',
-        command: async () => {
-          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakSupport, 'buy', false);
-          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakResistance, 'buy', false);
-          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakSupport, 'sell', false);
-          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.breakResistance, 'sell', false);
-          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'sell');
-          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
-          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiTrade, 'buy');
-          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
-          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'sell');
-          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
-          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
-          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'sell');
-          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.demark9, 'buy');
-          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfi, 'sell');
-          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.bband, 'sell');
-          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.mfi, 'buy');
-          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.bband, 'buy');
-          this.autopilotService.addPairOnSignal(SwingtradeAlgorithms.macd, 'buy');
-          this.autopilotService.buyWinnersSellLosers();
-        }
-      },
-      {
-        label: 'Sell All',
-        command: async () => {
-          await this.sellAll();
-        }
-      },
-
-      {
-        label: 'Set credentials',
-        command: async () => {
-          this.autopilotService.checkCredentials();
-        }
-      },
-      {
-        label: 'Print cart',
-        command: async () => {
-          console.log('Buy', this.cartService.buyOrders);
-          console.log('Sell', this.cartService.sellOrders);
-          console.log('Other', this.cartService.otherOrders);
-        }
-      },
-      {
-        label: 'Test handle strategy',
-        command: async () => {
-          await this.autopilotService.handleStrategy();
-        }
-      },
-      {
-        label: 'Test add options strategies',
-        command: async () => {
-          await this.optionsOrderBuilderService.addOptionsStrategiesToCart();
-        }
-      },
-      {
-        label: 'Test upload profit loss',
-        command: async () => {
-          const lastProfitLoss = JSON.parse(localStorage.getItem('profitLoss'));
-          console.log(localStorage.getItem('profitLoss'));
-          const accountId = sessionStorage.getItem('accountId');
-          this.portfolioService.updatePortfolioProfitLoss(accountId || null, lastProfitLoss.date,
-            lastProfitLoss.lastRiskTolerance,
-            lastProfitLoss.lastStrategy,
-            lastProfitLoss.profit).subscribe();
-        }
-      },
-      {
-        label: 'Test ml',
-        command: async () => {
-          const buyFeatures = Array(66).fill(1);
-
-          const featuresToTry = [buyFeatures];
-          // for (let i = 0; i < buyFeatures.length; i++) {
-          //   featuresToTry.push(buyFeatures.slice(0, i).concat([0]).concat(buyFeatures.slice(i + 1)));
-          // }
-          console.log('buyFeatures', buyFeatures);
-          console.log('featuresToTry', featuresToTry);
-          const endDate = moment().format('YYYY-MM-DD');
-          const list = ['AMD', 'GOOGL', 'CRWD', 'DELL', 'META', 'NVDA'];
-          const allScores = [];
-          const parameters = [
-            // { days: 700, range: 4, limit: 0.08, trainingSize: 0.9 },
-            // { days: 700, range: 4, limit: 0.045, trainingSize: 0.9 },
-            // { days: 700, range: 4, limit: 0.06, trainingSize: 0.9 },
-            // { days: 700, range: 4, limit: 0.055, trainingSize: 0.9 },
-            { days: 700, range: 4, limit: 0.04, trainingSize: 0.9 },
-            // { days: 700, range: 4, limit: 0.03, trainingSize: 0.9 },
-            // { days: 700, range: 4, limit: 0.035, trainingSize: 0.9 }
-          ];
-          for (const p of parameters) {
-            for (const f of featuresToTry) {
-              for (const sym1 of list) {
-                const train = await this.machineLearningService.trainBuy(sym1, endDate,
-                  moment().subtract({ day: p.days }).format('YYYY-MM-DD'), p.trainingSize, f, p.range, p.limit).toPromise();
-                allScores.push({ days: p.days, score: train[0].score, features: f.join(), symbol: sym1, range: p.range, limit: p.limit });
-                console.log(sym1, 'Train', f, train[0].score, train[0].predictionHistory.filter(r => r.prediction > 0.5).map((val) => {
-                  return { date: val.date, prediction: val.prediction, actual: val.actual[0] };
-                }));
-
-                const activate = await this.machineLearningService.activateBuy(sym1, endDate,
-                  moment().subtract({ day: p.days }).format('YYYY-MM-DD'), p.trainingSize, f, p.range, p.limit).toPromise();
-                allScores.push({ days: p.days, score: activate[0].score, features: f.join(), symbol: sym1, range: p.range, limit: p.limit });
-                console.log(sym1, 'Activate', f, activate[0].score, activate[0].predictionHistory.filter(r => r.prediction > 0.5).map((val) => {
-                  return { date: val.date, prediction: val.prediction, actual: val.actual[0] };
-                }));
-
-                // const result2 = await this.machineLearningService.trainSellOff(sym1, endDate,
-                //   moment().subtract({ day: 1000 }).format('YYYY-MM-DD'), 0.8, null, 10, -0.03).toPromise();
-                // console.log(sym1, 'SELL', result2[0].score, result2[0].predictionHistory.filter(r => r.prediction > 0.6));
-                // const result1 = await this.machineLearningService.trainMfiBuy(sym1, endDate,
-                //   moment().subtract({ day: 600 }).format('YYYY-MM-DD'), 0.8, 10, 0.05).toPromise();
-                // console.log(sym1, 'MFI', result1[0].score, result1[0].predictionHistory.filter(r => r.prediction > 0.6));
-              }
-            }
-          }
-          console.log(allScores.sort((a, b) => b.score - a.score).filter((a) => a.score > 0.5));
-          //console.log(allScores.filter((a) => a.score > 0.4));
-        }
-      },
-      {
-        label: 'Test api',
-        command: async () => {
-          const currentHoldings = await this.cartService.findCurrentPositions();
-          for (const holding of currentHoldings) {
-            if (holding.shares) {
-              const price = await this.portfolioService.getPrice(holding.name).toPromise();
-              const orderSizePct = 0.5;
-              const order = this.cartService.buildOrderWithAllocation(holding.name,
-                holding.shares,
-                price,
-                'Sell',
-                orderSizePct, -0.005, 0.01, -0.003, null, true);
-              const result = await this.orderingService.getRecommendationAndProcess(order).toPromise();
-              console.log('sell result', result);
-            }
-          }
-          const buys = this.autopilotService.getBuyList()
-          for (const buy of buys) {
-            const price = await this.portfolioService.getPrice(buy).toPromise();
-            const order = this.cartService.buildOrderWithAllocation(buy, 1, price, 'Buy',
-              0.5, -0.005, 0.01, -0.003, null, true);
-            const result = await this.orderingService.getRecommendationAndProcess(order).toPromise();
-            console.log('buy result', result);
-          }
-        }
-      },
-    ];
+    const menuContext: IAutopilotMenuContext = {
+      startManualTrading: () => this.startManualTrading(),
+      updateStockList: () => this.updateStockList(),
+      sellAll: () => this.sellAll()
+    };
+    this.startButtonOptions = this.menuService.getStartButtonOptions(menuContext);
+    this.otherOptions = this.menuService.getOtherOptions(menuContext);
+    this.multibuttonOptions = this.menuService.getMultibuttonOptions(menuContext);
   }
 
   open() {
@@ -360,6 +183,20 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       severity: 'success',
       summary: 'Trading started'
     });
+  }
+
+  /** Used by menu "Start orders without auto manage". Message and addOldList are handled by AutopilotMenuService. */
+  async startManualTrading(): Promise<void> {
+    this.manualStart = true;
+    this.destroy$ = new Subject<void>();
+    if (this.backtestBuffer$) {
+      this.backtestBuffer$.unsubscribe();
+    }
+    this.backtestBuffer$ = new Subject();
+
+    this.display = true;
+    await this.startInterval();
+    this.interval = this.defaultInterval;
   }
 
   async startInterval() {

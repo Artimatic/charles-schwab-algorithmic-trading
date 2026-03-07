@@ -16,6 +16,11 @@ import { OptionsOrderBuilderService } from '../strategies/options-order-builder.
 import { PortfolioMgmtService } from '../portfolio-mgmt/portfolio-mgmt.service';
 import { PriceTargetService } from './price-target.service';
 import { AutopilotService } from './autopilot.service';
+import { AutopilotMenuService } from './autopilot-menu.service';
+import { AutopilotOrchestrationService } from './autopilot-orchestration.service';
+import { RiskManagementService } from './risk-management.service';
+import { StrategyManagementService } from './strategy-management.service';
+import { SignalsStateService } from '../strategies/signals-state.service';
 import { of, Subject } from 'rxjs';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
 import { AiPicksService } from '@shared/services/ai-picks.service';
@@ -49,6 +54,10 @@ xdescribe('AutopilotComponent', () => {
   let mockAiPicksService: jasmine.SpyObj<AiPicksService>;
   let mockOrderingService: jasmine.SpyObj<OrderingService>;
   let mockNewStockFinderService: jasmine.SpyObj<NewStockFinderService>;
+  let mockOrchestrationService: jasmine.SpyObj<AutopilotOrchestrationService>;
+  let mockRiskManagementService: jasmine.SpyObj<RiskManagementService>;
+  let mockStrategyManagementService: jasmine.SpyObj<StrategyManagementService>;
+  let mockSignalsStateService: jasmine.SpyObj<SignalsStateService>;
 
   const mockHolding: PortfolioInfoHolding = {
     name: 'TEST',
@@ -88,6 +97,20 @@ xdescribe('AutopilotComponent', () => {
     mockAiPicksService = jasmine.createSpyObj('AiPicksService', ['mlNeutralResults']);
     mockOrderingService = jasmine.createSpyObj('OrderingService', ['getRecommendationAndProcess']);
     mockNewStockFinderService = jasmine.createSpyObj('NewStockFinderService', ['addOldList', 'processOneStock']);
+    mockOrchestrationService = jasmine.createSpyObj('AutopilotOrchestrationService', ['start', 'stop']);
+    mockOrchestrationService.start.and.returnValue({ unsubscribe: () => {} } as any);
+    mockRiskManagementService = jasmine.createSpyObj('RiskManagementService', ['decreaseRiskTolerance', 'increaseRiskTolerance', 'getDayTradeRiskTolerance', 'getDayTradeRiskCounter', 'modifyRisk']);
+    mockStrategyManagementService = jasmine.createSpyObj('StrategyManagementService', ['setupStrategy', 'backtestOneStock', 'addCurrentHoldingsToAuditLog', 'resetCart', 'modifyCurrentHoldings', 'buySellAtCloseOrOpen', 'sellAll', 'isBuyPrediction', 'runFindPattern', 'removeStrategy']);
+    mockStrategyManagementService.setupStrategy.and.returnValue(Promise.resolve());
+    mockStrategyManagementService.backtestOneStock.and.returnValue(Promise.resolve());
+    mockStrategyManagementService.modifyCurrentHoldings.and.returnValue(Promise.resolve());
+    mockStrategyManagementService.buySellAtCloseOrOpen.and.returnValue(Promise.resolve());
+    mockStrategyManagementService.sellAll.and.returnValue(Promise.resolve());
+    mockSignalsStateService = jasmine.createSpyObj('SignalsStateService', ['select', 'getState', 'update', 'reset']);
+    mockSignalsStateService.select.and.returnValue(of(null));
+    mockSignalsStateService.getState.and.returnValue({ lastCredentialCheck: null, boughtAtClose: false, developedStrategy: true, lastProfitCheck: new Date(), currentHoldings: [] });
+    mockSignalsStateService.update.and.returnValue(undefined);
+    mockSignalsStateService.reset.and.returnValue(undefined);
 
     mockPortfolioService.getUserPreferences.and.returnValue(of({}));
     mockCartService.findCurrentPositions.and.returnValue([]);
@@ -142,6 +165,11 @@ xdescribe('AutopilotComponent', () => {
         { provide: AiPicksService, useValue: mockAiPicksService },
         { provide: OrderingService, useValue: mockOrderingService },
         { provide: NewStockFinderService, useValue: mockNewStockFinderService },
+        AutopilotMenuService,
+        { provide: AutopilotOrchestrationService, useValue: mockOrchestrationService },
+        { provide: RiskManagementService, useValue: mockRiskManagementService },
+        { provide: StrategyManagementService, useValue: mockStrategyManagementService },
+        { provide: SignalsStateService, useValue: mockSignalsStateService },
         TradeService
       ]
     })
@@ -162,7 +190,7 @@ xdescribe('AutopilotComponent', () => {
     expect(mockAutopilotService.checkCredentials).toHaveBeenCalled();
     expect(mockAutopilotService.setPreferencesFromDB).toHaveBeenCalled();
     expect(component.startButtonOptions.length).toBe(1);
-    expect(component.multibuttonOptions.length).toBe(7);
+    expect(component.multibuttonOptions.length).toBe(9);
   });
 
   it('should open and start interval', fakeAsync(() => {
