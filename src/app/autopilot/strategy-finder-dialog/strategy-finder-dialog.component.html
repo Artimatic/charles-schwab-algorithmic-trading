@@ -80,24 +80,27 @@
 
 <!-- new table for value 3; keeps value 2 unchanged -->
 <div *ngIf="value === 3">
-    <div *ngIf="buys?.length || sells?.length" style="max-height:400px; overflow:auto; padding:0.5rem 0;">
+    <div *ngIf="signalResults?.length" style="max-height:400px; overflow:auto; padding:0.5rem 0;">
         <h3>Signal-generated Pairs</h3>
-        <p *ngIf="!buys?.length && !sells?.length">No pairs generated yet.</p>
-        <p *ngIf="selectedSignal">Signal used: <strong>{{ selectedSignal }}</strong></p>
+        <p *ngIf="!signalResults?.length">No signal results generated yet.</p>
         <table class="p-datatable p-component" style="width:100%; border-collapse:collapse;">
             <thead>
                 <tr>
+                    <th style="text-align:left; padding:0.5rem; border-bottom:1px solid #e6e6e6">Signal</th>
                     <th style="text-align:left; padding:0.5rem; border-bottom:1px solid #e6e6e6">Buys</th>
                     <th style="text-align:left; padding:0.5rem; border-bottom:1px solid #e6e6e6">Sells</th>
                 </tr>
             </thead>
             <tbody>
-                <tr>
+                <tr *ngFor="let sr of signalResults">
                     <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">
-                        {{ buys.join(', ') || '-' }}
+                        <strong>{{ sr.signal }}</strong>
                     </td>
                     <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">
-                        {{ sells.join(', ') || '-' }}
+                        {{ sr.buys?.length ? (sr.buys.join(', ')) : '-' }}
+                    </td>
+                    <td style="padding:0.5rem; border-bottom:1px solid #f5f5f5">
+                        {{ sr.sells?.length ? (sr.sells.join(', ')) : '-' }}
                     </td>
                 </tr>
             </tbody>
