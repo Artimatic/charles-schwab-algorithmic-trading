@@ -218,16 +218,15 @@ class PortfolioService {
       this.access_token[accountId] = { token: '123', timestamp: moment().valueOf() };
     }
     return this.sendPositionRequest(accountId).then(pos => {
-      console.log('Added new token');
       return Promise.resolve({ message: 'Added new token' });
     })
       .catch(error => {
-        console.log('Potential token error: ', error);
+        console.log('Potential token error: ', error, accountId);
         const diffMinutes = moment().diff(moment(this.access_token[accountId].timestamp), 'minutes');
 
         if (!diffMinutes || diffMinutes >= 30) {
           console.log('Last token request: ', moment(this.lastTokenRequest).format());
-          if (this.access_token[accountId] && (this.lastTokenRequest === null || moment().diff(moment(this.lastTokenRequest), 'minutes') > 15)) {
+          if (this.access_token[accountId] && (this.lastTokenRequest === null || moment().diff(moment(this.lastTokenRequest), 'minutes') > 9)) {
             this.lastTokenRequest = moment().valueOf();
             console.log('Requesting new token');
             return this.refreshAccessToken(accountId);
@@ -391,9 +390,10 @@ class PortfolioService {
     }
   }
 
-  getDailyQuoteInternal(symbol, startDate, endDate, response = null) {
-    let accountId;
+  getDailyQuoteInternal(symbol, startDate, endDate, response = null, accountId = null) {
+    // TODO: Use passed accountId when available
     const accountIds = Object.getOwnPropertyNames(this.refreshTokensHash);
+    console.log('Found account ids: ', accountIds);
     if (accountIds.length > 0) {
       accountId = accountIds[0];
     } else {

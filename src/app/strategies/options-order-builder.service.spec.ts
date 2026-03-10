@@ -93,6 +93,99 @@ describe('OptionsOrderBuilderService', () => {
     expect(cartServiceSpy.addSingleLegOptionOrder).not.toHaveBeenCalled();
   });
 
+  describe('shouldBuyCallOption', () => {
+    it('should return true when price difference is less than negative threshold', async () => {
+      const symbol = 'AAPL';
+      const lastPrice = 150;
+      const closePrice = 155;
+      const threshold = 0.01;
+
+      backtestServiceSpy.getLastPriceTiingo.and.returnValue(of({
+        [symbol]: {
+          quote: {
+            lastPrice,
+            closePrice
+          }
+        }
+      }));
+
+      priceTargetServiceSpy.getDiff.and.returnValue(-0.032); // More than -1 * threshold (-0.01)
+
+      const result = await service.shouldBuyCallOption(symbol, threshold);
+      expect(result).toBeTruthy();
+      expect(backtestServiceSpy.getLastPriceTiingo).toHaveBeenCalledWith({ symbol });
+      expect(priceTargetServiceSpy.getDiff).toHaveBeenCalledWith(closePrice, lastPrice);
+    });
+
+    it('should return false when price difference is more than negative threshold', async () => {
+      const symbol = 'AAPL';
+      const lastPrice = 150;
+      const closePrice = 151;
+      const threshold = 0.01;
+
+      backtestServiceSpy.getLastPriceTiingo.and.returnValue(of({
+        [symbol]: {
+          quote: {
+            lastPrice,
+            closePrice
+          }
+        }
+      }));
+
+      priceTargetServiceSpy.getDiff.and.returnValue(-0.005); // Less than -1 * threshold (-0.01)
+
+      const result = await service.shouldBuyCallOption(symbol, threshold);
+      expect(result).toBeFalsy();
+      expect(backtestServiceSpy.getLastPriceTiingo).toHaveBeenCalledWith({ symbol });
+      expect(priceTargetServiceSpy.getDiff).toHaveBeenCalledWith(closePrice, lastPrice);
+    });
+
+    it('should return false when price difference is positive', async () => {
+      const symbol = 'AAPL';
+      const lastPrice = 150;
+      const closePrice = 145;
+      const threshold = 0.01;
+
+      backtestServiceSpy.getLastPriceTiingo.and.returnValue(of({
+        [symbol]: {
+          quote: {
+            lastPrice,
+            closePrice
+          }
+        }
+      }));
+
+      priceTargetServiceSpy.getDiff.and.returnValue(0.02);
+
+      const result = await service.shouldBuyCallOption(symbol, threshold);
+      expect(result).toBeFalsy();
+      expect(backtestServiceSpy.getLastPriceTiingo).toHaveBeenCalledWith({ symbol });
+      expect(priceTargetServiceSpy.getDiff).toHaveBeenCalledWith(closePrice, lastPrice);
+    });
+
+    it('should use default threshold when not provided', async () => {
+      const symbol = 'AAPL';
+      const lastPrice = 150;
+      const closePrice = 155;
+
+      backtestServiceSpy.getLastPriceTiingo.and.returnValue(of({
+        [symbol]: {
+          quote: {
+            lastPrice,
+            closePrice
+          }
+        }
+      }));
+
+      priceTargetServiceSpy.getDiff.and.returnValue(-0.02); // More than default threshold (-0.01)
+
+      const result = await service.shouldBuyCallOption(symbol);
+      expect(result).toBeTruthy();
+      expect(backtestServiceSpy.getLastPriceTiingo).toHaveBeenCalledWith({ symbol });
+      expect(priceTargetServiceSpy.getDiff).toHaveBeenCalledWith(closePrice, lastPrice);
+    });
+  });
+
   it('should not create protective put if options price too low', async () => {
     const testHoldings = [
       {
@@ -279,7 +372,8 @@ describe('OptionsOrderBuilderService', () => {
       };
     });
 
-    await service.balanceTrades(['BAC'], ['MO'], 100, 5000, 'test');
+    const result = await service.balanceTrades(['BAC'], ['MO'], 100, 5000, 'test');
+    expect(result.orders).toBeTruthy();
     expect(cartServiceSpy.createOptionOrder).toHaveBeenCalledTimes(2);
 
     expect(service.getTradingPairs().length).toEqual(1);
@@ -497,7 +591,8 @@ describe('OptionsOrderBuilderService', () => {
       };
     });
 
-    await service.balanceTrades(['BAC'], ['MO'], 100, 5000, 'test');
+    const result = await service.balanceTrades(['BAC'], ['MO'], 100, 5000, 'test');
+    expect(result.orders).toBeTruthy();
     expect(service.getTradeHashValue(service.getTradingPairs()[0])).toBe('93acbe56');
     expect(service.getTradeHashValue(service.getTradingPairs()[0])).toBe('93acbe56');
     expect(service.getTradeHashValue([{
@@ -631,7 +726,8 @@ describe('OptionsOrderBuilderService', () => {
       }
     } as any]];
     service.tradingPairDate = { '1c5adddb': 123, 'db6ee64b': new Date().valueOf() - 402000000 };
-    await service.balanceTrades(['BAC'], ['MO'], 100, 5000, 'test');
+    const result = await service.balanceTrades(['BAC'], ['MO'], 100, 5000, 'test');
+    expect(result.orders).toBeTruthy();
     expect(service.getTradeHashValue(service.getTradingPairs()[0])).toBe('db6ee64b');
     expect(service.getTradingPairs().length).toBe(2);
     expect(service.getTradingPairs()[0]).toEqual([{
@@ -817,6 +913,108 @@ describe('OptionsOrderBuilderService', () => {
       expect(service.addTradingPair).not.toHaveBeenCalled();
       expect(cartServiceSpy.addToCart).not.toHaveBeenCalled();
       expect(service.tradingPairs.length).toBe(1);
+    });
+  });
+
+  describe('shouldBuyCallOption', () => {
+    const mockSymbol = 'AAPL';
+    const defaultThreshold = 0.01;
+
+    beforeEach(() => {
+      // Reset mock calls before each test
+      backtestServiceSpy.getLastPriceTiingo.calls.reset();
+      priceTargetServiceSpy.getDiff.calls.reset();
+      // Setup getBacktestData mock with default impliedMovement
+      strategyBuilderServiceSpy.getBacktestData.and.returnValue(Promise.resolve({ impliedMovement: 3 }));
+    });
+
+    it('should return true when price difference is less than negative threshold', async () => {
+      // Arrange
+      const mockPriceData = {
+        AAPL: {
+          quote: {
+            lastPrice: 150,
+            closePrice: 152
+          }
+        }
+      };
+      backtestServiceSpy.getLastPriceTiingo.and.returnValue(of(mockPriceData));
+      priceTargetServiceSpy.getDiff.and.returnValue(-0.02); // -2% difference
+
+      // Act
+      const result = await service.shouldBuyCallOption(mockSymbol);
+
+      // Assert
+      expect(result).toBe(true);
+      expect(backtestServiceSpy.getLastPriceTiingo).toHaveBeenCalledWith({ symbol: mockSymbol });
+      expect(priceTargetServiceSpy.getDiff).toHaveBeenCalledWith(152, 150);
+    });
+
+    it('should return false when price difference is greater than negative threshold', async () => {
+      // Arrange
+      const mockPriceData = {
+        AAPL: {
+          quote: {
+            lastPrice: 150,
+            closePrice: 150.5
+          }
+        }
+      };
+      backtestServiceSpy.getLastPriceTiingo.and.returnValue(of(mockPriceData));
+      priceTargetServiceSpy.getDiff.and.returnValue(-0.005); // -0.5% difference
+
+      // Act
+      const result = await service.shouldBuyCallOption(mockSymbol);
+
+      // Assert
+      expect(result).toBe(false);
+      expect(backtestServiceSpy.getLastPriceTiingo).toHaveBeenCalledWith({ symbol: mockSymbol });
+      expect(priceTargetServiceSpy.getDiff).toHaveBeenCalledWith(150.5, 150);
+    });
+
+    it('should use custom threshold when provided', async () => {
+      // Arrange
+      const customThreshold = 0.02; // 2%
+      const mockPriceData = {
+        AAPL: {
+          quote: {
+            lastPrice: 150,
+            closePrice: 152
+          }
+        }
+      };
+      backtestServiceSpy.getLastPriceTiingo.and.returnValue(of(mockPriceData));
+      priceTargetServiceSpy.getDiff.and.returnValue(-0.015); // -1.5% difference
+
+      // Act
+      const result = await service.shouldBuyCallOption(mockSymbol, customThreshold);
+
+      // Assert
+      expect(result).toBe(true); // Should be true because -1.5% is less than -2%
+      expect(backtestServiceSpy.getLastPriceTiingo).toHaveBeenCalledWith({ symbol: mockSymbol });
+      expect(priceTargetServiceSpy.getDiff).toHaveBeenCalledWith(152, 150);
+    });
+
+    it('should handle no price change', async () => {
+      // Arrange
+      const mockPriceData = {
+        AAPL: {
+          quote: {
+            lastPrice: 150,
+            closePrice: 150
+          }
+        }
+      };
+      backtestServiceSpy.getLastPriceTiingo.and.returnValue(of(mockPriceData));
+      priceTargetServiceSpy.getDiff.and.returnValue(0);
+
+      // Act
+      const result = await service.shouldBuyCallOption(mockSymbol);
+
+      // Assert
+      expect(result).toBe(false);
+      expect(backtestServiceSpy.getLastPriceTiingo).toHaveBeenCalledWith({ symbol: mockSymbol });
+      expect(priceTargetServiceSpy.getDiff).toHaveBeenCalledWith(150, 150);
     });
   });
 });

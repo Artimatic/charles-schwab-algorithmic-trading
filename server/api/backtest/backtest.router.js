@@ -1,41 +1,54 @@
-import BacktestController from './backtest.controller';
+const BacktestController = require('./backtest.controller').default;
 
-export const backtest = (request, response) => {
+const backtest = (request, response) => {
   BacktestController.backtest(request, response);
 };
 
-export const getMeanReversionChart = (request, response) => {
+const getMeanReversionChart = (request, response) => {
   BacktestController.getMeanReversionChart(request, response);
 };
 
-export const indicator = (request, response) => {
+const indicator = (request, response) => {
   BacktestController.getIndicator(request, response);
 };
 
-export const infoV2 = (request, response) => {
+const infoV2 = (request, response) => {
   BacktestController.getInfoV2(request, response);
 };
 
-export const infoV2Chart = (request, response) => {
+const infoV2Chart = (request, response) => {
   BacktestController.getInfoV2Chart(request, response);
 };
 
-export const timeline = (request, response) => {
+const timeline = (request, response) => {
   BacktestController.getHistoricalMatches(request, response);
 };
 
-export const sma = (request, response) => {
+const sma = (request, response) => {
   BacktestController.getSMA(request, response);
 };
 
-export const roc = (request, response) => {
+const roc = (request, response) => {
   BacktestController.getRateOfChange(request, response);
 };
 
-export const mfi = (request, response) => {
+const mfi = (request, response) => {
   BacktestController.getMfi(request, response);
 };
 
-export const vwma = (request, response) => {
+const vwma = (request, response) => {
   BacktestController.getVwma(request, response);
+};
+
+module.exports = {
+  backtest,
+  getMeanReversionChart,
+  indicator,
+  infoV2,
+  infoV2Chart,
+  timeline,
+  sma,
+  roc,
+  mfi,
+  vwma
 };

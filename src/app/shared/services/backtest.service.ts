@@ -144,14 +144,16 @@ export class BacktestService {
     return this.http.post(`${BASE_URL}api/backtest`, data, {});
   }
 
-  getBacktestData(symbol: string, startDate: string, endDate: string): Observable<any> {
+  getBacktestData(symbol: string, startDate: string, endDate: string, accountId?: string): Observable<any> {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    const id = accountId || this.authenticationService.selectedTdaAccount.accountId;
     const options = {
       headers: headers,
       params: {
         symbol,
         startDate,
-        endDate
+        endDate,
+        accountId: id
       }
     };
 

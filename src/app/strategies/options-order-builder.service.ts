@@ -17,6 +17,8 @@ export interface TradingPair {
   underlying: string;
 }
 
+// Using shared TradingStrategy interface from autopilot interfaces
+
 @Injectable({
   providedIn: 'root'
 })
@@ -52,7 +54,8 @@ export class OptionsOrderBuilderService {
     return crc.crc32(value).toString(16);
   }
 
-  private createOrderAddToList(currentPut: TradingPair, currentCall: TradingPair, reason: string, minCashAllocation: number, maxCashAllocation: number) {
+  // returns the orders that were created (for callers that want them)
+  private createOrderAddToList(currentPut: TradingPair, currentCall: TradingPair, reason: string, minCashAllocation: number, maxCashAllocation: number): SmartOrder[] | null {
     if (currentPut && currentCall &&
       currentCall.quantity && currentPut.quantity &&
       (currentCall.price * currentCall.quantity) + (currentPut.price * currentPut.quantity) <= maxCashAllocation) {
@@ -68,17 +71,32 @@ export class OptionsOrderBuilderService {
       this.reportingService.addAuditLog(null,
         `Added trading pair ${option1?.primaryLegs[0]?.symbol} ${option2?.primaryLegs[0]?.symbol}. Reason: ${reason}, Min cash: ${minCashAllocation}, Max cash: ${maxCashAllocation}`);
       this.addTradingPairs([option1, option2], reason);
+      return [option1, option2];
     }
+    return null;
   }
 
   private isIdealOption(price: number,
     maxCashAllocation: number,
     option: Options) {
+    // reject if bid/ask spread is more than 15% of bid price
+    const bid = option.bid;
+    const ask = option.ask;
+    if (bid != null && ask != null && bid > 0) {
+      const spreadPct = (ask - bid) / bid;
+      if (spreadPct > 0.15) {
+        console.log(null,
+          `Bid/ask spread too wide (${(spreadPct * 100).toFixed(1)}%) for ${option.underlyingSymbol} ${option.description}`);
+        return false;
+      }
+    }
+    // check that the option price is within half of available cash
     if (price > (maxCashAllocation / 2)) {
-      this.reportingService.addAuditLog(null,
-        `Unable to find suitable option. Stock: ${option.underlyingSymbol} Option: ${option.description} Price: ${price} Cash available: ${maxCashAllocation}`);
+      console.log(null,
+        `Unable to find suitable option. Stock: ${option.underlyingSymbol} Option: ${option.description} Price: ${price} Cash available to trade: ${maxCashAllocation}`);
       return false;
     }
+
     return true;
   }
 
@@ -212,11 +230,29 @@ export class OptionsOrderBuilderService {
   }
 
   async createTradingPair(minCashAllocation: number, maxCashAllocation: number) {
-    this.strategyBuilderService.getTradingStrategies().forEach(async (strat) => {
-      const buys: string[] = strat.strategy.buy;
-      const sells: string[] = strat.strategy.sell;
-      await this.balanceTrades(buys, sells, minCashAllocation, maxCashAllocation, strat.reason ? strat.reason : 'Trading pair');
+    // Get all symbols that are currently in trading pairs
+    const existingSymbols = new Set<string>();
+    this.tradingPairs.forEach(pair => {
+      pair.forEach(order => {
+        if (order.holding && order.holding.symbol) {
+          existingSymbols.add(order.holding.symbol);
+        }
+      });
     });
+
+    const strategies = await this.strategyBuilderService.getTradingStrategies();
+    // Process strategies sequentially
+    for (const strat of strategies) {
+      // Filter out symbols that already exist in trading pairs
+      const buys: string[] = strat.strategy.buy.filter(symbol => !existingSymbols.has(symbol));
+      const sells: string[] = strat.strategy.sell.filter(symbol => !existingSymbols.has(symbol));
+
+      // Only proceed if we have symbols to trade
+      if (buys.length > 0 && sells.length > 0) {
+        const { orders } = await this.balanceTrades(buys, sells, minCashAllocation, maxCashAllocation, strat.reason ? strat.reason : 'Trading pair');
+        // orders may be used later if needed
+      }
+    }
   }
 
   clearCurrentTradeIdeas() {
@@ -227,27 +263,41 @@ export class OptionsOrderBuilderService {
     sellList: string[],
     minCashAllocation: number,
     maxCashAllocation: number,
-    reason: string) {
+    reason: string,
+    addToList: boolean = true): Promise<{ currentPut: TradingPair | null; currentCall: TradingPair | null; orders: SmartOrder[] | null }> {
     if (minCashAllocation === maxCashAllocation) {
       minCashAllocation = 0;
     }
+
+    let finalPut: TradingPair | null = null;
+    let finalCall: TradingPair | null = null;
+    let returnedOrders: SmartOrder[] | null = null;
+
     for (const buy of buyList) {
+      if (typeof buy !== 'string') {
+        console.error('Invalid buy symbol:', buy, buyList);
+        continue;
+      }
       const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(buy);
       if (bullishStrangle && bullishStrangle.call) {
         const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
-        let currentCall = {
+        let currentCall: TradingPair = {
           call: bullishStrangle.call,
           price: callPrice,
           quantity: 0,
           underlying: buy
         };
-        let currentPut = null;
+        let currentPut: TradingPair | null = null;
         if (!this.isIdealOption(callPrice, maxCashAllocation, bullishStrangle.call)) {
           currentCall = null;
           this.strategyBuilderService.addBullishStock(buy);
           break;
         }
         for (const sell of sellList) {
+          if (typeof sell !== 'string') {
+            console.error('Invalid sell symbol:', sell, sellList);
+            continue;
+          }
           const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
           if (bearishStrangle && bearishStrangle.put) {
             const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
@@ -296,9 +346,17 @@ export class OptionsOrderBuilderService {
             }
           }
         }
-        this.createOrderAddToList(currentPut, currentCall, reason, minCashAllocation, maxCashAllocation);
+        if (addToList) {
+          const orders = this.createOrderAddToList(currentPut, currentCall, reason, minCashAllocation, maxCashAllocation);
+          if (orders) {
+            returnedOrders = orders;
+          }
+        }
+        finalPut = currentPut;
+        finalCall = currentCall;
       }
     }
+    return { currentPut: finalPut, currentCall: finalCall, orders: returnedOrders };
   }
 
   getCallPutQuantities(callPrice,
@@ -336,64 +394,6 @@ export class OptionsOrderBuilderService {
     return { callQuantity, putQuantity };
   }
 
-  async hedgeCallTrade(stock: string, quantity: number, currentHoldings: PortfolioInfoHolding[]) {
-    const tradingPairs = JSON.parse(localStorage.getItem('tradingPairs'));
-    const foundPairs = tradingPairs.find(s => s.name === stock);
-    if (foundPairs) {
-      const existingHedges = currentHoldings.reduce((acc, holding) => {
-        if (foundPairs.find(pair => pair.symbol === holding.name) &&
-          holding.primaryLegs &&
-          holding.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
-          acc.push(holding);
-        }
-        return acc;
-      }, []);
-
-    }
-    const pairTrades = this.strategyBuilderService.getTradingStrategies().find(s => s.name === stock);
-    const foundCurrentHoldingHedge = currentHoldings.find(ch => pairTrades.strategy.sell.find(s => s === ch.name));
-    let hedgeUnderlyingStock;
-    if (foundCurrentHoldingHedge) {
-      hedgeUnderlyingStock = foundCurrentHoldingHedge.name;
-    } else {
-      let foundBearishStrangle = null;
-      let foundPrice = null;
-      hedgeUnderlyingStock = pairTrades.strategy.sell.find(async (stockSymbol: string) => {
-        const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(stockSymbol);
-        const price = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
-        if (price > 500) {
-          foundBearishStrangle = bearishStrangle;
-          foundPrice = price;
-          return true;
-        }
-        return false;
-      });
-    }
-    if (!hedgeUnderlyingStock) {
-      return false;
-    }
-    const bullishStrangle = await this.strategyBuilderService.getPutStrangleTrade(hedgeUnderlyingStock);
-    const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
-
-    //const { callQuantity, putQuantity } = this.getCallPutQuantities(callPrice, initialCallQuantity, putPrice, initialPutQuantity, multiple);
-    return true;
-  }
-
-  hedgePutTrade(stock: string, quantity: number, currentHoldings: PortfolioInfoHolding[]) {
-    const tradingPairs = JSON.parse(localStorage.getItem('tradingPairs'));
-    const foundPairs = tradingPairs.find(s => s.name === stock);
-    if (foundPairs) {
-      const existingHedges = currentHoldings.reduce((acc, holding) => {
-        if (foundPairs.find(pair => pair.symbol === holding.name) &&
-          holding.primaryLegs &&
-          holding.primaryLegs[0].putCallInd.toLowerCase() === 'p') {
-          acc.push(holding);
-        }
-        return acc;
-      }, []);
-
-    }
-  }
 
   isExpiring(holding: PortfolioInfoHolding) {
     return (holding.primaryLegs ? holding.primaryLegs : []).concat(holding.secondaryLegs ? holding.secondaryLegs : []).find((option: Options) => {
@@ -434,7 +434,29 @@ export class OptionsOrderBuilderService {
     const lastPrice = price[symbol].quote.lastPrice;
     const closePrice = price[symbol].quote.closePrice;
     const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
-    return Math.abs(currentDiff) < 0.01;
+    return Math.abs(currentDiff) < 0.008;
+  }
+
+  async shouldBuyCallOption(symbol: string, modifier = 1) {
+    const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
+    const threshold = ((backtestResults.impliedMovement ? backtestResults.impliedMovement : 3) / 5);
+    const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
+    const lastPrice = price[symbol].quote.lastPrice;
+    const closePrice = price[symbol].quote.closePrice;
+    const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
+    // Treat very small positive diffs as potential buys, but do not treat zero change as buy
+    // Only apply small diff exception for positive diffs (when price has increased slightly from close)
+    return (currentDiff < (-1 * threshold) * modifier) || (currentDiff > 0 && currentDiff < 0.006);
+  }
+
+  async shouldBuyPutOption(symbol: string, modifier = 1) {
+    const backtestResults = await this.strategyBuilderService.getBacktestData(symbol);
+    const threshold = ((backtestResults.impliedMovement ? backtestResults.impliedMovement : 5) / 3);
+    const price = await this.backtestService.getLastPriceTiingo({ symbol: symbol }).toPromise();
+    const lastPrice = price[symbol].quote.lastPrice;
+    const closePrice = price[symbol].quote.closePrice;
+    const currentDiff = this.priceTargetService.getDiff(closePrice, lastPrice);
+    return currentDiff > threshold * modifier || Math.abs(currentDiff) < 0.006;
   }
 
   async shouldSellOptions(holding: PortfolioInfoHolding, isStrangle: boolean, putCallInd: string) {
@@ -468,7 +490,7 @@ export class OptionsOrderBuilderService {
   async hedge(currentHoldings: PortfolioInfoHolding[], balance: Balance, min = 0.15) {
     currentHoldings.forEach(async (holding) => {
       if (holding.netLiq && (holding.netLiq / balance.liquidationValue) > min) {
-        const shouldBuy = await this.shouldBuyOption(holding.name);
+        const shouldBuy = await this.shouldBuyPutOption(holding.name);
         if (shouldBuy && holding.assetType !== 'collective_investment') {
           console.log('Adding protective put for', holding.name);
           await this.createProtectivePutOrder(holding, balance.cashBalance);
@@ -545,8 +567,8 @@ export class OptionsOrderBuilderService {
           !this.cartService.optionsOrderExists(trade[1].holding.symbol, trade[1].primaryLegs) &&
           !this.cartService.optionsOrderExists(trade[1].holding.symbol, trade[1].secondaryLegs)
         ) {
-          const shouldBuyCall = await this.shouldBuyOption(trade[0].holding.symbol);
-          const shouldBuyPut = await this.shouldBuyOption(trade[1].holding.symbol);
+          const shouldBuyCall = await this.shouldBuyCallOption(trade[0].holding.symbol);
+          const shouldBuyPut = await this.shouldBuyPutOption(trade[1].holding.symbol);
           console.log('Should buy ', trade, shouldBuyCall, shouldBuyPut);
           if (shouldBuyCall && shouldBuyPut) {
             const buyTrendCall = await this.priceTargetService.hasBuyTrend(trade[0].holding.symbol);

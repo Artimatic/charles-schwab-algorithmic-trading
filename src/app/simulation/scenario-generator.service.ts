@@ -33,8 +33,11 @@ export class ScenarioGeneratorService {
   }
 
   async testTradingPair() {
-    const options = await this.optionsOrderBuilderService.balanceTrades(['NVDA'], ['AMD'], 1000, 5000, 'Test trading pair');
-    this.optionsOrderBuilderService.addTradingPair(options, 'Test trading pair');
+    const { currentPut, currentCall, orders } = await this.optionsOrderBuilderService.balanceTrades(['NVDA'], ['AMD'], 1000, 5000, 'Test trading pair');
+    // orders may be null if nothing was added
+    if (orders) {
+      this.optionsOrderBuilderService.addTradingPair(orders, 'Test trading pair');
+    }
     this.sendSignal('NVDA', OrderType.Buy);
   }
 

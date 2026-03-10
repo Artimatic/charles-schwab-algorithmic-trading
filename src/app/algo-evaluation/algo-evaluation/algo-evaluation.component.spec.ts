@@ -173,10 +173,10 @@ xdescribe('AlgoEvaluationComponent', () => {
     spyOn(component, 'setColumnsForPortfolio');
     component.recommendations = [{ stock: 'XYZ' } as Stock]; // Add some mock data
 
-    component.setTable({ checked: false });
+    component.setTable({ value: 'recommendations' });
     tick(); // Wait for async operations if any (though none in this branch)
 
-    expect(component.showPortfolio).toBe(false);
+    expect(component.tableDisplay).toBe('recommendations');
     expect(component.setColumnsForRecommendations).toHaveBeenCalled();
     expect(component.setColumnsForPortfolio).not.toHaveBeenCalled();
     expect(component.currentList).toEqual(component.recommendations);
@@ -187,10 +187,10 @@ xdescribe('AlgoEvaluationComponent', () => {
     spyOn(component, 'setColumnsForPortfolio');
     cartServiceSpy.findCurrentPositions.and.returnValue(Promise.resolve([mockPortfolioHolding]));
 
-    component.setTable({ checked: true });
+    component.setTable({ value: 'portfolio' });
     tick(); // Wait for the promise from findCurrentPositions to resolve
 
-    expect(component.showPortfolio).toBe(true);
+    expect(component.tableDisplay).toBe('portfolio');
     expect(component.setColumnsForPortfolio).toHaveBeenCalled();
     expect(component.setColumnsForRecommendations).not.toHaveBeenCalled();
     expect(cartServiceSpy.findCurrentPositions).toHaveBeenCalled();

@@ -1,7 +1,6 @@
-import { ChangeDetectorRef, AfterContentChecked, Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 
 import { CartService } from '@shared/services/cart.service';
-import { Subject } from 'rxjs';
 
 @Component({
   selector: 'app-orders-list',

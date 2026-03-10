@@ -145,6 +145,7 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
       { field: 'profitableTrades', header: 'Profitable Trades' },
       { field: 'totalTrades', header: 'Trades' },
       { field: 'ml', header: 'AI Prediction' },
+      { field: 'sellMl', header: 'Sell ML' },
       { field: 'recommendation', header: 'Recommendation' },
       { field: 'kellyCriterion', header: 'Trade Size' },
 
@@ -207,6 +208,7 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
       { field: 'stock', header: 'Stock' },
       { field: 'buySignals', header: 'Buy' },
       { field: 'sellSignals', header: 'Sell' },
+      { field: 'sellMl', header: 'Sell ML' },
       { field: 'recommendation', header: 'Recommendation' },
       { field: 'ml', header: 'AI Prediction' },
       { field: 'returns', header: 'Returns' },
@@ -795,6 +797,21 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
     return _.round(winProbability - (1 - winProbability) / totalWinLossRatio, 2);
   }
 
+  formatSignificant(value: any, digits: number = 2): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    const num = Number(value);
+    if (!isNaN(num)) {
+      try {
+        return num.toPrecision(digits);
+      } catch (e) {
+        return num.toString();
+      }
+    }
+    return String(value);
+  }
+
   executeBacktests() {
     this.bufferSubject = new Subject();
 
@@ -890,13 +907,13 @@ export class RhTableComponent implements OnInit, OnChanges, OnDestroy {
       this.currentList = this.currentList.filter((stock: Stock) => {
         const searchTextLowerCase = this.searchText.toLowerCase()
         const foundBuy = stock.buySignals.find(algo => {
-          return algo.toLowerCase().includes(searchTextLowerCase);
+          return algo.toLowerCase() === searchTextLowerCase;
         });
         const foundSell = stock.sellSignals.find(algo => {
-          return algo.toLowerCase().includes(searchTextLowerCase);
+          return algo.toLowerCase() === searchTextLowerCase;
         });
 
-        return foundBuy || foundSell || stock.stock.toLowerCase().includes(searchTextLowerCase);
+        return foundBuy || foundSell || stock.stock.toLowerCase() === searchTextLowerCase;
       });
     }
   }

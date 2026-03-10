@@ -183,10 +183,13 @@ export class CartService {
   }
 
   deleteCart() {
-    console.log('Delete cart');
     this.sellOrders = [];
     this.buyOrders = [];
     this.otherOrders = [];
+  }
+
+  deleteBuyOrders() {
+    this.buyOrders = [];
   }
 
   submitOrders() {
@@ -342,8 +345,21 @@ export class CartService {
   }
 
   private existingOptionsCheck(order, underlyingSymbol: string, optionSymbol: string) {
-    return order.primaryLegs && (order.holding.symbol === underlyingSymbol || order.primaryLegs[0].symbol === optionSymbol) ||
-      (order.secondaryLegs && order.secondaryLegs[0].symbol === optionSymbol);
+    if (order.primaryLegs) {
+      if (order.holding.symbol === underlyingSymbol) {
+        console.log(`Existing options check found matching underlying symbol: ${underlyingSymbol} in order:`, order);
+        return true;
+      }
+      if (order.primaryLegs[0].symbol === optionSymbol) {
+        console.log(`Existing options check found matching primary leg option symbol: ${optionSymbol} in order:`, order);
+        return true;
+      }
+    }
+    if (order.secondaryLegs && order.secondaryLegs[0].symbol === optionSymbol) {
+      console.log(`Existing options check found matching secondary leg option symbol: ${optionSymbol} in order:`, order);
+      return true;
+    }
+    return false;
   }
 
   optionsOrderExists(symbol, leg) {
@@ -567,9 +583,13 @@ export class CartService {
     return currentHoldings;
   }
 
-  async getAvailableFunds(useCashBalance: boolean) {
-    const balance = await this.portfolioService.getTdBalance().toPromise();
-    return useCashBalance ? Number(balance.cashBalance) : Number(balance.availableFunds);
+  async getAvailableFunds(useCashBalance: boolean, useCache = false) {
+    const balance = await this.portfolioService.getTdBalance(useCache).toPromise();
+    let availableCash = useCashBalance ? Number(balance.cashBalance) : Number(balance.availableFunds);
+    if (availableCash > balance.liquidationValue * 0.33) {
+      availableCash = round(balance.liquidationValue * 0.33, 2);
+    }
+    return availableCash;
   }
 
   isStrangle(holding: PortfolioInfoHolding) {
@@ -601,16 +621,22 @@ export class CartService {
     profitThreshold: number = null,
     stopLossThreshold: number = null,
     reason: string) {
+    console.log('Building buy order:', { holding, allocation, profitThreshold, stopLossThreshold, reason });
     const price = await this.portfolioService.getPrice(holding.name).toPromise();
+    console.log('Got price:', { symbol: holding.name, price });
     const cash = await this.getAvailableFunds(false);
+    console.log('Got available funds:', cash);
     let quantity = this.getQuantity(price, allocation, cash);
+    console.log('Calculated initial quantity:', { price, allocation, cash, quantity });
     if (!quantity && cash >= price) {
       quantity = 1;
+      console.log('Adjusted quantity to minimum 1 share');
     }
     const orderSizePct = 0.1;
     const order = this.buildOrderWithAllocation(holding.name, quantity, price, 'Buy',
       orderSizePct, stopLossThreshold, profitThreshold,
       stopLossThreshold, allocation, false, reason);
+    console.log('Built buy order:', order);
     return order;
   }
 
@@ -630,13 +656,35 @@ export class CartService {
     allocation: number = 0.05,
     profitThreshold: number = null,
     stopLossThreshold: number = null, reason: string) {
-    const order = await this.buildBuyOrder(holding, allocation, profitThreshold, stopLossThreshold, reason);
-    console.log('Portfolio buy', order, reason);
+    console.log('Starting portfolioBuy:', { 
+      symbol: holding.name,
+      allocation,
+      profitThreshold,
+      stopLossThreshold,
+      reason 
+    });
 
-    if (order.quantity) {
-      this.addToCart(order, false, reason);
-      this.initializeOrder(order);
+    const order = await this.buildBuyOrder(holding, allocation, profitThreshold, stopLossThreshold, reason);
+    console.log('Portfolio buy order created:', { order, reason });
+
+    if (!order) {
+      console.log('Order was not created successfully');
+      return;
     }
+
+    if (!order.quantity) {
+      console.log('Order has no quantity, skipping cart add:', order);
+      return;
+    }
+
+    console.log('Adding order to cart:', { 
+      symbol: order.holding.symbol,
+      quantity: order.quantity,
+      price: order.price,
+      reason 
+    });
+    this.addToCart(order, false, reason);
+    this.initializeOrder(order);
   }
 
 

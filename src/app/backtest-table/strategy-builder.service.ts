@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { round } from 'lodash-es';
+import { TradingStrategy } from '../autopilot/interfaces/trading-strategy.interface';
 import { OptionsDataService } from '@shared/options-data.service';
 import { BacktestService, CartService, PortfolioService, ReportingService } from '@shared/services';
 import { Stock } from '@shared/stock.interface';
@@ -30,8 +31,9 @@ export class StrategyBuilderService {
   sumNet = 0;
   countNet = 0;
   defaultMinExpiration = 90;
-  defaultMaxImpliedMovement = 0.06;
-  bullishStocks = [];
+  defaultMaxImpliedMovement = 0.09;
+  bullishStocks: string[] = [];
+  bearishStocks: string[] = [];
   constructor(private backtestService: BacktestService,
     private optionsDataService: OptionsDataService,
     private portfolioService: PortfolioService,
@@ -45,6 +47,27 @@ export class StrategyBuilderService {
   addBullishStock(symbol: string) {
     this.bullishStocks.push(symbol);
   }
+
+  clearBullishStock() {
+    this.bullishStocks = [];
+  }
+
+  getBullishStocks() {
+    return this.bullishStocks;
+  }
+
+  clearBearishStocks() {
+    this.bearishStocks = [];
+  }
+
+  addBearishStock(symbol: string) {
+    this.bearishStocks.push(symbol);
+  }
+
+  getBearishStocks() {
+    return this.bearishStocks;
+  }
+
   getRecentBacktest(symbol: string = null, expiry = 1) {
     const backtestStorage = this.strategyStoreService.getStorage('backtest');
     if (!symbol) {
@@ -103,8 +126,15 @@ export class StrategyBuilderService {
               this.mlError();
             });
         });
+      if (!results) {
+        return null;
+      }
       // this.backtestAggregatorService.analyseBacktest(results);
-      this.addToOrderHistoryStorage(symbol, results.orderHistory);
+      if (results.orderHistory) {
+        this.addToOrderHistoryStorage(symbol, results.orderHistory);
+      } else {
+        console.log('Order history is missing', results);
+      }
       const pop = this.allocationService.determineProbabilityOfProfit(results.buySignals.length,
         results.sellSignals.length,
         results.impliedMovement,
@@ -199,7 +229,7 @@ export class StrategyBuilderService {
   async getCallStrangleTrade(symbol: string): Promise<Strangle> {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     if (!optionsData.move || optionsData.move > this.defaultMaxImpliedMovement) {
-      this.reportingService.addAuditLog(null,
+      console.log(null,
         `Implied movement is too high for ${symbol} at ${optionsData.move}. Max is ${this.defaultMaxImpliedMovement}`);
       this.addBullishStock(symbol);
       return { call: null, put: null };
@@ -238,8 +268,8 @@ export class StrategyBuilderService {
     }
 
     if (!potentialStrangle.call) {
-      this.reportingService.addAuditLog(null,
-        'Unable to find call for ' + symbol);
+      const msg = 'Unable to find call for ' + symbol;
+      console.log(null, msg);
     }
     return potentialStrangle;
   }
@@ -247,7 +277,7 @@ export class StrategyBuilderService {
   async getPutStrangleTrade(symbol: string) {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     if (!optionsData.move || optionsData.move > this.defaultMaxImpliedMovement) {
-      this.reportingService.addAuditLog(null,
+      console.log(null,
         `Implied movement is too high for ${symbol} at ${optionsData.move}`);
       return { call: null, put: null };
     }
@@ -286,8 +316,8 @@ export class StrategyBuilderService {
       }
     }
     if (!potentialStrangle.put) {
-      this.reportingService.addAuditLog(null,
-        'Unable to find put for ' + symbol);
+      const msg = 'Unable to find put for ' + symbol;
+      this.reportingService.addAuditLog(null, msg);
     }
     return potentialStrangle;
   }
@@ -317,6 +347,13 @@ export class StrategyBuilderService {
         pop: result.pop,
         kellyCriterion: result.kellyCriterion
       });
+    }
+
+    // Prune old backtests after adding a new entry
+    try {
+      this.pruneBacktests(2);
+    } catch (err) {
+      console.warn('Error pruning backtests after addToResultStorage', err);
     }
   }
 
@@ -356,6 +393,38 @@ export class StrategyBuilderService {
       newStorageObj[key] = value;
       localStorage.setItem(storageName, JSON.stringify(newStorageObj));
     }
+  }
+
+  /**
+   * Prune backtests stored in localStorage under the key 'backtest'.
+   * Removes any entry where `backtestDate` is older than `maxAgeDays` days.
+   * Returns the pruned backtest object.
+   */
+  pruneBacktests(maxAgeDays = 2): { [key: string]: any } {
+    const storageRaw = localStorage.getItem('backtest');
+    if (!storageRaw) {
+      return {};
+    }
+
+    let storage: { [key: string]: any };
+    try {
+      storage = JSON.parse(storageRaw);
+    } catch (e) {
+      console.warn('Unable to parse backtest storage', e);
+      return {};
+    }
+
+    const now = moment();
+    Object.keys(storage).forEach(key => {
+      const entry = storage[key];
+      const dateStr = entry && entry.backtestDate;
+      if (!dateStr || now.diff(moment(dateStr), 'days') > maxAgeDays) {
+        delete storage[key];
+      }
+    });
+
+    localStorage.setItem('backtest', JSON.stringify(storage));
+    return storage;
   }
 
   addToBlackList(ticker: string) {
@@ -441,30 +510,37 @@ export class StrategyBuilderService {
     return newBacktestData;
   }
 
-  createStrategy(tradeName: string, key: string, buyList: string[], sellList: string[], reason) {
-    const trade = {
+  createStrategy(tradeName: string, key: string, buyList: string[], sellList: string[], reason: string) {
+    // Ensure we only store string values
+    const trade: PotentialTrade = {
       name: tradeName,
       date: moment().format(),
       type: 'pairTrade',
       key: key,
       strategy: {
-        buy: buyList,
-        sell: sellList
+        buy: buyList.filter(s => typeof s === 'string'),
+        sell: sellList.filter(s => typeof s === 'string')
       },
-      reason: reason
+      reason: reason || 'Trading strategy' // Ensure reason is never undefined
     };
     this.portfolioService.addStrategy(trade.date, trade.type, trade.key, trade.strategy, trade.reason).subscribe();
     this.addTradingStrategy(trade);
   }
 
-  findTrades() {
+  findTrades(filterKey = '', skipRecommendation = false) {
     const backtests = this.sanitizeData();
     const tradingPairs = JSON.parse(localStorage.getItem('tradingPairs'));
-    for (const key in tradingPairs) {
+    if (!tradingPairs) {
+      return;
+    }
+    const keysToProcess = filterKey ? [filterKey] : Object.keys(tradingPairs);
+    
+    for (const key of keysToProcess) {
+      if (!tradingPairs[key]) continue;
       const pairs = tradingPairs[key];
       const bObj = backtests[key];
       if (bObj !== undefined && bObj !== null && bObj.ml !== null && bObj.buySignals) {
-        if (bObj.ml > 0.4 && bObj.recommendation.toLowerCase() === 'strongbuy') {
+        if (bObj.ml > 0.4 && (bObj.recommendation.toLowerCase() === 'strongbuy' || (skipRecommendation && bObj.recommendation.toLowerCase() !== 'strongsell'))) {
           for (const pairVal of pairs) {
             if (pairVal !== null && backtests[pairVal.symbol] && backtests[pairVal.symbol].ml !== null) {
               if (backtests[pairVal.symbol]?.sellMl > 0.4 && (backtests[pairVal.symbol].recommendation.toLowerCase() === 'strongsell')) {
@@ -473,13 +549,38 @@ export class StrategyBuilderService {
             }
           }
         }
-
       }
     }
   }
 
-  getTradingStrategies() {
-    return JSON.parse(localStorage.getItem('tradingStrategy')) || [];
+  private validateStrategy(strategy: any): TradingStrategy | null {
+    if (!strategy?.strategy?.buy || !strategy?.strategy?.sell) {
+      return null;
+    }
+    
+    return {
+      name: String(strategy.name || ''),
+      key: String(strategy.key || ''),
+      date: strategy.date || moment().format(),
+      type: strategy.type || 'pairTrade',
+      strategy: {
+        buy: Array.isArray(strategy.strategy.buy) ? strategy.strategy.buy.filter(s => typeof s === 'string') : [],
+        sell: Array.isArray(strategy.strategy.sell) ? strategy.strategy.sell.filter(s => typeof s === 'string') : []
+      },
+      reason: strategy.reason ? String(strategy.reason) : undefined
+    };
+  }
+
+  getTradingStrategies(): TradingStrategy[] {
+    try {
+      const strategies = JSON.parse(localStorage.getItem('tradingStrategy')) || [];
+      return strategies
+        .map(s => this.validateStrategy(s))
+        .filter(s => s !== null);
+    } catch (e) {
+      console.error('Error parsing trading strategies:', e);
+      return [];
+    }
   }
 
   setTradingStrategies(strats: PotentialTrade[]) {
@@ -487,7 +588,7 @@ export class StrategyBuilderService {
   }
 
   addAndRemoveOldStrategies(storage) {
-    storage = storage.filter(s => moment().diff(moment(s.date), 'days') < 10);
+    storage = storage.filter(s => moment().diff(moment(s.date), 'days') < 15);
     this.setTradingStrategies(storage);
   }
 
@@ -517,7 +618,6 @@ export class StrategyBuilderService {
           storage.push(trade)
         }
 
-        storage = storage.filter(s => moment().diff(moment(s.date), 'days') < 5);
         this.addAndRemoveOldStrategies(storage);
       } else {
         const newStorageObj = [trade];
@@ -719,54 +819,56 @@ export class StrategyBuilderService {
     console.log('Risk percent', riskPct);
     switch (riskPct) {
       case 0.1:
-        this.defaultMinExpiration = 100;
-        this.defaultMaxImpliedMovement = 0.065;
+        this.defaultMinExpiration = 80;
+        this.defaultMaxImpliedMovement = 0.09;
         break;
       case 0.2:
-        this.defaultMinExpiration = 90;
-        this.defaultMaxImpliedMovement = 0.075;
-        break;
-      case 0.3:
-        this.defaultMinExpiration = 85;
-        this.defaultMaxImpliedMovement = 0.085;
-        break;
-      case 0.4:
-        this.defaultMinExpiration = 80;
+        this.defaultMinExpiration = 75;
         this.defaultMaxImpliedMovement = 0.095;
         break;
+      case 0.3:
+        this.defaultMinExpiration = 70;
+        this.defaultMaxImpliedMovement = 0.1;
+        break;
+      case 0.4:
+        this.defaultMinExpiration = 65;
+        this.defaultMaxImpliedMovement = 0.11;
+        break;
       case 0.5:
-        this.defaultMinExpiration = 75;
-        this.defaultMaxImpliedMovement = 0.105;
+        this.defaultMinExpiration = 60;
+        this.defaultMaxImpliedMovement = 0.15;
         break;
       case 0.6:
-        this.defaultMinExpiration = 65;
-        this.defaultMaxImpliedMovement = 0.115;
+        this.defaultMinExpiration = 55;
+        this.defaultMaxImpliedMovement = 0.15;
         break;
       case 0.7:
-        this.defaultMinExpiration = 55;
-        this.defaultMaxImpliedMovement = 0.135;
+        this.defaultMinExpiration = 50;
+        this.defaultMaxImpliedMovement = 0.16;
         break;
       case 0.8:
-        this.defaultMinExpiration = 50;
-        this.defaultMaxImpliedMovement = 0.145;
+        this.defaultMinExpiration = 45;
+        this.defaultMaxImpliedMovement = 0.17;
         break;
       case 0.9:
-        this.defaultMinExpiration = 45;
-        this.defaultMaxImpliedMovement = 0.155;
+        this.defaultMinExpiration = 40;
+        this.defaultMaxImpliedMovement = 0.18;
         break;
       case 1:
-        this.defaultMinExpiration = 30;
-        this.defaultMaxImpliedMovement = 0.155;
+        this.defaultMinExpiration = 31;
+        this.defaultMaxImpliedMovement = 0.19;
         break;
       default:
         this.defaultMinExpiration = 90;
-        this.defaultMaxImpliedMovement = 0.07;
+        this.defaultMaxImpliedMovement = 0.08;
         break;
     }
+          this.reportingService.addAuditLog(null,
+        `Min expiration is ${this.defaultMinExpiration} Max implied movement is ${this.defaultMaxImpliedMovement}`);
   }
 
   resetStrategyRisk() {
-    this.defaultMinExpiration = 90;
-    this.defaultMaxImpliedMovement = 0.07;
+    this.defaultMinExpiration = 89;
+    this.defaultMaxImpliedMovement = 0.1;
   }
 }

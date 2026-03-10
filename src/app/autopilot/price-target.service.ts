@@ -50,7 +50,7 @@ export class PriceTargetService {
     this.reportingService.addAuditLog(null, `Ten Year Yield High: ${targetYield}`);
   }
 
-  isProfitable(invested: number, pl: number, target = 0.05) {
+  isProfitable(invested: number, pl: number, target = 0) {
     return this.getDiff(invested, invested + pl) > target;
   }
 
@@ -135,7 +135,7 @@ export class PriceTargetService {
     this.reportingService.addAuditLog(null, `Portfolio PnL: ${portfolioPl}. target: ${priceTarget}`);
 
     if (portfolioPl && portfolioPl > priceTarget) {
-      if (portfolioPl > priceTarget * 5) {
+      if (portfolioPl > priceTarget * 7) {
         const portData = await this.portfolioService.getTdPortfolio().toPromise();
         try {
           this.reportingService.addAuditLog(null, `Profit loss may be inaccurate: ${portfolioPl} ${JSON.stringify(portData)}`);
@@ -157,6 +157,9 @@ export class PriceTargetService {
   async checkProfitTarget(retrievedHoldings: PortfolioInfoHolding[] = null, target = this.targetDiff) {
     const targetMet = await this.hasMetPriceTarget(target);
     if (targetMet) {
+      if (this.cartService && typeof this.cartService.deleteBuyOrders === 'function') {
+        this.cartService.deleteBuyOrders();
+      }
       const holdings = retrievedHoldings ? retrievedHoldings : await this.cartService.findCurrentPositions();
       holdings.forEach(async (portItem: PortfolioInfoHolding) => {
         if (this.liquidationValue > 25000 || !this.reportingService.findBuyLogBySymbol(portItem.name)) {
@@ -197,7 +200,7 @@ export class PriceTargetService {
     const backtest = await this.backtestService.getBacktestEvaluation(symbol, startDate, currentDate, 'daily-indicators').toPromise();
     const signals = backtest.signals;
     const lastSignal = signals[signals.length - 1];
-    if (lastSignal.mfiPrevious < lastSignal.mfiLeft) {
+    if (lastSignal.mfiPrevious < lastSignal.mfiLeft + 1) {
       return true;
     }
 
@@ -210,7 +213,7 @@ export class PriceTargetService {
     const backtest = await this.backtestService.getBacktestEvaluation(symbol, startDate, currentDate, 'daily-indicators').toPromise();
     const signals = backtest.signals;
     const lastSignal = signals[signals.length - 1];
-    if (lastSignal.mfiPrevious > lastSignal.mfiLeft) {
+    if (lastSignal.mfiPrevious - 1 > lastSignal.mfiLeft) {
       return true;
     }
 

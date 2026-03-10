@@ -239,13 +239,10 @@ class BacktestService {
     };
   }
 
-  getData(ticker, currentDate, startDate) {
+  getData(ticker, currentDate, startDate, accountId?) {
     const { end, start } = this.getDateRanges(currentDate, startDate);
 
-    return QuoteService.getDailyQuotes(ticker, end, start)
-      .then(data => {
-        return data;
-      });
+    return QuoteService.getDailyQuotes(ticker, end, start, accountId);
   }
 
   writeCsv(name, startDate, currentDate, rows, fields, count) {
@@ -727,11 +724,11 @@ class BacktestService {
       });
   }
 
-  initDailyStrategy(symbol, currentDate, startDate, parameters = { minQuotes: 80 }) {
+  initDailyStrategy(symbol, currentDate, startDate, parameters = { minQuotes: 80 }, accountId?) {
     const minQuotes = parameters.minQuotes;
     const getIndicatorQuotes = [];
 
-    return this.getData(symbol, currentDate, startDate)
+    return this.getData(symbol, currentDate, startDate, accountId)
       .then(quotes => {
         console.log('Found quotes ', quotes[0].date, ' to ', quotes[quotes.length - 1].date);
         _.forEach(quotes, (value, key) => {

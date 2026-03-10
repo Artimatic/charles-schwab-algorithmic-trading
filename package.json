@@ -14,7 +14,6 @@
     "test-server": "npm run build-ts && node server-tests.js",
     "test": "ng test",
     "e2e": "ng e2e",
-    "postinstall": "npm run build",
     "build-ts": "tsc -p ./server/tsconfig.json",
     "watch-ts": "tsc -p ./server/tsconfig.json -w",
     "lint": "npm run tslint && npm run lintfix",
@@ -84,12 +83,12 @@
     "serve-favicon": "2.4.5",
     "string": "3.3.3",
     "tslib": "1.10.0",
-    "tulind": "0.8.20",
     "twilio": "3.50.0",
     "websocket-extensions": "0.1.4",
     "xlsx": "0.18.5",
     "y18n": "4.0.1",
-    "zone.js": "0.11.8"
+    "zone.js": "0.11.8",
+    "tulind": "file:tulind"
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "0.1102.19",

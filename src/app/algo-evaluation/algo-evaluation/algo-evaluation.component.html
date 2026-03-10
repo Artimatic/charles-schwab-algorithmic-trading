@@ -1,8 +1,13 @@
 <p-table [columns]="selectedColumns" [value]="currentList" [paginator]="true" [rows]="3" selectionMode="single"
   [(selection)]="selectedStock" dataKey="stock" [tableStyle]="{ 'min-width': '50rem' }">
   <ng-template pTemplate="caption">
-    <label for="portfolio-switch">{{ showPortfolio ? 'Portfolio' : 'Recommendations'}}</label>
-    <p-inputSwitch inputId="portfolio-switch" [(ngModel)]="showPortfolio" (onChange)="setTable($event)"></p-inputSwitch>
+    <p-selectButton 
+      [options]="tableStates" 
+      [(ngModel)]="tableDisplay"
+      (onChange)="setTable($event)"
+      optionLabel="label" 
+      optionValue="value">
+    </p-selectButton>
   </ng-template>
   <ng-template pTemplate="header" let-columns>
     <tr>

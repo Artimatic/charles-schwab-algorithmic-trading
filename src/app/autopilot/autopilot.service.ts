@@ -2,6 +2,9 @@ import { Injectable } from '@angular/core';
 import { AuthenticationService, CartService, DaytradeService, MachineLearningService, PortfolioInfoHolding, PortfolioService, ReportingService } from '@shared/services';
 import { round } from 'lodash-es';
 import * as moment from 'moment-timezone';
+import { BacktestData } from './interfaces/backtest-data.interface';
+import { MarketHours } from './interfaces/market-hours.interface';
+import { TradingStrategy } from './interfaces/trading-strategy.interface';
 import { OptionsOrderBuilderService } from '../strategies/options-order-builder.service';
 import { PriceTargetService } from './price-target.service';
 import { MachineDaytradingService } from '../machine-daytrading/machine-daytrading.service';
@@ -10,7 +13,7 @@ import { StrategyBuilderService } from '../backtest-table/strategy-builder.servi
 import { OrderHandlingService } from '../order-handling/order-handling.service';
 import { OrderTypes } from '@shared/models/smart-order';
 import { map, tap } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { GlobalSettingsService } from '../settings/global-settings.service';
 import { DaytradeStrategiesService } from '../strategies/daytrade-strategies.service';
 import { Balance } from '@shared/services/portfolio.service';
@@ -19,6 +22,7 @@ import { ScoringIndex } from '@shared/services/score-keeper.service';
 import { RiskTolerance } from './risk-tolerance.enum';
 import { Strategy } from './strategy.enum';
 import { DelayedBuySellStrategyService } from '../delayed-buy-sell-strategy.service';
+import { IntradayStrategyScannerService } from '../strategies/intraday-strategy-scanner.service';
 
 export interface ProfitLossRecord {
   date: string;
@@ -49,98 +53,176 @@ export enum SwingtradeAlgorithms {
   providedIn: 'root'
 })
 export class AutopilotService {
-  lastBalanceUtilizationCheck: any = null;
-  riskCounter = 0;
-  lastSpyMl = 0;
-  lastGldMl = 0;
-  lastBtcMl = 0;
-  volatility = 0;
-  lastMarketHourCheck = null;
-  sessionStart = null;
-  sessionEnd = null;
+  private lastBalanceUtilizationCheck: moment.Moment | null = null;
+  private _riskCounter = 0;
+  private _lastSpyMl = 0;
+  private _lastGldMl = 0;
+  private _lastBtcMl = 0;
+
+  get riskCounter(): number {
+    return this._riskCounter;
+  }
+
+  set riskCounter(value: number) {
+    this._riskCounter = value;
+  }
+
+  get lastSpyMl(): number {
+    return this._lastSpyMl;
+  }
+
+  set lastSpyMl(value: number) {
+    this._lastSpyMl = value;
+  }
+
+  get lastGldMl(): number {
+    return this._lastGldMl;
+  }
+
+  set lastGldMl(value: number) {
+    this._lastGldMl = value;
+  }
+
+  get lastBtcMl(): number {
+    return this._lastBtcMl;
+  }
+
+  set lastBtcMl(value: number) {
+    this._lastBtcMl = value;
+  }
+  private _volatility = 0;
+  private lastMarketHourCheck: moment.Moment | null = null;
+  private _sessionStart: Date | null = null;
+  private _sessionEnd: Date | null = null;
+
+  get volatility(): number {
+    return this._volatility;
+  }
+
+  set volatility(value: number) {
+    this._volatility = value;
+  }
+
+  get sessionStart(): Date | null {
+    return this._sessionStart;
+  }
+
+  set sessionStart(value: Date | null) {
+    this._sessionStart = value;
+  }
+
+  get sessionEnd(): Date | null {
+    return this._sessionEnd;
+  }
+
+  set sessionEnd(value: Date | null) {
+    this._sessionEnd = value;
+  }
+
   riskToleranceList = [
-    RiskTolerance.One,
-    RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.Fear,
     RiskTolerance.Neutral,
-    RiskTolerance.One,
-    RiskTolerance.Two,
-    RiskTolerance.Lower,
-    RiskTolerance.Low,
-    RiskTolerance.Neutral,
-    RiskTolerance.One,
-    RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.Neutral,
     RiskTolerance.Greed,
-    RiskTolerance.Two,
     RiskTolerance.Lower,
     RiskTolerance.Low,
     RiskTolerance.Neutral,
-    RiskTolerance.Greed
+    RiskTolerance.Lower,
+    RiskTolerance.Greed,
+    RiskTolerance.Low,
+    RiskTolerance.Neutral,
+    RiskTolerance.XXXXLGreed
   ];
-  isOpened = false;
-  maxHoldings = 10;
-  lastBuyList = [];
-  lastOptionsCheckCheck = null;
-  currentHoldings: PortfolioInfoHolding[] = [];
-  defaultList = [
+  public isOpened = false;
+  private lastOptionsCheckCheck: moment.Moment | null = null;
+  private _currentHoldings: PortfolioInfoHolding[] = [];
+
+  get currentHoldings(): PortfolioInfoHolding[] {
+    return this._currentHoldings;
+  }
+
+  set currentHoldings(value: PortfolioInfoHolding[]) {
+    this._currentHoldings = value;
+  }
+
+  private readonly defaultList: Strategy[] = [
     Strategy.Default,
-    Strategy.AddToPositions,
     Strategy.BuySnP,
-    Strategy.StopLoss
+    Strategy.IwmInverseDispersion,
+    Strategy.PerfectPair,
+    Strategy.Swingtrade,
+    Strategy.VolatilityPairs,
+    Strategy.MLPairs,
+    Strategy.TrimHoldings,
+    Strategy.BuyMfiTrade,
+    Strategy.BuyMfiDiv,
+    Strategy.BuyBband,
+    Strategy.BuyBbandBreakout,
+    Strategy.BuyFlag,
+    Strategy.BuyWinnersSellLosers,
+    Strategy.BuyMfiDiv2,
+    Strategy.InverseDispersion,
+    Strategy.BuyWinners,
+    Strategy.StopLoss,
+    Strategy.BuyMfi
   ];
 
-  bearishList = [
+  private readonly bearishList: Strategy[] = [
     Strategy.Hedge,
     Strategy.InverseDispersion,
-    Strategy.PerfectPair,
-    Strategy.BuySnP,
+    Strategy.VolatilityPairs,
     Strategy.StopLoss,
     Strategy.MLPairs,
     Strategy.TrimHoldings,
-    Strategy.Hedge,
-    Strategy.Short,
-    Strategy.TradingPairs,
-    Strategy.VolatilityPairs,
-    Strategy.Gold,
     Strategy.BuyMfiTrade,
+    Strategy.Gold,
     Strategy.BuyMfiDiv,
-    Strategy.PerfectPair,
-    Strategy.MLPairs,
-    Strategy.BuyMfi,
     Strategy.BuyBband,
     Strategy.BuyMfiDiv2,
-    Strategy.TradingPairs,
-    Strategy.VolatilityPairs,
-    Strategy.BuyWinners,
-    Strategy.BuyMfiTrade
+    Strategy.Short
   ];
 
-  bullishList = [
+  private readonly bullishList: Strategy[] = [
     Strategy.AddToPositions,
     Strategy.BuyCalls,
     Strategy.BuyBbandBreakout,
     Strategy.BuyWinners,
-    Strategy.BuyFlag,
     Strategy.BuyFlag,
     Strategy.BuyWinnersSellLosers,
     Strategy.BTC,
     Strategy.StopLoss
   ];
 
-  strategyList = this.defaultList;
+  private _strategyList: Strategy[] = this.defaultList;
 
-  callPutBuffer = 0.05;
-  intradayProcessCounter = 0;
-  intradayStrategyTriggered = false;
-  strategies = [];
-  strategyCounter = 0;
-  riskLevel = RiskTolerance.One;
-  private processes = [
+  get strategyList(): Strategy[] {
+    return this._strategyList;
+  }
+
+  set strategyList(value: Strategy[]) {
+    this._strategyList = value;
+    // Reset counter if it's out of bounds with new list
+    this.strategyCounter = this.strategyCounter >= value.length ? 0 : this.strategyCounter;
+  }
+
+  private readonly callPutBuffer = 0.05;
+  private intradayProcessCounter = 0;
+  private _strategies: TradingStrategy[] = [];
+  private _strategyCounter = 0;
+
+  get strategyCounter(): number {
+    return this._strategyCounter;
+  }
+
+  set strategyCounter(value: number) {
+    this._strategyCounter = value;
+  }
+  private _riskLevel: RiskTolerance = RiskTolerance.One;
+  private readonly processes: Array<() => Promise<void>> = [
     async () => await this.priceTargetService.setTargetDiff(),
     async () => {
       await this.setCurrentHoldings();
@@ -153,11 +235,12 @@ export class AutopilotService {
       }
     },
     async () => await this.checkIntradayStrategies(),
-    async () => {
-      await this.setCurrentHoldings();
-      const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
-      await this.optionsOrderBuilderService.hedge(this.currentHoldings, balance, 0.2);
-    },
+    async () => await this.findAnyPair(),
+    // async () => {
+    //   await this.setCurrentHoldings();
+    //   const balance: Balance = await this.portfolioService.getTdBalance().toPromise();
+    //   await this.optionsOrderBuilderService.hedge(this.currentHoldings, balance, 0.2);
+    // },
     async () => {
       await this.optionsOrderBuilderService.addOptionsStrategiesToCart();
     },
@@ -165,9 +248,21 @@ export class AutopilotService {
       await this.setCurrentHoldings();
       await this.optionsOrderBuilderService.checkCurrentOptions(this.currentHoldings);
     },
+    // async () => {
+    //   await this.setCurrentHoldings();
+    //   // await this.balanceCallPutRatio(this.currentHoldings);
+    // },
+    async () => await this.findStockBuys(),
     async () => {
-      await this.setCurrentHoldings();
-      await this.balanceCallPutRatio(this.currentHoldings);
+      // Prevent handleBalanceUtilization if last call was within 45 minutes
+      if (!this.lastBalanceUtilizationCheck || Math.abs(moment().diff(this.lastBalanceUtilizationCheck, 'minutes')) > 45) {
+        if (this.cartService.buyOrders.length + this.cartService.otherOrders.length < 1) {
+          this.changeStrategy();
+          await this.handleStrategy();
+        } else {
+          await this.createTradingPairs();
+        }
+      }
     }
   ];
 
@@ -185,7 +280,8 @@ export class AutopilotService {
     private daytradeStrategiesService: DaytradeStrategiesService,
     private machineLearningService: MachineLearningService,
     private intradayStrategyService: IntradayStrategyService,
-    private delayedBuySellStrategyService: DelayedBuySellStrategyService
+    private delayedBuySellStrategyService: DelayedBuySellStrategyService,
+    private intradayStrategyScannerService: IntradayStrategyScannerService
   ) {
     const globalStartStop = this.globalSettingsService.getStartStopTime();
     this.sessionStart = globalStartStop.startDateTime;
@@ -230,14 +326,21 @@ export class AutopilotService {
     this.currentHoldings = await this.cartService.findCurrentPositions();
   }
 
+  getCurrentHoldings() {
+    return this.currentHoldings;
+  }
+
   async checkIntradayStrategies() {
     await this.intradayStrategyService.checkIntradayStrategies(this.riskLevel);
   }
 
   async getMinMaxCashForOptions(modifier = 1) {
-    const cash = await this.cartService.getAvailableFunds(false);
+    const cash = await this.cartService.getAvailableFunds(false, true);
     const minConstant = modifier ? (cash * RiskTolerance.Zero * modifier) : 1000;
-    const maxCash = round(this.riskLevel * cash, 2);
+    const level = (this.riskCounter != null && this.riskCounter < this.riskToleranceList.length)
+      ? this.riskToleranceList[this.riskCounter]
+      : this.riskLevel;
+    const maxCash = round(level * cash, 2);
     const minCash = maxCash - minConstant;
     return {
       maxCash,
@@ -320,13 +423,13 @@ export class AutopilotService {
       for (const saved in savedBacktest) {
         const backtestObj = savedBacktest[saved];
         const symbol = backtestObj.stock
-        if (backtestObj.ml > 0.5 && backtestObj.sellMl < 0.5 && backtestObj.recommendation.toLowerCase() === 'STRONGBUY') {
+        if (backtestObj.ml > 0.5 && backtestObj.sellMl < 0.5 && backtestObj.recommendation.toLowerCase() === 'strongbuy') {
           if (MlBuys[backtestObj.ml]) {
             MlBuys[backtestObj.ml].push(symbol);
           } else {
             MlBuys[backtestObj.ml] = [symbol];
           }
-        } else if (backtestObj.ml < 0.5 && backtestObj.sellMl > 0.5 && backtestObj.recommendation.toLowerCase() === 'STRONGSELL') {
+        } else if (backtestObj.ml < 0.5 && backtestObj.sellMl > 0.5 && backtestObj.recommendation.toLowerCase() === 'strongsell') {
           if (MlSells[backtestObj.sellMl]) {
             MlSells[backtestObj.sellMl].push(symbol);
           } else {
@@ -372,8 +475,8 @@ export class AutopilotService {
     };
   }
 
-  async findSwingStockCallback(symbol: string, prediction: number, backtestData: any) {
-    if ((prediction > 0.7 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY') && this.priceTargetService.isProfitable(backtestData.invested, backtestData.net)) {
+  async findSwingStockCallback(symbol: string, prediction: number | null, backtestData: BacktestData): Promise<void> {
+    if ((prediction > 0.65 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY') && this.priceTargetService.isProfitable(backtestData.invested, backtestData.net)) {
       const stock: PortfolioInfoHolding = {
         name: symbol,
         pl: 0,
@@ -391,10 +494,10 @@ export class AutopilotService {
     }
   }
 
-  getBuyList(filter = (data) => data.recommendation === 'STRONGBUY'): string[] {
-    const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
-    let backtestResults = [];
-    let newList = [];
+  getBuyList(filter: (data: BacktestData) => boolean = (data: BacktestData) => data.recommendation === 'STRONGBUY'): string[] {
+    const savedBacktest = JSON.parse(localStorage.getItem('backtest') || '{}');
+    let backtestResults: BacktestData[] = [];
+    let newList: BacktestData[] = [];
 
     if (savedBacktest) {
       for (const saved in savedBacktest) {
@@ -436,9 +539,18 @@ export class AutopilotService {
   }
 
   async findAnyPair() {
-    const buys = this.getBuyList()
-    const sells = this.getSellList();
-    this.addPair(buys, sells, 'Any pair');
+    const buySellList = await this.intradayStrategyScannerService.scanStocksForIntradayStrategies()
+    if (!buySellList.buys.length || !buySellList.sells.length) {
+      return;
+    }
+    this.addPair(buySellList.buys, buySellList.sells, 'Intraday pair');
+  }
+
+  async findStockBuys() {
+    const buyList = await this.intradayStrategyScannerService.scanStocksForIntradayBuys()
+    console.log('findStockBuys', buyList);
+    await this.orderHandlingService.addBuy(this.createHoldingObj(buyList.pop()),
+        this.riskLevel, 'Buy intraday bullish stock');
   }
 
   async findMlOnlyPair() {
@@ -454,39 +566,51 @@ export class AutopilotService {
     this.addPair(buys, sells, 'Winner Loser pair');
   }
 
-  async findStock() {
-    if (this.strategyBuilderService.bullishStocks.length) {
-      await this.orderHandlingService.addBuy(this.createHoldingObj(this.strategyBuilderService.bullishStocks.pop()),
-        this.riskLevel * 2, 'Buy bullish stock');
-    }
-  }
-
   addPair(buys: string[], sells: string[], reason) {
-    if (!sells.length) {
-      buys.forEach(buy => {
+    // Get current trading pairs to filter against
+    const existingSymbols = new Set<string>();
+    
+    // Collect all symbols from existing trading pairs
+    this.optionsOrderBuilderService.tradingPairs.forEach(pair => {
+      pair.forEach(order => {
+        if (order.holding && order.holding.symbol) {
+          existingSymbols.add(order.holding.symbol);
+        }
+      });
+    });
+
+    // Filter out stocks that are already in trading pairs
+    const filteredBuys = buys.filter(buy => !existingSymbols.has(buy));
+    const filteredSells = sells.filter(sell => !existingSymbols.has(sell));
+
+    if (!filteredSells.length) {
+      filteredBuys.forEach(buy => {
         this.strategyBuilderService.addBullishStock(buy);
       });
       return;
-    } else if (!buys.length) {
-      buys = ['SPY'];
+    } else if (!filteredBuys.length) {
+      const defaultSymbols = ['IWM', 'QQQ', 'SPY'].filter(sym => !existingSymbols.has(sym));
+      filteredBuys.push.apply(filteredBuys, defaultSymbols);
+      if (!filteredBuys.length) return;
     }
 
-    buys.forEach(buy => {
-      sells.forEach(sell => {
-        this.strategyBuilderService.createStrategy(`${buy} ${reason}`, buy, [buy], [sell], reason);
-      });
-    });
+    // filteredBuys.forEach(buy => {
+    //   filteredSells.forEach(sell => {
+    //     this.strategyBuilderService.createStrategy(`${buy} ${reason}`, buy, [buy], [sell], reason);
+    //   });
+    // });
+    this.strategyBuilderService.createStrategy(`${filteredBuys[0]} ${reason}`, filteredBuys[0], filteredBuys, filteredSells, reason);
   }
 
   addPairOnSignal(indicator: SwingtradeAlgorithms, direction: 'buy' | 'sell', addPair = true) {
     let buyFilterFn = null;
     let sellFilterFn = null;
     if (direction === 'buy') {
-      buyFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator);
-      sellFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator);
+      buyFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator) && backtestData.ml > 0.5 && backtestData.sellMl < 0.5;
+      sellFilterFn = (backtestData) => backtestData.sellSignals && backtestData.buySignals.find(sig => sig === indicator) && backtestData.sellMl > 0.5 && backtestData.ml < 0.5;
     } else {
-      sellFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator);
-      buyFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator);
+      buyFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator) && backtestData.ml > 0.5 && backtestData.sellMl < 0.5;
+      sellFilterFn = (backtestData) => backtestData.buySignals && backtestData.sellSignals.find(sig => sig === indicator) && backtestData.sellMl > 0.5 && backtestData.ml < 0.5;
     }
 
     const buys = this.getBuyList(buyFilterFn);
@@ -495,14 +619,23 @@ export class AutopilotService {
     if (addPair) {
       this.addPair(buys, sells, `${direction} ${indicator}`);
     }
+
+    return { buys, sells };
+  }
+
+  findIwmTrade() {
+    const buys = ['IWM'];
+    const sells = this.getSellList((backtestData) => backtestData.recommendation.toLowerCase() === 'strongsell' && (backtestData.sellMl > 0.6 || backtestData.ml < 0.3));
+    console.log('IWM trade', buys, sells);
+    this.addPair(buys, sells, 'IWM pair');
   }
 
   async buyOnSignal(indicator: SwingtradeAlgorithms, direction: 'buy' | 'sell') {
     let buyFilterFn = null;
     if (direction === 'buy') {
-      buyFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator);
+      buyFilterFn = (backtestData) => backtestData.buySignals && backtestData.buySignals.find(sig => sig === indicator) && backtestData.ml > 0.5;
     } else {
-      buyFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator);
+      buyFilterFn = (backtestData) => backtestData.sellSignals && backtestData.sellSignals.find(sig => sig === indicator) && backtestData.ml > 0.5;
     }
 
     const buys = this.getBuyList(buyFilterFn);
@@ -528,13 +661,26 @@ export class AutopilotService {
       const actualUtilization = (1 - (balance.cashBalance / balance.liquidationValue));
 
       if (actualUtilization > 0.95) {
-        await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'), 1, 'Near 100 percent utilization');
+        await this.orderHandlingService.addBuy(this.createHoldingObj('SPY'), 1, 'Near 100 percent utilization');
       } else {
         let targetUtilization = this.getLastSpyMl();
         targetUtilization = targetUtilization > 1 ? 1 : targetUtilization;
         if (actualUtilization < targetUtilization) {
           this.reportingService.addAuditLog(null, `Underutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
-          await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'), this.riskToleranceList[0], 'Underutilized. Buy snp');
+
+          // try {
+          // // Get the best symbol based on ML scores
+          //   const symbols = ['GLD', 'SH', 'UPRO', 'TLT'];
+          //   const bestSymbolResult = await this.selectBestSymbolByMl(symbols);
+
+          //   await this.orderHandlingService.addBuy(this.createHoldingObj(bestSymbolResult.symbol), this.riskToleranceList[0], `Underutilized. Buy ${bestSymbolResult.symbol} (ml: ${bestSymbolResult.ml})`);
+          // } catch (error) {
+          //   console.log(`Error selecting best symbol by ML: ${error}`);
+          //   await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'), this.riskToleranceList[0], `Underutilized. Buy UPRO (default)`);
+          // }
+          await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'), this.riskToleranceList[0], `Underutilized. Buy UPRO (default)`);
+
+          //this.findIwmTrade();
         } else if (canSell && actualUtilization > targetUtilization + 0.03) {
           this.reportingService.addAuditLog(null, `Overutilized, Target: ${targetUtilization}, Actual: ${actualUtilization}`);
           this.currentHoldings.forEach(async (holding) => {
@@ -605,13 +751,13 @@ export class AutopilotService {
     let newList;
     if (this.lastSpyMl > 0.7) {
       newList = this.bullishList;
-    } else if (this.lastSpyMl < 0.3) {
+    } else if (this.lastSpyMl < 0.35) {
       newList = this.bearishList;
     } else {
       newList = this.defaultList;
     }
     if (this.strategyList !== newList) {
-      this.reportingService.addAuditLog(null, `Strategy list changed: ${newList.map(s => s).join(', ')}`);
+      this.reportingService.addAuditLog(null, `Strategy list changed: ${newList.map(s => s).join(', ')}. Last SPY prediction: ${this.lastSpyMl}`);
     }
     this.strategyList = newList;
     this.strategyCounter = this.strategyCounter >= this.strategyList.length ? 0 : this.strategyCounter;
@@ -733,12 +879,12 @@ export class AutopilotService {
     this.authenticationService.checkCredentials(accountId).subscribe();
   }
 
-  isMarketOpened() {
+  isMarketOpened(): Observable<boolean> {
     if (this.lastMarketHourCheck && Math.abs(this.lastMarketHourCheck.diff(moment(), 'minutes')) < 20) {
       return of(this.isOpened);
     }
     return this.portfolioService.getEquityMarketHours(moment().format('YYYY-MM-DD')).pipe(
-      map((marketHour: any) => {
+      map((marketHour: MarketHours) => {
         if (!marketHour.equity) {
           this.checkCredentials();
           return this.isOpened;
@@ -755,6 +901,8 @@ export class AutopilotService {
 
         if (!this.isOpened) {
           this.lastMarketHourCheck = moment();
+        } else {
+          console.log('Market is open', this.sessionStart, this.sessionEnd);
         }
 
         return this.isOpened;
@@ -770,6 +918,29 @@ export class AutopilotService {
   async updateGldPrediction() {
     const backtestData = await this.strategyBuilderService.getBacktestData('GLD');
     this.lastGldMl = round(backtestData.ml, 2);
+  }
+
+  /**
+   * Selects the best symbol from a list of symbols based on their machine learning scores
+   * @param symbols Array of symbols to evaluate
+   * @returns Object containing the best symbol and its ml score
+   */
+  async selectBestSymbolByMl(symbols: string[]): Promise<{ symbol: string; ml: number }> {
+    const backtestResults: Array<BacktestData | null> = await Promise.all(
+      symbols.map(async symbol => await this.strategyBuilderService.getBacktestData(symbol))
+    );
+
+    let bestSymbol = symbols[0]; // Default to first symbol
+    let highestMl = -1;
+
+    for (let i = 0; i < symbols.length; i++) {
+      if (backtestResults[i] && backtestResults[i].ml > highestMl) {
+        highestMl = backtestResults[i].ml;
+        bestSymbol = symbols[i];
+      }
+    }
+
+    return { symbol: bestSymbol, ml: highestMl };
   }
 
   updateVolatility() {
@@ -835,12 +1006,13 @@ export class AutopilotService {
   async executeOrderList() {
     const buyAndSellList = this.cartService.sellOrders.concat(this.cartService.buyOrders);
     const orders = buyAndSellList.concat(this.cartService.otherOrders);
+    
     for (let i = 0; i < orders.length; i++) {
       const symbol = orders[i].holding.symbol;
       if (!this.daytradeStrategiesService.shouldSkip(symbol)) {
         await this.orderHandlingService.intradayStep(orders[i]);
       }
-    }
+    }    
   }
 
   private async runIntradayProcess() {
@@ -848,27 +1020,32 @@ export class AutopilotService {
       this.intradayProcessCounter = 0;
     }
 
+    console.log(`[${moment().format('HH:mm:ss')}] Executing intraday process ${this.intradayProcessCounter + 1} of ${this.processes.length}`);
     await this.processes[this.intradayProcessCounter]();
     this.intradayProcessCounter++;
   }
 
 
-  handleIntraday() {
-    if (moment().isAfter(moment(this.sessionStart).add(23, 'minutes')) &&
-      moment().isBefore(moment(this.sessionEnd).subtract(10, 'minutes'))) {
-      this.isMarketOpened().subscribe(async (isOpen) => {
-        if (isOpen) {
-          if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 9) {
-            this.lastOptionsCheckCheck = moment();
-            await this.runIntradayProcess();
-          } else {
-            await this.executeOrderList();
-          }
-        }
-      });
-      return true;
+  isIntradayTrading(): boolean {
+    return moment().isAfter(moment(this.sessionStart).add(23, 'minutes')) &&
+           moment().isBefore(moment(this.sessionEnd).subtract(10, 'minutes'));
+  }
+
+  async handleIntraday(): Promise<void> {
+    if (!this.isIntradayTrading()) {
+      return;
+    }
+
+    const isOpen = await this.isMarketOpened().toPromise();
+    if (!isOpen) {
+      return;
+    }
+    
+    if (!this.lastOptionsCheckCheck || Math.abs(moment().diff(this.lastOptionsCheckCheck, 'minutes')) > 9) {
+      this.lastOptionsCheckCheck = moment();
+      await this.runIntradayProcess();
     } else {
-      return false;
+      await this.executeOrderList();
     }
   }
 
@@ -877,7 +1054,11 @@ export class AutopilotService {
     const findPuts = async (symbol: string, prediction: number, backtestData: any, sellMl: number) => {
       if (sellMl > 0.5 && (backtestData.recommendation === 'STRONGSELL' || backtestData.recommendation === 'SELL')) {
         const cash = await this.getMinMaxCashForOptions(backtestData.impliedMovement + 1);
-        await this.optionsOrderBuilderService.balanceTrades(['SPY'], [symbol], cash.minCash, cash.maxCash, 'Inverse dispersion');
+        const result = await this.optionsOrderBuilderService.balanceTrades(['SPY'], [symbol], cash.minCash, cash.maxCash, 'Inverse dispersion');
+        // result.orders contains created orders if any
+        if (result.orders) {
+          console.log('Inverse dispersion created orders', result.orders);
+        }
       } else if ((prediction > 0.8 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY')) {
         const stock: PortfolioInfoHolding = {
           name: symbol,
@@ -928,7 +1109,7 @@ export class AutopilotService {
 
   async handleStrategy(useDefault = false) {
     this.strategyBuilderService.findTrades();
-    this.strategies = this.strategyBuilderService.getTradingStrategies();
+    this._strategies = this.strategyBuilderService.getTradingStrategies();
     const strategy = useDefault ? Strategy.Default : this.strategyList[this.strategyCounter];
 
     // Get the list of stocks to sell today from delayed sells
@@ -978,24 +1159,24 @@ export class AutopilotService {
         break;
       case Strategy.BuyMfiTrade:
         if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.bband, 'buy');
-          await this.addPairOnSignal(SwingtradeAlgorithms.bband, 'sell');
+          this.addPairOnSignal(SwingtradeAlgorithms.bband, 'buy');
+          this.addPairOnSignal(SwingtradeAlgorithms.bband, 'sell');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.bband, 'buy');
         }
         break;
       case Strategy.BuyMfiDiv2:
         if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
-          await this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'sell');
+          this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
+          this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'sell');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.mfiDivergence2, 'buy');
         }
         break;
       case Strategy.BuyMfiDiv:
         if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
-          await this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
+          this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
+          this.addPairOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.mfiDivergence, 'buy');
           await this.buyOnSignal(SwingtradeAlgorithms.mfiDivergence, 'sell');
@@ -1003,16 +1184,16 @@ export class AutopilotService {
         break;
       case Strategy.BuyFlag:
         if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
-          await this.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'sell');
+          this.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
+          this.addPairOnSignal(SwingtradeAlgorithms.flagPennant, 'sell');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.flagPennant, 'buy');
         }
         break;
       case Strategy.BuyMfi:
         if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.mfi, 'sell');
-          await this.addPairOnSignal(SwingtradeAlgorithms.mfi, 'buy');
+          this.addPairOnSignal(SwingtradeAlgorithms.mfi, 'sell');
+          this.addPairOnSignal(SwingtradeAlgorithms.mfi, 'buy');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.mfi, 'buy');
           await this.buyOnSignal(SwingtradeAlgorithms.mfi, 'sell');
@@ -1020,8 +1201,8 @@ export class AutopilotService {
         break;
       case Strategy.BuyBband:
         if (this.isVolatilityHigh()) {
-          await this.addPairOnSignal(SwingtradeAlgorithms.bband, 'buy');
-          await this.addPairOnSignal(SwingtradeAlgorithms.bband, 'sell');
+          this.addPairOnSignal(SwingtradeAlgorithms.bband, 'buy');
+          this.addPairOnSignal(SwingtradeAlgorithms.bband, 'sell');
         } else {
           await this.buyOnSignal(SwingtradeAlgorithms.bband, 'buy');
           await this.buyOnSignal(SwingtradeAlgorithms.bband, 'sell');
@@ -1055,15 +1236,16 @@ export class AutopilotService {
         this.currentHoldings.forEach(async (holding) => {
           await this.checkStopLoss(holding);
         });
+      case Strategy.IwmInverseDispersion:
+        this.findIwmTrade();
         break;
-      case Strategy.BTC:
-        await this.orderHandlingService.addBuy(this.createHoldingObj('UPRO'),
-          this.riskLevel, 'Buy BTC');
+      case Strategy.Swingtrade:
+        await this.getNewTrades(null, null, this.currentHoldings);
         break;
       default: {
-          await this.addInverseDispersionTrade();
-          await this.findStock();
-          await this.getNewTrades(null, null, this.currentHoldings);
+        this.findIwmTrade();
+        await this.addVolatilityPairs();
+        this.addPerfectPair()
         break;
       }
     }
@@ -1110,9 +1292,9 @@ export class AutopilotService {
   }
   setRiskLevel() {
     if (this.riskCounter < this.riskToleranceList.length) {
-      this.riskLevel = this.riskToleranceList[this.riskCounter];
+      this._riskLevel = this.riskToleranceList[this.riskCounter];
     } else {
-      this.riskLevel = this.riskToleranceList[this.riskToleranceList.length - 1];
+      this._riskLevel = this.riskToleranceList[this.riskToleranceList.length - 1];
     }
   }
 
@@ -1135,6 +1317,22 @@ export class AutopilotService {
   /**
  * Checks today's combined portfolio PnL from localStorage and calls changeStrategy if negative.
  */
+  public get strategies(): TradingStrategy[] {
+    return this._strategies;
+  }
+
+  public set strategies(value: TradingStrategy[]) {
+    this._strategies = value;
+  }
+
+  public get riskLevel(): RiskTolerance {
+    return this._riskLevel;
+  }
+
+  public set riskLevel(value: RiskTolerance) {
+    this._riskLevel = value;
+  }
+
   public checkAndChangeStrategyOnNegativePnL(): void {
     try {
       const key = 'todaysPortfolioPlHistory';

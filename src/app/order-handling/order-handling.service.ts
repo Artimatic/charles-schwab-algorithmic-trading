@@ -52,24 +52,77 @@ export class OrderHandlingService {
     return this.backtestService.getBacktestEvaluation(stock, startDate, currentDate, 'daily-indicators');
   }
 
-  async addBuy(holding: PortfolioInfoHolding, allocation, reason) {
+  async addBuy(holding: PortfolioInfoHolding, allocation, reason, addOrderRightAway = true) {
+    console.log('addBuy called with params:', { 
+      symbol: holding?.name, 
+      allocation, 
+      reason, 
+      addOrderRightAway 
+    });
+
     if (!holding.name) {
+      console.log('Ticker is missing, throwing error');
       throw Error('Ticker is missing')
     }
-    if ((this.cartService.getBuyOrders().length + this.cartService.getOtherOrders().length) < this.cartService.getMaxTradeCount()) {
-      const currentDate = moment().format('YYYY-MM-DD');
-      const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
-      try {
-        const allIndicators = await this.getTechnicalIndicators(holding.name, startDate, currentDate).toPromise();
-        const indicator = allIndicators.signals[allIndicators.signals.length - 1];
-        const thresholds = this.getStopLoss(indicator.low, indicator.high);
-        await this.cartService.portfolioBuy(holding,
-          allocation || 0.01,
-          thresholds.profitTakingThreshold,
-          thresholds.stopLoss, reason);
-      } catch (error) {
-        console.log('Error getting backtest data for ', holding.name, error);
-      }
+
+    if (!addOrderRightAway) {
+      console.log('Not adding order right away, adding to bullish stock list:', holding.name);
+      this.strategyBuilderService.addBullishStock(holding.name);
+      return;
+    }
+
+    const currentOrders = this.cartService.getBuyOrders().length + this.cartService.getOtherOrders().length;
+    const maxOrders = this.cartService.getMaxTradeCount();
+    console.log('Checking order limits:', { currentOrders, maxOrders });
+
+    if (currentOrders >= maxOrders) {
+      console.log('Max order count reached, skipping buy');
+      return;
+    }
+
+    const currentDate = moment().format('YYYY-MM-DD');
+    const startDate = moment().subtract(100, 'days').format('YYYY-MM-DD');
+    console.log('Getting technical indicators for:', { 
+      symbol: holding.name, 
+      startDate, 
+      currentDate 
+    });
+
+    try {
+      const allIndicators = await this.getTechnicalIndicators(holding.name, startDate, currentDate).toPromise();
+      console.log('Got indicators:', { 
+        symbol: holding.name, 
+        signalsCount: allIndicators?.signals?.length 
+      });
+
+      const indicator = allIndicators.signals[allIndicators.signals.length - 1];
+      const thresholds = this.getStopLoss(indicator.low, indicator.high);
+      console.log('Calculated thresholds:', { 
+        symbol: holding.name,
+        thresholds,
+        effectiveAllocation: allocation || 0.01
+      });
+
+      console.log('Calling portfolioBuy with params:', {
+        symbol: holding.name,
+        allocation: allocation || 0.01,
+        profitThreshold: thresholds.profitTakingThreshold,
+        stopLoss: thresholds.stopLoss,
+        reason
+      });
+
+      await this.cartService.portfolioBuy(holding,
+        allocation || 0.01,
+        thresholds.profitTakingThreshold,
+        thresholds.stopLoss, reason);
+        
+      console.log('portfolioBuy completed for:', holding.name);
+    } catch (error) {
+      console.log('Error in addBuy:', { 
+        symbol: holding.name, 
+        errorMessage: error.message,
+        errorStack: error.stack
+      });
     }
   }
 
@@ -144,8 +197,8 @@ export class OrderHandlingService {
       this.reportingService.addAuditLog(order.holding.symbol, `Total Price with secondary leg ${totalPrice}, balance: ${cashBalance}`);
       if (totalPrice < cashBalance) {
         order = this.incrementBuy(order);
-        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.primaryLegs[0].quantity} ${order.primaryLegs[0].symbol} $${totalPrice}`);
-        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.secondaryLegs[0].quantity} ${order.secondaryLegs[0].symbol} $${totalPrice}`);
+        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.primaryLegs[0].quantity} ${order.primaryLegs[0].symbol}@$${primaryLegPrice}`);
+        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.secondaryLegs[0].quantity} ${order.secondaryLegs[0].symbol}@$${secondaryLegPrice}`);
 
         await this.buyOption(order.primaryLegs[0].symbol, order.primaryLegs[0].quantity || 1, primaryLegPrice, () => { });
         await this.buyOption(order.secondaryLegs[0].symbol, order.secondaryLegs[0].quantity || 1, secondaryLegPrice, () => { });
@@ -155,7 +208,7 @@ export class OrderHandlingService {
 
       if (totalPrice < cashBalance) {
         order = this.incrementBuy(order);
-        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.quantity} ${order.primaryLegs[0].symbol} $${totalPrice}`);
+        this.reportingService.addAuditLog(order.holding.symbol, `Buying ${order.quantity} ${order.primaryLegs[0].symbol}@$${primaryLegPrice}`);
         await this.buyOption(order.primaryLegs[0].symbol, order.quantity || 1);
       } else {
         this.reportingService.addAuditLog(order.holding.symbol, 'Balance is too low.');

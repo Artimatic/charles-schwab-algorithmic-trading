@@ -1,6 +1,6 @@
 <p-messages [(value)]="messages"></p-messages>
 <app-product-view #product></app-product-view>
-<p-table #dt [columns]="selectedColumns" [value]="currentList" [paginator]="true" [rows]="10" selectionMode="single"
+<p-table #dt [columns]="selectedColumns" [value]="currentList" [paginator]="true" [rows]="8" selectionMode="single"
   [(selection)]="selectedStock" dataKey="stock">
   <ng-template pTemplate="caption">
     <div class="ui-g">
@@ -106,9 +106,24 @@
           <span *ngIf=element.kellyCriterion>{{element.kellyCriterion}}</span>
         </span>
         <span *ngSwitchCase="'ml'">
-          <div *ngIf="element.ml">
-             {{element.ml}}
+          <div *ngIf="element.ml !== undefined && element.ml !== null" [title]="element.ml">
+             {{ formatSignificant(element.ml, 2) }}
           </div>
+        </span>
+        <span *ngSwitchCase="'sellMl'">
+          <div *ngIf="element.sellMl !== undefined && element.sellMl !== null" [title]="element.sellMl">
+            {{ formatSignificant(element.sellMl, 2) }}
+          </div>
+        </span>
+        <span *ngSwitchCase="'buySignals'">
+          <span [title]="(element.buySignals || []).join(', ')">
+            {{ (element.buySignals || []).join(', ') }}
+          </span>
+        </span>
+        <span *ngSwitchCase="'sellSignals'">
+          <span [title]="(element.sellSignals || []).join(', ')">
+            {{ (element.sellSignals || []).join(', ') }}
+          </span>
         </span>
         <span *ngSwitchDefault>
           {{element[col.field]}}
@@ -122,17 +137,5 @@
         No stocks found
       </td>
     </tr>
-  </ng-template>
-  <ng-template pTemplate="summary">
-    Progress: {{progress}}/{{totalStocks}}
-    <mat-progress-bar mode="determinate" value="{{progressPct}}"></mat-progress-bar>
-    <span class="summary-title">Average Trades: </span>{{algoReport.averageTrades}}
-    <span class="summary-title">Average Returns: </span>{{algoReport.averageReturns.toFixed(1)}}%
-    <span class="summary-title">Profitable Trades: </span>{{algoReport.profitableTrades}}
-    <span class="summary-title">Total Trades: </span>{{algoReport.totalTrades}}
-    <span class="summary-title">Success Rate: </span>{{algoReport.successRate | percent}}
-    <span class="summary-title">Bullish Count: </span>{{algoReport.bullishCount}}
-    <span class="summary-title">Bearish Count: </span>{{algoReport.bearishCount}}
-    <span class="summary-title">Bullish/Bearish: </span>{{algoReport.bullishBearishRatio}}
   </ng-template>
 </p-table>

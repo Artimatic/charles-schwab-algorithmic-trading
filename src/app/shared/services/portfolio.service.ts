@@ -37,6 +37,7 @@ export interface Balance {
   buyingPower: number;
   buyingPowerNonMarginableTrade: number;
   cashBalance: number;
+  cashAvailableForTrading: number;  // Added for trading calculations
   cashReceipts: number;
   dayTradingBuyingPower: number;
   equity: number;
@@ -73,6 +74,7 @@ export class PortfolioService {
   portfolioSubject: Subject<PortfolioInfoHolding> = new Subject();
   portfolio;
   private readonly ORDERS_KEY = 'orders'; // Single key for orders
+  private tdBalanceCache: { balance: Balance; timestamp: number } | null = null;
 
   constructor(
     private http: HttpClient,
@@ -415,8 +417,14 @@ export class PortfolioService {
     return this.http.post('/api/portfolio/v2/multi-order-sell', body);
   }
 
-  getTdBalance(): Observable<any> {
+  getTdBalance(useCache: boolean = false): Observable<Balance> {
     const accountId = this.getAccountId();
+    const now = Date.now();
+    
+    // Return cached value if enabled and within 3 minutes
+    if (useCache && this.tdBalanceCache && now - this.tdBalanceCache.timestamp < 180000) {
+      return of(this.tdBalanceCache.balance);
+    }
 
     const options = {
       params: {
@@ -424,7 +432,20 @@ export class PortfolioService {
       }
     };
 
-    return this.http.get('/api/portfolio/balance', options);
+    return this.http.get<Balance>('/api/portfolio/balance', options)
+      .pipe(
+        map(balance => {
+          // Calculate cashAvailableForTrading based on available funds and cash balance
+          balance.cashAvailableForTrading = Math.min(balance.availableFunds, balance.cashBalance);
+          
+          // Update cache with new value
+          this.tdBalanceCache = {
+            balance,
+            timestamp: now
+          };
+          return balance;
+        })
+      );
   }
 
   getIntradayPriceHistoryQuotes(symbol: string): Observable<any> {

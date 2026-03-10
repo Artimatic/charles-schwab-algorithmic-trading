@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AiPicksService, CartService, PortfolioInfoHolding } from '@shared/services';
 import { Stock } from '@shared/stock.interface';
+import { StrategyBuilderService } from 'src/app/backtest-table/strategy-builder.service';
 
 @Component({
   selector: 'app-algo-evaluation',
@@ -12,21 +13,31 @@ export class AlgoEvaluationComponent implements OnInit {
   selectedStock: any;
   currentList: any[] = [];
   stockList: Stock[] = [];
-  showPortfolio;
+  tableStates: any[] = [
+    { label: 'Portfolio', value: 'portfolio' },
+    { label: 'Recommendations', value: 'recommendations' },
+    { label: 'Trading Pairs', value: 'tradingPairs' }
+  ];
+  tableDisplay: string = 'portfolio';
   recommendations: Stock[] = [];
+  tradingPairs: any[] = [];
 
   constructor(private aiPicksService: AiPicksService,
-    private cartService: CartService) { }
+    private cartService: CartService,
+    private strategyBuilderService: StrategyBuilderService) { }
 
   async ngOnInit() {
     await this.getBacktests();
 
     this.aiPicksService.mlNeutralResults.subscribe(async () => {
+      console.log('AlgoEvaluationComponent detected mlNeutralResults update');
       await this.getBacktests();
     });
   }
 
   async getBacktests() {
+    this.strategyBuilderService.clearBullishStock();
+    this.strategyBuilderService.clearBearishStocks();
     this.stockList = [];
     const savedBacktest = JSON.parse(localStorage.getItem('backtest'));
     if (savedBacktest) {
@@ -37,8 +48,10 @@ export class AlgoEvaluationComponent implements OnInit {
     this.recommendations = this.stockList.filter(stock => {
       if ((stock?.ml > 0.5) && (stock.recommendation.toLowerCase() === 'buy' || stock.recommendation.toLowerCase() === 'strongbuy')) {
         stock.recommendation = 'Strong buy';
+        this.strategyBuilderService.addBullishStock(stock.stock);
         return true;
-      } else if ((stock?.sellMl > 0.5) && (stock.recommendation.toLowerCase() === 'sell' || stock.recommendation.toLowerCase() === 'strongsell')) {
+      } else if ((stock?.sellMl > 0.5 || stock?.ml < 0.4) && (stock.recommendation.toLowerCase() === 'sell' || stock.recommendation.toLowerCase() === 'strongsell')) {
+        this.strategyBuilderService.addBearishStock(stock.stock);
         stock.recommendation = 'Strong sell';
         return true;
       }
@@ -70,9 +83,18 @@ export class AlgoEvaluationComponent implements OnInit {
     ];
   }
 
+  setColumnsForTradingPairs() {
+    this.selectedColumns = [
+      { field: 'name', header: 'Strategy Name' },
+      { field: 'buySymbols', header: 'Buy Symbols' },
+      { field: 'sellSymbols', header: 'Sell Symbols' },
+      { field: 'reason', header: 'Reason' }
+    ];
+  }
+
   async setTable(ev = null) {
-    this.showPortfolio = ev?.checked;
-    if (this.showPortfolio) {
+    this.tableDisplay = ev?.value || 'portfolio';
+    if (this.tableDisplay === 'portfolio') {
       this.setColumnsForPortfolio();
       const positions = await this.cartService.findCurrentPositions();
       this.currentList = positions.map((pos: PortfolioInfoHolding) => {
@@ -85,6 +107,17 @@ export class AlgoEvaluationComponent implements OnInit {
           primaryLegsSymbol: pos.primaryLegs ? pos.primaryLegs[0].putCall : '',
           secondaryLegs: pos.secondaryLegs ? pos.secondaryLegs.map(leg => `${leg.quantity} ${leg.description}`).join(',') : null,
           secondaryLegsSymbol: pos.secondaryLegs ? pos.secondaryLegs[0].putCall : ''
+        };
+      });
+    } else if (this.tableDisplay === 'tradingPairs') {
+      this.setColumnsForTradingPairs();
+      const strategies = this.strategyBuilderService.getTradingStrategies();
+      this.currentList = strategies.map(strategy => {
+        return {
+          name: strategy.name || 'Unnamed Strategy',
+          buySymbols: strategy.strategy?.buy?.length ? strategy.strategy.buy.join(', ') : 'None',
+          sellSymbols: strategy.strategy?.sell?.length ? strategy.strategy.sell.join(', ') : 'None',
+          reason: strategy.reason || 'No reason specified'
         };
       });
     } else {
