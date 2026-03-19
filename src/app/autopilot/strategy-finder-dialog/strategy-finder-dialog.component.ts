@@ -52,7 +52,11 @@ export class StrategyFinderDialogComponent implements OnInit {
         SwingtradeAlgorithms.mfiDivergence,
         SwingtradeAlgorithms.mfiDivergence2,
         SwingtradeAlgorithms.breakResistance,
-        SwingtradeAlgorithms.breakSupport
+        SwingtradeAlgorithms.breakSupport,
+        SwingtradeAlgorithms.bbandBreakout,
+        SwingtradeAlgorithms.mfiLow,
+        SwingtradeAlgorithms.macd,
+        SwingtradeAlgorithms.roc
       ];
 
       // collect results from all signals
