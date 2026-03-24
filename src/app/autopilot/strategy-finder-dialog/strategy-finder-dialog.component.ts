@@ -70,6 +70,15 @@ export class StrategyFinderDialogComponent implements OnInit {
         });
       }
 
+      for (const oppositeSig of signals) {
+        const result = this.autopilotService.addPairOnSignal(oppositeSig, 'sell', false);
+        this.signalResults.push({
+          signal: oppositeSig + ' (sell)',
+          buys: result.buys,
+          sells: result.sells
+        });
+      }
+
       console.log('all signal results', this.signalResults);
 
       // attempt to balance trades for all signals that have both buys and sells
