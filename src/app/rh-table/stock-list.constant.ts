@@ -7,6 +7,7 @@ const currentList = [
     'META',
     'NVDA',
     'AMD',
+    'BX',
     'INTC',
     'BAC',
     'C',
