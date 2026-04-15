@@ -154,7 +154,7 @@ export class AutopilotService {
     Strategy.BuySnP,
     Strategy.IwmInverseDispersion,
     Strategy.PerfectPair,
-    Strategy.Swingtrade,
+    // Strategy.Swingtrade,
     Strategy.VolatilityPairs,
     Strategy.MLPairs,
     Strategy.TrimHoldings,
@@ -229,7 +229,7 @@ export class AutopilotService {
       // Prevent handleBalanceUtilization if last call was within 45 minutes
       if (!this.lastBalanceUtilizationCheck || Math.abs(moment().diff(this.lastBalanceUtilizationCheck, 'minutes')) > 45) {
         this.lastBalanceUtilizationCheck = moment();
-        await this.handleBalanceUtilization(this.currentHoldings);
+        // await this.handleBalanceUtilization(this.currentHoldings);
       } else {
         this.reportingService.addAuditLog(null, 'Skipped handleBalanceUtilization: last call within 45 minutes');
       }
@@ -476,7 +476,7 @@ export class AutopilotService {
   }
 
   async findSwingStockCallback(symbol: string, prediction: number | null, backtestData: BacktestData): Promise<void> {
-    if ((prediction > 0.65 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY') && this.priceTargetService.isProfitable(backtestData.invested, backtestData.net)) {
+    if (((prediction) > 0.65 || prediction === null) && (backtestData.recommendation === 'STRONGBUY' || backtestData.recommendation === 'BUY') && this.priceTargetService.isProfitable(backtestData.invested, backtestData.net)) {
       const stock: PortfolioInfoHolding = {
         name: symbol,
         pl: 0,
@@ -1130,7 +1130,7 @@ export class AutopilotService {
         await this.addMLPairs();
         break;
       case Strategy.TrimHoldings:
-        this.handleBalanceUtilization(this.currentHoldings, true);
+        // this.handleBalanceUtilization(this.currentHoldings, true);
         break;
       case Strategy.Short:
         await this.addShort();
