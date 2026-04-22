@@ -18,7 +18,7 @@ export const routes: Routes = [
   },
   {
     path: 'deep-analysis',
-    loadChildren: './machine-learning/machine-learning.module#MachineLearningModule'
+    loadChildren: () => import('./machine-learning/machine-learning.module').then(m => m.MachineLearningModule)
   },
   {
     path: 'backtest',

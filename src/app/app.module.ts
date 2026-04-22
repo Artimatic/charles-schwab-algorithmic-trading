@@ -4,18 +4,36 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 import { ChartModule } from 'angular-highcharts';
-import { ToastModule } from 'primeng/toast';
-import { MessageService } from 'primeng/api';
-import { InputTextModule } from 'primeng/inputtext';
-import { ToolbarModule } from 'primeng/toolbar';
-import { TooltipModule } from 'primeng/tooltip';
-import { TabMenuModule } from 'primeng/tabmenu';
-import { OverlayPanelModule } from 'primeng/overlaypanel';
+
+// Angular Material imports
+import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatInputModule } from '@angular/material/input';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatMenuModule } from '@angular/material/menu';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatTableModule } from '@angular/material/table';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatSortModule } from '@angular/material/sort';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { MatStepperModule } from '@angular/material/stepper';
+import { MatListModule } from '@angular/material/list';
+import { MatRippleModule } from '@angular/material/core';
 
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import 'hammerjs';
-
-import { routes } from './app.routes';
 import { AppComponent } from './app.component';
 import { BulkBacktestComponent } from './bulk-backtest';
 import { XlsImportComponent } from './xls-import/xls-import.component';
@@ -76,7 +94,6 @@ import { TimepickerModule } from 'ngx-bootstrap/timepicker';
 import { PieAlloctComponent } from './pie-alloct/pie-alloct.component';
 import { AiPicksComponent } from './ai-picks/ai-picks.component';
 import { AutoBacktestSwitchComponent } from './auto-backtest-switch/auto-backtest-switch.component';
-import { SchedulerService } from '@shared/service/scheduler.service';
 import { DialogService, DynamicDialogModule } from 'primeng/dynamicdialog';
 import { PasswordModule } from 'primeng/password';
 import { CheckboxModule } from 'primeng/checkbox';
@@ -84,6 +101,20 @@ import { InputTextareaModule } from 'primeng/inputtextarea';
 import { PickListModule } from 'primeng/picklist';
 import { TimelineModule } from 'primeng/timeline';
 import { DataViewModule } from 'primeng/dataview';
+import { ButtonModule } from 'primeng/button';
+import { CardModule } from 'primeng/card';
+import { TableModule } from 'primeng/table';
+import { MessagesModule } from 'primeng/messages';
+import { SelectButtonModule } from 'primeng/selectbutton';
+import { SplitButtonModule } from 'primeng/splitbutton';
+import { StepsModule } from 'primeng/steps';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
+import { InputTextModule } from 'primeng/inputtext';
+import { ToolbarModule } from 'primeng/toolbar';
+import { TooltipModule } from 'primeng/tooltip';
+import { TabMenuModule } from 'primeng/tabmenu';
+import { OverlayPanelModule } from 'primeng/overlaypanel';
 import { AutopilotComponent } from './autopilot/autopilot.component';
 import { RippleModule } from 'primeng/ripple';
 import { BacktestTableComponent } from './backtest-table/backtest-table.component';
@@ -95,6 +126,7 @@ import { SimulationChartComponent } from './simulation/simulation-chart/simulati
 import { AlgoEvaluationModule } from './algo-evaluation/algo-evaluation.module';
 import { LiveSimulationComponent } from './simulation/live-simulation/live-simulation.component';
 import { StatsCardComponent } from './stats-card/stats-card.component';
+import { routes } from './app.routes';
 
 @NgModule({
   declarations: [
@@ -169,6 +201,34 @@ import { StatsCardComponent } from './stats-card/stats-card.component';
     MachineLearningModule,
     SharedModule,
     TimepickerModule.forRoot(),
+    // Angular Material modules
+    MatSnackBarModule,
+    MatInputModule,
+    MatToolbarModule,
+    MatTooltipModule,
+    MatTabsModule,
+    MatMenuModule,
+    MatDialogModule,
+    MatButtonModule,
+    MatIconModule,
+    MatCardModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatCheckboxModule,
+    MatTableModule,
+    MatPaginatorModule,
+    MatSortModule,
+    MatProgressSpinnerModule,
+    MatProgressBarModule,
+    MatChipsModule,
+    MatSlideToggleModule,
+    MatAutocompleteModule,
+    MatExpansionModule,
+    MatStepperModule,
+    MatListModule,
+    MatRippleModule,
+    AlgoEvaluationModule,
+    // Keep PrimeNG modules for now (will migrate gradually)
     ToastModule,
     InputTextModule,
     DynamicDialogModule,
@@ -178,12 +238,18 @@ import { StatsCardComponent } from './stats-card/stats-card.component';
     PickListModule,
     TimelineModule,
     DataViewModule,
+    ButtonModule,
+    CardModule,
+    TableModule,
+    MessagesModule,
+    SelectButtonModule,
+    SplitButtonModule,
+    StepsModule,
     ToolbarModule,
     TooltipModule,
-    RippleModule,
     TabMenuModule,
-    AlgoEvaluationModule,
-    OverlayPanelModule
+    OverlayPanelModule,
+    RippleModule,
   ],
   providers: [
     BacktestService,
@@ -198,7 +264,6 @@ import { StatsCardComponent } from './stats-card/stats-card.component';
     AlgoService,
     TradeService,
     MessageService,
-    SchedulerService,
     DialogService,
   ],
   bootstrap: [AppComponent]

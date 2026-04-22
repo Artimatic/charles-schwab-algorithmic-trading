@@ -1,82 +1,71 @@
 <!-- Strategy finder dialog moved to `StrategyFinderDialogComponent` and is opened via DialogService -->
 
-<p-card>
+<mat-card>
     <span *ngIf="autopilotService.strategyList[autopilotService.strategyCounter] === 'Daytrade'">
-        <p-tag [value]="autopilotService.strategyList[autopilotService.strategyCounter]" pTooltip="Current strategy"
-            severity="warning"></p-tag>
+        <mat-chip [color]="getStrategyChipColor('Daytrade')" matTooltip="Current strategy">{{autopilotService.strategyList[autopilotService.strategyCounter]}}</mat-chip>
     </span>
     <span *ngIf="autopilotService.strategyList[autopilotService.strategyCounter] !== 'Daytrade'">
-        <p-tag [value]="autopilotService.strategyList[autopilotService.strategyCounter]" pTooltip="Current strategy"
-            severity="danger"></p-tag>
+        <mat-chip [color]="getStrategyChipColor('other')" matTooltip="Current strategy">{{autopilotService.strategyList[autopilotService.strategyCounter]}}</mat-chip>
     </span>
-    <p-tag [value]="'Predicted volatility: ' + autopilotService.volatility * 100 +'%'"
-        *ngIf="autopilotService.volatility >= 0.5" severity="danger" pTooltip="Predicted volatility"></p-tag>
+    <mat-chip [color]="getVolatilityChipColor(autopilotService.volatility)" matTooltip="Predicted volatility">Predicted volatility: {{autopilotService.volatility * 100 | number:'1.2-2'}}%</mat-chip>
 
-    <p-tag [value]="'Predicted volatility: ' + autopilotService.volatility * 100 +'%'"
-        *ngIf="autopilotService.volatility >= 0.28 && autopilotService.volatility < 0.5" severity="warning"
-        pTooltip="Predicted volatility"></p-tag>
+    <mat-chip color="primary" matTooltip="Predicted">Predicted BTC: {{autopilotService.lastBtcMl * 100 | number:'1.2-2'}}%</mat-chip>
 
-    <p-tag [value]="'Predicted volatility: ' + autopilotService.volatility * 100 +'%'"
-        *ngIf="autopilotService.volatility < 0.28" severity="success" pTooltip="Predicted volatility"></p-tag>
+    <mat-chip color="primary" matTooltip="Predicted">Predicted GLD: {{autopilotService.lastGldMl * 100 | number:'1.2-2'}}%</mat-chip>
 
-    <p-tag [value]="'Predicted BTC: ' + autopilotService.lastBtcMl * 100 +'%'" severity="info"
-        pTooltip="Predicted"></p-tag>
+    <mat-chip color="primary" matTooltip="Predicted">Predicted SPY: {{autopilotService.lastSpyMl * 100 | number:'1.2-2'}}%</mat-chip>
 
-    <p-tag [value]="'Predicted GLD: ' + autopilotService.lastGldMl * 100 +'%'" severity="info"
-        pTooltip="Predicted"></p-tag>
+    <mat-chip color="primary" matTooltip="Portfolio volatility">Portfolio volatility: {{priceTargetService.portfolioVolatility * 100 | number:'1.2-2'}}%</mat-chip>
 
-    <p-tag [value]="'Predicted SPY: ' + (autopilotService.lastSpyMl * 100 | number: '1.2-2') + '%'" severity="info"
-        pTooltip="Predicted"></p-tag>
+    <mat-chip color="primary" matTooltip="Estimated portfolio profit and loss">Estimated portfolio profit and loss: {{priceTargetService.portfolioPl * 100 | number:'1.2-2'}}%</mat-chip>
 
-    <p-tag [value]="'Portfolio volatility: ' + priceTargetService.portfolioVolatility * 100 +'%'" severity="info"
-        pTooltip="Portfolio volatility"></p-tag>
-
-    <p-tag [value]="'Estimated portfolio profit and loss: ' + priceTargetService.portfolioPl * 100 +'%'" severity="info"
-        pTooltip="Estimated portfolio profit and loss"></p-tag>
-
-    <p-tag [value]="'Profit target: ' + priceTargetService.targetDiff * 100 +'%'" severity="info"
-        pTooltip="Profit target"></p-tag>
-    <p-tag pTooltip="Trade allocation - percentage of cash balance"
-        [value]="'Trade allocation - percentage of cash balance: ' + autopilotService.riskLevel * 100 +'%'"
-        severity="danger"></p-tag>
+    <mat-chip color="primary" matTooltip="Profit target">Profit target: {{priceTargetService.targetDiff * 100 | number:'1.2-2'}}%</mat-chip>
+    <mat-chip color="warn" matTooltip="Trade allocation - percentage of cash balance">Trade allocation - percentage of cash balance: {{autopilotService.riskLevel * 100 | number:'1.2-2'}}%</mat-chip>
     <!-- 
-<p-tag [value]="dayTradingRiskToleranceList[dayTradeRiskCounter] * 100 +'%'" severity="warning"
-pTooltip="Day trade allocation - percentage of total bp"></p-tag>
+<mat-chip [color]="getDaytradeRiskColor()" matTooltip="Day trade allocation - percentage of total bp">{{dayTradingRiskToleranceList[dayTradeRiskCounter] * 100}}%</mat-chip>
 <label for="daytrade-switch">Daytrade mode</label>
-<p-inputSwitch inputId="daytrade-switch" (onChange)="handleDaytrade()" [(ngModel)]="daytradeMode"></p-inputSwitch>
+<mat-slide-toggle id="daytrade-switch" (change)="handleDaytrade()" [(ngModel)]="daytradeMode"></mat-slide-toggle>
 -->
-</p-card>
-<p-card>
-    <p-toolbar id="autopilot-toolbar">
-        <div class="p-toolbar-group-left">
+</mat-card>
+<mat-card>
+    <mat-toolbar id="autopilot-toolbar">
+        <div class="toolbar-group-left">
             <div class="toolbar-header">
                 <ng-container *ngTemplateOutlet="header"></ng-container>
             </div>
         </div>
-        <div class="p-toolbar">
+        <div class="toolbar-center">
             <!-- <app-ai-picks></app-ai-picks> -->
             <!-- <app-daytrade-active-search></app-daytrade-active-search> -->
             <app-algo-evaluation></app-algo-evaluation>
         </div>
-        <div class="p-toolbar-group-right">
-            <p-splitButton label="Auto Manage" icon="pi pi-play" severity="success" *ngIf="!display" (onClick)="open()"
-                [model]="startButtonOptions" styleClass="p-button-success"></p-splitButton>
-            <p-button label="Stop" icon="pi pi-times" *ngIf="display" styleClass="p-button-danger"
-                (click)="stop()"></p-button>
-            <p-splitButton label="Show strategies" severity="success" (onClick)="showStrategies()"
-                [model]="otherOptions"></p-splitButton>
-            <p-splitButton label="Test Functionalities" severity="warning" (onClick)="test()"
-                [model]="multibuttonOptions" styleClass="p-button-warning"></p-splitButton>
+        <div class="toolbar-group-right">
+            <button mat-raised-button color="primary" *ngIf="!display" (click)="open()" matTooltip="Auto Manage">
+                <mat-icon>play_arrow</mat-icon>
+                Auto Manage
+            </button>
+            <button mat-raised-button color="warn" *ngIf="display" (click)="stop()" matTooltip="Stop">
+                <mat-icon>stop</mat-icon>
+                Stop
+            </button>
+            <button mat-raised-button color="primary" (click)="showStrategies()" matTooltip="Show strategies">
+                <mat-icon>list</mat-icon>
+                Show strategies
+            </button>
+            <button mat-raised-button color="accent" (click)="test()" matTooltip="Test Functionalities">
+                <mat-icon>bug_report</mat-icon>
+                Test Functionalities
+            </button>
             <app-default-order-lists class="default-orders-button"></app-default-order-lists>
         </div>
-    </p-toolbar>
-</p-card>
+    </mat-toolbar>
+</mat-card>
 <ng-template #header>
     <div class="grid-container">
         <div class="grid-item">
             <h3>Strategy</h3>
             <label for="trading-switch">Trading is active</label>
-            <p-inputSwitch inputId="trading-switch" [(ngModel)]="isOpenMarket" [readonly]="true"></p-inputSwitch>
+            <mat-slide-toggle id="trading-switch" [(ngModel)]="isOpenMarket" [disabled]="true"></mat-slide-toggle>
         </div>
     </div>
 </ng-template>

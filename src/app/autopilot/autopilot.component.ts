@@ -424,6 +424,15 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     return this.riskManagementService.getDayTradeRiskCounter();
   }
 
+  getVolatilityChipColor(volatility: number): string {
+    if (volatility > 0.3) {
+      return 'warn';
+    } else if (volatility > 0.15) {
+      return 'accent';
+    }
+    return 'primary';
+  }
+
   addCurrentHoldingsToAuditLog(): void {
     this.strategyManagementService.addCurrentHoldingsToAuditLog();
   }
