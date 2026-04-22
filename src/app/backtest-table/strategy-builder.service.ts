@@ -226,7 +226,7 @@ export class StrategyBuilderService {
     return (price > 70 && price < 3700);
   }
 
-  async getCallStrangleTrade(symbol: string): Promise<Strangle> {
+  async getCallStrangleTrade(symbol: string): Promise<Strangle | null> {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
     if (!optionsData.move || optionsData.move > this.defaultMaxImpliedMovement) {
       console.log(null,
@@ -247,7 +247,7 @@ export class StrategyBuilderService {
         console.log('Unable to find options chain for', optionsChain);
         this.reportingService.addAuditLog(null,
           'Unable to find options chain for ' + symbol);
-        return;
+        return null;
       }
       potentialStrangle = strategyList.optionStrategyList.reduce((prev, curr) => {
         if (this.isWithinCallMovementRange(goal, curr.strategyStrike, impliedMovement)) {
