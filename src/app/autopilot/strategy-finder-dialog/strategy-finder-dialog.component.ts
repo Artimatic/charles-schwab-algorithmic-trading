@@ -58,7 +58,7 @@ export class StrategyFinderDialogComponent implements OnInit {
       const getMovement = (symbol: string) => {
         // Find the entry that matches this symbol in savedBacktest
         const match = Object.values(savedBacktest).find(
-          (b: any) => b.symbol === symbol,
+          (b: any) => b.stock === symbol,
         );
         return match ? (match as any).impliedMovement : null;
       };
