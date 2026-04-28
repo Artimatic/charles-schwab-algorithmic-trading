@@ -16,6 +16,6 @@ module.exports = function(app) {
   app.use('/api/ordering', require('./api/ordering'));
   app.route('/*')
     .get(function(req, res) {
-      res.sendfile('dist/public/index.html');
+      res.sendfile('dist/server/public/index.html');
   });
 };
