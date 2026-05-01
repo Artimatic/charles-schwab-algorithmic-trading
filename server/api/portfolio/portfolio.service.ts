@@ -1,5 +1,5 @@
 import * as request from 'request-promise';
-import * as charlesSchwabApi from 'charles-schwab-api';
+import * as charlesSchwabApi from '../../lib/charles-schwab-api';
 import * as _ from 'lodash';
 import * as moment from 'moment';
 
