@@ -109,10 +109,13 @@ class PortfolioService {
         const data = (response as any).data;
         this.getAccountNumbers(data?.access_token)
           .then(accountNumbers => {
+            console.log('Retrieved account numbers: ', accountNumbers);
+            console.log('accountId: ', accountId);
             accountNumbers.forEach(val => {
               this.accountIdToHash[val.accountNumber] = val.hashValue;
             });
             this.refreshTokensHash[accountId] = (data?.refresh_token as string) || null;
+
             this.access_token[accountId] = {
               timestamp: moment().valueOf(),
               token: data?.access_token || null
@@ -131,40 +134,83 @@ class PortfolioService {
       });
   }
 
-  refreshAccessToken(accountId) {
-    if (!accountId) {
-      return Promise.reject(new Error('Missing accountId. Please log in.'));
-    }
-    if (!this.accountStore[accountId]?.appKey) {
-      return Promise.reject(new Error('Missing appKey. Please log in.'));
-    }
-    if (!this.accountStore[accountId]?.secret) {
-      return Promise.reject(new Error('Missing secret. Please log in.'));
-    }
-    if (!this.refreshTokensHash[accountId]) {
-      return Promise.reject(new Error('Missing refresh token. Please log in.'));
-    }
-
-    return charlesSchwabApi.refreshAccessToken(this.accountStore[accountId].appKey,
-      this.accountStore[accountId].secret,
-      this.refreshTokensHash[accountId]
-    ).then((response) => {
-      const data = (response as any).data;
-      this.refreshTokensHash[accountId] = (data?.refresh_token as string) || null;
-      this.access_token[accountId] = {
-        timestamp: moment().valueOf(),
-        token: data?.access_token || null
-      }
-      return Promise.resolve({ accountId: accountId });
-    })
-      .catch(e => {
-        if (e.toJSON) {
-          const error = e.toJSON();
-          console.log('error refreshing token:', JSON.stringify(error));
-        }
-        return e;
-      });
+async refreshAccessToken(accountId: string) {
+  if (!accountId) {
+    return Promise.reject(new Error('Missing accountId. Please log in.'));
   }
+  if (!this.accountStore[accountId]?.appKey) {
+    return Promise.reject(new Error('Missing appKey. Please log in.'));
+  }
+  if (!this.accountStore[accountId]?.secret) {
+    return Promise.reject(new Error('Missing secret. Please log in.'));
+  }
+  if (!this.refreshTokensHash[accountId]) {
+    return Promise.reject(new Error('Missing refresh token. Please log in.'));
+  }
+
+  try {
+    const refreshToken = this.refreshTokensHash[accountId];
+
+    const response = await charlesSchwabApi.refreshAccessToken(
+      this.accountStore[accountId].appKey,
+      this.accountStore[accountId].secret,
+      refreshToken
+    );
+    
+    const data = response.data;
+    this.refreshTokensHash[accountId] = data?.refresh_token || null;
+    this.access_token[accountId] = {
+      timestamp: moment().valueOf(),
+      token: data?.access_token || null
+    };
+    
+    return Promise.resolve({ accountId });
+    
+  } catch (error: any) {
+    const errorData = error.response?.data;
+    const errorDescription = errorData?.error_description || errorData?.error || 'Unknown error';
+    
+    console.error('Token refresh failed:', {
+      status: error.response?.status,
+      error: errorData?.error,
+      errorDescription: errorDescription?.substring(0, 200) + '...'
+    });
+    
+    const authErrors = [
+      'unsupported_token_type',
+      'refresh_token_authentication_error', 
+      'invalid_grant',
+      'invalid_request'
+    ];
+    
+    if (error.response?.status === 400 && authErrors.some(e => errorDescription.includes(e))) {
+      console.error('Refresh token is INVALID - clearing and requiring re-auth');
+      
+      // Clear ALL tokens for this account
+      this.refreshTokensHash[accountId] = null;
+      this.access_token[accountId] = null;
+      
+      // Return specific error for UI to handle
+      return Promise.reject({
+        statusCode: 401,
+        error: 'authentication_required',
+        message: 'Refresh token invalid. Please log in again.',
+        schwabError: errorData
+      });
+    }
+    
+    // Handle other 401 errors
+    if (error.response?.status === 401) {
+      console.error('Unauthorized - credentials invalid');
+      this.refreshTokensHash[accountId] = null;
+      this.access_token[accountId] = null;
+      return Promise.reject(error);
+    }
+    
+    // Re-throw other errors
+    return Promise.reject(error);
+  }
+}
 
   getAccountNumbers(token) {
     const url = `${charlesSchwabTraderUrl}accounts/accountNumbers`;
@@ -221,7 +267,6 @@ class PortfolioService {
       return Promise.resolve({ message: 'Added new token' });
     })
       .catch(error => {
-        console.log('Potential token error: ', error, accountId);
         const diffMinutes = moment().diff(moment(this.access_token[accountId].timestamp), 'minutes');
 
         if (!diffMinutes || diffMinutes >= 30) {
@@ -372,10 +417,16 @@ class PortfolioService {
   }
 
   getDailyQuotes(symbol, startDate, endDate, accountId, reply) {
-    console.log(moment().format(), 'Retrieving daily quotes ');
+    console.log(moment().format(), `Retrieving daily quotes for ${symbol}`, { accountId });
+
+    if (!accountId) {
+      console.warn('getDailyQuotes called with missing accountId. Attempting to resolve via getAccountId().');
+      accountId = this.getAccountId();
+    }
 
     if (!this.access_token[accountId]) {
-      console.log('missing access token');
+      console.error('getDailyQuotes: Missing access token for account:', accountId);
+      console.trace('Trace for missing access token context:');
 
       return this.renewAuth(accountId, reply)
         .then(() => this.getTDDailyQuotes(symbol, startDate, endDate, accountId));

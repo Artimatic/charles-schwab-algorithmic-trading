@@ -58,9 +58,13 @@ export function getAccessToken(
 ): Promise<ApiResponse> {
   const path = '/oauth/token';
   const url = `${host}${path}`;
+  
+  // Decode code if needed (Schwab may return encoded)
+  const decodedCode = decodeURIComponent(code);
+  
   const data = {
     grant_type,
-    code,
+    code: decodedCode,
     redirect_uri
   };
 
@@ -84,9 +88,12 @@ export function refreshAccessToken(
 ): Promise<any> {
   const path = '/oauth/token';
   const url = `${host}${path}`;
+  
+  const decodedRefreshToken = decodeURIComponent(refreshToken);
+  
   const data = {
     grant_type: 'refresh_token',
-    refresh_token: refreshToken
+    refresh_token: decodedRefreshToken  // Send decoded token
   };
 
   const options = {
