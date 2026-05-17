@@ -88,6 +88,14 @@ export class StrategyFinderDialogComponent implements OnInit {
     );
   }
 
+  private mergeUniqueSymbols(
+    target: Array<{ symbol: string; movement: number }>,
+    source: Array<{ symbol: string; movement: number }>,
+  ) {
+    const seen = new Set(target.map((s) => s.symbol));
+    return [...target, ...source.filter((s) => !seen.has(s.symbol))];
+  }
+
   close() {
     this.ref.close();
   }
@@ -100,7 +108,7 @@ export class StrategyFinderDialogComponent implements OnInit {
         localStorage.getItem(this.backtestStorageKey) || "{}",
       );
 
-      const backtestMap = new Map<string, any>();
+      const backtestMap = new Map<string, number>();
       Object.values(savedBacktest).forEach((b: any) => {
         if (b && b.stock) {
           backtestMap.set(b.stock, b.impliedMovement);
@@ -161,7 +169,32 @@ export class StrategyFinderDialogComponent implements OnInit {
         this.saveSignalResults(filtered);
       }
 
-      this.signalResults = [...existing, ...filtered];
+      const mergedMap = new Map<string, SignalResult>();
+      [...existing, ...filtered].forEach((item) => {
+        if (mergedMap.has(item.signal)) {
+          const found = mergedMap.get(item.signal);
+          found.buys = this.mergeUniqueSymbols(found.buys, item.buys);
+          found.sells = this.mergeUniqueSymbols(found.sells, item.sells);
+          mergedMap.set(item.signal, {
+            signal: item.signal,
+            buys: found.buys,
+            sells: found.sells,
+            generatedAt: Math.max(
+              found.generatedAt || 0,
+              item.generatedAt || 0,
+            ),
+          });
+        } else {
+          mergedMap.set(item.signal, {
+            buys: item.buys,
+            sells: item.sells,
+            generatedAt: item.generatedAt,
+            signal: item.signal,
+          });
+        }
+      });
+
+      this.signalResults = mergedMap.size ? Array.from(mergedMap.values()) : [];
       console.log("all signal results", this.signalResults);
 
       // attempt to balance trades for all signals that have both buys and sells
