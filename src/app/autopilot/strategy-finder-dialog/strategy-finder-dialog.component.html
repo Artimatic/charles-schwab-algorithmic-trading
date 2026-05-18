@@ -180,37 +180,18 @@
     >
       <thead>
         <tr>
-          <th
-            style="
-              text-align: left;
-              padding: 0.5rem;
-              border-bottom: 1px solid #e6e6e6;
-            "
-          >
-            Signal
-          </th>
-          <th
-            style="
-              text-align: left;
-              padding: 0.5rem;
-              border-bottom: 1px solid #e6e6e6;
-            "
-          >
-            Buys
-          </th>
-          <th
-            style="
-              text-align: left;
-              padding: 0.5rem;
-              border-bottom: 1px solid #e6e6e6;
-            "
-          >
-            Sells
-          </th>
+          <th style="text-align: left; padding: 0.5rem; border-bottom: 1px solid #e6e6e6;">Signal</th>
+          <th style="text-align: left; padding: 0.5rem; border-bottom: 1px solid #e6e6e6;">Buys</th>
+          <th style="text-align: left; padding: 0.5rem; border-bottom: 1px solid #e6e6e6;">Sells</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let sr of signalResults">
+        <tr 
+          *ngFor="let sr of signalResults" 
+          (click)="balanceTrades(sr.buys, sr.sells, sr.signal)"
+          style="cursor: pointer; transition: background-color 0.2s;"
+          class="strategy-row"
+        >
           <td style="padding: 0.5rem; border-bottom: 1px solid #f5f5f5">
             <strong>{{ sr.signal }}</strong>
           </td>
@@ -239,7 +220,6 @@
     </table>
   </div>
 </div>
-
 <p-button
   label="Ok"
   styleClass="p-button-success"

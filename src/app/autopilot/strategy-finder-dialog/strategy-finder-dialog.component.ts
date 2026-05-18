@@ -196,20 +196,25 @@ export class StrategyFinderDialogComponent implements OnInit {
 
       this.signalResults = mergedMap.size ? Array.from(mergedMap.values()) : [];
       console.log("all signal results", this.signalResults);
+    }
+  }
 
-      // attempt to balance trades for all signals that have both buys and sells
-      for (const sr of this.signalResults) {
-        if (sr.buys.length && sr.sells.length) {
-          const result = await this.optionsOrderBuilderService.balanceTrades(
-            sr.buys.map((item) => item.symbol),
-            sr.sells.map((item) => item.symbol),
-            1000,
-            5000,
-            `Signal-generated pair (${sr.signal})`,
-          );
-          console.log(`balanceTrades returned for ${sr.signal}`, result);
-        }
-      }
+  async balanceTrades(
+    buys: Array<{ symbol: string; movement: number }>,
+    sells: Array<{ symbol: string; movement: number }>,
+    signal: string,
+  ) {
+    if (buys.length && sells.length) {
+      const result = await this.optionsOrderBuilderService.balanceTrades(
+        buys.map((item) => item.symbol),
+        sells.map((item) => item.symbol),
+        5000,
+        10000,
+        `Signal-generated pair (${signal})`,
+        false,
+        0.15
+      );
+      console.log(`balanceTrades returned for ${signal}`, result);
     }
   }
 }

@@ -264,7 +264,8 @@ export class OptionsOrderBuilderService {
     minCashAllocation: number,
     maxCashAllocation: number,
     reason: string,
-    addToList: boolean = true): Promise<{ currentPut: TradingPair | null; currentCall: TradingPair | null; orders: SmartOrder[] | null }> {
+    addToList: boolean = true,
+    maxImpliedMovement = this.strategyBuilderService.defaultMaxImpliedMovement): Promise<{ currentPut: TradingPair | null; currentCall: TradingPair | null; orders: SmartOrder[] | null }> {
     if (minCashAllocation === maxCashAllocation) {
       minCashAllocation = 0;
     }
@@ -278,7 +279,7 @@ export class OptionsOrderBuilderService {
         console.error('Invalid buy symbol:', buy, buyList);
         continue;
       }
-      const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(buy);
+      const bullishStrangle = await this.strategyBuilderService.getCallStrangleTrade(buy, maxImpliedMovement);
       if (bullishStrangle && bullishStrangle.call) {
         const callPrice = this.strategyBuilderService.findOptionsPrice(bullishStrangle.call.bid, bullishStrangle.call.ask) * 100;
         let currentCall: TradingPair = {
@@ -298,7 +299,7 @@ export class OptionsOrderBuilderService {
             console.error('Invalid sell symbol:', sell, sellList);
             continue;
           }
-          const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell);
+          const bearishStrangle = await this.strategyBuilderService.getPutStrangleTrade(sell, maxImpliedMovement);
           if (bearishStrangle && bearishStrangle.put) {
             const putPrice = this.strategyBuilderService.findOptionsPrice(bearishStrangle.put.bid, bearishStrangle.put.ask) * 100;
             if (!this.isIdealOption(putPrice, maxCashAllocation, bearishStrangle.put)) {

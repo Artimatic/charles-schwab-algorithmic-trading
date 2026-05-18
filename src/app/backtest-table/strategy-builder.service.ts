@@ -226,11 +226,11 @@ export class StrategyBuilderService {
     return (price > 70 && price < 3700);
   }
 
-  async getCallStrangleTrade(symbol: string): Promise<Strangle | null> {
+  async getCallStrangleTrade(symbol: string, maxImpliedMovement = this.defaultMaxImpliedMovement): Promise<Strangle | null> {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
-    if (!optionsData.move || optionsData.move > this.defaultMaxImpliedMovement) {
+    if (!optionsData.move || optionsData.move > maxImpliedMovement) {
       console.log(null,
-        `Implied movement is too high for ${symbol} at ${optionsData.move}. Max is ${this.defaultMaxImpliedMovement}`);
+        `Implied movement is too high for ${symbol} at ${optionsData.move}. Max is ${maxImpliedMovement}`);
       this.addBullishStock(symbol);
       return { call: null, put: null };
     }
@@ -274,11 +274,11 @@ export class StrategyBuilderService {
     return potentialStrangle;
   }
 
-  async getPutStrangleTrade(symbol: string) {
+  async getPutStrangleTrade(symbol: string, maxImpliedMovement = this.defaultMaxImpliedMovement) {
     const optionsData = await this.optionsDataService.getImpliedMove(symbol).toPromise();
-    if (!optionsData.move || optionsData.move > this.defaultMaxImpliedMovement) {
+    if (!optionsData.move || optionsData.move > maxImpliedMovement) {
       console.log(null,
-        `Implied movement is too high for ${symbol} at ${optionsData.move}`);
+        `Implied movement is too high for ${symbol} at ${optionsData.move}. Max is ${maxImpliedMovement}`);
       return { call: null, put: null };
     }
     const optionsChain = optionsData.optionsChain;
