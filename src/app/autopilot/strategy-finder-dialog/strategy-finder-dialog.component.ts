@@ -128,6 +128,7 @@ export class StrategyFinderDialogComponent implements OnInit {
         SwingtradeAlgorithms.mfiLow,
         SwingtradeAlgorithms.macd,
         SwingtradeAlgorithms.roc,
+        SwingtradeAlgorithms.bband
       ];
 
       // Helper function to map strings to objects with movement data
