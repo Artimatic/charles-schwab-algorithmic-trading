@@ -122,17 +122,6 @@ class AlgoService {
     roc10Previous: number,
     roc10: number,
   ): DaytradeRecommendation {
-    if (current.bband80 && current.bband80[1] && current.bband80[1][0]) {
-      const change = DecisionService.getPercentChange(
-        current.close,
-        current.bband80[1][0],
-      );
-
-      if (change < 0 && change < 0.15) {
-        return DaytradeRecommendation.Bearish;
-      }
-    }
-
     const change = DecisionService.getPercentChange(mfi, mfiPrevious);
     const changeRoc = Math.abs(
       DecisionService.getPercentChange(roc10, roc10Previous),
