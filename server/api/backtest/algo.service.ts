@@ -168,10 +168,9 @@ class AlgoService {
           previous.lastMfi < current.mfiLeft
         ) {
           previous.divergent = DaytradeRecommendation.Bearish;
-        } else {
-          previous.lastClose = current.close;
-          previous.lastMfi = current.mfiLeft;
         }
+        previous.lastClose = current.close;
+        previous.lastMfi = current.mfiLeft;
 
         if (
           previous.bband === DaytradeRecommendation.Bullish &&
@@ -233,7 +232,7 @@ class AlgoService {
       },
       {
         lastMfiLowPrice: 0,
-        lastMfiHighPrice: 0,
+        lastMfiHighPrice: Infinity,
         recommendation: DaytradeRecommendation.Neutral,
       },
     ).recommendation;
@@ -422,7 +421,8 @@ class AlgoService {
       return OrderType.None;
     }
 
-    return indicators.slice(-5).reduce(
+    // 1. Count the bullish and bearish signals over the last 5 indicators
+    const { bullishCounter, bearishCounter } = indicators.slice(-5).reduce(
       (previous, current) => {
         const recommendations = current.recommendation;
         for (let rec in recommendations) {
@@ -432,40 +432,41 @@ class AlgoService {
             previous.bearishCounter++;
           }
         }
-
-        if (
-          previous.bullishCounter > 4 &&
-          previous.bullishCounter - previous.bearishCounter > 3
-        ) {
-          if (
-            indicators[indicators.length - 3].mfiLeft <
-              indicators[indicators.length - 1].mfiLeft &&
-            indicators[indicators.length - 3].close <
-              indicators[indicators.length - 1].close
-          ) {
-            previous.recommendation = OrderType.Buy;
-          }
-        } else if (
-          previous.bearishCounter > 4 &&
-          previous.bearishCounter - previous.bullishCounter > 3
-        ) {
-          if (
-            indicators[indicators.length - 3].mfiLeft >
-              indicators[indicators.length - 1].mfiLeft &&
-            indicators[indicators.length - 3].close >
-              indicators[indicators.length - 1].close
-          ) {
-            previous.recommendation = OrderType.Sell;
-          }
-        }
         return previous;
       },
       {
         bullishCounter: 0,
         bearishCounter: 0,
-        recommendation: OrderType.None,
       },
-    ).recommendation;
+    );
+
+    // 2. Evaluate the final recommendation based on the counts and trend confirmation
+    // Safety check: Ensure we have at least 3 indicators to safely access [length - 3]
+    if (indicators.length >= 3) {
+      const thirdToLast = indicators[indicators.length - 3];
+      const last = indicators[indicators.length - 1];
+
+      // Check for Buy conditions
+      if (bullishCounter > 4 && bullishCounter - bearishCounter > 3) {
+        if (
+          thirdToLast.mfiLeft < last.mfiLeft &&
+          thirdToLast.close < last.close
+        ) {
+          return OrderType.Buy;
+        }
+      }
+      // Check for Sell conditions
+      else if (bearishCounter > 4 && bearishCounter - bullishCounter > 3) {
+        if (
+          thirdToLast.mfiLeft > last.mfiLeft &&
+          thirdToLast.close > last.close
+        ) {
+          return OrderType.Sell;
+        }
+      }
+    }
+
+    return OrderType.None;
   }
 }
 
