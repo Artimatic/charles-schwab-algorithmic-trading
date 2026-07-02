@@ -1,0 +1,65 @@
+<div class="sector-container">
+  <h2>Major Sector & Factor Rotation Dashboard</h2>
+  
+  <div class="controls-card">
+    <div class="control-item">
+      <label>Target Date</label>
+      <input type="date" [(ngModel)]="selectedDate" (change)="loadSectorData()" class="form-input">
+    </div>
+
+    <div class="control-item">
+      <label>Lookback (Days)</label>
+      <input type="number" [(ngModel)]="lookbackDays" (change)="loadSectorData()" class="form-input" style="width: 80px;">
+    </div>
+
+    <div class="control-item">
+      <label>Category Filter</label>
+      <select [(ngModel)]="selectedCategory" (change)="filterData()" class="form-input">
+        <option value="ALL">All Categories</option>
+        <option value="GICS">GICS Core Sectors</option>
+        <option value="SubSector">Industry Sub-Sectors</option>
+        <option value="Factor">Trading Factors</option>
+      </select>
+    </div>
+    
+    <button (click)="loadSectorData()" class="btn-refresh" [disabled]="isLoading">
+      {{ isLoading ? 'Loading...' : 'Refresh Matrix' }}
+    </button>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-banner">{{ errorMessage }}</div>
+
+  <div class="workspace">
+    <div class="chart-panel">
+      <canvas #rrgCanvas width="520" height="520" class="rrg-matrix"></canvas>
+    </div>
+
+    <div class="table-panel">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Name</th>
+            <th>RS-Ratio</th>
+            <th>RS-Momentum</th>
+            <th>Quadrant Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let asset of filteredData" [ngClass]="asset.quadrant.toLowerCase()">
+            <td class="bold">{{ asset.ticker }}</td>
+            <td>{{ asset.name }}</td>
+            <td class="numeric">{{ asset.rsRatio }}</td>
+            <td class="numeric">{{ asset.rsMomentum }}</td>
+            <td>
+              <span class="badge" [ngClass]="asset.quadrant.toLowerCase()">{{ asset.quadrant }}</span>
+            </td>
+          </tr>
+          <tr *ngIf="filteredData.length === 0 && !isLoading">
+            <td colspan="5" style="text-align: center; color: #888;">No sector data returned for this date query.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

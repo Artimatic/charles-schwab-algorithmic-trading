@@ -32,5 +32,6 @@ router.post('/score-signals', BacktestController.scoreSignals);
 router.post('/pop', BacktestController.getProbabilityOfProfit);
 router.post('/recommendation-fn', BacktestController.getCurrentDaytradeRecommendation);
 router.get('/backtest-data', BacktestController.getBacktestData);
+router.get('/sector-rotation', BacktestController.getSectorRotationData);
 
 module.exports = router;
