@@ -95,6 +95,7 @@ import { SimulationChartComponent } from './simulation/simulation-chart/simulati
 import { AlgoEvaluationModule } from './algo-evaluation/algo-evaluation.module';
 import { LiveSimulationComponent } from './simulation/live-simulation/live-simulation.component';
 import { StatsCardComponent } from './stats-card/stats-card.component';
+import { SectorRotationComponent } from './autopilot/sector-rotation/sector-rotation.component';
 
 @NgModule({
   declarations: [
@@ -139,6 +140,7 @@ import { StatsCardComponent } from './stats-card/stats-card.component';
     AiPicksComponent,
     AutoBacktestSwitchComponent,
     AutopilotComponent,
+    SectorRotationComponent,
     BacktestTableComponent,
     AddOptionsTradeComponent,
     DaytradeActiveSearchComponent,

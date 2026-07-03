@@ -14,7 +14,7 @@ import * as moment from "moment";
 @Component({
   selector: "app-sector-rotation",
   templateUrl: "./sector-rotation.component.html",
-  styleUrls: ["./sector-rotation.component.css"],
+  styleUrls: ["./sector-rotation.component.css"]
 })
 export class SectorRotationComponent implements OnInit, AfterViewInit {
   @ViewChild("rrgCanvas", { static: false })
