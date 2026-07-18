@@ -256,7 +256,7 @@ export class AutopilotService {
     async () => {
       // Prevent handleBalanceUtilization if last call was within 45 minutes
       if (!this.lastBalanceUtilizationCheck || Math.abs(moment().diff(this.lastBalanceUtilizationCheck, 'minutes')) > 45) {
-        if (this.cartService.buyOrders.length + this.cartService.otherOrders.length < 3) {
+        if (this.cartService.buyOrders.length + this.cartService.otherOrders.length < 5) {
           this.changeStrategy();
           await this.handleStrategy();
         } else {
