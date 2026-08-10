@@ -78,10 +78,9 @@ export class StrategyFinderDialogComponent implements OnInit {
 
   private saveSignalResults(results: SignalResult[]): void {
     const previous = this.getSavedSignalResults();
-    const merged = [
-      ...previous,
-      ...results.map((result) => ({ ...result, generatedAt: Date.now() })),
-    ];
+    const merged = previous.concat(
+      results.map((result) => ({ ...result, generatedAt: Date.now() })),
+    );
     localStorage.setItem(
       this.signalResultsStorageKey,
       JSON.stringify(this.pruneSavedSignalResults(merged)),
@@ -93,7 +92,7 @@ export class StrategyFinderDialogComponent implements OnInit {
     source: Array<{ symbol: string; movement: number }>,
   ) {
     const seen = new Set(target.map((s) => s.symbol));
-    return [...target, ...source.filter((s) => !seen.has(s.symbol))];
+    return target.concat(source.filter((s) => !seen.has(s.symbol)));
   }
 
   close() {
@@ -138,7 +137,7 @@ export class StrategyFinderDialogComponent implements OnInit {
           movement: getMovement(symbol),
         }));
 
-      const existing = [...this.signalResults]; // keep what was loaded from localStorage
+      const existing = this.signalResults.slice(); // keep what was loaded from localStorage
       const newResults: SignalResult[] = [];
       for (const sig of signals) {
         const result = this.autopilotService.addPairOnSignal(sig, "buy", false);
@@ -171,9 +170,10 @@ export class StrategyFinderDialogComponent implements OnInit {
       }
 
       const mergedMap = new Map<string, SignalResult>();
-      [...existing, ...filtered].forEach((item) => {
+      const mergedResults = existing.concat(filtered);
+      mergedResults.forEach((item) => {
         if (mergedMap.has(item.signal)) {
-          const found = mergedMap.get(item.signal);
+          const found = mergedMap.get(item.signal)!;
           found.buys = this.mergeUniqueSymbols(found.buys, item.buys);
           found.sells = this.mergeUniqueSymbols(found.sells, item.sells);
           mergedMap.set(item.signal, {
@@ -218,4 +218,45 @@ export class StrategyFinderDialogComponent implements OnInit {
       console.log(`balanceTrades returned for ${signal}`, result);
     }
   }
-}
+  exportCreateStrategyCsv(): void {
+    if (!this.signalResults?.length) {
+      return;
+    }
+
+    const headers = ['Signal', 'Buys', 'Sells'];
+    const rows = this.signalResults.map((sr) => {
+      const buys = (sr.buys || [])
+        .map((item) =>
+          `${item.symbol} (${item.movement != null ? (item.movement * 100).toFixed(2) + '%' : 'N/A'})`,
+        )
+        .join('; ');
+      const sells = (sr.sells || [])
+        .map((item) =>
+          `${item.symbol} (${item.movement != null ? (item.movement * 100).toFixed(2) + '%' : 'N/A'})`,
+        )
+        .join('; ');
+
+      return [sr.signal, buys, sells]
+        .map((value) => this.formatCsvValue(value))
+        .join(',');
+    });
+
+    const csvRows = [headers.map((value) => this.formatCsvValue(value)).join(',')].concat(rows);
+    const csv = csvRows.join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `create-strategy-signals-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  private formatCsvValue(value: any): string {
+    if (value === null || value === undefined) {
+      return '""';
+    }
+
+    const stringValue = String(value).replace(/"/g, '""');
+    return `"${stringValue}"`;
+  }}
