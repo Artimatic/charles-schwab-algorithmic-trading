@@ -19,6 +19,6 @@ export interface Options {
 }
 
 export interface Strangle {
-    call: Options;
-    put: Options;
+    call: Options | null;
+    put: Options | null;
 }

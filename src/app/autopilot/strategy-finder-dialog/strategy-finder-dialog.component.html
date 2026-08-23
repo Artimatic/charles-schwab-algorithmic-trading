@@ -168,49 +168,31 @@
 
 <!-- new table for value 3; keeps value 2 unchanged -->
 <div *ngIf="value === 3">
-  <div
-    *ngIf="signalResults?.length"
-    style="max-height: 400px; overflow: auto; padding: 0.5rem 0"
-  >
-    <h3>Signal-generated Pairs</h3>
+  <div style="max-height: 400px; overflow: auto; padding: 0.5rem 0">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+      <h3 style="margin:0;">Signal-generated Pairs</h3>
+      <button pButton type="button" label="Export CSV" icon="pi pi-file" (click)="exportCreateStrategyCsv()" [disabled]="!signalResults?.length"></button>
+    </div>
     <p *ngIf="!signalResults?.length">No signal results generated yet.</p>
     <table
+      *ngIf="signalResults?.length"
       class="p-datatable p-component"
       style="width: 100%; border-collapse: collapse"
     >
       <thead>
         <tr>
-          <th
-            style="
-              text-align: left;
-              padding: 0.5rem;
-              border-bottom: 1px solid #e6e6e6;
-            "
-          >
-            Signal
-          </th>
-          <th
-            style="
-              text-align: left;
-              padding: 0.5rem;
-              border-bottom: 1px solid #e6e6e6;
-            "
-          >
-            Buys
-          </th>
-          <th
-            style="
-              text-align: left;
-              padding: 0.5rem;
-              border-bottom: 1px solid #e6e6e6;
-            "
-          >
-            Sells
-          </th>
+          <th style="text-align: left; padding: 0.5rem; border-bottom: 1px solid #e6e6e6;">Signal</th>
+          <th style="text-align: left; padding: 0.5rem; border-bottom: 1px solid #e6e6e6;">Buys</th>
+          <th style="text-align: left; padding: 0.5rem; border-bottom: 1px solid #e6e6e6;">Sells</th>
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let sr of signalResults">
+        <tr 
+          *ngFor="let sr of signalResults" 
+          (click)="balanceTrades(sr.buys, sr.sells, sr.signal)"
+          style="cursor: pointer; transition: background-color 0.2s;"
+          class="strategy-row"
+        >
           <td style="padding: 0.5rem; border-bottom: 1px solid #f5f5f5">
             <strong>{{ sr.signal }}</strong>
           </td>
@@ -239,7 +221,6 @@
     </table>
   </div>
 </div>
-
 <p-button
   label="Ok"
   styleClass="p-button-success"
