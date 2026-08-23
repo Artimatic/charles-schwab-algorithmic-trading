@@ -589,8 +589,8 @@ export class AutopilotComponent implements OnInit, OnDestroy {
     }
     this.portfolioService.purgeStrategy().subscribe();
 
-    // Sell all
-    this.autopilotService.getCurrentHoldings().forEach(async (portItem: PortfolioInfoHolding) => {
+    const holdings = this.autopilotService.getCurrentHoldings();
+    for (const portItem of holdings) {
       if (portItem.primaryLegs) {
         let orderType = null;
         if (portItem.primaryLegs[0].putCallInd.toLowerCase() === 'c') {
@@ -603,8 +603,7 @@ export class AutopilotComponent implements OnInit, OnDestroy {
       } else {
         await this.cartService.portfolioSell(portItem, 'Testing sell', true);
       }
-    });
-
+    }
     // Testing buy stock
     await this.orderHandlingService.addBuy(this.autopilotService.createHoldingObj('GOOGL'), 0.01, 'Testing buy stock');
 
