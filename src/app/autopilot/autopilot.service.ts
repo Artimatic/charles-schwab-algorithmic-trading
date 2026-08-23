@@ -686,7 +686,7 @@ export class AutopilotService {
     console.log("findStockBuys", buyList);
     await this.orderHandlingService.addBuy(
       this.createHoldingObj(buyList.pop()),
-      this.riskLevel,
+      this.riskLevel * 2,
       "Buy intraday bullish stock",
     );
   }
