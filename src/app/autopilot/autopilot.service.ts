@@ -1576,7 +1576,7 @@ export class AutopilotService {
         await this.addMLPairs();
         break;
       case Strategy.TrimHoldings:
-        this.handleBalanceUtilization(this.currentHoldings, true);
+        await this.handleBalanceUtilization(this.currentHoldings, true);
         break;
       case Strategy.Short:
         await this.addShort();
@@ -1704,7 +1704,6 @@ export class AutopilotService {
           await this.checkStopLoss(holding);
         }
         break; // Add this missing break statement
-      case Strategy.IwmInverseDispersion:
       case Strategy.IwmInverseDispersion:
         this.findIwmTrade();
         break;
