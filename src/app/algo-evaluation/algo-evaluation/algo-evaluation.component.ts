@@ -30,7 +30,19 @@ export class AlgoEvaluationComponent implements OnInit {
     await this.getBacktests();
 
     this.aiPicksService.mlNeutralResults.subscribe(async () => {
-      console.log('AlgoEvaluationComponent detected mlNeutralResults update');
+        console.log(
+          "New recommendations received at: ",
+          new Date().toLocaleString("en-US", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+            second: "2-digit",
+            timeZoneName: "short",
+          }),
+      );
       await this.getBacktests();
     });
   }
