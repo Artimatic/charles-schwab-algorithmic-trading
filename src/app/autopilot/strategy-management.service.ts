@@ -214,8 +214,10 @@ export class StrategyManagementService {
   }
 
   /**
-   * Handles buy/sell at market close or open
-   * Gets SPY ML prediction and may trigger a buy order right away
+   * Handles buy/sell at market close or open.
+   * - Checks balance utilization for SPY ML
+   * - Buys every stock that AlgoEvaluationComponent would show as a "Strong buy"
+   *   (ml > 0.5 and recommendation BUY / STRONGBUY), skipping anything already held.
    */
   async buySellAtCloseOrOpen(): Promise<void> {
     const overBalance = await this.autopilotService.handleBalanceUtilization(
@@ -227,30 +229,67 @@ export class StrategyManagementService {
 
     const backtestData =
       await this.strategyBuilderService.getBacktestData("SPY");
-    if (!backtestData) {
+    if (backtestData) {
+      this.autopilotService.setLastSpyMl(backtestData.ml);
+    }
+
+    const recommendedBuys = this.getRecommendedBuysFromBacktest();
+    if (!recommendedBuys.length) {
+      this.reportingService.addAuditLog(
+        null,
+        "No recommended stocks to buy at close.",
+      );
       return;
     }
 
-    this.autopilotService.setLastSpyMl(backtestData.ml);
+    // Refresh holdings so we don't buy something we already own
+    await this.autopilotService.setCurrentHoldings();
+    const currentHoldings = this.autopilotService.getCurrentHoldings();
 
-    // Send a buy order right away for SPY based on the backtest data
-    if (
-      backtestData.ml > 0.5 &&
-      (backtestData.recommendation === "STRONGBUY" ||
-        backtestData.recommendation === "BUY")
-    ) {
-      // Use the ML score as the allocation fraction (0–1)
-      const allocation = backtestData.ml;
-      await this.autopilotService.buyRightAway("SPY", allocation);
-
-      this.reportingService.addAuditLog(
-        null,
-        `Bought SPY right away: allocation ${allocation}, ml ${backtestData.ml}, ` +
-          `recommendation ${backtestData.recommendation}`,
-      );
+    const bought: string[] = [];
+    for (const symbol of recommendedBuys) {
+      if (currentHoldings.some((h) => h.name === symbol)) {
+        continue;
+      }
+      try {
+        await this.autopilotService.buyRightAway(symbol, 0.01);
+        bought.push(symbol);
+      } catch (error) {
+        this.reportingService.addAuditLog(
+          symbol,
+          `Failed buying recommended stock at close: ${error?.message ?? error}`,
+        );
+      }
     }
+
+    this.reportingService.addAuditLog(
+      null,
+      `Bought ${bought.length} recommended stocks at close: ${bought.join(", ")}`,
+    );
   }
-  
+
+  /**
+   * Extracts the bullish recommendations from the saved backtest data.
+   * Mirrors the filtering logic used in AlgoEvaluationComponent.getBacktests():
+   *   ml > 0.5 AND recommendation in ('buy', 'strongbuy')
+   */
+  private getRecommendedBuysFromBacktest(): string[] {
+    const savedBacktest = JSON.parse(localStorage.getItem("backtest") || "{}");
+    const symbols: string[] = [];
+    for (const saved in savedBacktest) {
+      const stock = savedBacktest[saved];
+      if (!stock || !stock.stock) {
+        continue;
+      }
+      const rec = (stock.recommendation || "").toString().toLowerCase();
+      if (stock.ml > 0.5 && (rec === "buy" || rec === "strongbuy")) {
+        if (!symbols.includes(stock.stock)) {
+          symbols.push(stock.stock);
+        }
+      }
+    }
+    return symbols;
+  }
   /**
    * Sells all current stock holdings
    */
