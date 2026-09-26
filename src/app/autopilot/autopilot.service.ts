@@ -279,7 +279,7 @@ export class AutopilotService {
         if (
           this.cartService.buyOrders.length +
             this.cartService.otherOrders.length <
-          5
+          8
         ) {
           this.changeStrategy();
           await this.handleStrategy();
