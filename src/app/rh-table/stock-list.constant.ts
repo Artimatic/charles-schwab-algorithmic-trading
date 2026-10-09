@@ -1,4 +1,8 @@
 const currentList = [
+    'CAT',
+    'VST',
+    'NEE',
+    'CEG',
     'AAPL',
     'MSFT',
     'GOOGL',
