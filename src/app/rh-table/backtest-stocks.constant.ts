@@ -3603,7 +3603,7 @@ const fullList = ['RKLB',
   'JD',
   'BUD',
   'SUN',
-  'SKWS']
+  'SKWS'];
 
 const top300 = ['S',
   'AAPL',
