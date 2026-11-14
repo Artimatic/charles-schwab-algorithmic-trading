@@ -13,7 +13,7 @@ const currentList = [
   'AAPL', 'MSFT', 'GOOGL', 'META', 'NVDA', 'AMD', 'AVGO', 'TSM', 'QCOM',
   'AMAT', 'LRCX', 'ADI', 'MU', 'INTC', 'MRVL', 'SMCI', 'TXN', 'KLAC', 'MCHP',
   'ASML',            // NEW: the other irreplaceable semi name (lithography monopoly)
-  'ORCL', 'CRM', 'NOW', 'ADBE', 'PANW', 'CRWD', 'NET', 'OKTA', 'SNOW', 'PLTR',
+  'ORCL', 'CRM', 'NOW', 'ADBE', 'PANW', 'CRWD', 'NET', 'OKTA', 'FTNT', 'SNOW', 'PLTR',
   'DDOG', 'ZS', 'FTNT', 'DELL', 'ANET', 'VRT', 'GLW', 'COHR',
 
   // --- Financials & Fintech ---
